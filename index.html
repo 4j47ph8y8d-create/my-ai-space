@@ -92,7 +92,6 @@
         ::-webkit-scrollbar-thumb { background: rgba(192,192,192,0.5); border-radius: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
 
-        /* ===== 桌面 ===== */
         .screen-launcher { 
             width: 100%; height: 100%; 
             background: linear-gradient(145deg,#1a1a2e,#16213e,#0f3460); 
@@ -108,7 +107,6 @@
         .screen-launcher.hidden { transform: scale(0.92); opacity: 0; pointer-events: none; }
         [data-theme="light"] .screen-launcher { background: linear-gradient(145deg,#e8ecf1,#d5dbe3,#c5cdd8); }
 
-        /* ===== 状态栏 ===== */
         .status-bar { 
             display: flex; justify-content: space-between; 
             color: rgba(255,255,255,0.8); font-size: 12px; 
@@ -121,7 +119,6 @@
         [data-theme="light"] .status-bar { color: rgba(0,0,0,0.6); text-shadow: none; }
         .status-bar .icons { display: flex; gap: 6px; }
 
-        /* ===== 主题切换按钮（下移） ===== */
         .theme-toggle-btn {
             position: absolute; 
             top: 44px; 
@@ -164,7 +161,6 @@
         }
         [data-theme="light"] .desktop-title { color: rgba(0,0,0,0.3); }
 
-        /* ===== 心跳卡片 ===== */
         .heart-card { 
             width: 92%; max-width: 280px; 
             background: rgba(255,255,255,0.05); 
@@ -208,7 +204,6 @@
         @keyframes heartbeat { 0% { transform: scale(1); } 14% { transform: scale(1.1); } 28% { transform: scale(1); } 42% { transform: scale(1.04); } 70% { transform: scale(1); } 100% { transform: scale(1); } }
         @keyframes pulseGlow { 0% { transform: translate(-50%,-50%) scale(0.8); opacity: 0; } 14% { transform: translate(-50%,-50%) scale(1.2); opacity: 0.5; } 28% { transform: translate(-50%,-50%) scale(1.3); opacity: 0.15; } 42% { transform: translate(-50%,-50%) scale(1.35); opacity: 0.05; } 70% { transform: translate(-50%,-50%) scale(1.4); opacity: 0; } 100% { transform: translate(-50%,-50%) scale(0.8); opacity: 0; } }
 
-        /* ===== 应用网格 ===== */
         .app-grid { 
             display: grid; 
             grid-template-columns: repeat(3, 1fr); 
@@ -248,7 +243,6 @@
         .app-icon .app-name { font-size: 10px; color: rgba(255,255,255,0.85); text-align: center; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
         [data-theme="light"] .app-icon .app-name { color: rgba(0,0,0,0.7); text-shadow: none; }
 
-        /* ===== Dock栏 ===== */
         .dock { 
             display: flex; 
             justify-content: center; 
@@ -267,7 +261,6 @@
         .dock .app-icon .icon-wrap.settings { background: linear-gradient(135deg,#b2bec3,#2d3436); }
         .dock .app-icon .app-name { font-size: 9px; }
 
-        /* ===== 联系人 ===== */
         .screen-contacts { 
             width: 100%; height: 100%; 
             background: var(--bg-secondary); 
@@ -307,7 +300,6 @@
         .empty-contacts { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
         .empty-contacts i { font-size: 48px; color: var(--text-secondary); opacity: 0.3; display: block; margin-bottom: 16px; }
 
-        /* ===== 聊天 ===== */
         .screen-chat { 
             width: 100%; height: 100%; 
             background: var(--bg-secondary); 
@@ -321,7 +313,6 @@
         .screen-chat.open { transform: translateX(0); }
         .chat-bg-layer { position: absolute; inset: 0; z-index: 0; background: var(--bg-secondary); background-size: cover; background-position: center; }
 
-        /* ===== 聊天顶部（加安全区域） ===== */
         .chat-header { 
             background: var(--header-bg); 
             backdrop-filter: blur(10px); 
@@ -388,7 +379,6 @@
         .message-row.self .bubble { background: var(--bg-bubble-self); }
         .bubble img { max-width: 160px; max-height: 160px; border-radius: 6px; display: block; margin: 4px 0; }
 
-        /* ===== 送礼卡片 ===== */
         .gift-card {
             display: flex; align-items: center; gap: 10px;
             background: linear-gradient(135deg, #fff5f5, #fff0f0);
@@ -434,7 +424,6 @@
         @keyframes dotBounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ===== 输入区域（底部安全区域） ===== */
         .chat-input-area { 
             background: var(--header-bg); 
             backdrop-filter: blur(10px); 
@@ -469,7 +458,6 @@
         .longpress-menu .menu-item i { width: 16px; color: #07c160; }
         .longpress-menu .menu-item.danger i { color: #e74c3c; }
 
-        /* ===== 其他屏幕（记忆库、表情包、日记）顶部安全区域 ===== */
         .screen-memory, .screen-meme, .screen-diary { 
             width: 100%; height: 100%; 
             background: var(--bg-secondary); 
@@ -512,7 +500,6 @@
         .memory-add-bar .add-mem-btn { background: #a29bfe; border: none; color: #fff; padding: 6px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: 0.15s; white-space: nowrap; }
         .memory-add-bar .add-mem-btn:active { transform: scale(0.95); }
 
-        /* ===== 表情包 ===== */
         .meme-category-list { display: flex; flex-direction: column; gap: 8px; }
         .meme-list-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 10px; }
         .meme-list-title { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
@@ -561,7 +548,6 @@
         .meme-picker-item .meme-picker-item-name { font-size: 9px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        /* ===== 日记 ===== */
         .diary-header { 
             background: rgba(247,241,232,0.95); 
             backdrop-filter: blur(10px); 
@@ -635,7 +621,6 @@
         .diary-notification .notif-btn:active { transform: scale(0.95); }
         .diary-notification .notif-close { background: none; border: none; color: #b0a090; font-size: 12px; cursor: pointer; margin-top: 6px; font-family: inherit; padding: 4px 10px; }
 
-        /* ===== 权限弹窗 ===== */
         .permission-overlay { position: absolute; inset: 0; z-index: 100; background: rgba(0,0,0,0.5); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; border-radius: 32px; overflow: hidden; }
         .permission-overlay.active { display: flex; }
         .permission-dialog { background: var(--bg-card); border-radius: 20px; padding: 24px 20px 18px; max-width: 300px; width: 88%; animation: fadeInUp 0.3s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
@@ -649,7 +634,6 @@
         .permission-dialog .btn-group .btn-deny { background: #fee; color: #e74c3c; }
         .permission-dialog .btn-group .btn-cancel-perm { background: var(--bg-secondary); color: var(--text-secondary); }
 
-        /* ===== 个性化弹窗 ===== */
         .style-picker-overlay { position: absolute; inset: 0; z-index: 90; background: rgba(0,0,0,0.5); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; border-radius: 32px; overflow: hidden; }
         .style-picker-overlay.active { display: flex; }
         .style-picker-panel { background: #1a1a2e; border-radius: 20px; padding: 20px 16px 18px; max-width: 380px; width: 94%; max-height: 85%; overflow-y: auto; animation: fadeInUp 0.3s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); }
@@ -674,7 +658,6 @@
         .style-option .style-check { color: #07c160; font-size: 12px; margin-left: 4px; display: none; }
         .style-option.active .style-check { display: inline; }
 
-        /* ===== 图片选择器 ===== */
         .image-picker-overlay { position: absolute; inset: 0; z-index: 50; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); display: none; justify-content: center; align-items: flex-end; border-radius: 32px; overflow: hidden; }
         .image-picker-overlay.active { display: flex; }
         .image-picker-menu { background: var(--bg-card); width: 100%; padding: 16px 16px calc(24px + var(--safe-bottom, 0px)); border-radius: 20px 20px 0 0; animation: slideUp 0.3s ease; }
@@ -687,7 +670,6 @@
         .image-picker-menu .cancel-btn { width: 100%; margin-top: 12px; padding: 12px; border: none; background: var(--bg-secondary); border-radius: 12px; font-size: 14px; color: var(--text-primary); cursor: pointer; font-weight: 500; }
         .image-picker-menu .cancel-btn:active { background: #e8e8e8; }
 
-        /* ===== 设置抽屉 ===== */
         .settings-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(3px); z-index: 60; display: none; justify-content: flex-end; border-radius: 32px; overflow: hidden; }
         .settings-overlay.active { display: flex; }
         .settings-drawer { background: var(--bg-secondary); width: 88%; max-width: 320px; height: 100%; padding: calc(18px + var(--safe-top, 0px)) 16px calc(24px + var(--safe-bottom, 0px)); overflow-y: auto; box-shadow: -4px 0 25px rgba(0,0,0,0.15); animation: slideInRight 0.25s ease; }
@@ -697,7 +679,7 @@
         .settings-drawer .setting-group label { font-weight: 600; font-size: 13px; color: var(--text-primary); display: flex; flex-direction: column; gap: 4px; }
         .settings-drawer .setting-group label .label-hint { font-weight: 400; color: var(--text-secondary); font-size: 11px; }
         .settings-drawer textarea, .settings-drawer input[type="text"], .settings-drawer select { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 13px; background: var(--bg-card); resize: vertical; outline: none; width: 100%; transition: 0.15s; color: var(--text-primary); }
-        .settings-drawer textarea:focus, .settings-drawer input[type="text"]:focus { border-color: #07c160; box-shadow: 0 0 0 3px rgba(7,193,96,0.12); }
+        .settings-drawer textarea:focus, .settings-drawer input[type="text"]:focus { border-color: #07c160; box-shadow: 0 0 0 3px rgba(7,193,160,0.12); }
         .settings-drawer .module-divider { border: none; border-top: 2px dashed var(--border-color); margin: 4px 0 12px; }
         .settings-drawer .save-btn { background: #07c160; color: #fff; border: none; padding: 10px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 6px; }
         .settings-drawer .save-btn:active { transform: scale(0.98); }
@@ -782,7 +764,6 @@
         .data-modal .role-select-list .role-check { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 12px; color: var(--text-primary); }
         .data-modal .role-select-list .role-check input[type="checkbox"] { accent-color: #07c160; cursor: pointer; }
 
-        /* ===== 心跳悬浮窗 ===== */
         .floating-heart { 
             position: fixed; 
             bottom: 100px; 
@@ -840,7 +821,6 @@
 </head>
 <body>
 <div class="phone-frame" id="app">
-    <!-- 桌面 -->
     <div class="screen-launcher" id="launcherScreen">
         <button class="theme-toggle-btn" id="themeToggleBtn" title="切换深色/浅色模式">
             <i class="fas fa-moon" id="themeIcon"></i>
@@ -876,7 +856,6 @@
         </div>
     </div>
 
-    <!-- 联系人 -->
     <div class="screen-contacts" id="contactsScreen">
         <div class="contacts-header">
             <button class="back-btn" id="backFromContacts"><i class="fas fa-chevron-left"></i></button>
@@ -886,7 +865,6 @@
         <div class="contacts-list" id="contactsList"></div>
     </div>
 
-    <!-- 聊天 -->
     <div class="screen-chat" id="chatScreen">
         <div class="chat-bg-layer" id="chatBgLayer"></div>
         <div class="chat-header">
@@ -914,7 +892,6 @@
         </div>
     </div>
 
-    <!-- 记忆库 -->
     <div class="screen-memory" id="memoryScreen">
         <div class="memory-header-bar">
             <button class="back-btn" id="backFromMemory"><i class="fas fa-chevron-left"></i></button>
@@ -928,7 +905,6 @@
         </div>
     </div>
 
-    <!-- 表情包 -->
     <div class="screen-meme" id="memeScreen">
         <div class="meme-header-bar">
             <button class="back-btn" id="backFromMeme"><i class="fas fa-chevron-left"></i></button>
@@ -941,7 +917,6 @@
         <div class="meme-body-scroll" id="memeBodyScroll"></div>
     </div>
 
-    <!-- 日记 -->
     <div class="screen-diary" id="diaryScreen">
         <div class="diary-header">
             <button class="back-btn" id="backFromDiary"><i class="fas fa-chevron-left"></i></button>
@@ -972,7 +947,6 @@
         </div>
     </div>
 
-    <!-- 表情包选择器 -->
     <div class="meme-picker-overlay" id="memePickerOverlay">
         <div class="meme-picker-panel" id="memePickerPanel">
             <div class="meme-picker-header">
@@ -983,7 +957,6 @@
         </div>
     </div>
 
-    <!-- 图片选择器 -->
     <div class="image-picker-overlay" id="imagePickerOverlay">
         <div class="image-picker-menu">
             <div class="menu-title" id="pickerTitle">选择图片来源</div>
@@ -995,7 +968,6 @@
         </div>
     </div>
 
-    <!-- 设置抽屉 -->
     <div class="settings-overlay" id="settingsOverlay">
         <div class="settings-drawer">
             <button class="close-drawer" id="closeSettingsBtn">×</button>
@@ -1059,7 +1031,6 @@
         </div>
     </div>
 
-    <!-- 权限弹窗 -->
     <div class="permission-overlay" id="permissionOverlay">
         <div class="permission-dialog">
             <div class="icon">📸</div>
@@ -1073,7 +1044,6 @@
         </div>
     </div>
 
-    <!-- 个性化弹窗 -->
     <div class="style-picker-overlay" id="stylePickerOverlay">
         <div class="style-picker-panel">
             <div class="panel-header"><h3>✨ 个性化</h3><button class="close-btn" id="closeStylePicker">&times;</button></div>
@@ -1094,7 +1064,6 @@
         </div>
     </div>
 
-    <!-- 数据管理 -->
     <div class="data-modal-overlay" id="dataModalOverlay">
         <div class="data-modal">
             <button class="modal-close" id="dataModalClose">&times;</button>
@@ -1118,7 +1087,6 @@
         </div>
     </div>
 
-    <!-- 日记通知 -->
     <div class="diary-notification" id="diaryNotification">
         <div class="notif-icon">📖</div>
         <h3>他的日记已送达</h3>
@@ -1127,13 +1095,11 @@
         <button class="notif-close" id="diaryNotifClose">稍后再说</button>
     </div>
 
-    <!-- 悬浮窗 -->
     <div class="floating-heart" id="floatingHeart">
         <span class="fh-value" id="fhValue">65</span>
         <span class="fh-label">BPM</span>
     </div>
 
-    <!-- 心跳详情 -->
     <div class="heart-detail-overlay" id="heartDetailOverlay">
         <div class="heart-detail-panel">
             <button class="close-btn" id="hdCloseBtn">&times;</button>
@@ -1146,58 +1112,18 @@
         </div>
     </div>
 
-    <!-- 长按菜单 -->
     <div class="longpress-menu" id="longpressMenu">
         <button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button>
         <button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button>
     </div>
-</div>
-
-<script>
+</div> <script>
 // ============================================================
-//  🚀 梦女空间 v2.1
-//  修复：壁纸压缩+持久化、点击穿透、安全区域适配
+//  🚀 梦女空间 v2.3 - 完整修复版
+//  修复日期：2026-07-08
+//  修复内容：全部8个bug修复 + 日记自动生成
 // ============================================================
 
-var CONFIG = {
-    apiKey: '',
-    model: 'deepseek-chat',
-    wallpaper: '',
-    chatBg: '',
-    userAvatar: '',
-    iconStyle: 'glass',
-    bubbleStyle: 'default',
-    timeMode: 'HH:MM',
-    permission: null,
-    temperature: 0.9,
-    fontSize: 'medium',
-    fontWeight: 'regular',
-    splitEnabled: true,
-    theme: 'dark',
-    pinnedContacts: [],
-    heart: {
-        bindRoleId: null,
-        value: 65,
-        restingValue: 65,
-        level: '平静',
-        signature: '今天也很想你 💕',
-        color: '#ff6b81',
-        floatingEnabled: true,
-        speed: 'normal',
-        recentTrigger: '等待你的第一句情话',
-        spikeActive: false,
-        spikeTimer: null,
-        recoveryTimer: null,
-        peakValue: 65,
-    },
-    aiMemeEnabled: true,
-    diaries: [],
-    diaryAutoGenerateEnabled: true,
-    lastDiaryCheckDate: null,
-    diaryCalendarCollapsed: false,
-    floatingHeartPosition: { x: null, y: null },
-};
-
+var CONFIG = {};
 var roles = [];
 var currentRoleId = null;
 var draftCache = {};
@@ -1216,7 +1142,11 @@ var memes = [];
 var memeCurrentCategoryId = null;
 var memeDeleteMode = false;
 var memeSelectedForDelete = [];
+var memePickerCurrentCategory = null;
 var heartBeatInterval = null;
+var isSending = false;
+var diaryAutoGenerateTimer = null;
+
 var lastMessageCount = -1;
 
 function generateId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6); }
@@ -1240,6 +1170,12 @@ function loadDraft(roleId) {
 function saveDraft(roleId, content) {
     draftCache[roleId] = content;
     try { localStorage.setItem('ds_draft_cache', JSON.stringify(draftCache)); } catch (_) {}
+}
+function clearDraft(roleId) {
+    if (draftCache[roleId]) {
+        delete draftCache[roleId];
+        try { localStorage.setItem('ds_draft_cache', JSON.stringify(draftCache)); } catch (_) {}
+    }
 }
 
 function createDefaultRole(name) {
@@ -1274,30 +1210,24 @@ function loadAllData() {
         if (raw) savedData = JSON.parse(raw);
     } catch (_) { savedData = null; }
 
-    if (savedData && savedData.roles && Array.isArray(savedData.roles) && savedData.roles.length > 0) {
-        CONFIG = savedData.config || {};
-        if (!CONFIG.unreadCount) CONFIG.unreadCount = {};
-        if (!CONFIG.timeMode) CONFIG.timeMode = 'HH:MM';
-        if (!CONFIG.fontSize) CONFIG.fontSize = 'medium';
-        if (!CONFIG.fontWeight) CONFIG.fontWeight = 'regular';
-        if (CONFIG.splitEnabled === undefined) CONFIG.splitEnabled = true;
-        if (!CONFIG.theme) CONFIG.theme = 'dark';
-        if (!CONFIG.pinnedContacts || !Array.isArray(CONFIG.pinnedContacts)) CONFIG.pinnedContacts = [];
-        if (!CONFIG.heart) CONFIG.heart = { bindRoleId: null, value: 65, restingValue: 65, level: '平静', signature: '今天也很想你 💕', color: '#ff6b81', floatingEnabled: true, speed: 'normal', recentTrigger: '等待你的第一句情话', spikeActive: false, spikeTimer: null, recoveryTimer: null, peakValue: 65 };
-        if (!CONFIG.heart.color) CONFIG.heart.color = '#ff6b81';
-        if (CONFIG.heart.floatingEnabled === undefined) CONFIG.heart.floatingEnabled = true;
-        if (!CONFIG.heart.speed) CONFIG.heart.speed = 'normal';
-        if (!CONFIG.heart.level) CONFIG.heart.level = '平静';
-        if (!CONFIG.heart.restingValue) CONFIG.heart.restingValue = 65;
-        if (!CONFIG.heart.value) CONFIG.heart.value = 65;
-        if (!CONFIG.heart.peakValue) CONFIG.heart.peakValue = 65;
-        if (!CONFIG.floatingHeartPosition) CONFIG.floatingHeartPosition = { x: null, y: null };
-        if (CONFIG.aiMemeEnabled === undefined) CONFIG.aiMemeEnabled = true;
-        if (!CONFIG.diaries || !Array.isArray(CONFIG.diaries)) CONFIG.diaries = [];
-        if (CONFIG.diaryAutoGenerateEnabled === undefined) CONFIG.diaryAutoGenerateEnabled = true;
-        if (!CONFIG.lastDiaryCheckDate) CONFIG.lastDiaryCheckDate = null;
-        if (CONFIG.diaryCalendarCollapsed === undefined) CONFIG.diaryCalendarCollapsed = false;
+    var defaultConfig = {
+        apiKey: '', model: 'deepseek-chat', wallpaper: '', chatBg: '', userAvatar: '',
+        iconStyle: 'glass', bubbleStyle: 'default', timeMode: 'HH:MM', permission: null,
+        temperature: 0.9, unreadCount: {}, fontSize: 'medium', fontWeight: 'regular',
+        splitEnabled: true, theme: 'dark', pinnedContacts: [],
+        heart: { bindRoleId: null, value: 65, restingValue: 65, level: '平静', signature: '今天也很想你 💕', color: '#ff6b81', floatingEnabled: true, speed: 'normal', recentTrigger: '等待你的第一句情话', spikeActive: false, spikeTimer: null, recoveryTimer: null, peakValue: 65 },
+        aiMemeEnabled: true, diaries: [], diaryAutoGenerateEnabled: true, lastDiaryCheckDate: null, diaryCalendarCollapsed: false,
+        floatingHeartPosition: { x: null, y: null },
+    };
 
+    if (savedData && savedData.roles && Array.isArray(savedData.roles) && savedData.roles.length > 0) {
+        CONFIG = { ...defaultConfig, ...savedData.config };
+        if (!CONFIG.heart) CONFIG.heart = { ...defaultConfig.heart };
+        if (!CONFIG.pinnedContacts || !Array.isArray(CONFIG.pinnedContacts)) CONFIG.pinnedContacts = [];
+        if (!CONFIG.unreadCount) CONFIG.unreadCount = {};
+        if (!CONFIG.diaries || !Array.isArray(CONFIG.diaries)) CONFIG.diaries = [];
+        if (!CONFIG.floatingHeartPosition) CONFIG.floatingHeartPosition = { x: null, y: null };
+        
         roles = savedData.roles;
         roles.forEach(function(role) {
             if (!role.heartData) role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' };
@@ -1308,18 +1238,14 @@ function loadAllData() {
             if (!role.heartData.peakValue) role.heartData.peakValue = 65;
             if (!Array.isArray(role.messages)) role.messages = [];
             if (!Array.isArray(role.memory)) role.memory = [];
+            if (!role.persona) role.persona = '';
+            if (!role.background) role.background = '';
+            if (!role.style) role.style = '只说对话内容，不要任何动作、表情、环境描写。用短句，像真人微信聊天一样自然分段回复。';
+            if (!role.extra) role.extra = '';
         });
         currentRoleId = savedData.currentRoleId || roles[0].id;
     } else {
-        CONFIG = {
-            apiKey: '', model: 'deepseek-chat', wallpaper: '', chatBg: '', userAvatar: '',
-            iconStyle: 'glass', bubbleStyle: 'default', timeMode: 'HH:MM', permission: null,
-            temperature: 0.9, unreadCount: {}, fontSize: 'medium', fontWeight: 'regular',
-            splitEnabled: true, theme: 'dark', pinnedContacts: [],
-            heart: { bindRoleId: null, value: 65, restingValue: 65, level: '平静', signature: '今天也很想你 💕', color: '#ff6b81', floatingEnabled: true, speed: 'normal', recentTrigger: '等待你的第一句情话', spikeActive: false, spikeTimer: null, recoveryTimer: null, peakValue: 65 },
-            aiMemeEnabled: true, diaries: [], diaryAutoGenerateEnabled: true, lastDiaryCheckDate: null, diaryCalendarCollapsed: false,
-            floatingHeartPosition: { x: null, y: null },
-        };
+        CONFIG = { ...defaultConfig };
         var defaultRole = createDefaultRole('温柔学长');
         defaultRole.persona = '25岁音乐系研究生，性格内敛细腻，喜欢弹钢琴';
         defaultRole.background = '从小在江南小镇长大，家里开旧书店';
@@ -1335,152 +1261,20 @@ function loadAllData() {
     if (!currentRoleId || !roles.find(function(r) { return r.id === currentRoleId; })) {
         currentRoleId = roles[0] ? roles[0].id : null;
     }
-
-    roles.forEach(function(role) {
-        if (!Array.isArray(role.memory)) role.memory = [];
-        if (!Array.isArray(role.messages)) role.messages = [];
-        if (!role.heartData) role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' };
-        if (!role.heartData.signature) role.heartData.signature = '今天也很想你 💕';
-        if (!role.heartData.recentTrigger) role.heartData.recentTrigger = '初次相遇';
-        if (!role.heartData.restingValue) role.heartData.restingValue = 65;
-        if (!role.heartData.value) role.heartData.value = 65;
-        if (!role.heartData.peakValue) role.heartData.peakValue = 65;
-    });
 }
 
-// ===== 壁纸压缩工具 =====
-function compressImage(dataUrl, maxSizeKB, callback) {
-    var img = new Image();
-    img.onload = function() {
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-        var quality = 0.9;
-        var width = img.width;
-        var height = img.height;
-        var maxDim = 800;
-        if (width > maxDim || height > maxDim) {
-            var ratio = Math.min(maxDim / width, maxDim / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-        }
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-        var result = canvas.toDataURL('image/jpeg', quality);
-        while (result.length > maxSizeKB * 1024 && quality > 0.2) {
-            quality -= 0.1;
-            result = canvas.toDataURL('image/jpeg', quality);
-        }
-        callback(result);
-    };
-    img.onerror = function() {
-        callback(dataUrl);
-    };
-    img.src = dataUrl;
+function resetChatState() {
+    lastMessageCount = -1;
+    readMessages = {};
+    quotedMsg = null;
+    var quoteBar = document.getElementById('quoteBar');
+    var quoteText = document.getElementById('quoteText');
+    if (quoteBar) quoteBar.classList.remove('active');
+    if (quoteText) quoteText.textContent = '引用内容';
+    var input = document.getElementById('messageInput');
+    if (input) input.value = '';
 }
 
-// ===== 美化功能 =====
-function applyWallpaper(dataUrl) {
-    var screen = document.getElementById('launcherScreen');
-    if (dataUrl) {
-        // 压缩后保存
-        compressImage(dataUrl, 200, function(compressed) {
-            screen.style.backgroundImage = 'url(' + compressed + ')';
-            screen.style.backgroundSize = 'cover';
-            screen.style.backgroundPosition = 'center';
-            screen.style.pointerEvents = 'auto';
-            document.getElementById('wallpaperPreviewImg').src = compressed;
-            document.getElementById('wallpaperPreviewImg').style.display = 'block';
-            document.getElementById('wallpaperStatus').textContent = '自定义';
-            CONFIG.wallpaper = compressed;
-            saveAllData();
-            var sizeKB = Math.round(compressed.length / 1024);
-            showToast('✅ 壁纸已保存（' + sizeKB + 'KB）');
-        });
-    } else {
-        screen.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
-        screen.style.backgroundSize = 'auto';
-        screen.style.pointerEvents = 'auto';
-        document.getElementById('wallpaperPreviewImg').style.display = 'none';
-        document.getElementById('wallpaperPreviewImg').src = '';
-        document.getElementById('wallpaperStatus').textContent = '默认';
-        CONFIG.wallpaper = '';
-        saveAllData();
-    }
-}
-
-function applyChatBg(dataUrl) {
-    if (dataUrl) {
-        CONFIG.chatBg = dataUrl;
-        var role = getCurrentRole();
-        if (!role || !role.chatBg) {
-            document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + dataUrl + ')';
-            document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
-            document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
-        }
-        document.getElementById('chatBgPreviewImg').src = dataUrl;
-        document.getElementById('chatBgPreviewImg').style.display = 'block';
-        document.getElementById('chatBgStatus').textContent = '自定义';
-    } else {
-        CONFIG.chatBg = '';
-        var role2 = getCurrentRole();
-        if (!role2 || !role2.chatBg) {
-            document.getElementById('chatBgLayer').style.backgroundImage = 'none';
-            document.getElementById('chatBgLayer').style.backgroundColor = 'var(--bg-secondary)';
-        }
-        document.getElementById('chatBgPreviewImg').style.display = 'none';
-        document.getElementById('chatBgPreviewImg').src = '';
-        document.getElementById('chatBgStatus').textContent = '默认';
-    }
-    saveAllData();
-}
-
-function applyUserAvatar(dataUrl) {
-    var els = document.querySelectorAll('.avatar.user');
-    if (dataUrl) {
-        els.forEach(function(el) {
-            el.style.backgroundImage = 'url(' + dataUrl + ')';
-            el.style.backgroundSize = 'cover';
-            el.style.backgroundPosition = 'center';
-            el.classList.add('has-image');
-        });
-        document.getElementById('userAvatarPreviewImg').src = dataUrl;
-        document.getElementById('userAvatarPreviewImg').style.display = 'block';
-        document.getElementById('userAvatarStatus').textContent = '自定义';
-    } else {
-        els.forEach(function(el) {
-            el.style.backgroundImage = '';
-            el.style.backgroundSize = '';
-            el.style.backgroundPosition = '';
-            el.classList.remove('has-image');
-            el.style.backgroundColor = '#576b95';
-        });
-        document.getElementById('userAvatarPreviewImg').style.display = 'none';
-        document.getElementById('userAvatarPreviewImg').src = '';
-        document.getElementById('userAvatarStatus').textContent = '默认';
-    }
-    CONFIG.userAvatar = dataUrl || '';
-    saveAllData();
-}
-
-function applyChatBgForRole(role) {
-    if (role && role.chatBg) {
-        document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + role.chatBg + ')';
-        document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
-        document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
-    } else if (CONFIG.chatBg) {
-        document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + CONFIG.chatBg + ')';
-        document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
-        document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
-    } else {
-        document.getElementById('chatBgLayer').style.backgroundImage = 'none';
-        document.getElementById('chatBgLayer').style.backgroundColor = 'var(--bg-secondary)';
-    }
-}
-
-// ============================================================
-//  心跳系统（保留完整功能）
-// ============================================================
 var HEART_KEYWORDS = [
     { keywords: ['我爱你', '我喜欢你', '爱死你了', '最爱', '好爱你'], weight: 15, level: '热恋' },
     { keywords: ['想你', '好想你', '想你了', '想见你'], weight: 10, level: '思念' },
@@ -1506,14 +1300,22 @@ function getLevel(value) {
     return '灵魂共振';
 }
 
+function stopHeartRecovery() {
+    if (CONFIG.heart && CONFIG.heart.recoveryTimer) {
+        clearTimeout(CONFIG.heart.recoveryTimer);
+        CONFIG.heart.recoveryTimer = null;
+    }
+    if (CONFIG.heart) CONFIG.heart.spikeActive = false;
+}
+
 function updateHeartDisplay() {
-    var heartValue = CONFIG.heart.value || 65;
-    var heartLevel = CONFIG.heart.level || getLevel(heartValue);
-    var signature = CONFIG.heart.signature || '今天也很想你 💕';
-    var recentTrigger = CONFIG.heart.recentTrigger || '等待你的第一句情话';
-    var bindRoleId = CONFIG.heart.bindRoleId;
+    var heartValue = CONFIG.heart ? CONFIG.heart.value : 65;
+    var heartLevel = CONFIG.heart ? CONFIG.heart.level : '平静';
+    var signature = CONFIG.heart ? CONFIG.heart.signature : '今天也很想你 💕';
+    var recentTrigger = CONFIG.heart ? CONFIG.heart.recentTrigger : '等待你的第一句情话';
+    var bindRoleId = CONFIG.heart ? CONFIG.heart.bindRoleId : null;
     var bindRole = bindRoleId ? roles.find(function(r) { return r.id === bindRoleId; }) : null;
-    var color = CONFIG.heart.color || '#ff6b81';
+    var color = CONFIG.heart ? CONFIG.heart.color : '#ff6b81';
 
     var valueDisplay = document.getElementById('heartValueDisplay');
     var signatureText = document.getElementById('signatureText');
@@ -1568,12 +1370,14 @@ function updateHeartDisplay() {
 }
 
 function bindHeartRole(roleId) {
+    stopHeartRecovery();
     var role = roles.find(function(r) { return r.id === roleId; });
     if (!role) { showToast('⚠️ 未找到该角色'); return; }
     if (!role.heartData) {
         role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' };
         saveAllData();
     }
+    if (!CONFIG.heart) CONFIG.heart = {};
     CONFIG.heart.bindRoleId = roleId;
     CONFIG.heart.value = role.heartData.value || 65;
     CONFIG.heart.restingValue = role.heartData.restingValue || 65;
@@ -1582,10 +1386,6 @@ function bindHeartRole(roleId) {
     CONFIG.heart.recentTrigger = role.heartData.recentTrigger || '初次相遇';
     CONFIG.heart.level = getLevel(CONFIG.heart.value);
     CONFIG.heart.spikeActive = false;
-    if (CONFIG.heart.recoveryTimer) {
-        clearTimeout(CONFIG.heart.recoveryTimer);
-        CONFIG.heart.recoveryTimer = null;
-    }
     saveAllData();
     showToast('💕 已绑定「' + role.name + '」');
     updateHeartDisplay();
@@ -1604,15 +1404,13 @@ function triggerHeartSpike(role, weight, keyword, level) {
     var triggerText = '「' + keyword + '」💓 +' + spikeAmount;
     role.heartData.recentTrigger = triggerText;
 
-    if (CONFIG.heart.bindRoleId === role.id) {
+    if (CONFIG.heart && CONFIG.heart.bindRoleId === role.id) {
+        stopHeartRecovery();
         CONFIG.heart.value = peakValue;
         CONFIG.heart.peakValue = peakValue;
         CONFIG.heart.level = getLevel(peakValue);
         CONFIG.heart.recentTrigger = triggerText;
-        if (CONFIG.heart.recoveryTimer) {
-            clearTimeout(CONFIG.heart.recoveryTimer);
-            CONFIG.heart.recoveryTimer = null;
-        }
+        CONFIG.heart.spikeActive = true;
         var heartWrap = document.getElementById('heartWrap');
         if (heartWrap) {
             heartWrap.classList.add('spike');
@@ -1629,18 +1427,22 @@ function triggerHeartSpike(role, weight, keyword, level) {
 
 function recoverHeartRate(role) {
     if (!role) return;
+    if (CONFIG.heart && CONFIG.heart.bindRoleId !== role.id) {
+        CONFIG.heart.spikeActive = false;
+        return;
+    }
     var resting = role.heartData.restingValue || 65;
     var currentValue = role.heartData.value || 65;
     if (Math.abs(currentValue - resting) < 5) {
         role.heartData.value = resting;
         role.heartData.peakValue = resting;
-        if (CONFIG.heart.bindRoleId === role.id) {
+        if (CONFIG.heart) {
             CONFIG.heart.value = resting;
             CONFIG.heart.peakValue = resting;
             CONFIG.heart.level = getLevel(resting);
             CONFIG.heart.spikeActive = false;
             CONFIG.heart.recentTrigger = '心跳恢复平静 💕';
-            if (CONFIG.heart.recoveryTimer) { clearTimeout(CONFIG.heart.recoveryTimer); CONFIG.heart.recoveryTimer = null; }
+            CONFIG.heart.recoveryTimer = null;
         }
         saveAllData();
         updateHeartDisplay();
@@ -1650,17 +1452,16 @@ function recoverHeartRate(role) {
     var newValue = Math.max(resting, currentValue - dropAmount);
     role.heartData.value = newValue;
     role.heartData.peakValue = newValue;
-    if (CONFIG.heart.bindRoleId === role.id) {
+    if (CONFIG.heart && CONFIG.heart.bindRoleId === role.id) {
         CONFIG.heart.value = newValue;
         CONFIG.heart.peakValue = newValue;
         CONFIG.heart.level = getLevel(newValue);
         if (newValue > resting + 3) {
-            if (CONFIG.heart.recoveryTimer) clearTimeout(CONFIG.heart.recoveryTimer);
             CONFIG.heart.recoveryTimer = setTimeout(function() { recoverHeartRate(role); }, 5000 + Math.random() * 5000);
         } else {
             CONFIG.heart.spikeActive = false;
             CONFIG.heart.recentTrigger = '心跳恢复平静 💕';
-            if (CONFIG.heart.recoveryTimer) { clearTimeout(CONFIG.heart.recoveryTimer); CONFIG.heart.recoveryTimer = null; }
+            CONFIG.heart.recoveryTimer = null;
         }
     }
     saveAllData();
@@ -1670,9 +1471,8 @@ function recoverHeartRate(role) {
 function startHeartBeatFluctuation() {
     if (heartBeatInterval) clearInterval(heartBeatInterval);
     heartBeatInterval = setInterval(function() {
-        var bindRoleId = CONFIG.heart.bindRoleId;
-        if (!bindRoleId) return;
-        var role = roles.find(function(r) { return r.id === bindRoleId; });
+        if (!CONFIG.heart || !CONFIG.heart.bindRoleId) return;
+        var role = roles.find(function(r) { return r.id === CONFIG.heart.bindRoleId; });
         if (!role) return;
         if (CONFIG.heart.spikeActive) {
             var currentValue = role.heartData.value || 65;
@@ -1680,7 +1480,7 @@ function startHeartBeatFluctuation() {
             var jitter = Math.floor(Math.random() * 6) - 3;
             var finalValue = Math.max(peak - 5, Math.min(Math.min(99, peak + 5), currentValue + jitter));
             role.heartData.value = finalValue;
-            if (CONFIG.heart.bindRoleId === role.id) CONFIG.heart.value = finalValue;
+            if (CONFIG.heart) CONFIG.heart.value = finalValue;
             saveAllData();
             updateHeartDisplay();
             return;
@@ -1694,7 +1494,7 @@ function startHeartBeatFluctuation() {
             var finalVal = Math.max(55, Math.min(75, Math.round(newVal)));
             role.heartData.value = finalVal;
             role.heartData.peakValue = finalVal;
-            if (CONFIG.heart.bindRoleId === role.id) {
+            if (CONFIG.heart) {
                 CONFIG.heart.value = finalVal;
                 CONFIG.heart.peakValue = finalVal;
                 CONFIG.heart.level = getLevel(finalVal);
@@ -1705,7 +1505,6 @@ function startHeartBeatFluctuation() {
     }, 30000);
 }
 
-// ===== 联系人 =====
 function togglePinContact(roleId) {
     if (!CONFIG.pinnedContacts) CONFIG.pinnedContacts = [];
     var idx = CONFIG.pinnedContacts.indexOf(roleId);
@@ -1756,7 +1555,7 @@ function renderContacts() {
         var preview = getLastMessage(role.id);
         var unread = CONFIG.unreadCount && CONFIG.unreadCount[role.id] ? CONFIG.unreadCount[role.id] : 0;
         var dotHtml = unread > 0 ? '<span class="unread-dot">' + unread + '</span>' : '';
-        var isHeartBound = CONFIG.heart.bindRoleId === role.id;
+        var isHeartBound = CONFIG.heart && CONFIG.heart.bindRoleId === role.id;
         item.innerHTML = '<div class="contact-avatar" style="' + avatarStyle + '">' + (role.avatar ? '' : getInitials(role.name)) + '</div><div class="contact-info"><div class="contact-name">' + (isHeartBound ? '💕 ' : '') + role.name + '</div><div class="contact-preview">' + preview + '</div></div>' + dotHtml;
         item.addEventListener('click', function() {
             clearUnreadForRole(role.id);
@@ -1769,7 +1568,6 @@ function renderContacts() {
     });
 }
 
-// ===== 渲染角色管理 =====
 function renderRoleManager() {
     var container = document.getElementById('roleManagerContainer');
     if (!container) return;
@@ -1785,9 +1583,9 @@ function renderRoleManager() {
         var avatarPreviewStyle = role.avatar ? 'background-image: url(' + role.avatar + '); background-size: cover; background-position: center;' : 'background-color: #07c160;';
         var bgPreviewStyle = role.chatBg ? 'background-image: url(' + role.chatBg + '); background-size: cover; background-position: center;' : 'background-color: #ededed;';
         var isPinned = isContactPinned(role.id);
-        var isHeartBound = CONFIG.heart.bindRoleId === role.id;
+        var isHeartBound = CONFIG.heart && CONFIG.heart.bindRoleId === role.id;
         var heartValue = role.heartData ? role.heartData.value : 65;
-        card.innerHTML = '<div class="role-card-header"><div class="role-avatar-mini" style="' + avatarPreviewStyle + '"></div><input class="role-name-input" type="text" value="' + role.name + '" data-id="' + role.id + '" placeholder="输入角色名" /><button class="role-heart-bind" data-id="' + role.id + '" style="font-size:13px;cursor:pointer;background:none;border:none;padding:4px;color:' + (isHeartBound ? '#ff6b81' : 'rgba(255,255,255,0.2)') + ';" title="' + (isHeartBound ? '已绑定心跳' : '绑定心跳') + '"><i class="fas ' + (isHeartBound ? 'fa-heart' : 'fa-heart') + '"></i></button><button class="role-pin-toggle" data-id="' + role.id + '" style="font-size:13px;cursor:pointer;background:none;border:none;padding:4px;color:' + (isPinned ? '#f39c12' : '#999') + ';" title="' + (isPinned ? '取消置顶' : '置顶联系人') + '"><i class="fas ' + (isPinned ? 'fa-star' : 'fa-star') + '"></i></button><button class="role-expand" data-id="' + role.id + '"><i class="fas fa-chevron-down"></i></button><button class="role-delete" data-id="' + role.id + '"><i class="fas fa-trash-alt"></i></button></div><div class="role-body" id="roleBody_' + role.id + '"><div class="role-avatar-upload"><div class="preview-circle" id="avatarPreview_' + role.id + '" style="' + avatarPreviewStyle + '"></div><button class="upload-btn" data-id="' + role.id + '" data-type="avatar">更换头像</button><button class="remove-btn" data-id="' + role.id + '" data-type="avatar-remove" ' + (role.avatar ? '' : 'style="display:none;"') + '>移除</button></div><div class="role-bg-upload"><div class="preview-box-small" id="bgPreview_' + role.id + '" style="' + bgPreviewStyle + '"></div><button class="upload-btn" data-id="' + role.id + '" data-type="bg">更换背景</button><button class="remove-btn" data-id="' + role.id + '" data-type="bg-remove" ' + (role.chatBg ? '' : 'style="display:none;"') + '>移除</button></div><div class="field-group"><label>🧑 人设</label><textarea class="role-field" data-id="' + role.id + '" data-field="persona" rows="2">' + (role.persona || '') + '</textarea></div><div class="field-group"><label>🌍 背景</label><textarea class="role-field" data-id="' + role.id + '" data-field="background" rows="2">' + (role.background || '') + '</textarea></div><div class="field-group"><label>💬 说话风格</label><textarea class="role-field" data-id="' + role.id + '" data-field="style" rows="2">' + (role.style || '') + '</textarea></div><div class="field-group"><label>📎 补充项</label><textarea class="role-field" data-id="' + role.id + '" data-field="extra" rows="2">' + (role.extra || '') + '</textarea></div><div style="margin-top:4px;font-size:10px;color:var(--text-secondary);">消息数：' + (role.messages ? role.messages.length : 0) + ' ｜ 心跳：' + heartValue + '%</div></div>';
+        card.innerHTML = '<div class="role-card-header"><div class="role-avatar-mini" style="' + avatarPreviewStyle + '"></div><input class="role-name-input" type="text" value="' + role.name + '" data-id="' + role.id + '" placeholder="输入角色名" /><button class="role-heart-bind" data-id="' + role.id + '" style="font-size:13px;cursor:pointer;background:none;border:none;padding:4px;color:' + (isHeartBound ? '#ff6b81' : 'rgba(255,255,255,0.2)') + ';" title="' + (isHeartBound ? '已绑定心跳' : '绑定心跳') + '"><i class="fas fa-heart"></i></button><button class="role-pin-toggle" data-id="' + role.id + '" style="font-size:13px;cursor:pointer;background:none;border:none;padding:4px;color:' + (isPinned ? '#f39c12' : '#999') + ';" title="' + (isPinned ? '取消置顶' : '置顶联系人') + '"><i class="fas fa-star"></i></button><button class="role-expand" data-id="' + role.id + '"><i class="fas fa-chevron-down"></i></button><button class="role-delete" data-id="' + role.id + '"><i class="fas fa-trash-alt"></i></button></div><div class="role-body" id="roleBody_' + role.id + '"><div class="role-avatar-upload"><div class="preview-circle" id="avatarPreview_' + role.id + '" style="' + avatarPreviewStyle + '"></div><button class="upload-btn" data-id="' + role.id + '" data-type="avatar">更换头像</button><button class="remove-btn" data-id="' + role.id + '" data-type="avatar-remove" ' + (role.avatar ? '' : 'style="display:none;"') + '>移除</button></div><div class="role-bg-upload"><div class="preview-box-small" id="bgPreview_' + role.id + '" style="' + bgPreviewStyle + '"></div><button class="upload-btn" data-id="' + role.id + '" data-type="bg">更换背景</button><button class="remove-btn" data-id="' + role.id + '" data-type="bg-remove" ' + (role.chatBg ? '' : 'style="display:none;"') + '>移除</button></div><div class="field-group"><label>🧑 人设</label><textarea class="role-field" data-id="' + role.id + '" data-field="persona" rows="2">' + (role.persona || '') + '</textarea></div><div class="field-group"><label>🌍 背景</label><textarea class="role-field" data-id="' + role.id + '" data-field="background" rows="2">' + (role.background || '') + '</textarea></div><div class="field-group"><label>💬 说话风格</label><textarea class="role-field" data-id="' + role.id + '" data-field="style" rows="2">' + (role.style || '') + '</textarea></div><div class="field-group"><label>📎 补充项</label><textarea class="role-field" data-id="' + role.id + '" data-field="extra" rows="2">' + (role.extra || '') + '</textarea></div><div style="margin-top:4px;font-size:10px;color:var(--text-secondary);">消息数：' + (role.messages ? role.messages.length : 0) + ' ｜ 心跳：' + heartValue + '%</div></div>';
         var expandBtn = card.querySelector('.role-expand');
         var body = card.querySelector('.role-body');
         var isOpen = false;
@@ -1863,6 +1661,7 @@ function renderRoleManager() {
             if (confirm('确定要删除角色「' + role.name + '」吗？')) {
                 var idx = roles.findIndex(function(r) { return r.id === role.id; });
                 if (idx > -1) {
+                    clearDraft(role.id);
                     roles.splice(idx, 1);
                     if (currentRoleId === role.id) currentRoleId = roles[0] ? roles[0].id : null;
                     if (CONFIG.unreadCount) delete CONFIG.unreadCount[role.id];
@@ -1870,10 +1669,14 @@ function renderRoleManager() {
                         var pinIdx = CONFIG.pinnedContacts.indexOf(role.id);
                         if (pinIdx !== -1) CONFIG.pinnedContacts.splice(pinIdx, 1);
                     }
-                    if (CONFIG.heart.bindRoleId === role.id) CONFIG.heart.bindRoleId = null;
+                    if (CONFIG.heart && CONFIG.heart.bindRoleId === role.id) {
+                        stopHeartRecovery();
+                        CONFIG.heart.bindRoleId = null;
+                    }
                     if (CONFIG.diaries) CONFIG.diaries = CONFIG.diaries.filter(function(d) { return d.roleId !== role.id; });
                     saveAllData();
                     renderRoleManager(); renderContacts(); renderMemoryScreen(); renderDiaryAll(); updateChatTitle();
+                    resetChatState();
                     showToast('🗑️ 已删除「' + role.name + '」');
                 }
             }
@@ -1882,14 +1685,33 @@ function renderRoleManager() {
     });
 }
 
-// ===== 聊天消息渲染 =====
 function renderMessages() {
     var role = getCurrentRole();
-    if (!role) return;
-    applyChatBgForRole(role);
+    if (!role) {
+        console.warn('⚠️ 没有当前角色');
+        return;
+    }
+    
+    if (!Array.isArray(role.messages)) {
+        console.warn('⚠️ role.messages 不是数组，已修复');
+        role.messages = [];
+        saveAllData();
+    }
+    
     var container = document.getElementById('messageContainer');
+    if (!container) return;
+    
     var msgs = role.messages || [];
-
+    
+    var domMessageCount = container.querySelectorAll('.message-row').length;
+    
+    if (msgs.length !== domMessageCount) {
+        console.log('🔄 消息数量不匹配 (DOM:', domMessageCount, '数据:', msgs.length, ')，强制重新渲染');
+        lastMessageCount = -1;
+    }
+    
+    applyChatBgForRole(role);
+    
     if (lastMessageCount === -1 || msgs.length === 0) {
         container.innerHTML = '';
         if (msgs.length === 0) {
@@ -1914,7 +1736,7 @@ function renderMessages() {
         setTimeout(function() { markVisibleMessagesAsRead(); }, 100);
         return;
     }
-
+    
     if (msgs.length > lastMessageCount) {
         for (var i = lastMessageCount; i < msgs.length; i++) {
             var row = createMessageRow(msgs[i], role);
@@ -1922,7 +1744,9 @@ function renderMessages() {
         }
         lastMessageCount = msgs.length;
         container.scrollTop = container.scrollHeight;
-    } else if (msgs.length < lastMessageCount) {
+    } 
+    else if (msgs.length < lastMessageCount) {
+        console.log('🔄 消息数量减少，重新渲染');
         container.innerHTML = '';
         if (msgs.length === 0) {
             var w2 = document.createElement('div');
@@ -1938,6 +1762,7 @@ function renderMessages() {
         lastMessageCount = msgs.length;
         container.scrollTop = container.scrollHeight;
     }
+    
     applyAvatars();
     applyBubbleStyle(CONFIG.bubbleStyle || 'default');
     applyFontSettings();
@@ -2174,7 +1999,6 @@ function regenerateMessage(roleId, messageId) {
     });
 }
 
-// ===== API 调用 =====
 function buildSystemPrompt(role) {
     var parts = [];
     if (CONFIG.aiMemeEnabled !== false && memes.length > 0) {
@@ -2260,7 +2084,6 @@ function callDeepSeek(userMessage, role) {
     });
 }
 
-// ===== 送礼功能 =====
 function sendGift(roleId, productName, fromName, note, price) {
     var role = roles.find(function(r) { return r.id === roleId; });
     if (!role) return false;
@@ -2283,16 +2106,20 @@ function sendGift(roleId, productName, fromName, note, price) {
     role.heartData.value = newValue;
     role.heartData.peakValue = newValue;
     role.heartData.recentTrigger = '🎁 收到了「' + productName + '」';
-    if (CONFIG.heart.bindRoleId === roleId) {
+    if (CONFIG.heart && CONFIG.heart.bindRoleId === roleId) {
+        stopHeartRecovery();
         CONFIG.heart.value = newValue;
         CONFIG.heart.peakValue = newValue;
         CONFIG.heart.level = getLevel(newValue);
         CONFIG.heart.recentTrigger = '🎁 收到了「' + productName + '」';
+        CONFIG.heart.spikeActive = true;
         var heartWrap = document.getElementById('heartWrap');
         if (heartWrap) {
             heartWrap.classList.add('spike');
             setTimeout(function() { heartWrap.classList.remove('spike'); }, 1500);
         }
+        var recoveryDelay = 60000 + Math.random() * 60000;
+        CONFIG.heart.recoveryTimer = setTimeout(function() { recoverHeartRate(role); }, recoveryDelay);
     }
     if (!Array.isArray(role.memory)) role.memory = [];
     role.memory.push({ text: '🎁 ' + fromName + ' 送了「' + productName + '」' + (note ? '（附言：' + note + '）' : ''), sourceMessageId: msgId });
@@ -2415,24 +2242,36 @@ function autoExtractMemory(role, sourceMsgId) {
 }
 
 function handleSend() {
+    if (isSending) {
+        showToast('⏳ 正在发送中，请稍后');
+        return;
+    }
+    
     var input = document.getElementById('messageInput');
     var text = input.value.trim();
     if (!text) return;
+    
     var finalMessage = text;
     if (quotedMsg) {
         var quotedContent = quotedMsg.content.replace(/\n/g, '\n> ');
         finalMessage = '> ' + quotedContent + '\n\n' + text;
         quotedMsg = null;
         document.getElementById('quoteBar').classList.remove('active');
+        document.getElementById('quoteText').textContent = '引用内容';
     }
+    
     var role = getCurrentRole();
     if (!role) { showToast('⚠️ 未找到当前角色'); return; }
+    
+    isSending = true;
     input.value = '';
     input.disabled = true;
     document.getElementById('sendBtn').disabled = true;
+    
     addMessageToRole(role.id, 'user', finalMessage);
     renderMessages();
     showTyping();
+    
     callDeepSeek(finalMessage, role).then(function(reply) {
         hideTyping();
         reply = detectAndProcessGift(role.id, reply);
@@ -2458,16 +2297,22 @@ function handleSend() {
         sendNext();
     }).catch(function(e) {
         hideTyping();
+        console.error('❌ 发送消息失败:', e);
         addMessageToRole(role.id, 'assistant', '💔 ' + e.message);
         renderMessages();
+        if (quotedMsg) {
+            quotedMsg = null;
+            document.getElementById('quoteBar').classList.remove('active');
+            document.getElementById('quoteText').textContent = '引用内容';
+        }
     }).finally(function() {
         input.disabled = false;
         document.getElementById('sendBtn').disabled = false;
         input.focus();
+        isSending = false;
     });
 }
 
-// ===== 长按引用 =====
 function attachLongPressEvents() {
     var container = document.getElementById('messageContainer');
     var rows = container.querySelectorAll('.message-row');
@@ -2527,7 +2372,6 @@ function onTouchEnd() { clearTimeout(longpressTimer); longpressTimer = null; }
 function onTouchMove() { clearTimeout(longpressTimer); longpressTimer = null; }
 function hideLongpressMenu() { var menu = document.getElementById('longpressMenu'); if (menu) menu.classList.remove('active'); }
 
-// ===== 图片选择器 =====
 function openImagePicker(action) {
     currentPickerTarget = action;
     var titles = { 'wallpaper': '选择桌面壁纸', 'chatBg': '选择聊天背景（全局）', 'userAvatar': '选择我的头像', 'chatImage': '选择图片发送' };
@@ -2607,7 +2451,6 @@ function updatePermissionStatusUI() {
     else { status.textContent = '⏳ 未设置'; status.style.color = '#999'; }
 }
 
-// ===== 商城数据读写 =====
 function getMallBalance() {
     try { var data = JSON.parse(localStorage.getItem('mall_data') || '{}'); return data.balance !== undefined ? data.balance : 1000; } catch (_) { return 1000; }
 }
@@ -2632,7 +2475,6 @@ function addMallOrder(order) {
     } catch (_) {}
 }
 
-// ===== 记忆库 =====
 function renderMemoryScreen() {
     var selector = document.getElementById('memoryRoleSelector');
     if (!selector) return;
@@ -2675,7 +2517,6 @@ function renderMemoryList() {
     });
 }
 
-// ===== 日记系统 =====
 function getDiaryDateKey(date) { var d = new Date(date); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function getDiaryDateDisplay(date) { var d = new Date(date); return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
 function getDiaryDateShort(date) { var d = new Date(date); return (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
@@ -2871,7 +2712,67 @@ function generateDiary(roleId, showToastMsg) {
     });
 }
 
-// ===== 表情包 - IndexedDB（保留完整功能） =====
+function startDiaryAutoGenerate() {
+    if (diaryAutoGenerateTimer) {
+        clearInterval(diaryAutoGenerateTimer);
+        diaryAutoGenerateTimer = null;
+    }
+    
+    if (CONFIG.diaryAutoGenerateEnabled !== true) return;
+    
+    diaryAutoGenerateTimer = setInterval(function() {
+        checkAndAutoGenerateDiary();
+    }, 30 * 60 * 1000);
+    
+    setTimeout(checkAndAutoGenerateDiary, 5000);
+}
+
+function checkAndAutoGenerateDiary() {
+    if (CONFIG.diaryAutoGenerateEnabled !== true) return;
+    if (!CONFIG.apiKey) return;
+    
+    var todayKey = getTodayKey();
+    var today = new Date();
+    var hour = today.getHours();
+    
+    if (hour < 20) return;
+    
+    if (CONFIG.lastDiaryCheckDate === todayKey) return;
+    
+    roles.forEach(function(role) {
+        var existing = getDiaryForDate(role.id, todayKey);
+        if (existing) return;
+        
+        var msgs = role.messages || [];
+        if (msgs.length < 3) return;
+        
+        console.log('📖 自动为 ' + role.name + ' 生成日记...');
+        generateDiary(role.id, false).then(function(diary) {
+            if (diary) {
+                console.log('✅ 自动生成日记完成: ' + role.name);
+                showDiaryNotification(role);
+            }
+        }).catch(function(e) {
+            console.error('自动生成日记失败:', e);
+        });
+    });
+    
+    CONFIG.lastDiaryCheckDate = todayKey;
+    saveAllData();
+}
+
+function showDiaryNotification(role) {
+    var notif = document.getElementById('diaryNotification');
+    var text = document.getElementById('diaryNotifText');
+    if (notif && text) {
+        text.textContent = '✨ ' + role.name + ' 写下了今天的日记，快来阅读吧 💕';
+        notif.classList.add('active');
+        setTimeout(function() {
+            notif.classList.remove('active');
+        }, 5 * 60 * 1000);
+    }
+}
+
 var DEFAULT_CATEGORIES = [
     { id: 'cat_happy', name: '表达开心', icon: '😊' },
     { id: 'cat_sad', name: '表达难过', icon: '😢' },
@@ -3166,7 +3067,6 @@ function renderMemePickerMemes(categoryId) {
     document.getElementById('memePickerClose').onclick = function() { document.getElementById('memePickerOverlay').classList.remove('active'); };
 }
 
-// ===== 数据管理 =====
 function openDataModal() {
     renderRoleSelectList();
     var checkboxes = document.querySelectorAll('#dataModalOptions .export-option input[type="checkbox"]');
@@ -3200,10 +3100,9 @@ function getSelectedRoleIds() {
     return ids;
 }
 
-// ===== 悬浮窗 =====
 function showFloatingHeart() {
     var el = document.getElementById('floatingHeart');
-    if (el && CONFIG.heart.floatingEnabled !== false) {
+    if (el && CONFIG.heart && CONFIG.heart.floatingEnabled !== false) {
         el.classList.add('visible');
         el.style.display = 'flex';
         el.style.opacity = '1';
@@ -3293,7 +3192,6 @@ function initFloatingDrag() {
     });
 }
 
-// ===== 主题 =====
 function applyTheme(theme) {
     if (theme === 'auto') {
         var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -3385,6 +3283,301 @@ function formatTime(timeStr, mode) {
     } catch (_) { return timeStr; }
 }
 
+function compressImage(dataUrl, maxSizeKB, callback) {
+    var img = new Image();
+    img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        var quality = 0.9;
+        var width = img.width;
+        var height = img.height;
+        var maxDim = 800;
+        if (width > maxDim || height > maxDim) {
+            var ratio = Math.min(maxDim / width, maxDim / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+        }
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        var result = canvas.toDataURL('image/jpeg', quality);
+        while (result.length > maxSizeKB * 1024 && quality > 0.2) {
+            quality -= 0.1;
+            result = canvas.toDataURL('image/jpeg', quality);
+        }
+        callback(result);
+    };
+    img.onerror = function() {
+        callback(dataUrl);
+    };
+    img.src = dataUrl;
+}
+
+function applyWallpaper(dataUrl) {
+    var screen = document.getElementById('launcherScreen');
+    if (dataUrl) {
+        compressImage(dataUrl, 200, function(compressed) {
+            screen.style.backgroundImage = 'url(' + compressed + ')';
+            screen.style.backgroundSize = 'cover';
+            screen.style.backgroundPosition = 'center';
+            screen.style.pointerEvents = 'auto';
+            document.getElementById('wallpaperPreviewImg').src = compressed;
+            document.getElementById('wallpaperPreviewImg').style.display = 'block';
+            document.getElementById('wallpaperStatus').textContent = '自定义';
+            CONFIG.wallpaper = compressed;
+            saveAllData();
+            var sizeKB = Math.round(compressed.length / 1024);
+            showToast('✅ 壁纸已保存（' + sizeKB + 'KB）');
+        });
+    } else {
+        screen.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
+        screen.style.backgroundSize = 'auto';
+        screen.style.pointerEvents = 'auto';
+        document.getElementById('wallpaperPreviewImg').style.display = 'none';
+        document.getElementById('wallpaperPreviewImg').src = '';
+        document.getElementById('wallpaperStatus').textContent = '默认';
+        CONFIG.wallpaper = '';
+        saveAllData();
+    }
+}
+
+function applyChatBg(dataUrl) {
+    if (dataUrl) {
+        CONFIG.chatBg = dataUrl;
+        var role = getCurrentRole();
+        if (!role || !role.chatBg) {
+            document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + dataUrl + ')';
+            document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
+            document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
+        }
+        document.getElementById('chatBgPreviewImg').src = dataUrl;
+        document.getElementById('chatBgPreviewImg').style.display = 'block';
+        document.getElementById('chatBgStatus').textContent = '自定义';
+    } else {
+        CONFIG.chatBg = '';
+        var role2 = getCurrentRole();
+        if (!role2 || !role2.chatBg) {
+            document.getElementById('chatBgLayer').style.backgroundImage = 'none';
+            document.getElementById('chatBgLayer').style.backgroundColor = 'var(--bg-secondary)';
+        }
+        document.getElementById('chatBgPreviewImg').style.display = 'none';
+        document.getElementById('chatBgPreviewImg').src = '';
+        document.getElementById('chatBgStatus').textContent = '默认';
+    }
+    saveAllData();
+}
+
+function applyUserAvatar(dataUrl) {
+    var els = document.querySelectorAll('.avatar.user');
+    if (dataUrl) {
+        els.forEach(function(el) {
+            el.style.backgroundImage = 'url(' + dataUrl + ')';
+            el.style.backgroundSize = 'cover';
+            el.style.backgroundPosition = 'center';
+            el.classList.add('has-image');
+        });
+        document.getElementById('userAvatarPreviewImg').src = dataUrl;
+        document.getElementById('userAvatarPreviewImg').style.display = 'block';
+        document.getElementById('userAvatarStatus').textContent = '自定义';
+    } else {
+        els.forEach(function(el) {
+            el.style.backgroundImage = '';
+            el.style.backgroundSize = '';
+            el.style.backgroundPosition = '';
+            el.classList.remove('has-image');
+            el.style.backgroundColor = '#576b95';
+        });
+        document.getElementById('userAvatarPreviewImg').style.display = 'none';
+        document.getElementById('userAvatarPreviewImg').src = '';
+        document.getElementById('userAvatarStatus').textContent = '默认';
+    }
+    CONFIG.userAvatar = dataUrl || '';
+    saveAllData();
+}
+
+function applyChatBgForRole(role) {
+    if (role && role.chatBg) {
+        document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + role.chatBg + ')';
+        document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
+        document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
+    } else if (CONFIG.chatBg) {
+        document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + CONFIG.chatBg + ')';
+        document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
+        document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
+    } else {
+        document.getElementById('chatBgLayer').style.backgroundImage = 'none';
+        document.getElementById('chatBgLayer').style.backgroundColor = 'var(--bg-secondary)';
+    }
+}
+
+function openChat(fromContacts) {
+    fromContacts = fromContacts || false;
+    isFromContacts = fromContacts;
+    
+    resetChatState();
+    
+    var role = getCurrentRole();
+    if (role) saveDraft(role.id, document.getElementById('messageInput').value);
+    
+    document.getElementById('launcherScreen').classList.add('hidden');
+    if (fromContacts) {
+        document.getElementById('contactsScreen').classList.add('open');
+    } else {
+        document.getElementById('contactsScreen').classList.remove('open');
+    }
+    document.getElementById('chatScreen').classList.add('open');
+    document.getElementById('memoryScreen').classList.remove('open');
+    document.getElementById('memeScreen').classList.remove('open');
+    document.getElementById('diaryScreen').classList.remove('open');
+    
+    var role2 = getCurrentRole();
+    if (role2) {
+        clearUnreadForRole(role2.id);
+        document.getElementById('messageInput').value = loadDraft(role2.id);
+        setTimeout(function() {
+            document.getElementById('messageInput').focus();
+            document.getElementById('messageInput').select();
+        }, 300);
+    }
+    
+    updateChatTitle();
+    renderMessages();
+    if (document.getElementById('contactsScreen').classList.contains('open')) {
+        renderContacts();
+    }
+    if (CONFIG.heart && CONFIG.heart.floatingEnabled !== false) {
+        setTimeout(showFloatingHeart, 300);
+    }
+}
+
+function closeChat() {
+    var role = getCurrentRole();
+    if (role) saveDraft(role.id, document.getElementById('messageInput').value);
+    
+    resetChatState();
+    
+    document.getElementById('chatScreen').classList.remove('open');
+    if (isFromContacts) {
+        document.getElementById('contactsScreen').classList.add('open');
+        document.getElementById('launcherScreen').classList.add('hidden');
+        renderContacts();
+    } else {
+        document.getElementById('launcherScreen').classList.remove('hidden');
+        document.getElementById('contactsScreen').classList.remove('open');
+    }
+}
+
+function openContacts() { 
+    document.getElementById('launcherScreen').classList.add('hidden'); 
+    document.getElementById('chatScreen').classList.remove('open'); 
+    document.getElementById('memoryScreen').classList.remove('open'); 
+    document.getElementById('memeScreen').classList.remove('open'); 
+    document.getElementById('diaryScreen').classList.remove('open'); 
+    document.getElementById('contactsScreen').classList.add('open'); 
+    renderContacts(); 
+    if (CONFIG.heart && CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300); 
+}
+function closeContacts() { 
+    document.getElementById('contactsScreen').classList.remove('open'); 
+    document.getElementById('launcherScreen').classList.remove('hidden'); 
+}
+function openMemory() { 
+    document.getElementById('launcherScreen').classList.add('hidden'); 
+    document.getElementById('chatScreen').classList.remove('open'); 
+    document.getElementById('contactsScreen').classList.remove('open'); 
+    document.getElementById('memeScreen').classList.remove('open'); 
+    document.getElementById('diaryScreen').classList.remove('open'); 
+    document.getElementById('memoryScreen').classList.add('open'); 
+    renderMemoryScreen(); 
+    if (CONFIG.heart && CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300); 
+}
+function closeMemory() { 
+    document.getElementById('memoryScreen').classList.remove('open'); 
+    document.getElementById('launcherScreen').classList.remove('hidden'); 
+}
+function openMeme() { 
+    document.getElementById('launcherScreen').classList.add('hidden'); 
+    document.getElementById('chatScreen').classList.remove('open'); 
+    document.getElementById('contactsScreen').classList.remove('open'); 
+    document.getElementById('memoryScreen').classList.remove('open'); 
+    document.getElementById('diaryScreen').classList.remove('open'); 
+    document.getElementById('memeScreen').classList.add('open'); 
+    renderMemeScreen(); 
+    if (CONFIG.heart && CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300); 
+}
+function closeMeme() { 
+    document.getElementById('memeScreen').classList.remove('open'); 
+    document.getElementById('launcherScreen').classList.remove('hidden'); 
+}
+function openDiary() { 
+    document.getElementById('launcherScreen').classList.add('hidden'); 
+    document.getElementById('chatScreen').classList.remove('open'); 
+    document.getElementById('contactsScreen').classList.remove('open'); 
+    document.getElementById('memoryScreen').classList.remove('open'); 
+    document.getElementById('memeScreen').classList.remove('open'); 
+    document.getElementById('diaryScreen').classList.add('open'); 
+    if (selectedDiaryRoleId === null) selectedDiaryRoleId = currentRoleId; 
+    renderDiaryAll(); 
+    if (CONFIG.heart && CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300); 
+}
+function closeDiary() { 
+    document.getElementById('diaryScreen').classList.remove('open'); 
+    document.getElementById('launcherScreen').classList.remove('hidden'); 
+}
+function openMall() { window.location.href = 'mall.html'; }
+function openPhone() { window.location.href = 'phone.html'; }
+
+function openSettings() {
+    document.getElementById('apiKeyInput').value = CONFIG.apiKey || '';
+    document.getElementById('modelSelect').value = CONFIG.model || 'deepseek-chat';
+    renderRoleManager();
+    updatePermissionStatusUI();
+    loadTemperature();
+    loadFontSize();
+    loadFontWeight();
+    loadSplitToggle();
+    if (CONFIG.wallpaper) { document.getElementById('wallpaperPreviewImg').src = CONFIG.wallpaper; document.getElementById('wallpaperPreviewImg').style.display = 'block'; document.getElementById('wallpaperStatus').textContent = '自定义'; }
+    else { document.getElementById('wallpaperPreviewImg').style.display = 'none'; document.getElementById('wallpaperStatus').textContent = '默认'; }
+    if (CONFIG.chatBg) { document.getElementById('chatBgPreviewImg').src = CONFIG.chatBg; document.getElementById('chatBgPreviewImg').style.display = 'block'; document.getElementById('chatBgStatus').textContent = '自定义'; }
+    else { document.getElementById('chatBgPreviewImg').style.display = 'none'; document.getElementById('chatBgStatus').textContent = '默认'; }
+    if (CONFIG.userAvatar) { document.getElementById('userAvatarPreviewImg').src = CONFIG.userAvatar; document.getElementById('userAvatarPreviewImg').style.display = 'block'; document.getElementById('userAvatarStatus').textContent = '自定义'; }
+    else { document.getElementById('userAvatarPreviewImg').style.display = 'none'; document.getElementById('userAvatarStatus').textContent = '默认'; }
+    updateStorageDisplay();
+    document.getElementById('settingsOverlay').classList.add('active');
+}
+function closeSettings() { document.getElementById('settingsOverlay').classList.remove('active'); }
+
+function loadTemperature() { var val = parseFloat(CONFIG.temperature) || 0.9; document.getElementById('tempSlider').value = val; document.getElementById('tempDisplay').textContent = val.toFixed(1); }
+function loadFontSize() {
+    var FONT_SIZE_MAP = ['small', 'medium', 'large', 'xlarge'];
+    var FONT_SIZE_LABELS = ['小', '中', '大', '特大'];
+    var key = CONFIG.fontSize || 'medium';
+    var idx = FONT_SIZE_MAP.indexOf(key);
+    if (idx !== -1) { document.getElementById('fontSizeSlider').value = idx; document.getElementById('fontSizeDisplay').textContent = FONT_SIZE_LABELS[idx]; }
+    else { document.getElementById('fontSizeSlider').value = 1; document.getElementById('fontSizeDisplay').textContent = '中'; }
+    applyFontSettings();
+}
+function loadFontWeight() {
+    var FONT_WEIGHT_MAP = ['light', 'regular', 'medium', 'bold'];
+    var FONT_WEIGHT_LABELS = ['细', '常规', '中', '粗'];
+    var key = CONFIG.fontWeight || 'regular';
+    var idx = FONT_WEIGHT_MAP.indexOf(key);
+    if (idx !== -1) { document.getElementById('fontWeightSlider').value = idx; document.getElementById('fontWeightDisplay').textContent = FONT_WEIGHT_LABELS[idx]; }
+    else { document.getElementById('fontWeightSlider').value = 1; document.getElementById('fontWeightDisplay').textContent = '常规'; }
+    applyFontSettings();
+}
+function loadSplitToggle() { var val = CONFIG.splitEnabled !== false ? 1 : 0; document.getElementById('splitToggleSlider').value = val; document.getElementById('splitToggleDisplay').textContent = val === 1 ? '开启' : '关闭'; }
+
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(function(reg) {
+            console.log('📱 Service Worker 注册成功');
+        }).catch(function(err) {
+            console.log('📱 Service Worker 注册失败:', err);
+        });
+    }
+}
+
 function renderStylePicker() {
     var iconGrid = document.getElementById('styleOptionGrid');
     if (!iconGrid) return;
@@ -3460,7 +3653,7 @@ function renderStylePicker() {
     var floatingGrid = document.getElementById('floatingSwitchGrid');
     if (floatingGrid) {
         var floatingOptions = [{ id: 'on', name: '开启悬浮窗' }, { id: 'off', name: '关闭悬浮窗' }];
-        var isFloatingOn = CONFIG.heart.floatingEnabled !== false;
+        var isFloatingOn = CONFIG.heart && CONFIG.heart.floatingEnabled !== false;
         floatingGrid.innerHTML = '';
         floatingOptions.forEach(function(opt) {
             var option = document.createElement('div');
@@ -3482,7 +3675,7 @@ function renderStylePicker() {
             { id: '#00d2d3', name: '海洋蓝', demo: '💙' },
             { id: '#ff9ff3', name: '樱花粉', demo: '🎀' },
         ];
-        var currentColor = CONFIG.heart.color || '#ff6b81';
+        var currentColor = CONFIG.heart ? CONFIG.heart.color : '#ff6b81';
         colorGrid.innerHTML = '';
         colorOptions.forEach(function(opt) {
             var option = document.createElement('div');
@@ -3537,101 +3730,6 @@ function updateStatusTime() {
     if (el) el.textContent = hours + ':' + mins;
 }
 
-// ===== 页面切换 =====
-function openChat(fromContacts) {
-    fromContacts = fromContacts || false;
-    isFromContacts = fromContacts;
-    var role = getCurrentRole();
-    if (role) saveDraft(role.id, document.getElementById('messageInput').value);
-    document.getElementById('launcherScreen').classList.add('hidden');
-    if (fromContacts) document.getElementById('contactsScreen').classList.add('open');
-    else document.getElementById('contactsScreen').classList.remove('open');
-    document.getElementById('chatScreen').classList.add('open');
-    document.getElementById('memoryScreen').classList.remove('open');
-    document.getElementById('memeScreen').classList.remove('open');
-    document.getElementById('diaryScreen').classList.remove('open');
-    var role2 = getCurrentRole();
-    if (role2) {
-        clearUnreadForRole(role2.id);
-        readMessages = {};
-        document.getElementById('messageInput').value = loadDraft(role2.id);
-        setTimeout(function() { document.getElementById('messageInput').focus(); document.getElementById('messageInput').select(); }, 300);
-    }
-    updateChatTitle();
-    renderMessages();
-    if (document.getElementById('contactsScreen').classList.contains('open')) renderContacts();
-    if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300);
-}
-function closeChat() {
-    var role = getCurrentRole();
-    if (role) saveDraft(role.id, document.getElementById('messageInput').value);
-    document.getElementById('chatScreen').classList.remove('open');
-    if (isFromContacts) { document.getElementById('contactsScreen').classList.add('open'); document.getElementById('launcherScreen').classList.add('hidden'); renderContacts(); }
-    else { document.getElementById('launcherScreen').classList.remove('hidden'); document.getElementById('contactsScreen').classList.remove('open'); }
-}
-function openContacts() { document.getElementById('launcherScreen').classList.add('hidden'); document.getElementById('chatScreen').classList.remove('open'); document.getElementById('memoryScreen').classList.remove('open'); document.getElementById('memeScreen').classList.remove('open'); document.getElementById('diaryScreen').classList.remove('open'); document.getElementById('contactsScreen').classList.add('open'); renderContacts(); if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300); }
-function closeContacts() { document.getElementById('contactsScreen').classList.remove('open'); document.getElementById('launcherScreen').classList.remove('hidden'); }
-function openMemory() { document.getElementById('launcherScreen').classList.add('hidden'); document.getElementById('chatScreen').classList.remove('open'); document.getElementById('contactsScreen').classList.remove('open'); document.getElementById('memeScreen').classList.remove('open'); document.getElementById('diaryScreen').classList.remove('open'); document.getElementById('memoryScreen').classList.add('open'); renderMemoryScreen(); if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300); }
-function closeMemory() { document.getElementById('memoryScreen').classList.remove('open'); document.getElementById('launcherScreen').classList.remove('hidden'); }
-function openMeme() { document.getElementById('launcherScreen').classList.add('hidden'); document.getElementById('chatScreen').classList.remove('open'); document.getElementById('contactsScreen').classList.remove('open'); document.getElementById('memoryScreen').classList.remove('open'); document.getElementById('diaryScreen').classList.remove('open'); document.getElementById('memeScreen').classList.add('open'); renderMemeScreen(); if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300); }
-function closeMeme() { document.getElementById('memeScreen').classList.remove('open'); document.getElementById('launcherScreen').classList.remove('hidden'); }
-function openDiary() { document.getElementById('launcherScreen').classList.add('hidden'); document.getElementById('chatScreen').classList.remove('open'); document.getElementById('contactsScreen').classList.remove('open'); document.getElementById('memoryScreen').classList.remove('open'); document.getElementById('memeScreen').classList.remove('open'); document.getElementById('diaryScreen').classList.add('open'); if (selectedDiaryRoleId === null) selectedDiaryRoleId = currentRoleId; renderDiaryAll(); if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300); }
-function closeDiary() { document.getElementById('diaryScreen').classList.remove('open'); document.getElementById('launcherScreen').classList.remove('hidden'); }
-function openMall() { window.location.href = 'mall.html'; }
-function openPhone() { 
-    showToast('📱 "他的手机" 功能开发中，敬请期待～');
-}
-function openSettings() {
-    document.getElementById('apiKeyInput').value = CONFIG.apiKey || '';
-    document.getElementById('modelSelect').value = CONFIG.model || 'deepseek-chat';
-    renderRoleManager();
-    updatePermissionStatusUI();
-    loadTemperature();
-    loadFontSize();
-    loadFontWeight();
-    loadSplitToggle();
-    if (CONFIG.wallpaper) { document.getElementById('wallpaperPreviewImg').src = CONFIG.wallpaper; document.getElementById('wallpaperPreviewImg').style.display = 'block'; document.getElementById('wallpaperStatus').textContent = '自定义'; }
-    else { document.getElementById('wallpaperPreviewImg').style.display = 'none'; document.getElementById('wallpaperStatus').textContent = '默认'; }
-    if (CONFIG.chatBg) { document.getElementById('chatBgPreviewImg').src = CONFIG.chatBg; document.getElementById('chatBgPreviewImg').style.display = 'block'; document.getElementById('chatBgStatus').textContent = '自定义'; }
-    else { document.getElementById('chatBgPreviewImg').style.display = 'none'; document.getElementById('chatBgStatus').textContent = '默认'; }
-    if (CONFIG.userAvatar) { document.getElementById('userAvatarPreviewImg').src = CONFIG.userAvatar; document.getElementById('userAvatarPreviewImg').style.display = 'block'; document.getElementById('userAvatarStatus').textContent = '自定义'; }
-    else { document.getElementById('userAvatarPreviewImg').style.display = 'none'; document.getElementById('userAvatarStatus').textContent = '默认'; }
-    updateStorageDisplay();
-    document.getElementById('settingsOverlay').classList.add('active');
-}
-function closeSettings() { document.getElementById('settingsOverlay').classList.remove('active'); }
-
-function loadTemperature() { var val = parseFloat(CONFIG.temperature) || 0.9; document.getElementById('tempSlider').value = val; document.getElementById('tempDisplay').textContent = val.toFixed(1); }
-function loadFontSize() {
-    var FONT_SIZE_MAP = ['small', 'medium', 'large', 'xlarge'];
-    var FONT_SIZE_LABELS = ['小', '中', '大', '特大'];
-    var key = CONFIG.fontSize || 'medium';
-    var idx = FONT_SIZE_MAP.indexOf(key);
-    if (idx !== -1) { document.getElementById('fontSizeSlider').value = idx; document.getElementById('fontSizeDisplay').textContent = FONT_SIZE_LABELS[idx]; }
-    else { document.getElementById('fontSizeSlider').value = 1; document.getElementById('fontSizeDisplay').textContent = '中'; }
-    applyFontSettings();
-}
-function loadFontWeight() {
-    var FONT_WEIGHT_MAP = ['light', 'regular', 'medium', 'bold'];
-    var FONT_WEIGHT_LABELS = ['细', '常规', '中', '粗'];
-    var key = CONFIG.fontWeight || 'regular';
-    var idx = FONT_WEIGHT_MAP.indexOf(key);
-    if (idx !== -1) { document.getElementById('fontWeightSlider').value = idx; document.getElementById('fontWeightDisplay').textContent = FONT_WEIGHT_LABELS[idx]; }
-    else { document.getElementById('fontWeightSlider').value = 1; document.getElementById('fontWeightDisplay').textContent = '常规'; }
-    applyFontSettings();
-}
-function loadSplitToggle() { var val = CONFIG.splitEnabled !== false ? 1 : 0; document.getElementById('splitToggleSlider').value = val; document.getElementById('splitToggleDisplay').textContent = val === 1 ? '开启' : '关闭'; }
-
-function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').then(function(reg) {
-            console.log('📱 Service Worker 注册成功');
-        }).catch(function(err) {
-            console.log('📱 Service Worker 注册失败:', err);
-        });
-    }
-}
-
 function init() {
     try { loadAllData(); } catch (e) { console.error('加载数据失败:', e); }
     try { loadMemeData().then(function() { updateStorageDisplay(); }); } catch (e) { console.error('加载表情包失败:', e); }
@@ -3665,7 +3763,7 @@ function init() {
     try { loadTemperature(); loadFontSize(); loadFontWeight(); loadSplitToggle(); } catch (e) { console.error('设置加载失败:', e); }
 
     try {
-        if (CONFIG.heart.bindRoleId) {
+        if (CONFIG.heart && CONFIG.heart.bindRoleId) {
             var role = roles.find(function(r) { return r.id === CONFIG.heart.bindRoleId; });
             if (role && role.heartData) {
                 CONFIG.heart.value = role.heartData.value || 65;
@@ -3682,7 +3780,10 @@ function init() {
         updateStorageDisplay();
     } catch (e) { console.error('心跳系统初始化失败:', e); }
 
-    try { if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 800); } catch (e) { console.error('悬浮窗初始化失败:', e); }
+    try {
+        if (CONFIG.heart && CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 800);
+        startDiaryAutoGenerate();
+    } catch (e) { console.error('悬浮窗或日记自动生成初始化失败:', e); }
 
     try { updateChatTitle(); renderContacts(); renderMemoryScreen(); renderDiaryAll(); updateStatusTime(); setInterval(updateStatusTime, 30000); } catch (e) { console.error('界面渲染失败:', e); }
 
@@ -3703,7 +3804,7 @@ function init() {
 
     try { registerServiceWorker(); } catch (e) { console.log('PWA 注册跳过'); }
 
-    console.log('🚀 梦女空间 v2.1 已启动！');
+    console.log('🚀 梦女空间 v2.3 已启动！');
     console.log('角色数量:', roles.length);
     console.log('日记数量:', CONFIG.diaries ? CONFIG.diaries.length : 0);
     console.log('表情包数量:', memes.length);
@@ -3806,7 +3907,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dataModalOverlay').addEventListener('click', function(e) { if (e.target === this) closeDataModal(); });
     document.getElementById('dataExportBtn').addEventListener('click', function() {
         var exportType = getSelectedExportType();
-        var exportData = { exportTime: new Date().toISOString(), version: '2.1', type: exportType, config: {}, roles: [], diaries: [] };
+        var exportData = { exportTime: new Date().toISOString(), version: '2.3', type: exportType, config: {}, roles: [], diaries: [] };
         var roleData = [];
         if (exportType === 'all') {
             roleData = JSON.parse(JSON.stringify(roles));
@@ -3909,7 +4010,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateChatTitle();
                     if (document.getElementById('chatScreen').classList.contains('open')) renderMessages();
                     updateHeartDisplay();
-                    if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 500);
+                    if (CONFIG.heart && CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 500);
                     showToast('✅ 成功导入 ' + roles.length + ' 个角色，' + CONFIG.diaries.length + ' 篇日记');
                     closeDataModal();
                     closeSettings();
@@ -3924,6 +4025,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirm('⚠️ 确定要清空所有角色的聊天记录吗？此操作不可恢复！')) {
             roles.forEach(function(role) { role.messages = []; clearUnreadForRole(role.id); });
             saveAllData();
+            resetChatState();
             renderMessages();
             renderContacts();
             renderRoleManager();
@@ -3938,6 +4040,7 @@ document.addEventListener('DOMContentLoaded', function() {
             role.messages = [];
             clearUnreadForRole(role.id);
             saveAllData();
+            resetChatState();
             renderMessages();
             renderContacts();
             showToast('🗑️ 已清空「' + role.name + '」的聊天记录');
@@ -3996,6 +4099,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('quoteCancelBtn').addEventListener('click', function() {
         quotedMsg = null;
         document.getElementById('quoteBar').classList.remove('active');
+        document.getElementById('quoteText').textContent = '引用内容';
         showToast('已取消引用');
     });
 
@@ -4146,7 +4250,7 @@ document.addEventListener('DOMContentLoaded', function() {
             text.textContent = newText;
             text.classList.remove('hide');
             input.classList.remove('show');
-            var bindRoleId = CONFIG.heart.bindRoleId;
+            var bindRoleId = CONFIG.heart ? CONFIG.heart.bindRoleId : null;
             if (bindRoleId) {
                 var role = roles.find(function(r) { return r.id === bindRoleId; });
                 if (role) {
@@ -4157,7 +4261,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateHeartDisplay();
                     showToast('✅ 个签已更新');
                 }
-            } else { CONFIG.heart.signature = newText; saveAllData(); updateHeartDisplay(); }
+            } else { if (CONFIG.heart) CONFIG.heart.signature = newText; saveAllData(); updateHeartDisplay(); }
         } else {
             text.classList.add('hide');
             input.classList.add('show');
