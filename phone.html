@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>他的手机</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+        body { background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 0; margin: 0; }
+        .phone-frame { width: 100%; max-width: 430px; height: 100vh; max-height: 100vh; background: #000; border-radius: 0; overflow: hidden; position: relative; box-shadow: none; }
+        :root { --safe-top: 0px; --safe-bottom: 0px; --desktop-bg: #000; }
+        @supports (padding: env(safe-area-inset-top)) { :root { --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); } }
+
+        .hidden { display: none !important; }
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        /* ===== Entry Overlay ===== */
+        .entry-overlay { position: absolute; inset: 0; z-index: 150; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; }
+        .entry-overlay.hidden { display: none; }
+        .entry-overlay .entry-title { font-size: 22px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+        .entry-overlay .entry-sub { font-size: 14px; color: rgba(255,255,255,0.3); margin-bottom: 24px; }
+        .entry-overlay .entry-role-list { width: 100%; max-width: 300px; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .entry-overlay .entry-role-btn { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; cursor: pointer; transition: 0.2s; font-family: inherit; width: 100%; text-align: left; color: #fff; }
+        .entry-overlay .entry-role-btn:active { transform: scale(0.97); background: rgba(255,255,255,0.08); }
+        .entry-overlay .entry-role-btn .er-avatar { width: 44px; height: 44px; border-radius: 50%; background-color: #2ed573; background-size: cover; background-position: center; flex-shrink: 0; }
+        .entry-overlay .entry-role-btn .er-info { flex: 1; }
+        .entry-overlay .entry-role-btn .er-info .er-name { font-size: 15px; font-weight: 600; color: #fff; }
+        .entry-overlay .entry-role-btn .er-info .er-hint { font-size: 11px; color: rgba(255,255,255,0.2); }
+        .entry-overlay .entry-role-btn .er-lock { font-size: 14px; color: rgba(255,255,255,0.15); }
+
+        /* ===== Lock Screen ===== */
+        .lock-screen { width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: absolute; top: 0; left: 0; z-index: 100; transition: opacity 0.5s ease; }
+        .lock-screen.unlocked { opacity: 0; pointer-events: none; }
+        .lock-screen .lock-time { font-size: 72px; font-weight: 300; color: #fff; letter-spacing: 2px; }
+        .lock-screen .lock-date { font-size: 18px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+        .lock-screen .lock-avatar { width: 72px; height: 72px; border-radius: 50%; background-color: #2ed573; background-size: cover; background-position: center; margin: 20px 0 6px; border: 2px solid rgba(255,255,255,0.1); }
+        .lock-screen .lock-name { font-size: 20px; font-weight: 500; color: #fff; }
+        .lock-screen .lock-pin-dots { display: flex; gap: 16px; margin: 28px 0 16px; }
+        .lock-screen .lock-pin-dots .dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); transition: 0.2s; }
+        .lock-screen .lock-pin-dots .dot.filled { background: #fff; border-color: #fff; }
+        .lock-screen .lock-pin-dots .dot.wrong { background: #ff3b30; border-color: #ff3b30; animation: shake 0.3s ease; }
+        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        .lock-screen .lock-error { color: #ff3b30; font-size: 14px; min-height: 24px; margin-top: 4px; }
+        .lock-screen .lock-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 260px; width: 100%; margin-top: 8px; }
+        .lock-screen .lock-keypad button { padding: 16px; border: none; border-radius: 50%; font-size: 24px; font-weight: 300; background: rgba(255,255,255,0.06); color: #fff; cursor: pointer; transition: 0.15s; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: inherit; }
+        .lock-screen .lock-keypad button:active { background: rgba(255,255,255,0.15); transform: scale(0.92); }
+        .lock-screen .lock-keypad .key-empty { visibility: hidden; }
+        .lock-screen .lock-keypad .key-delete { font-size: 18px; color: rgba(255,255,255,0.5); }
+
+        /* ===== Phone Home ===== */
+        .phone-home { width: 100%; height: 100%; background: var(--desktop-bg, #000); display: flex; flex-direction: column; position: absolute; top: 0; left: 0; z-index: 10; transition: background 0.3s; overflow: hidden; touch-action: none; }
+        .phone-status { display: flex; justify-content: space-between; padding: calc(8px + var(--safe-top, 0px)) 20px 8px; font-size: 12px; color: #fff; flex-shrink: 0; background: transparent; }
+        .phone-status .status-time { font-weight: 600; }
+        .phone-status .status-icons { display: flex; gap: 6px; font-size: 13px; }
+
+        .phone-header { display: flex; align-items: center; gap: 12px; padding: 4px 20px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; cursor: pointer; background: transparent; }
+        .phone-header .ph-avatar { width: 36px; height: 36px; border-radius: 50%; background-color: #2ed573; background-size: cover; background-position: center; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.1); }
+        .phone-header .ph-info { flex: 1; }
+        .phone-header .ph-info .ph-name { font-size: 16px; font-weight: 600; color: #fff; }
+        .phone-header .ph-info .ph-status-text { font-size: 11px; color: rgba(255,255,255,0.3); }
+        .phone-header .ph-switch-btn { font-size: 12px; color: rgba(255,255,255,0.3); padding: 4px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; background: transparent; cursor: pointer; font-family: inherit; transition: 0.15s; }
+        .phone-header .ph-switch-btn:active { background: rgba(255,255,255,0.05); transform: scale(0.95); }
+
+        .phone-app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px 12px; padding: 24px 20px; flex: 1; align-content: start; }
+        .phone-app { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 8px 4px; border-radius: 12px; transition: 0.15s; border: none; background: transparent; color: #fff; font-family: inherit; }
+        .phone-app:active { transform: scale(0.88); background: rgba(255,255,255,0.05); }
+        .phone-app .app-icon { width: 60px; height: 60px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .phone-app .app-icon.safari { background: linear-gradient(135deg,#4a90d9,#2d6fc4); }
+        .phone-app .app-icon.notes { background: linear-gradient(135deg,#fdcb6e,#f39c12); color: #2d1a0a; }
+        .phone-app .app-icon.maps { background: linear-gradient(135deg,#2ed573,#1ea85a); }
+        .phone-app .app-icon.music { background: linear-gradient(135deg,#ff6b81,#ee5a24); }
+        .phone-app .app-icon.moments { background: linear-gradient(135deg,#a29bfe,#6c5ce7); }
+        .phone-app .app-name { font-size: 10px; color: rgba(255,255,255,0.7); text-align: center; line-height: 1.2; }
+
+        .phone-dock { display: flex; justify-content: center; gap: 40px; padding: 12px 20px calc(12px + var(--safe-bottom, 0px)); border-top: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; background: transparent; }
+        .phone-dock .phone-app .app-icon { width: 52px; height: 52px; border-radius: 12px; font-size: 22px; }
+        .phone-dock .phone-app .app-icon.wechat { background: linear-gradient(135deg,#07c160,#059b4e); }
+        .phone-dock .phone-app .app-icon.settings { background: linear-gradient(135deg,#636e72,#2d3436); }
+        .phone-dock .phone-app .app-name { font-size: 10px; }
+
+        /* ===== App Pages ===== */
+        .app-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 50; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1); display: flex; flex-direction: column; }
+        .app-page.open { transform: translateX(0); }
+
+        .app-page-header { display: flex; align-items: center; gap: 12px; padding: calc(12px + var(--safe-top, 0px)) 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .app-page-header .back-btn { font-size: 20px; color: rgba(255,255,255,0.6); cursor: pointer; border: none; background: none; padding: 4px; }
+        .app-page-header .title { font-size: 17px; font-weight: 600; color: #fff; flex: 1; }
+        .app-page-header .action-btn { font-size: 16px; color: rgba(255,255,255,0.4); cursor: pointer; border: none; background: none; padding: 4px; }
+        .app-page-body { flex: 1; overflow-y: auto; padding: 12px 16px 20px; }
+
+        /* Browser */
+        .browser-record-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: rgba(255,255,255,0.04); border-radius: 10px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.04); }
+        .browser-record-item .br-icon { font-size: 16px; color: rgba(255,255,255,0.2); width: 28px; text-align: center; }
+        .browser-record-item .br-info { flex: 1; }
+        .browser-record-item .br-info .br-query { font-size: 14px; color: #fff; }
+        .browser-record-item .br-info .br-time { font-size: 11px; color: rgba(255,255,255,0.3); }
+        .browser-record-item .br-tag { font-size: 10px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.3); padding: 2px 10px; border-radius: 10px; }
+        .browser-empty { text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.2); }
+        .browser-empty i { font-size: 40px; display: block; margin-bottom: 12px; }
+
+        /* Notes */
+        .note-item { padding: 12px 14px; background: rgba(255,255,255,0.04); border-radius: 10px; margin-bottom: 6px; border-left: 3px solid rgba(253,203,110,0.3); cursor: pointer; transition: 0.15s; }
+        .note-item:active { transform: scale(0.98); background: rgba(255,255,255,0.06); }
+        .note-item .note-text { font-size: 14px; color: #fff; line-height: 1.6; }
+        .note-item .note-meta { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: rgba(255,255,255,0.25); }
+        .note-item .note-meta .note-tag { color: #fdcb6e; }
+        .note-item.important { border-left-color: #ff6b81; }
+        .note-item.important .note-meta .note-tag { color: #ff6b81; }
+        .note-empty { text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.2); }
+        .note-empty i { font-size: 40px; display: block; margin-bottom: 12px; }
+
+        /* WeChat */
+        .wx-contact-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: rgba(255,255,255,0.03); border-radius: 10px; margin-bottom: 4px; cursor: pointer; transition: 0.15s; }
+        .wx-contact-item:active { background: rgba(255,255,255,0.06); transform: scale(0.98); }
+        .wx-contact-item .wx-avatar { width: 44px; height: 44px; border-radius: 8px; background-color: #2ed573; background-size: cover; background-position: center; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; }
+        .wx-contact-item .wx-info { flex: 1; min-width: 0; }
+        .wx-contact-item .wx-info .wx-name { font-size: 15px; font-weight: 500; color: #fff; }
+        .wx-contact-item .wx-info .wx-preview { font-size: 12px; color: rgba(255,255,255,0.3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .wx-contact-item .wx-time { font-size: 10px; color: rgba(255,255,255,0.2); flex-shrink: 0; }
+        .wx-contact-item .wx-unread { background: #ff3b30; color: #fff; font-size: 10px; font-weight: 600; min-width: 18px; height: 18px; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 0 6px; flex-shrink: 0; }
+
+        .wx-chat-header { display: flex; align-items: center; gap: 12px; padding: calc(12px + var(--safe-top, 0px)) 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .wx-chat-header .back-btn { font-size: 20px; color: rgba(255,255,255,0.6); cursor: pointer; border: none; background: none; padding: 4px; }
+        .wx-chat-header .wx-chat-name { font-size: 17px; font-weight: 600; color: #fff; flex: 1; }
+        .wx-chat-messages { flex: 1; overflow-y: auto; padding: 12px 16px 8px; display: flex; flex-direction: column; gap: 6px; }
+        .wx-msg { max-width: 80%; padding: 8px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; word-break: break-word; }
+        .wx-msg.self { align-self: flex-end; background: #07c160; color: #fff; border-bottom-right-radius: 2px; }
+        .wx-msg.other { align-self: flex-start; background: rgba(255,255,255,0.08); color: #fff; border-bottom-left-radius: 2px; }
+        .wx-msg .wx-msg-time { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 4px; display: block; }
+        .wx-msg.self .wx-msg-time { text-align: right; }
+        .wx-msg .wx-msg-name { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 2px; }
+
+        /* Music */
+        .music-player-card { background: linear-gradient(135deg, rgba(255,107,129,0.1), rgba(238,90,36,0.05)); border-radius: 16px; padding: 20px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 16px; cursor: pointer; transition: 0.15s; }
+        .music-player-card:active { transform: scale(0.97); }
+        .music-player-card .player-art { font-size: 48px; text-align: center; padding: 16px 0; }
+        .music-player-card .player-name { font-size: 18px; font-weight: 600; color: #fff; text-align: center; }
+        .music-player-card .player-artist { font-size: 13px; color: rgba(255,255,255,0.3); text-align: center; }
+        .music-player-card .player-controls { display: flex; justify-content: center; gap: 32px; margin-top: 12px; color: rgba(255,255,255,0.5); font-size: 20px; }
+        .music-player-card .player-controls .play-btn { color: #fff; font-size: 32px; cursor: pointer; }
+        .music-player-card .player-controls .play-btn:active { transform: scale(0.85); }
+
+        .music-playlist .playlist-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 4px; cursor: pointer; transition: 0.15s; }
+        .music-playlist .playlist-item:active { transform: scale(0.95); background: rgba(255,255,255,0.04); }
+        .music-playlist .playlist-item .pl-index { font-size: 12px; color: rgba(255,255,255,0.2); width: 24px; text-align: center; }
+        .music-playlist .playlist-item .pl-info { flex: 1; }
+        .music-playlist .playlist-item .pl-info .pl-name { font-size: 14px; color: #fff; }
+        .music-playlist .playlist-item .pl-info .pl-artist { font-size: 11px; color: rgba(255,255,255,0.3); }
+        .music-playlist .playlist-item .pl-duration { font-size: 11px; color: rgba(255,255,255,0.2); }
+
+        /* Maps - Timeline */
+        .track-timeline { position: relative; padding-left: 28px; border-left: 2px solid rgba(46,213,115,0.2); }
+        .track-timeline .track-point { position: relative; padding: 10px 0 10px 16px; }
+        .track-timeline .track-point::before { content: ''; position: absolute; left: -9px; top: 16px; width: 16px; height: 16px; border-radius: 50%; background: #2ed573; border: 3px solid #000; box-shadow: 0 0 0 2px rgba(46,213,115,0.2); }
+        .track-timeline .track-point .tp-content { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 12px 16px; border: 1px solid rgba(255,255,255,0.04); }
+        .track-timeline .track-point .tp-content .tp-title { font-size: 15px; font-weight: 500; color: #fff; }
+        .track-timeline .track-point .tp-content .tp-desc { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+        .track-timeline .track-point .tp-content .tp-time { font-size: 11px; color: rgba(255,255,255,0.2); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+        .track-timeline .track-point .tp-content .tp-time i { font-size: 12px; }
+
+        /* Moments - WeChat Style */
+        .moments-feed { padding: 0; }
+        .moments-item { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.04); }
+        .moments-item .m-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .moments-item .m-header .m-avatar { width: 36px; height: 36px; border-radius: 50%; background-color: #2ed573; background-size: cover; background-position: center; flex-shrink: 0; cursor: pointer; }
+        .moments-item .m-header .m-avatar:active { transform: scale(0.92); }
+        .moments-item .m-header .m-name { font-size: 14px; font-weight: 500; color: #fff; cursor: pointer; }
+        .moments-item .m-header .m-name:active { opacity: 0.6; }
+        .moments-item .m-header .m-time { font-size: 10px; color: rgba(255,255,255,0.2); margin-left: auto; }
+        .moments-item .m-header .m-privacy { font-size: 10px; color: rgba(255,255,255,0.2); margin-left: 4px; }
+        .moments-item .m-content { font-size: 14px; color: rgba(255,255,255,0.85); line-height: 1.6; }
+        .moments-item .m-footer { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: rgba(255,255,255,0.3); }
+        .moments-item .m-footer i { margin-right: 4px; }
+        .moments-item .m-footer .m-likes { color: #ff6b81; cursor: pointer; }
+        .moments-item .m-footer .m-likes:active { opacity: 0.5; }
+        .moments-item .m-footer .m-comments { color: rgba(255,255,255,0.3); cursor: pointer; }
+        .moments-item .m-footer .m-comments:active { opacity: 0.5; }
+        .moments-item .m-divider { height: 6px; background: rgba(255,255,255,0.03); margin: 10px -16px; }
+
+        /* Moments Profile */
+        .moments-profile .profile-cover { width: 100%; height: 200px; background: linear-gradient(135deg, #2d3436, #636e72); background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 16px 16px; flex-shrink: 0; }
+        .moments-profile .profile-cover .cover-top { display: flex; align-items: center; gap: 12px; }
+        .moments-profile .profile-cover .cover-avatar { width: 64px; height: 64px; border-radius: 50%; background-color: #2ed573; background-size: cover; background-position: center; border: 3px solid #000; flex-shrink: 0; }
+        .moments-profile .profile-cover .cover-info { flex: 1; }
+        .moments-profile .profile-cover .cover-info .cover-name { font-size: 18px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+        .moments-profile .profile-cover .cover-info .cover-moments-label { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+        .moments-profile .profile-body { flex: 1; overflow-y: auto; padding: 12px 16px 20px; background: #000; }
+
+        /* Settings */
+        .wallpaper-preview-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .wallpaper-preview-row .wpr-label { flex: 1; font-size: 14px; color: rgba(255,255,255,0.7); }
+        .wallpaper-preview-row .wpr-preview { width: 40px; height: 40px; border-radius: 6px; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.06); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 16px; color: rgba(255,255,255,0.1); }
+        .wallpaper-preview-row .wpr-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .wallpaper-preview-row .wpr-btn { padding: 4px 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; background: transparent; color: rgba(255,255,255,0.4); font-size: 11px; cursor: pointer; font-family: inherit; transition: 0.15s; }
+        .wallpaper-preview-row .wpr-btn:active { background: rgba(255,255,255,0.05); transform: scale(0.95); }
+        .wallpaper-preview-row .wpr-btn.danger { color: #ff6b81; border-color: rgba(255,107,129,0.15); }
+
+        /* Role Switch */
+        .role-switch-overlay { position: absolute; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: none; justify-content: center; align-items: center; }
+        .role-switch-overlay.active { display: flex; }
+        .role-switch-panel { background: rgba(30,30,40,0.95); border-radius: 20px; padding: 24px 20px 20px; max-width: 320px; width: 90%; border: 1px solid rgba(255,255,255,0.06); }
+        .role-switch-panel h3 { color: #fff; font-size: 17px; text-align: center; margin-bottom: 4px; }
+        .role-switch-panel p { color: rgba(255,255,255,0.3); font-size: 13px; text-align: center; margin-bottom: 16px; }
+        .role-switch-panel .rs-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+        .role-switch-panel .rs-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,0.03); cursor: pointer; transition: 0.15s; border: 1px solid transparent; }
+        .role-switch-panel .rs-item:active { transform: scale(0.97); }
+        .role-switch-panel .rs-item .rs-avatar { width: 36px; height: 36px; border-radius: 50%; background-color: #2ed573; background-size: cover; background-position: center; flex-shrink: 0; }
+        .role-switch-panel .rs-item .rs-name { flex: 1; font-size: 14px; color: #fff; }
+        .role-switch-panel .rs-cancel { width: 100%; margin-top: 12px; padding: 10px; border: none; border-radius: 12px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; font-family: inherit; transition: 0.15s; }
+        .role-switch-panel .rs-cancel:active { transform: scale(0.97); }
+
+        .phone-toast { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.12); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #fff; padding: 10px 24px; border-radius: 12px; font-size: 13px; z-index: 300; animation: fadeInUp 0.3s ease; text-align: center; max-width: 80%; border: 1px solid rgba(255,255,255,0.06); }
+        .phone-toast.hidden { display: none; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+        .loading-spinner { text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.3); }
+        .loading-spinner i { font-size: 32px; display: block; margin-bottom: 12px; animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        @media (min-width: 431px) { .phone-frame { border-radius: 32px; height: 780px; max-height: 90vh; box-shadow: 0 20px 60px rgba(0,0,0,0.8); } body { padding: 12px; } }
+        @media (max-width: 460px) { .phone-frame { border-radius: 0; height: 100vh; max-height: 100vh; } body { padding: 0; } }
+    </style>
+</head>
+<body>
+<div class="phone-frame" id="app">
+
+    <!-- Entry Overlay -->
+    <div class="entry-overlay" id="entryOverlay">
+        <div class="entry-title">📱 他的手机</div>
+        <div class="entry-sub">选择要进入的角色手机</div>
+        <div class="entry-role-list" id="entryRoleList"></div>
+    </div>
+
+    <!-- Lock Screen -->
+    <div class="lock-screen" id="lockScreen">
+        <div class="lock-time" id="lockTime">09:41</div>
+        <div class="lock-date" id="lockDate">2026年7月7日</div>
+        <div class="lock-avatar" id="lockAvatar" style="background-color:#2ed573;"></div>
+        <div class="lock-name" id="lockName">未绑定</div>
+        <div class="lock-pin-dots" id="lockDots">
+            <span class="dot" data-i="0"></span>
+            <span class="dot" data-i="1"></span>
+            <span class="dot" data-i="2"></span>
+            <span class="dot" data-i="3"></span>
+        </div>
+        <div class="lock-error" id="lockError"></div>
+        <div class="lock-keypad" id="lockKeypad">
+            <button data-key="1">1</button>
+            <button data-key="2">2</button>
+            <button data-key="3">3</button>
+            <button data-key="4">4</button>
+            <button data-key="5">5</button>
+            <button data-key="6">6</button>
+            <button data-key="7">7</button>
+            <button data-key="8">8</button>
+            <button data-key="9">9</button>
+            <button class="key-empty"></button>
+            <button data-key="0">0</button>
+            <button class="key-delete" id="lockDelete"><i class="fas fa-delete-left"></i></button>
+        </div>
+    </div>
+
+    <!-- Phone Home -->
+    <div class="phone-home" id="phoneHome">
+        <div class="phone-status">
+            <span class="status-time" id="statusTime">09:41</span>
+            <span class="status-icons"><i class="fas fa-signal"></i> <i class="fas fa-wifi"></i> <i class="fas fa-battery-three-quarters"></i></span>
+        </div>
+        <div class="phone-header" id="phoneHeader">
+            <div class="ph-avatar" id="phAvatar" style="background-color:#2ed573;"></div>
+            <div class="ph-info">
+                <div class="ph-name" id="phName">未绑定</div>
+                <div class="ph-status-text" id="phStatus">点击切换角色</div>
+            </div>
+            <button class="ph-switch-btn" id="phSwitchBtn">切换</button>
+        </div>
+        <div class="phone-app-grid" id="phoneAppGrid">
+            <button class="phone-app" data-app="safari"><div class="app-icon safari"><i class="fas fa-compass"></i></div><span class="app-name">浏览器</span></button>
+            <button class="phone-app" data-app="notes"><div class="app-icon notes"><i class="fas fa-pencil"></i></div><span class="app-name">备忘录</span></button>
+            <button class="phone-app" data-app="maps"><div class="app-icon maps"><i class="fas fa-location-dot"></i></div><span class="app-name">行动轨迹</span></button>
+            <button class="phone-app" data-app="music"><div class="app-icon music"><i class="fas fa-music"></i></div><span class="app-name">音乐</span></button>
+            <button class="phone-app" data-app="moments"><div class="app-icon moments"><i class="fas fa-images"></i></div><span class="app-name">朋友圈</span></button>
+        </div>
+        <div class="phone-dock">
+            <button class="phone-app" data-app="wechat"><div class="app-icon wechat"><i class="fab fa-weixin"></i></div><span class="app-name">微信</span></button>
+            <button class="phone-app" data-app="settings"><div class="app-icon settings"><i class="fas fa-cog"></i></div><span class="app-name">设置</span></button>
+        </div>
+    </div>
+
+    <!-- App Pages -->
+    <div class="app-page" id="safariPage"><div class="app-page-header"><button class="back-btn" data-back="safari"><i class="fas fa-chevron-left"></i></button><div class="title">🌐 浏览记录</div><button class="action-btn" id="safariRefresh" title="刷新"><i class="fas fa-rotate"></i></button></div><div class="app-page-body" id="safariBody"></div></div>
+    <div class="app-page" id="notesPage"><div class="app-page-header"><button class="back-btn" data-back="notes"><i class="fas fa-chevron-left"></i></button><div class="title">📝 备忘录</div><button class="action-btn" id="notesRefresh" title="刷新"><i class="fas fa-rotate"></i></button></div><div class="app-page-body" id="notesBody"></div></div>
+    <div class="app-page" id="mapsPage"><div class="app-page-header"><button class="back-btn" data-back="maps"><i class="fas fa-chevron-left"></i></button><div class="title">📍 行动轨迹</div><button class="action-btn" id="mapsRefresh" title="刷新"><i class="fas fa-rotate"></i></button></div><div class="app-page-body" id="mapsBody"></div></div>
+    <div class="app-page" id="musicPage"><div class="app-page-header"><button class="back-btn" data-back="music"><i class="fas fa-chevron-left"></i></button><div class="title">🎵 音乐</div><button class="action-btn" id="musicRefresh" title="刷新歌单"><i class="fas fa-rotate"></i></button></div><div class="app-page-body" id="musicBody"></div></div>
+    <div class="app-page" id="momentsPage"><div class="app-page-header"><button class="back-btn" data-back="moments"><i class="fas fa-chevron-left"></i></button><div class="title">📷 朋友圈</div><button class="action-btn" id="momentsRefresh" title="刷新"><i class="fas fa-rotate"></i></button></div><div class="app-page-body" id="momentsBody"></div></div>
+    <div class="app-page" id="wechatPage"><div class="app-page-header"><button class="back-btn" data-back="wechat"><i class="fas fa-chevron-left"></i></button><div class="title">💬 微信</div><button class="action-btn" id="wechatRefresh" title="刷新"><i class="fas fa-rotate"></i></button></div><div class="app-page-body" id="wechatBody"></div></div>
+    <div class="app-page" id="wxChatPage"><div class="wx-chat-header"><button class="back-btn" id="wxChatBack"><i class="fas fa-chevron-left"></i></button><div class="wx-chat-name" id="wxChatName">联系人</div></div><div class="wx-chat-messages" id="wxChatMessages"></div></div>
+    <div class="app-page" id="settingsPage"><div class="app-page-header"><button class="back-btn" data-back="settings"><i class="fas fa-chevron-left"></i></button><div class="title">⚙️ 设置</div></div><div class="app-page-body" id="settingsBody"></div></div>
+
+    <!-- Moments Profile -->
+    <div class="app-page moments-profile" id="momentsProfilePage">
+        <div class="app-page-header">
+            <button class="back-btn" id="momentsProfileBack"><i class="fas fa-chevron-left"></i></button>
+            <div class="title" id="momentsProfileTitle">朋友圈</div>
+        </div>
+        <div class="profile-cover" id="profileCover">
+            <div class="cover-top">
+                <div class="cover-avatar" id="profileCoverAvatar" style="background-color:#2ed573;"></div>
+                <div class="cover-info">
+                    <div class="cover-name" id="profileCoverName">TA</div>
+                    <div class="cover-moments-label">朋友圈</div>
+                </div>
+            </div>
+        </div>
+        <div class="profile-body" id="profileBody"></div>
+    </div>
+
+    <!-- Role Switch -->
+    <div class="role-switch-overlay" id="roleSwitchOverlay">
+        <div class="role-switch-panel">
+            <h3>切换角色</h3>
+            <p>选择要切换到的角色</p>
+            <div class="rs-list" id="roleSwitchList"></div>
+            <button class="rs-cancel" id="roleSwitchCancel">取消</button>
+        </div>
+    </div>
+
+    <div class="phone-toast hidden" id="phoneToast"></div>
+</div>
+
+<script>
+// ============================================================
+//  📱 他的手机 - 完整版 v3.0
+//  功能：密码系统 | 浏览器 | 备忘录 | 微信 | 音乐 | 轨迹 | 朋友圈
+//  朋友圈全新设计：类似微信朋友圈样式
+//  修复：微信和设置按钮可点击
+// ============================================================
+
+var PHONE_CONFIG = {
+    defaultPassword: '0000',
+    noteCleanupDays: 3,
+    momentsCleanupDays: 15,
+    maxWxMessagesPerContact: 50,
+    dailySongsCount: 10,
+    wxAutoGenInterval: 86400000,
+    ncmApiUrl: 'https://netease-cloud-music-api-five-roan.vercel.app',
+};
+
+var phoneData = {};
+var allRoles = [];
+var currentRoleId = null;
+var lockPin = '';
+var lockAttempts = 0;
+var wxChatTarget = null;
+var isSwitchingRole = false;
+var pendingSwitchRoleId = null;
+var isPhoneUnlocked = false;
+var touchStartX = 0;
+var touchStartY = 0;
+
+function generateId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6); }
+
+function showToast(msg) {
+    var el = document.getElementById('phoneToast');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function() { el.classList.add('hidden'); }, 3000);
+}
+
+function getRoleById(id) { return allRoles.find(function(r) { return r.id === id; }) || null; }
+
+function getRolePassword(roleId) {
+    if (!roleId) return PHONE_CONFIG.defaultPassword;
+    if (!phoneData.passwords) phoneData.passwords = {};
+    return phoneData.passwords[roleId] || PHONE_CONFIG.defaultPassword;
+}
+
+function setRolePassword(roleId, password) {
+    if (!phoneData.passwords) phoneData.passwords = {};
+    phoneData.passwords[roleId] = password;
+    savePhoneData();
+}
+
+function loadPhoneData() {
+    try {
+        var raw = localStorage.getItem('phone_data');
+        if (raw) {
+            phoneData = JSON.parse(raw);
+        } else {
+            phoneData = {
+                passwords: {},
+                notes: {},
+                browserHistory: {},
+                wxContacts: {},
+                wxMessages: {},
+                songs: {},
+                tracks: {},
+                moments: {},
+                lastWxGen: {},
+                lastSongGen: {},
+                lastNoteCleanup: null,
+                lastMomentCleanup: null,
+                desktopWallpaper: {},
+                momentsWallpaper: {},
+                currentRoleId: null,
+                isUnlocked: false,
+            };
+            savePhoneData();
+        }
+    } catch (_) {
+        phoneData = {
+            passwords: {},
+            notes: {},
+            browserHistory: {},
+            wxContacts: {},
+            wxMessages: {},
+            songs: {},
+            tracks: {},
+            moments: {},
+            lastWxGen: {},
+            lastSongGen: {},
+            lastNoteCleanup: null,
+            lastMomentCleanup: null,
+            desktopWallpaper: {},
+            momentsWallpaper: {},
+            currentRoleId: null,
+            isUnlocked: false,
+        };
+        savePhoneData();
+    }
+    if (!phoneData.passwords) phoneData.passwords = {};
+    if (!phoneData.desktopWallpaper) phoneData.desktopWallpaper = {};
+    if (!phoneData.momentsWallpaper) phoneData.momentsWallpaper = {};
+    if (!phoneData.browserHistory) phoneData.browserHistory = {};
+    if (!phoneData.wxContacts) phoneData.wxContacts = {};
+    if (!phoneData.wxMessages) phoneData.wxMessages = {};
+    if (!phoneData.songs) phoneData.songs = {};
+    if (!phoneData.tracks) phoneData.tracks = {};
+    if (!phoneData.moments) phoneData.moments = {};
+    if (!phoneData.lastWxGen) phoneData.lastWxGen = {};
+    if (!phoneData.lastSongGen) phoneData.lastSongGen = {};
+    if (!phoneData.lastNoteCleanup) phoneData.lastNoteCleanup = null;
+    if (!phoneData.lastMomentCleanup) phoneData.lastMomentCleanup = null;
+}
+
+function savePhoneData() {
+    try { localStorage.setItem('phone_data', JSON.stringify(phoneData)); } catch (_) {}
+}
+
+function loadRolesFromMain() {
+    try {
+        var raw = localStorage.getItem('ds_multirole_v2');
+        if (raw) {
+            var data = JSON.parse(raw);
+            allRoles = data.roles || [];
+            return allRoles;
+        }
+    } catch (_) {}
+    allRoles = [];
+    return [];
+}
+
+function extractBirthdayFromMemory(role) {
+    if (!role || !Array.isArray(role.memory)) return null;
+    var memories = role.memory.map(function(m) { return m.text || m; }).filter(function(t) { return t; });
+    var fullText = memories.join(' ');
+    var patterns = [
+        { regex: /生日是?\s*(\d{1,2})月\s*(\d{1,2})日?/, format: function(m) { return String(Number(m[1])).padStart(2,'0') + String(Number(m[2])).padStart(2,'0'); } },
+        { regex: /(\d{1,2})月(\d{1,2})日?\s*生日/, format: function(m) { return String(Number(m[1])).padStart(2,'0') + String(Number(m[2])).padStart(2,'0'); } },
+        { regex: /生日\s*(\d{4})[年.\-\/](\d{1,2})[月.\-\/](\d{1,2})/, format: function(m) { return String(Number(m[2])).padStart(2,'0') + String(Number(m[3])).padStart(2,'0'); } },
+        { regex: /(\d{4})[年.\-\/](\d{1,2})[月.\-\/](\d{1,2})日?\s*生日/, format: function(m) { return String(Number(m[2])).padStart(2,'0') + String(Number(m[3])).padStart(2,'0'); } },
+    ];
+    for (var i = 0; i < patterns.length; i++) {
+        var p = patterns[i];
+        var match = fullText.match(p.regex);
+        if (match) {
+            var result = p.format(match);
+            if (result && result.length === 4 && !isNaN(Number(result))) return result;
+        }
+    }
+    return null;
+}
+
+function updateRolePasswordFromMemory(role) {
+    if (!role) return false;
+    var birthday = extractBirthdayFromMemory(role);
+    if (birthday) {
+        setRolePassword(role.id, birthday);
+        showToast('🔐 ' + role.name + ' 的密码已更新为生日：' + birthday);
+        return true;
+    }
+    return false;
+}
+
+// ===== 数据读写 =====
+function getRoleNotes(roleId) { if (!roleId || !phoneData.notes) return []; return phoneData.notes[roleId] || []; }
+function setRoleNotes(roleId, notes) { if (!roleId) return; if (!phoneData.notes) phoneData.notes = {}; phoneData.notes[roleId] = notes; savePhoneData(); }
+
+function getRoleBrowserHistory(roleId) { if (!roleId || !phoneData.browserHistory) return []; return phoneData.browserHistory[roleId] || []; }
+function setRoleBrowserHistory(roleId, history) { if (!roleId) return; if (!phoneData.browserHistory) phoneData.browserHistory = {}; phoneData.browserHistory[roleId] = history; savePhoneData(); }
+
+function getRoleWxContacts(roleId) { if (!roleId || !phoneData.wxContacts) return []; return phoneData.wxContacts[roleId] || []; }
+function setRoleWxContacts(roleId, contacts) { if (!roleId) return; if (!phoneData.wxContacts) phoneData.wxContacts = {}; phoneData.wxContacts[roleId] = contacts; savePhoneData(); }
+
+function getRoleWxMessages(roleId) { if (!roleId || !phoneData.wxMessages) return {}; return phoneData.wxMessages[roleId] || {}; }
+function setRoleWxMessages(roleId, messages) { if (!roleId) return; if (!phoneData.wxMessages) phoneData.wxMessages = {}; phoneData.wxMessages[roleId] = messages; savePhoneData(); }
+
+function getRoleSongs(roleId) { if (!roleId || !phoneData.songs) return []; return phoneData.songs[roleId] || []; }
+function setRoleSongs(roleId, songs) { if (!roleId) return; if (!phoneData.songs) phoneData.songs = {}; phoneData.songs[roleId] = songs; savePhoneData(); }
+
+function getRoleTracks(roleId) { if (!roleId || !phoneData.tracks) return []; return phoneData.tracks[roleId] || []; }
+function setRoleTracks(roleId, tracks) { if (!roleId) return; if (!phoneData.tracks) phoneData.tracks = {}; phoneData.tracks[roleId] = tracks; savePhoneData(); }
+
+function getRoleMoments(roleId) { if (!roleId || !phoneData.moments) return []; return phoneData.moments[roleId] || []; }
+function setRoleMoments(roleId, moments) { if (!roleId) return; if (!phoneData.moments) phoneData.moments = {}; phoneData.moments[roleId] = moments; savePhoneData(); }
+
+function getRoleLastWxGen(roleId) { if (!roleId || !phoneData.lastWxGen) return null; return phoneData.lastWxGen[roleId] || null; }
+function setRoleLastWxGen(roleId, time) { if (!roleId) return; if (!phoneData.lastWxGen) phoneData.lastWxGen = {}; phoneData.lastWxGen[roleId] = time; savePhoneData(); }
+
+function getRoleLastSongGen(roleId) { if (!roleId || !phoneData.lastSongGen) return null; return phoneData.lastSongGen[roleId] || null; }
+function setRoleLastSongGen(roleId, time) { if (!roleId) return; if (!phoneData.lastSongGen) phoneData.lastSongGen = {}; phoneData.lastSongGen[roleId] = time; savePhoneData(); }
+
+function getRoleDesktopWallpaper(roleId) { if (!roleId || !phoneData.desktopWallpaper) return ''; return phoneData.desktopWallpaper[roleId] || ''; }
+function setRoleDesktopWallpaper(roleId, url) { if (!roleId) return; if (!phoneData.desktopWallpaper) phoneData.desktopWallpaper = {}; phoneData.desktopWallpaper[roleId] = url; savePhoneData(); }
+
+function getRoleMomentsWallpaper(roleId) { if (!roleId || !phoneData.momentsWallpaper) return ''; return phoneData.momentsWallpaper[roleId] || ''; }
+function setRoleMomentsWallpaper(roleId, url) { if (!roleId) return; if (!phoneData.momentsWallpaper) phoneData.momentsWallpaper = {}; phoneData.momentsWallpaper[roleId] = url; savePhoneData(); }
+
+// ===== 锁屏 =====
+function renderLockScreen(roleId, isSwitch) {
+    var role = roleId ? getRoleById(roleId) : getCurrentPhoneRole();
+    if (!role) {
+        document.getElementById('lockName').textContent = '未绑定';
+        document.getElementById('lockAvatar').style.backgroundImage = '';
+        document.getElementById('lockAvatar').style.backgroundColor = '#2ed573';
+        return;
+    }
+
+    var now = new Date();
+    var hours = String(now.getHours()).padStart(2, '0');
+    var mins = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('lockTime').textContent = hours + ':' + mins;
+    document.getElementById('lockDate').textContent = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
+
+    var avatarEl = document.getElementById('lockAvatar');
+    if (role.avatar) {
+        avatarEl.style.backgroundImage = 'url(' + role.avatar + ')';
+        avatarEl.style.backgroundSize = 'cover';
+        avatarEl.style.backgroundPosition = 'center';
+        avatarEl.style.backgroundColor = 'transparent';
+    } else {
+        avatarEl.style.backgroundImage = '';
+        avatarEl.style.backgroundColor = '#2ed573';
+    }
+    document.getElementById('lockName').textContent = role.name;
+
+    lockPin = '';
+    lockAttempts = 0;
+    updateLockDots();
+    document.getElementById('lockError').textContent = '';
+    document.getElementById('lockKeypad').style.pointerEvents = 'auto';
+    document.getElementById('lockScreen').classList.remove('unlocked');
+}
+
+function updateLockDots() {
+    var dots = document.querySelectorAll('#lockDots .dot');
+    dots.forEach(function(dot, i) {
+        dot.className = 'dot';
+        if (i < lockPin.length) dot.classList.add('filled');
+    });
+}
+
+function handleLockKey(key) {
+    if (key === 'delete') {
+        lockPin = lockPin.slice(0, -1);
+        updateLockDots();
+        document.getElementById('lockError').textContent = '';
+        return;
+    }
+    if (lockPin.length >= 4) return;
+    lockPin += key;
+    updateLockDots();
+
+    if (lockPin.length === 4) {
+        var targetRoleId = pendingSwitchRoleId || currentRoleId;
+        var correctPassword = getRolePassword(targetRoleId);
+
+        if (lockPin === correctPassword) {
+            document.getElementById('lockScreen').classList.add('unlocked');
+            document.getElementById('lockError').textContent = '';
+            lockPin = '';
+            updateLockDots();
+
+            if (pendingSwitchRoleId) {
+                currentRoleId = pendingSwitchRoleId;
+                pendingSwitchRoleId = null;
+                isSwitchingRole = false;
+                phoneData.currentRoleId = currentRoleId;
+                savePhoneData();
+                var newRole = getRoleById(currentRoleId);
+                if (newRole) {
+                    renderLockScreen(currentRoleId, false);
+                    showToast('✅ 已切换至「' + newRole.name + '」的手机');
+                }
+            } else {
+                isPhoneUnlocked = true;
+                phoneData.currentRoleId = currentRoleId;
+                phoneData.isUnlocked = true;
+                savePhoneData();
+            }
+
+            var role = getCurrentPhoneRole();
+            if (role) {
+                updateRolePasswordFromMemory(role);
+                generateAllData(role);
+                loadPhoneHome();
+                refreshAllApps();
+            }
+        } else {
+            lockAttempts++;
+            document.getElementById('lockError').textContent = '密码错误' + (lockAttempts >= 3 ? '，请稍后再试' : '');
+            var dots = document.querySelectorAll('#lockDots .dot');
+            dots.forEach(function(d) { d.classList.add('wrong'); });
+            setTimeout(function() { dots.forEach(function(d) { d.classList.remove('wrong'); }); }, 400);
+            setTimeout(function() {
+                lockPin = '';
+                updateLockDots();
+                if (lockAttempts >= 3) {
+                    document.getElementById('lockError').textContent = '⏳ 请等待30秒后再试';
+                    document.getElementById('lockKeypad').style.pointerEvents = 'none';
+                    setTimeout(function() {
+                        document.getElementById('lockKeypad').style.pointerEvents = 'auto';
+                        document.getElementById('lockError').textContent = '';
+                        lockAttempts = 0;
+                    }, 30000);
+                }
+            }, 500);
+        }
+    }
+}
+
+// ===== 角色选择 =====
+function renderEntryScreen() {
+    var list = document.getElementById('entryRoleList');
+    list.innerHTML = '';
+    loadRolesFromMain();
+    if (allRoles.length === 0) {
+        list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px 0;font-size:14px;">暂无角色，请先在主应用创建</div>';
+        return;
+    }
+    allRoles.forEach(function(role) {
+        var btn = document.createElement('button');
+        btn.className = 'entry-role-btn';
+        var avatarStyle = role.avatar ? 'background-image:url(' + role.avatar + ');background-size:cover;background-position:center;' : 'background-color:#2ed573;';
+        var hasPassword = getRolePassword(role.id) !== PHONE_CONFIG.defaultPassword;
+        btn.innerHTML = '<div class="er-avatar" style="' + avatarStyle + '"></div>' +
+            '<div class="er-info"><div class="er-name">' + role.name + '</div><div class="er-hint">' + (hasPassword ? '🔐 已设置密码' : '🔓 默认密码 0000') + '</div></div>' +
+            '<div class="er-lock"><i class="fas fa-chevron-right"></i></div>';
+        btn.addEventListener('click', function() {
+            currentRoleId = role.id;
+            phoneData.currentRoleId = currentRoleId;
+            savePhoneData();
+            document.getElementById('entryOverlay').classList.add('hidden');
+            updateRolePasswordFromMemory(role);
+            isPhoneUnlocked = false;
+            renderLockScreen(role.id, false);
+        });
+        list.appendChild(btn);
+    });
+}
+
+function getCurrentPhoneRole() {
+    if (currentRoleId) {
+        var role = getRoleById(currentRoleId);
+        if (role) return role;
+    }
+    if (phoneData.currentRoleId) {
+        var role2 = getRoleById(phoneData.currentRoleId);
+        if (role2) {
+            currentRoleId = phoneData.currentRoleId;
+            return role2;
+        }
+    }
+    if (allRoles.length > 0) {
+        currentRoleId = allRoles[0].id;
+        phoneData.currentRoleId = currentRoleId;
+        savePhoneData();
+        return allRoles[0];
+    }
+    return null;
+}
+
+function loadPhoneHome() {
+    var role = getCurrentPhoneRole();
+    if (!role) {
+        document.getElementById('phAvatar').style.backgroundImage = '';
+        document.getElementById('phAvatar').style.backgroundColor = '#2ed573';
+        document.getElementById('phName').textContent = '未绑定';
+        document.getElementById('phStatus').textContent = '请先在主应用创建角色';
+        return;
+    }
+
+    var avatarEl = document.getElementById('phAvatar');
+    if (role.avatar) {
+        avatarEl.style.backgroundImage = 'url(' + role.avatar + ')';
+        avatarEl.style.backgroundSize = 'cover';
+        avatarEl.style.backgroundPosition = 'center';
+        avatarEl.style.backgroundColor = 'transparent';
+    } else {
+        avatarEl.style.backgroundImage = '';
+        avatarEl.style.backgroundColor = '#2ed573';
+    }
+    document.getElementById('phName').textContent = role.name;
+    document.getElementById('phStatus').textContent = '点击切换角色';
+
+    var lockAvatar = document.getElementById('lockAvatar');
+    if (role.avatar) {
+        lockAvatar.style.backgroundImage = 'url(' + role.avatar + ')';
+        lockAvatar.style.backgroundSize = 'cover';
+        lockAvatar.style.backgroundPosition = 'center';
+        lockAvatar.style.backgroundColor = 'transparent';
+    } else {
+        lockAvatar.style.backgroundImage = '';
+        lockAvatar.style.backgroundColor = '#2ed573';
+    }
+    document.getElementById('lockName').textContent = role.name;
+
+    var wallpaper = getRoleDesktopWallpaper(role.id);
+    var home = document.getElementById('phoneHome');
+    if (wallpaper && wallpaper.startsWith('data:image')) {
+        home.style.backgroundImage = 'url(' + wallpaper + ')';
+        home.style.backgroundSize = 'cover';
+        home.style.backgroundPosition = 'center';
+        home.style.backgroundColor = 'transparent';
+    } else {
+        home.style.backgroundImage = 'none';
+        home.style.backgroundColor = '#000';
+    }
+
+    updateStatusTime();
+    if (!window._statusInterval) {
+        window._statusInterval = setInterval(updateStatusTime, 30000);
+    }
+}
+
+function updateStatusTime() {
+    var now = new Date();
+    var hours = String(now.getHours()).padStart(2, '0');
+    var mins = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('statusTime').textContent = hours + ':' + mins;
+}
+
+// ===== 切换角色 =====
+function startRoleSwitch() {
+    var list = document.getElementById('roleSwitchList');
+    list.innerHTML = '';
+    var current = getCurrentPhoneRole();
+    allRoles.forEach(function(role) {
+        if (role.id === current.id) return;
+        var item = document.createElement('div');
+        item.className = 'rs-item';
+        var avatarStyle = role.avatar ? 'background-image:url(' + role.avatar + ');background-size:cover;background-position:center;' : 'background-color:#2ed573;';
+        var hasPassword = getRolePassword(role.id) !== PHONE_CONFIG.defaultPassword;
+        item.innerHTML = '<div class="rs-avatar" style="' + avatarStyle + '"></div><span class="rs-name">' + role.name + ' <span style="font-size:11px;color:rgba(255,255,255,0.2);">' + (hasPassword ? '🔐' : '') + '</span></span>';
+        item.addEventListener('click', function() {
+            document.getElementById('roleSwitchOverlay').classList.remove('active');
+            pendingSwitchRoleId = role.id;
+            isSwitchingRole = true;
+            renderLockScreen(role.id, true);
+            showToast('🔐 请输入 ' + role.name + ' 的密码');
+        });
+        list.appendChild(item);
+    });
+    document.getElementById('roleSwitchOverlay').classList.add('active');
+}
+
+// ===== 生成数据 =====
+function generateAllData(role) {
+    if (!role) return;
+    generateBrowserHistory(role);
+    generateNotes(role);
+    generateWxContacts(role);
+    generateWxMessages(role);
+    syncMainChatToWx(role);
+    generateSongsFromNCM(role);
+    generateTracks(role);
+    generateMoments(role);
+}
+
+// ===== 浏览器 =====
+function generateBrowserHistory(role) {
+    if (!role) return;
+    var persona = (role.persona || '').toLowerCase();
+    var bg = (role.background || '').toLowerCase();
+
+    var queries = [];
+    var isCold = persona.indexOf('冷') !== -1 || persona.indexOf('高冷') !== -1 || persona.indexOf('沉默') !== -1;
+    var isGentle = persona.indexOf('温柔') !== -1 || persona.indexOf('暖') !== -1 || persona.indexOf('细腻') !== -1;
+    var isArt = persona.indexOf('音乐') !== -1 || persona.indexOf('艺术') !== -1 || persona.indexOf('创作') !== -1 || bg.indexOf('琴') !== -1 || bg.indexOf('画') !== -1;
+    var isWork = bg.indexOf('公司') !== -1 || bg.indexOf('上班') !== -1 || persona.indexOf('工作') !== -1;
+    var isBook = bg.indexOf('书') !== -1 || bg.indexOf('阅读') !== -1 || persona.indexOf('阅读') !== -1;
+
+    if (isCold) {
+        queries = ['怎么让人对你上心', '冷漠的人怎么表达爱', '为什么总是独来独往', '如何变得更有温度', '喜欢一个人会有什么表现', '沉默的人在想什么'];
+    } else if (isGentle) {
+        queries = ['怎么更好地关心别人', '温柔的人有哪些特质', '如何让关系更亲密', '倾听是最好的安慰吗', '怎么表达爱意', '让人感到温暖的细节'];
+    } else if (isArt) {
+        queries = ['音乐如何治愈人心', '艺术家的内心世界', '创作灵感从哪里来', '最打动人的一首歌', '艺术与生活的关系', '如何把情感写成歌'];
+    } else if (isWork) {
+        queries = ['如何提高工作效率', '职场人际关系处理', '工作与生活的平衡', '职业发展规划', '怎么应对工作压力'];
+    } else if (isBook) {
+        queries = ['好书推荐', '阅读如何改变生活', '文学的魅力', '值得一读的经典', '读书笔记怎么写'];
+    } else {
+        queries = ['如何与人相处', '怎么表达真实的自己', '关系中的安全感从哪里来', '如何让生活更有意义', '每天都在想什么', '怎么判断一段感情'];
+    }
+
+    var shuffled = queries.slice().sort(function() { return Math.random() - 0.5; });
+    var tags = ['日常', '情感', '生活', '成长', '关系', '内心'];
+    var history = shuffled.slice(0, 5).map(function(q, idx) {
+        return { query: q, time: new Date(Date.now() - (idx + 1) * 600000).toLocaleString(), tag: tags[idx % tags.length] };
+    });
+    setRoleBrowserHistory(role.id, history);
+}
+
+// ===== 备忘录 =====
+function generateNotes(role) {
+    if (!role) return;
+    var messages = role.messages || [];
+    var recentMsgs = messages.slice(-20);
+    var noteTexts = [];
+    var persona = (role.persona || '').toLowerCase();
+    var bg = (role.background || '').toLowerCase();
+
+    var userMsgs = recentMsgs.filter(function(m) { return m.role === 'user'; }).map(function(m) { return m.content; }).join(' ');
+
+    var patterns = [
+        { regex: /(?:我|今天|明天|后天|下周|这周)(?:要|想|打算|准备|需要)(.+?)[。！？,.!?]/, label: '待办' },
+        { regex: /(?:记住|记得|别忘了|不要忘记)(.+?)[。！？,.!?]/, label: '重要', important: true },
+        { regex: /(?:纪念日|在一起|一周年|第\d+年)(?:是|的?)(.+?)[。！？,.!?]/, label: '重要', important: true },
+    ];
+    for (var i = 0; i < patterns.length; i++) {
+        var match = userMsgs.match(patterns[i].regex);
+        if (match) {
+            noteTexts.push({ text: match[1].trim(), label: patterns[i].label, important: patterns[i].important || false });
+        }
+    }
+
+    var birthday = extractBirthdayFromMemory(role);
+    if (birthday) {
+        var month = birthday.substring(0,2);
+        var day = birthday.substring(2,4);
+        noteTexts.push({ text: '🎂 用户生日：' + month + '月' + day + '日', label: '重要', important: true });
+    }
+
+    var thoughts = [];
+    if (bg.indexOf('琴') !== -1 || bg.indexOf('音乐') !== -1 || persona.indexOf('音乐') !== -1) {
+        thoughts = ['🎵 今天练琴的时候想到了新的旋律，想分享给TA', '📝 下个月的演出曲目：肖邦夜曲、德彪西月光'];
+    } else if (persona.indexOf('温柔') !== -1 || persona.indexOf('暖') !== -1) {
+        thoughts = ['💭 今天TA好像不太开心，记得多关心一下', '📝 周末想带TA去那家新开的咖啡馆'];
+    } else if (persona.indexOf('冷') !== -1 || persona.indexOf('高冷') !== -1) {
+        thoughts = ['💭 有些话还是说不出口，先写下来吧', '📝 今晚的月色很好，可惜没有人一起看'];
+    } else if (bg.indexOf('公司') !== -1 || bg.indexOf('上班') !== -1) {
+        thoughts = ['💭 今天的工作汇报要准备好', '📝 下周的项目截止，要抓紧了'];
+    } else {
+        thoughts = ['💭 今天想了很多，关于我们之间的事', '📝 记录一些瞬间，怕以后忘了'];
+    }
+    thoughts.forEach(function(t) {
+        noteTexts.push({ text: t, label: '思考' });
+    });
+
+    var dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    var dayIndex = new Date().getDay();
+    var todayName = dayNames[dayIndex === 0 ? 6 : dayIndex - 1];
+    noteTexts.push({ text: '📋 ' + todayName + '待办：整理房间', label: '日常' });
+
+    var existing = getRoleNotes(role.id);
+    var existingTexts = existing.map(function(n) { return n.text; });
+    noteTexts.forEach(function(n) {
+        if (!existingTexts.some(function(e) { return e.indexOf(n.text.substring(0, 10)) !== -1; })) {
+            existing.push({
+                id: generateId(),
+                text: n.text,
+                label: n.label || '日常',
+                important: n.important || false,
+                createdAt: new Date().toISOString(),
+            });
+        }
+    });
+
+    var threeDaysAgo = Date.now() - PHONE_CONFIG.noteCleanupDays * 86400000;
+    var important = existing.filter(function(n) { return n.important; });
+    var regular = existing.filter(function(n) {
+        return !n.important && new Date(n.createdAt).getTime() > threeDaysAgo;
+    });
+    var cleaned = important.concat(regular);
+    if (cleaned.length > 100) cleaned = cleaned.slice(-100);
+    setRoleNotes(role.id, cleaned);
+}
+
+// ===== 微信 =====
+function generateWxContacts(role) {
+    if (!role) return;
+    var contacts = [];
+    var current = getCurrentPhoneRole();
+    if (current) {
+        contacts.push({ id: 'wx_me', name: current.name, avatar: current.avatar || '', isMe: true, isUser: false });
+    }
+
+    var bgText = (role.persona || '') + ' ' + (role.background || '') + ' ' + (role.extra || '');
+    var patterns = [
+        /好友(?:叫|是|：|\s+)([^\s,，。；;、]{2,4})/,
+        /好朋友(?:叫|是|：|\s+)([^\s,，。；;、]{2,4})/,
+        /闺蜜(?:叫|是|：|\s+)([^\s,，。；;、]{2,4})/,
+        /兄弟(?:叫|是|：|\s+)([^\s,，。；;、]{2,4})/,
+        /室友(?:叫|是|：|\s+)([^\s,，。；;、]{2,4})/,
+        /家人(?:叫|是|：|\s+)([^\s,，。；;、]{2,4})/,
+        /同学(?:叫|是|：|\s+)([^\s,，。；;、]{2,4})/,
+        /(?:妈妈|爸爸|姐姐|妹妹|哥哥|弟弟)(?:叫|是|：|\s+)([^\s,，。；;、]{2,4})/,
+    ];
+    var extractedNames = [];
+    patterns.forEach(function(p) {
+        var match = bgText.match(p);
+        if (match && match[1] && match[1].length >= 2 && match[1].length <= 4) {
+            if (extractedNames.indexOf(match[1]) === -1 && match[1] !== role.name) {
+                extractedNames.push(match[1]);
+            }
+        }
+    });
+
+    extractedNames.slice(0, 4).forEach(function(name) {
+        contacts.push({ id: 'wx_' + generateId(), name: name, avatar: '', isMe: false, isUser: false });
+    });
+
+    if (!contacts.some(function(c) { return c.isUser; })) {
+        contacts.push({ id: 'wx_user', name: '你', avatar: '', isMe: false, isUser: true });
+    }
+
+    setRoleWxContacts(role.id, contacts);
+}
+
+function generateWxMessages(role) {
+    if (!role) return;
+    var now = Date.now();
+    var lastGen = getRoleLastWxGen(role.id);
+    if (lastGen && now - new Date(lastGen).getTime() < PHONE_CONFIG.wxAutoGenInterval) return;
+
+    var contacts = getRoleWxContacts(role.id).filter(function(c) { return !c.isMe; });
+    if (contacts.length === 0) return;
+
+    var persona = (role.persona || '').toLowerCase();
+    var messages = getRoleWxMessages(role.id);
+
+    var templates = [
+        '今天过得怎么样？', '要不要一起吃饭？', '周末有空吗？', '最近在忙什么呢？',
+        '我买了你喜欢的东西！', '今天好累啊...', '晚安，早点休息', '好想你啊',
+        '我发现一家超棒的店！', '你上次说的那件事，我考虑好了', '明天见！', '记得想我',
+        '刚看到个东西，第一个想到你', '什么时候有空见一面？', '最近还好吗？'
+    ];
+
+    if (persona.indexOf('温柔') !== -1) {
+        templates = ['好想你呀 💕', '晚安，做个好梦 🌙', '今天天气很好，适合见面', '你吃饭了吗？'];
+    }
+    if (persona.indexOf('冷') !== -1 || persona.indexOf('高冷') !== -1) {
+        templates = ['嗯', '好的', '知道了', '随便', '你决定', '...', '还行', '没事'];
+    }
+    if (persona.indexOf('音乐') !== -1 || persona.indexOf('琴') !== -1) {
+        templates = ['今天写了一段新旋律', '想让你听听这首歌', '周末有演出，来吗？', '琴房等你'];
+    }
+
+    contacts.forEach(function(contact) {
+        var key = contact.id;
+        if (!messages[key]) messages[key] = [];
+        var msgs = messages[key];
+        var count = 1 + Math.floor(Math.random() * 2);
+        var shuffled = templates.slice().sort(function() { return Math.random() - 0.5; });
+        for (var i = 0; i < Math.min(count, shuffled.length); i++) {
+            msgs.push({
+                id: generateId(),
+                sender: 'other',
+                text: shuffled[i],
+                time: new Date(now - (i + 1) * 600000).toISOString(),
+                read: Math.random() > 0.3,
+                fromMain: false,
+            });
+        }
+        if (msgs.length > PHONE_CONFIG.maxWxMessagesPerContact) {
+            messages[key] = msgs.slice(-PHONE_CONFIG.maxWxMessagesPerContact);
+        }
+    });
+
+    setRoleWxMessages(role.id, messages);
+    setRoleLastWxGen(role.id, new Date().toISOString());
+}
+
+function syncMainChatToWx(role) {
+    if (!role) return;
+    var key = 'wx_user';
+    var messages = getRoleWxMessages(role.id);
+    if (!messages[key]) messages[key] = [];
+
+    var mainMsgs = role.messages || [];
+    var wxMsgs = messages[key];
+    var lastWxTime = wxMsgs.length > 0 ? new Date(wxMsgs[wxMsgs.length - 1].time).getTime() : 0;
+    var newMsgs = mainMsgs.filter(function(m) {
+        var t = new Date(m.time || Date.now()).getTime();
+        return t > lastWxTime && m.role !== 'system';
+    });
+
+    newMsgs.slice(0, 15).forEach(function(m) {
+        wxMsgs.push({
+            id: generateId(),
+            sender: m.role === 'user' ? 'other' : 'me',
+            text: m.content,
+            time: m.time || new Date().toISOString(),
+            read: true,
+            fromMain: true,
+        });
+    });
+
+    if (wxMsgs.length > PHONE_CONFIG.maxWxMessagesPerContact) {
+        messages[key] = wxMsgs.slice(-PHONE_CONFIG.maxWxMessagesPerContact);
+    }
+    setRoleWxMessages(role.id, messages);
+}
+
+// ===== 网易云音乐 =====
+function searchMusicFromNCM(keyword) {
+    var url = PHONE_CONFIG.ncmApiUrl + '/search?keywords=' + encodeURIComponent(keyword) + '&limit=30';
+    return fetch(url)
+        .then(function(res) {
+            if (!res.ok) throw new Error('API请求失败');
+            return res.json();
+        })
+        .then(function(data) {
+            if (data.code === 200 && data.result && data.result.songs) {
+                return data.result.songs.map(function(s) {
+                    return {
+                        name: s.name,
+                        artist: s.artists.map(function(a) { return a.name; }).join(' / '),
+                        id: s.id,
+                        duration: Math.floor(s.duration / 1000),
+                    };
+                });
+            }
+            throw new Error('搜索无结果');
+        });
+}
+
+function generateSongsFromNCM(role) {
+    if (!role) return;
+    var now = Date.now();
+    var lastGen = getRoleLastSongGen(role.id);
+    if (lastGen && now - new Date(lastGen).getTime() < 3600000) {
+        var cached = getRoleSongs(role.id);
+        if (cached && cached.length > 0) return;
+    }
+
+    var persona = (role.persona || '').toLowerCase();
+    var bg = (role.background || '').toLowerCase();
+
+    var keywords = [];
+    var isGentle = persona.indexOf('温柔') !== -1 || persona.indexOf('暖') !== -1;
+    var isCold = persona.indexOf('冷') !== -1 || persona.indexOf('高冷') !== -1;
+    var isArt = persona.indexOf('音乐') !== -1 || persona.indexOf('艺术') !== -1 || bg.indexOf('琴') !== -1;
+
+    if (isGentle) {
+        keywords = ['温暖治愈', '温柔情歌', '安静民谣', '钢琴曲', '陪伴'];
+    } else if (isCold) {
+        keywords = ['空灵音乐', '氛围感', '纯音乐', '深沉', '孤独'];
+    } else if (isArt) {
+        keywords = ['古典音乐', '爵士', '艺术歌曲', '钢琴', '交响乐'];
+    } else {
+        keywords = ['华语流行', '经典老歌', '治愈系', '轻音乐', '民谣'];
+    }
+
+    var messages = role.messages || [];
+    var allText = messages.map(function(m) { return m.content; }).join(' ');
+    var mentionedSongs = [];
+    var songPatterns = /《([^》]+)》/g;
+    var match;
+    while ((match = songPatterns.exec(allText)) !== null) {
+        if (match[1]) mentionedSongs.push(match[1]);
+    }
+
+    var loadingEl = document.getElementById('musicBody');
+    if (loadingEl && document.getElementById('musicPage').classList.contains('open')) {
+        loadingEl.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner"></i>正在搜索推荐歌曲...</div>';
+    }
+
+    var allResults = [];
+    var searchTasks = [];
+    mentionedSongs.slice(0, 3).forEach(function(song) {
+        searchTasks.push({ keyword: song, priority: 1 });
+    });
+    keywords.slice(0, 3).forEach(function(kw) {
+        searchTasks.push({ keyword: kw, priority: 0 });
+    });
+
+    var tasks = searchTasks.slice(0, 5).map(function(task) {
+        return searchMusicFromNCM(task.keyword)
+            .then(function(songs) {
+                if (songs && songs.length > 0) {
+                    songs.forEach(function(s) {
+                        if (!allResults.some(function(r) { return r.name === s.name && r.artist === s.artist; })) {
+                            allResults.push(s);
+                        }
+                    });
+                }
+            })
+            .catch(function(err) {
+                console.log('搜索失败:', task.keyword, err.message);
+                return [];
+            });
+    });
+
+    Promise.all(tasks).then(function() {
+        if (allResults.length < PHONE_CONFIG.dailySongsCount) {
+            var fallbackSongs = getFallbackSongs(role);
+            fallbackSongs.forEach(function(s) {
+                if (!allResults.some(function(r) { return r.name === s.name && r.artist === s.artist; })) {
+                    allResults.push(s);
+                }
+            });
+        }
+
+        var shuffled = allResults.slice().sort(function() { return Math.random() - 0.5; });
+        var songs = shuffled.slice(0, PHONE_CONFIG.dailySongsCount).map(function(s, idx) {
+            return {
+                id: generateId(),
+                name: s.name,
+                artist: s.artist || '未知歌手',
+                style: '推荐',
+                duration: s.duration ? String(Math.floor(s.duration / 60)) + ':' + String(s.duration % 60).padStart(2, '0') : '3:30',
+                index: idx + 1,
+                fromNCM: true,
+            };
+        });
+
+        setRoleSongs(role.id, songs);
+        setRoleLastSongGen(role.id, new Date().toISOString());
+        renderMusic();
+        showToast('🎵 歌单已更新');
+    }).catch(function() {
+        var fallbackSongs = getFallbackSongs(role);
+        var songs = fallbackSongs.map(function(s, idx) {
+            return {
+                id: generateId(),
+                name: s.name,
+                artist: s.artist || '未知歌手',
+                style: '推荐',
+                duration: '3:30',
+                index: idx + 1,
+                fromNCM: false,
+            };
+        });
+        setRoleSongs(role.id, songs);
+        setRoleLastSongGen(role.id, new Date().toISOString());
+        renderMusic();
+        showToast('⚠️ 网易云连接失败，使用预设歌单');
+    });
+}
+
+function getFallbackSongs(role) {
+    var persona = (role.persona || '').toLowerCase();
+    var bg = (role.background || '').toLowerCase();
+    
+    var isGentle = persona.indexOf('温柔') !== -1 || persona.indexOf('暖') !== -1;
+    var isCold = persona.indexOf('冷') !== -1 || persona.indexOf('高冷') !== -1;
+    var isArt = persona.indexOf('音乐') !== -1 || persona.indexOf('艺术') !== -1 || bg.indexOf('琴') !== -1;
+    
+    if (isGentle) {
+        return [
+            { name: '小幸运', artist: '田馥甄' },
+            { name: '晴天', artist: '周杰伦' },
+            { name: '起风了', artist: '买辣椒也用券' },
+            { name: '因为爱情', artist: '陈奕迅/王菲' },
+            { name: '暖暖', artist: '梁静茹' },
+            { name: '安静', artist: '周杰伦' },
+            { name: '红豆', artist: '王菲' },
+            { name: '童话', artist: '光良' },
+            { name: '告白气球', artist: '周杰伦' },
+            { name: '那些年', artist: '胡夏' },
+        ];
+    } else if (isCold) {
+        return [
+            { name: '夜曲', artist: '周杰伦' },
+            { name: '搁浅', artist: '周杰伦' },
+            { name: '浮夸', artist: '陈奕迅' },
+            { name: 'K歌之王', artist: '陈奕迅' },
+            { name: '孤独患者', artist: '陈奕迅' },
+            { name: '像风一样', artist: '薛之谦' },
+            { name: '一半', artist: '薛之谦' },
+            { name: '演员', artist: '薛之谦' },
+            { name: '生而为人', artist: '尚士达' },
+            { name: '像我这样的人', artist: '毛不易' },
+        ];
+    } else if (isArt) {
+        return [
+            { name: 'River Flows In You', artist: 'Yiruma' },
+            { name: 'Kiss The Rain', artist: 'Yiruma' },
+            { name: '天空之城', artist: '久石让' },
+            { name: '月光', artist: '德彪西' },
+            { name: '夜曲', artist: '肖邦' },
+            { name: 'G小调赋格', artist: '巴赫' },
+            { name: '蓝色多瑙河', artist: '施特劳斯' },
+            { name: '卡农', artist: '帕赫贝尔' },
+            { name: '致爱丽丝', artist: '贝多芬' },
+            { name: '梦幻曲', artist: '舒曼' },
+        ];
+    } else {
+        return [
+            { name: '晴天', artist: '周杰伦' },
+            { name: '小幸运', artist: '田馥甄' },
+            { name: '起风了', artist: '买辣椒也用券' },
+            { name: '光年之外', artist: '邓紫棋' },
+            { name: '刚好遇见你', artist: '李玉刚' },
+            { name: '因为爱情', artist: '陈奕迅/王菲' },
+            { name: '红豆', artist: '王菲' },
+            { name: '十年', artist: '陈奕迅' },
+            { name: '夜曲', artist: '周杰伦' },
+            { name: '搁浅', artist: '周杰伦' },
+        ];
+    }
+}
+
+// ===== 行动轨迹 =====
+function generateTracks(role) {
+    if (!role) return;
+    var persona = (role.persona || '').toLowerCase();
+    var bg = (role.background || '').toLowerCase();
+
+    var isMusic = bg.indexOf('琴') !== -1 || bg.indexOf('音乐') !== -1 || persona.indexOf('音乐') !== -1;
+    var isBook = bg.indexOf('书') !== -1 || bg.indexOf('阅读') !== -1 || persona.indexOf('阅读') !== -1;
+    var isArt = bg.indexOf('画') !== -1 || bg.indexOf('设计') !== -1 || persona.indexOf('艺术') !== -1;
+    var isCold = persona.indexOf('冷') !== -1 || persona.indexOf('高冷') !== -1;
+    var isWork = bg.indexOf('公司') !== -1 || bg.indexOf('上班') !== -1 || persona.indexOf('工作') !== -1;
+    var isGentle = persona.indexOf('温柔') !== -1 || persona.indexOf('暖') !== -1;
+
+    var tracks;
+    if (isMusic) {
+        tracks = [
+            { title: '家', desc: '起床，准备出发', time: '07:30' },
+            { title: '琴房', desc: '练琴（肖邦夜曲）', time: '09:00' },
+            { title: '咖啡厅', desc: '休息，听 demo', time: '12:00' },
+            { title: '唱片店', desc: '淘黑胶唱片', time: '14:30' },
+            { title: '音乐厅', desc: '排练', time: '17:30' },
+            { title: '家', desc: '回家，整理乐谱', time: '21:00' },
+        ];
+    } else if (isBook) {
+        tracks = [
+            { title: '家', desc: '出发去图书馆', time: '07:30' },
+            { title: '图书馆', desc: '阅读', time: '09:00' },
+            { title: '书店', desc: '淘书，喝咖啡', time: '12:00' },
+            { title: '公园', desc: '散步，思考', time: '14:30' },
+            { title: '家', desc: '回家，写读书笔记', time: '17:30' },
+        ];
+    } else if (isArt) {
+        tracks = [
+            { title: '家', desc: '出发去画室', time: '07:30' },
+            { title: '画室', desc: '创作', time: '09:00' },
+            { title: '美术馆', desc: '看展 / 寻找灵感', time: '12:00' },
+            { title: '公园', desc: '写生', time: '14:30' },
+            { title: '家', desc: '回家，整理作品', time: '17:30' },
+        ];
+    } else if (isCold) {
+        tracks = [
+            { title: '家', desc: '出发', time: '07:30' },
+            { title: '公司', desc: '工作', time: '09:00' },
+            { title: '健身房', desc: '独处，锻炼', time: '18:00' },
+            { title: '家', desc: '回家', time: '20:00' },
+        ];
+    } else if (isWork) {
+        tracks = [
+            { title: '家', desc: '出发去公司', time: '07:30' },
+            { title: '公司', desc: '工作', time: '09:00' },
+            { title: '餐厅', desc: '午餐', time: '12:00' },
+            { title: '公司', desc: '继续工作', time: '13:30' },
+            { title: '咖啡厅', desc: '下班后放松', time: '17:30' },
+            { title: '家', desc: '回家', time: '19:00' },
+        ];
+    } else if (isGentle) {
+        tracks = [
+            { title: '家', desc: '出发', time: '07:30' },
+            { title: '咖啡厅', desc: '读书', time: '09:00' },
+            { title: '公园', desc: '散步', time: '12:00' },
+            { title: '书店', desc: '选书', time: '14:30' },
+            { title: '家', desc: '回家，准备晚餐', time: '17:30' },
+        ];
+    } else {
+        tracks = [
+            { title: '家', desc: '出发', time: '07:30' },
+            { title: '学校', desc: '上课', time: '09:00' },
+            { title: '图书馆', desc: '自习', time: '12:00' },
+            { title: '咖啡厅', desc: '休息', time: '14:30' },
+            { title: '家', desc: '回家', time: '17:30' },
+        ];
+    }
+
+    setRoleTracks(role.id, tracks);
+}
+
+// ===== 朋友圈（全新设计） =====
+function generateMoments(role) {
+    if (!role) return;
+    var now = Date.now();
+    var moments = getRoleMoments(role.id);
+    var lastCleanup = phoneData.lastMomentCleanup ? new Date(phoneData.lastMomentCleanup).getTime() : 0;
+    if (now - lastCleanup > PHONE_CONFIG.momentsCleanupDays * 86400000) {
+        moments = moments.filter(function(m) {
+            return new Date(m.createdAt).getTime() > now - PHONE_CONFIG.momentsCleanupDays * 86400000;
+        });
+        phoneData.lastMomentCleanup = new Date().toISOString();
+        setRoleMoments(role.id, moments);
+    }
+
+    var today = new Date().toDateString();
+    var todayMoments = moments.filter(function(m) {
+        return new Date(m.createdAt).toDateString() === today;
+    });
+    if (todayMoments.length >= 2) return;
+
+    var persona = (role.persona || '').toLowerCase();
+    var bg = (role.background || '').toLowerCase();
+
+    var templates = [];
+    var isGentle = persona.indexOf('温柔') !== -1 || persona.indexOf('暖') !== -1;
+    var isCold = persona.indexOf('冷') !== -1 || persona.indexOf('高冷') !== -1;
+    var isMusic = bg.indexOf('琴') !== -1 || bg.indexOf('音乐') !== -1 || persona.indexOf('音乐') !== -1;
+
+    if (isGentle) {
+        templates = [
+            { text: '今天的风很温柔，就像你说话的语气。', privacy: 'public', likes: Math.floor(Math.random() * 10) + 3, comments: Math.floor(Math.random() * 3) + 1 },
+            { text: '有些话，只想说给你一个人听。💕', privacy: 'private', likes: Math.floor(Math.random() * 20) + 5, comments: Math.floor(Math.random() * 5) + 2 },
+            { text: '在琴房待了一下午，弹了你上次说喜欢的那首曲子。', privacy: 'public', likes: Math.floor(Math.random() * 15) + 5, comments: Math.floor(Math.random() * 4) + 1 },
+            { text: '你笑起来的样子，比今天的阳光还暖。', privacy: 'private', likes: Math.floor(Math.random() * 25) + 8, comments: Math.floor(Math.random() * 6) + 2 },
+        ];
+    } else if (isCold) {
+        templates = [
+            { text: '风很冷，但不及你转身的温度。', privacy: 'public', likes: Math.floor(Math.random() * 8) + 2, comments: Math.floor(Math.random() * 2) },
+            { text: '习惯了独处，却还是期待你的消息。', privacy: 'private', likes: Math.floor(Math.random() * 15) + 5, comments: Math.floor(Math.random() * 4) + 1 },
+            { text: '...', privacy: 'public', likes: Math.floor(Math.random() * 5) + 1, comments: 0 },
+            { text: '有些话，说不出口。', privacy: 'private', likes: Math.floor(Math.random() * 12) + 3, comments: Math.floor(Math.random() * 3) + 1 },
+        ];
+    } else if (isMusic) {
+        templates = [
+            { text: '今天的琴声里，都是你。🎵', privacy: 'private', likes: Math.floor(Math.random() * 20) + 8, comments: Math.floor(Math.random() * 5) + 2 },
+            { text: '发现一首好歌，第一时间想分享给你。', privacy: 'public', likes: Math.floor(Math.random() * 15) + 5, comments: Math.floor(Math.random() * 4) + 1 },
+            { text: '在唱片店淘到了很珍贵的黑胶。', privacy: 'public', likes: Math.floor(Math.random() * 10) + 4, comments: Math.floor(Math.random() * 3) + 1 },
+            { text: '演奏的时候，希望你在听。', privacy: 'private', likes: Math.floor(Math.random() * 18) + 6, comments: Math.floor(Math.random() * 4) + 2 },
+        ];
+    } else {
+        templates = [
+            { text: '想你了。', privacy: 'private', likes: Math.floor(Math.random() * 15) + 5, comments: Math.floor(Math.random() * 4) + 1 },
+            { text: '今天的心情，很适合听一首慢歌。', privacy: 'public', likes: Math.floor(Math.random() * 8) + 2, comments: Math.floor(Math.random() * 2) },
+            { text: '有些瞬间，只想和你分享。💕', privacy: 'private', likes: Math.floor(Math.random() * 20) + 6, comments: Math.floor(Math.random() * 5) + 2 },
+            { text: '日子平淡，但有你很特别。', privacy: 'public', likes: Math.floor(Math.random() * 12) + 4, comments: Math.floor(Math.random() * 3) + 1 },
+        ];
+    }
+
+    var finalTemplate = templates[Math.floor(Math.random() * templates.length)];
+
+    var newMoment = {
+        id: generateId(),
+        content: finalTemplate.text,
+        privacy: finalTemplate.privacy || (Math.random() > 0.5 ? 'public' : 'private'),
+        createdAt: new Date().toISOString(),
+        roleName: role.name,
+        roleAvatar: role.avatar || '',
+        likes: finalTemplate.likes || Math.floor(Math.random() * 10) + 1,
+        comments: finalTemplate.comments || Math.floor(Math.random() * 3),
+    };
+    moments.push(newMoment);
+
+    // 同时生成联系人的朋友圈（增强真实感）
+    var contacts = getRoleWxContacts(role.id).filter(function(c) { return !c.isMe && !c.isUser; });
+    if (contacts.length > 0 && Math.random() > 0.4) {
+        var contact = contacts[Math.floor(Math.random() * contacts.length)];
+        var contactTemplates = [
+            { text: '今天天气真好，出来走走。', likes: Math.floor(Math.random() * 6) + 1, comments: Math.floor(Math.random() * 2) },
+            { text: '刚看完一部电影，很有感触。', likes: Math.floor(Math.random() * 8) + 2, comments: Math.floor(Math.random() * 3) },
+            { text: '分享一首歌，单曲循环中。🎵', likes: Math.floor(Math.random() * 10) + 3, comments: Math.floor(Math.random() * 3) + 1 },
+            { text: '周末愉快！', likes: Math.floor(Math.random() * 12) + 4, comments: Math.floor(Math.random() * 4) + 1 },
+            { text: '有点想你了，虽然才刚分开。', likes: Math.floor(Math.random() * 15) + 5, comments: Math.floor(Math.random() * 5) + 2 },
+        ];
+        var ct = contactTemplates[Math.floor(Math.random() * contactTemplates.length)];
+        var contactMoment = {
+            id: generateId(),
+            content: ct.text,
+            privacy: Math.random() > 0.5 ? 'public' : 'private',
+            createdAt: new Date(Date.now() - Math.random() * 3600000).toISOString(),
+            roleName: contact.name,
+            roleAvatar: contact.avatar || '',
+            likes: ct.likes,
+            comments: ct.comments,
+            isContact: true,
+        };
+        moments.push(contactMoment);
+    }
+
+    setRoleMoments(role.id, moments);
+}
+
+// ===== 渲染 =====
+function renderBrowser() {
+    var role = getCurrentPhoneRole();
+    if (!role) return;
+    var history = getRoleBrowserHistory(role.id);
+    var body = document.getElementById('safariBody');
+    if (!history || history.length === 0) {
+        body.innerHTML = '<div class="browser-empty"><i class="fas fa-compass"></i><p>暂无浏览记录</p></div>';
+        return;
+    }
+    var html = '';
+    history.forEach(function(item) {
+        html += '<div class="browser-record-item">' +
+            '<div class="br-icon"><i class="fas fa-search"></i></div>' +
+            '<div class="br-info"><div class="br-query">' + item.query + '</div><div class="br-time">' + (item.time || '刚刚') + '</div></div>' +
+            '<span class="br-tag">' + (item.tag || '日常') + '</span>' +
+            '</div>';
+    });
+    body.innerHTML = html;
+}
+
+function renderNotes() {
+    var role = getCurrentPhoneRole();
+    if (!role) return;
+    var notes = getRoleNotes(role.id);
+    var body = document.getElementById('notesBody');
+    if (!notes || notes.length === 0) {
+        body.innerHTML = '<div class="note-empty"><i class="fas fa-pencil"></i><p>暂无备忘录</p></div>';
+        return;
+    }
+    var html = '';
+    var sorted = notes.slice().sort(function(a, b) {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    sorted.forEach(function(n) {
+        var cls = 'note-item' + (n.important ? ' important' : '');
+        html += '<div class="' + cls + '" data-id="' + n.id + '">' +
+            '<div class="note-text">' + n.text + '</div>' +
+            '<div class="note-meta"><span class="note-tag">' + (n.label || '日常') + '</span><span>' + new Date(n.createdAt).toLocaleDateString() + '</span></div>' +
+            '</div>';
+    });
+    body.innerHTML = html;
+
+    // 点击标记重要/取消重要
+    body.querySelectorAll('.note-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var id = this.dataset.id;
+            var notesData = getRoleNotes(role.id);
+            var note = notesData.find(function(n) { return n.id === id; });
+            if (note) {
+                note.important = !note.important;
+                setRoleNotes(role.id, notesData);
+                renderNotes();
+                showToast(note.important ? '⭐ 已标记为重要' : '💤 已取消重要标记');
+            }
+        });
+    });
+}
+
+function renderWechat() {
+    var role = getCurrentPhoneRole();
+    if (!role) return;
+    var contacts = getRoleWxContacts(role.id);
+    var messages = getRoleWxMessages(role.id);
+    var body = document.getElementById('wechatBody');
+
+    if (!contacts || contacts.length === 0) {
+        body.innerHTML = '<div class="note-empty"><i class="fab fa-weixin"></i><p>暂无联系人</p></div>';
+        return;
+    }
+
+    var html = '';
+    contacts.forEach(function(contact) {
+        var key = contact.id;
+        var msgs = messages[key] || [];
+        var lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+        var preview = lastMsg ? (lastMsg.sender === 'me' ? '我：' : '') + lastMsg.text : '暂无消息';
+        var unread = msgs.filter(function(m) { return !m.read && m.sender === 'other'; }).length;
+        var time = lastMsg ? new Date(lastMsg.time).toLocaleString() : '';
+
+        var avatarStyle = contact.avatar ? 'background-image:url(' + contact.avatar + ');background-size:cover;background-position:center;' : 'background-color:#2ed573;';
+        var initial = contact.name.charAt(0).toUpperCase();
+
+        html += '<div class="wx-contact-item" data-id="' + contact.id + '">' +
+            '<div class="wx-avatar" style="' + avatarStyle + '">' + (contact.avatar ? '' : initial) + '</div>' +
+            '<div class="wx-info"><div class="wx-name">' + contact.name + '</div><div class="wx-preview">' + preview + '</div></div>' +
+            (time ? '<div class="wx-time">' + time + '</div>' : '') +
+            (unread > 0 ? '<div class="wx-unread">' + unread + '</div>' : '') +
+            '</div>';
+    });
+    body.innerHTML = html;
+
+    body.querySelectorAll('.wx-contact-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var id = this.dataset.id;
+            var contact = contacts.find(function(c) { return c.id === id; });
+            if (contact) openWxChat(contact);
+        });
+    });
+}
+
+function openWxChat(contact) {
+    wxChatTarget = contact;
+    document.getElementById('wxChatName').textContent = contact.name;
+    document.getElementById('wxChatPage').classList.add('open');
+    renderWxChat(contact);
+}
+
+function renderWxChat(contact) {
+    var role = getCurrentPhoneRole();
+    if (!role) return;
+    var messages = getRoleWxMessages(role.id);
+    var body = document.getElementById('wxChatMessages');
+    var key = contact.id;
+    var msgs = messages[key] || [];
+
+    msgs.forEach(function(m) { if (m.sender === 'other') m.read = true; });
+    setRoleWxMessages(role.id, messages);
+
+    if (msgs.length === 0) {
+        body.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.2);">暂无消息</div>';
+        return;
+    }
+
+    var html = '';
+    var sorted = msgs.slice().sort(function(a, b) {
+        return new Date(a.time) - new Date(b.time);
+    });
+    sorted.forEach(function(msg) {
+        var isSelf = msg.sender === 'me';
+        var senderName = isSelf ? '我' : contact.name;
+        html += '<div class="wx-msg ' + (isSelf ? 'self' : 'other') + '">' +
+            (!isSelf ? '<div class="wx-msg-name">' + senderName + '</div>' : '') +
+            msg.text +
+            '<span class="wx-msg-time">' + new Date(msg.time).toLocaleString() + '</span>' +
+            '</div>';
+    });
+    body.innerHTML = html;
+    body.scrollTop = body.scrollHeight;
+}
+
+function renderMusic() {
+    var role = getCurrentPhoneRole();
+    if (!role) return;
+    var songs = getRoleSongs(role.id);
+    var body = document.getElementById('musicBody');
+    var current = songs.length > 0 ? songs[0] : null;
+
+    var html = '';
+    if (current) {
+        html += '<div class="music-player-card" id="musicPlayerCard">' +
+            '<div class="player-art">🎵</div>' +
+            '<div class="player-name">' + current.name + '</div>' +
+            '<div class="player-artist">' + current.artist + '</div>' +
+            '<div class="player-controls"><i class="fas fa-step-backward" id="musicPrev"></i><i class="fas fa-play-circle play-btn" id="musicPlay"></i><i class="fas fa-step-forward" id="musicNext"></i></div>' +
+            '</div>';
+    } else {
+        html += '<div class="music-player-card"><div class="player-art" style="font-size:32px;padding:30px 0;">🎵</div><div class="player-name" style="color:rgba(255,255,255,0.3);">暂无歌曲</div></div>';
+    }
+
+    html += '<div class="music-playlist"><div style="font-size:13px;color:rgba(255,255,255,0.3);margin-bottom:8px;">🎵 歌单 · ' + (songs.length || 0) + ' 首</div>';
+    if (songs.length === 0) {
+        html += '<div style="text-align:center;padding:20px 0;color:rgba(255,255,255,0.15);">暂无歌单</div>';
+    } else {
+        songs.forEach(function(song, idx) {
+            var isActive = current && song.id === current.id;
+            var tag = song.fromNCM ? '🌟 ' : '';
+            html += '<div class="playlist-item" data-id="' + song.id + '" style="' + (isActive ? 'background:rgba(255,255,255,0.04);' : '') + '">' +
+                '<span class="pl-index">' + (idx + 1) + '</span>' +
+                '<div class="pl-info"><div class="pl-name" style="' + (isActive ? 'color:#2ed573;' : '') + '">' + tag + song.name + '</div><div class="pl-artist">' + song.artist + '</div></div>' +
+                '<span class="pl-duration">' + (song.duration || '3:30') + '</span>' +
+                '</div>';
+        });
+    }
+    html += '</div>';
+    body.innerHTML = html;
+
+    var playBtn = document.getElementById('musicPlay');
+    if (playBtn) {
+        playBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var currentSong = songs[0];
+            if (currentSong) {
+                showToast('🎵 正在播放：' + currentSong.name + ' - ' + currentSong.artist);
+                var icon = this.querySelector('i');
+                icon.className = 'fas fa-pause-circle';
+                setTimeout(function() { icon.className = 'fas fa-play-circle'; }, 2000);
+            }
+        });
+    }
+    var prevBtn = document.getElementById('musicPrev');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showToast('⏮ 上一首');
+        });
+    }
+    var nextBtn = document.getElementById('musicNext');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showToast('⏭ 下一首');
+        });
+    }
+    var card = document.getElementById('musicPlayerCard');
+    if (card) {
+        card.addEventListener('click', function() {
+            var currentSong2 = songs[0];
+            if (currentSong2) {
+                showToast('🎵 ' + currentSong2.name + ' - ' + currentSong2.artist);
+            }
+        });
+    }
+    body.querySelectorAll('.playlist-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var id = this.dataset.id;
+            var song = songs.find(function(s) { return s.id === id; });
+            if (song) {
+                showToast('🎵 正在播放：' + song.name + ' - ' + song.artist);
+                renderMusic();
+            }
+        });
+    });
+}
+
+function renderMaps() {
+    var role = getCurrentPhoneRole();
+    if (!role) return;
+    var tracks = getRoleTracks(role.id);
+    var body = document.getElementById('mapsBody');
+    if (!tracks || tracks.length === 0) {
+        body.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.2);">暂无轨迹数据</div>';
+        return;
+    }
+
+    var html = '<div class="track-timeline">';
+    tracks.forEach(function(track) {
+        html += '<div class="track-point">' +
+            '<div class="tp-content">' +
+            '<div class="tp-title">' + track.title + '</div>' +
+            (track.desc ? '<div class="tp-desc">' + track.desc + '</div>' : '') +
+            '<div class="tp-time"><i class="fas fa-clock"></i> ' + (track.time || '') + '</div>' +
+            '</div>' +
+            '</div>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+}
+
+function renderMoments() {
+    var role = getCurrentPhoneRole();
+    if (!role) return;
+    var moments = getRoleMoments(role.id);
+    var body = document.getElementById('momentsBody');
+    if (!moments || moments.length === 0) {
+        body.innerHTML = '<div class="note-empty"><i class="fas fa-images"></i><p>暂无朋友圈</p></div>';
+        return;
+    }
+
+    var html = '<div class="moments-feed">';
+    var sorted = moments.slice().sort(function(a, b) {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    sorted.forEach(function(m, idx) {
+        if (idx > 0) html += '<div class="m-divider"></div>';
+        var isPrivate = m.privacy === 'private';
+        var avatarStyle = m.roleAvatar ? 'background-image:url(' + m.roleAvatar + ');background-size:cover;background-position:center;' : 'background-color:#2ed573;';
+        
+        html += '<div class="moments-item' + (isPrivate ? ' m-private' : '') + '">' +
+            '<div class="m-header">' +
+            '<div class="m-avatar" style="' + avatarStyle + '" data-role="' + (m.roleName || '') + '" data-avatar="' + (m.roleAvatar || '') + '"></div>' +
+            '<span class="m-name" data-role="' + (m.roleName || '') + '">' + (m.roleName || 'TA') + '</span>' +
+            '<span class="m-time">' + new Date(m.createdAt).toLocaleString() + '</span>' +
+            (isPrivate ? '<span class="m-privacy">🔒</span>' : '') +
+            '</div>' +
+            '<div class="m-content">' + m.content + '</div>' +
+            '<div class="m-footer">' +
+            '<span class="m-likes"><i class="fas fa-heart"></i> ' + (m.likes || 0) + '</span>' +
+            '<span class="m-comments"><i class="fas fa-comment"></i> ' + (m.comments || 0) + '</span>' +
+            '</div>' +
+            '</div>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+
+    body.querySelectorAll('.m-avatar, .m-name').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var name = this.dataset.role || 'TA';
+            var avatar = this.dataset.avatar || '';
+            openMomentsProfile(name, avatar);
+        });
+    });
+}
+
+function openMomentsProfile(name, avatar) {
+    document.getElementById('momentsProfileTitle').textContent = name + ' 的朋友圈';
+    var cover = document.getElementById('profileCover');
+    var role = getCurrentPhoneRole();
+    var momentsWallpaper = '';
+    if (role) {
+        momentsWallpaper = getRoleMomentsWallpaper(role.id);
+        if (momentsWallpaper && momentsWallpaper.startsWith('data:image')) {
+            cover.style.backgroundImage = 'url(' + momentsWallpaper + ')';
+            cover.style.backgroundSize = 'cover';
+            cover.style.backgroundPosition = 'center';
+        } else {
+            cover.style.backgroundImage = 'linear-gradient(135deg, #2d3436, #636e72)';
+        }
+    }
+    var avatarEl = document.getElementById('profileCoverAvatar');
+    if (avatar && avatar.startsWith('data:image')) {
+        avatarEl.style.backgroundImage = 'url(' + avatar + ')';
+        avatarEl.style.backgroundSize = 'cover';
+        avatarEl.style.backgroundPosition = 'center';
+        avatarEl.style.backgroundColor = 'transparent';
+    } else {
+        avatarEl.style.backgroundImage = '';
+        avatarEl.style.backgroundColor = '#2ed573';
+    }
+    document.getElementById('profileCoverName').textContent = name;
+
+    var moments = getRoleMoments(role ? role.id : null);
+    var body = document.getElementById('profileBody');
+    if (!moments || moments.length === 0) {
+        body.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.2);">暂无动态</div>';
+        return;
+    }
+    var html = '<div class="moments-feed">';
+    var sorted = moments.slice().sort(function(a, b) {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    sorted.forEach(function(m, idx) {
+        if (idx > 0) html += '<div class="m-divider"></div>';
+        var isPrivate = m.privacy === 'private';
+        var avatarStyle2 = m.roleAvatar ? 'background-image:url(' + m.roleAvatar + ');background-size:cover;background-position:center;' : 'background-color:#2ed573;';
+        html += '<div class="moments-item' + (isPrivate ? ' m-private' : '') + '">' +
+            '<div class="m-header">' +
+            '<div class="m-avatar" style="' + avatarStyle2 + '"></div>' +
+            '<span class="m-name">' + (m.roleName || name) + '</span>' +
+            '<span class="m-time">' + new Date(m.createdAt).toLocaleString() + '</span>' +
+            (isPrivate ? '<span class="m-privacy">🔒</span>' : '') +
+            '</div>' +
+            '<div class="m-content">' + m.content + '</div>' +
+            '<div class="m-footer">' +
+            '<span class="m-likes"><i class="fas fa-heart"></i> ' + (m.likes || 0) + '</span>' +
+            '<span class="m-comments"><i class="fas fa-comment"></i> ' + (m.comments || 0) + '</span>' +
+            '</div>' +
+            '</div>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+
+    document.getElementById('momentsProfilePage').classList.add('open');
+}
+
+function renderSettings() {
+    var role = getCurrentPhoneRole();
+    if (!role) return;
+    var body = document.getElementById('settingsBody');
+
+    var desktopWallpaper = getRoleDesktopWallpaper(role.id);
+    var momentsWallpaper = getRoleMomentsWallpaper(role.id);
+
+    var html = '<div style="padding:4px 0;">' +
+        '<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:rgba(255,255,255,0.5);">当前密码</span><span style="color:#fff;font-weight:500;">' + getRolePassword(role.id) + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:rgba(255,255,255,0.5);">当前角色</span><span style="color:#fff;font-weight:500;">' + role.name + '</span></div>' +
+        '</div>' +
+
+        '<div style="margin-top:16px;padding:12px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.03);">' +
+        '<div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:12px;">🖼️ 壁纸设置</div>' +
+
+        '<div class="wallpaper-preview-row">' +
+        '<div class="wpr-label">桌面壁纸</div>' +
+        '<div class="wpr-preview" id="desktopPreview">' + (desktopWallpaper ? '<img src="' + desktopWallpaper + '" />' : '🏠') + '</div>' +
+        '<button class="wpr-btn" id="setDesktopWallpaper">更换</button>' +
+        (desktopWallpaper ? '<button class="wpr-btn danger" id="removeDesktopWallpaper">移除</button>' : '') +
+        '</div>' +
+
+        '<div class="wallpaper-preview-row">' +
+        '<div class="wpr-label">朋友圈壁纸</div>' +
+        '<div class="wpr-preview" id="momentsPreview">' + (momentsWallpaper ? '<img src="' + momentsWallpaper + '" />' : '📷') + '</div>' +
+        '<button class="wpr-btn" id="setMomentsWallpaper">更换</button>' +
+        (momentsWallpaper ? '<button class="wpr-btn danger" id="removeMomentsWallpaper">移除</button>' : '') +
+        '</div>' +
+
+        '</div>' +
+
+        '<div style="margin-top:16px;padding:12px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.03);">' +
+        '<div style="font-size:12px;color:rgba(255,255,255,0.2);">💡 密码规则：初始为 0000，检测到生日后自动更新。说 "密码太简单" 或 "换个密码" 可让 AI 帮你改。</div>' +
+        '</div>';
+
+    body.innerHTML = html;
+
+    var setDesktopBtn = document.getElementById('setDesktopWallpaper');
+    if (setDesktopBtn) {
+        setDesktopBtn.onclick = function() {
+            selectImage(function(dataUrl) {
+                setRoleDesktopWallpaper(role.id, dataUrl);
+                showToast('✅ 桌面壁纸已更新');
+                renderSettings();
+                loadPhoneHome();
+            });
+        };
+    }
+    var removeDesktopBtn = document.getElementById('removeDesktopWallpaper');
+    if (removeDesktopBtn) {
+        removeDesktopBtn.onclick = function() {
+            setRoleDesktopWallpaper(role.id, '');
+            showToast('✅ 桌面壁纸已移除');
+            renderSettings();
+            loadPhoneHome();
+        };
+    }
+    var setMomentsBtn = document.getElementById('setMomentsWallpaper');
+    if (setMomentsBtn) {
+        setMomentsBtn.onclick = function() {
+            selectImage(function(dataUrl) {
+                setRoleMomentsWallpaper(role.id, dataUrl);
+                showToast('✅ 朋友圈壁纸已更新');
+                renderSettings();
+            });
+        };
+    }
+    var removeMomentsBtn = document.getElementById('removeMomentsWallpaper');
+    if (removeMomentsBtn) {
+        removeMomentsBtn.onclick = function() {
+            setRoleMomentsWallpaper(role.id, '');
+            showToast('✅ 朋友圈壁纸已移除');
+            renderSettings();
+        };
+    }
+}
+
+function selectImage(callback) {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) { showToast('⚠️ 未选择图片'); return; }
+        if (file.size > 5 * 1024 * 1024) { showToast('⚠️ 图片超过5MB'); return; }
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            callback(ev.target.result);
+        };
+        reader.onerror = function() { showToast('⚠️ 读取图片失败'); };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
+function refreshAllApps() {
+    var role = getCurrentPhoneRole();
+    if (role) { generateAllData(role); }
+    renderBrowser();
+    renderNotes();
+    renderWechat();
+    renderMusic();
+    renderMaps();
+    renderMoments();
+    renderSettings();
+}
+
+// ===== 退出 =====
+function exitPhone() {
+    isPhoneUnlocked = false;
+    phoneData.isUnlocked = false;
+    currentRoleId = null;
+    pendingSwitchRoleId = null;
+    isSwitchingRole = false;
+    phoneData.currentRoleId = null;
+    savePhoneData();
+
+    document.querySelectorAll('.app-page.open').forEach(function(p) {
+        p.classList.remove('open');
+    });
+
+    document.getElementById('entryOverlay').classList.remove('hidden');
+    renderEntryScreen();
+    showToast('👋 已退出，请重新选择角色');
+}
+
+// ===== 右滑退出 =====
+function initSwipeToExit() {
+    var home = document.getElementById('phoneHome');
+    home.addEventListener('touchstart', function(e) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    home.addEventListener('touchmove', function(e) {
+        var dx = e.touches[0].clientX - touchStartX;
+        var dy = e.touches[0].clientY - touchStartY;
+        if (dx > 80 && Math.abs(dy) < 50) {
+            exitPhone();
+        }
+    }, { passive: true });
+}
+
+// ===== 事件绑定 =====
+function bindAppButtons() {
+    document.querySelectorAll('.phone-app[data-app]').forEach(function(btn) {
+        btn.removeEventListener('click', btn._appHandler);
+        var handler = function() {
+            var app = this.dataset.app;
+            var pageId = app + 'Page';
+            var page = document.getElementById(pageId);
+            if (page) {
+                page.classList.add('open');
+                if (app === 'safari') renderBrowser();
+                else if (app === 'notes') renderNotes();
+                else if (app === 'wechat') renderWechat();
+                else if (app === 'music') renderMusic();
+                else if (app === 'maps') renderMaps();
+                else if (app === 'moments') renderMoments();
+                else if (app === 'settings') renderSettings();
+            }
+        };
+        btn._appHandler = handler;
+        btn.addEventListener('click', handler);
+    });
+}
+
+function initEvents() {
+    // Lock screen
+    document.querySelectorAll('#lockKeypad button[data-key]').forEach(function(btn) {
+        btn.addEventListener('click', function() { handleLockKey(this.dataset.key); });
+    });
+    document.getElementById('lockDelete').addEventListener('click', function() { handleLockKey('delete'); });
+
+    // App buttons
+    bindAppButtons();
+
+    // Back buttons
+    document.querySelectorAll('.back-btn[data-back]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var pageId = this.dataset.back + 'Page';
+            var page = document.getElementById(pageId);
+            if (page) page.classList.remove('open');
+        });
+    });
+
+    // WeChat chat back
+    document.getElementById('wxChatBack').addEventListener('click', function() {
+        document.getElementById('wxChatPage').classList.remove('open');
+        renderWechat();
+    });
+
+    // Moments profile back
+    document.getElementById('momentsProfileBack').addEventListener('click', function() {
+        document.getElementById('momentsProfilePage').classList.remove('open');
+    });
+
+    // Role switch
+    document.getElementById('phSwitchBtn').addEventListener('click', startRoleSwitch);
+    document.getElementById('phoneHeader').addEventListener('click', startRoleSwitch);
+
+    document.getElementById('roleSwitchCancel').addEventListener('click', function() {
+        document.getElementById('roleSwitchOverlay').classList.remove('active');
+    });
+    document.getElementById('roleSwitchOverlay').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('active');
+    });
+
+    // Refresh buttons
+    document.getElementById('safariRefresh').addEventListener('click', function() { var r = getCurrentPhoneRole(); if (r) generateBrowserHistory(r); renderBrowser(); showToast('🔄 已刷新'); });
+    document.getElementById('notesRefresh').addEventListener('click', function() { var r = getCurrentPhoneRole(); if (r) generateNotes(r); renderNotes(); showToast('🔄 已刷新'); });
+    document.getElementById('wechatRefresh').addEventListener('click', function() { var r = getCurrentPhoneRole(); if (r) { generateWxMessages(r); syncMainChatToWx(r); } renderWechat(); showToast('🔄 已刷新'); });
+    document.getElementById('musicRefresh').addEventListener('click', function() { var r = getCurrentPhoneRole(); if (r) generateSongsFromNCM(r); showToast('🔄 正在搜索新歌...'); });
+    document.getElementById('mapsRefresh').addEventListener('click', function() { var r = getCurrentPhoneRole(); if (r) generateTracks(r); renderMaps(); showToast('🔄 已刷新'); });
+    document.getElementById('momentsRefresh').addEventListener('click', function() { var r = getCurrentPhoneRole(); if (r) generateMoments(r); renderMoments(); showToast('🔄 已刷新'); });
+
+    initSwipeToExit();
+}
+
+// ===== 初始化 =====
+function init() {
+    loadRolesFromMain();
+    loadPhoneData();
+
+    isPhoneUnlocked = false;
+    pendingSwitchRoleId = null;
+    isSwitchingRole = false;
+
+    renderEntryScreen();
+
+    if (phoneData.currentRoleId && getRoleById(phoneData.currentRoleId)) {
+        currentRoleId = phoneData.currentRoleId;
+        document.getElementById('entryOverlay').classList.add('hidden');
+        var role = getCurrentPhoneRole();
+        if (role) {
+            updateRolePasswordFromMemory(role);
+            renderLockScreen(role.id, false);
+        }
+    }
+
+    initEvents();
+
+    console.log('📱 他的手机 v3.0 已启动');
+    console.log('角色数:', allRoles.length);
+    console.log('当前角色:', currentRoleId ? (getRoleById(currentRoleId)?.name || '未知') : '未选择');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var observer = new MutationObserver(function() {
+        if (document.getElementById('lockScreen').classList.contains('unlocked')) {
+            var role = getCurrentPhoneRole();
+            if (role) {
+                generateAllData(role);
+                loadPhoneHome();
+                refreshAllApps();
+                document.querySelectorAll('.app-page.open').forEach(function(p) {
+                    p.classList.remove('open');
+                });
+            }
+            observer.disconnect();
+        }
+    });
+    observer.observe(document.getElementById('lockScreen'), { attributes: true, attributeFilter: ['class'] });
+
+    init();
+});
+</script>
+</body>
+</html>
