@@ -1252,9 +1252,9 @@
 
 <script>
 // ============================================================
-//  🚀 梦女空间 v2.4 - 智能时间分隔符
-//  新增：10分钟阈值、今天/昨天/前天/周几/月日/年月日
-//  兼容：支持 HH:MM 格式时间戳
+//  🚀 梦女空间 v2.5 - 智能时间分隔符（正确版）
+//  核心：从最新消息往前推，跨天自动累加日期
+//  规则：间隔 > 10分钟才显示分隔符
 // ============================================================
 
 var CONFIG = {
@@ -1297,7 +1297,7 @@ var CONFIG = {
     lastChatVisit: {},
     lastAiMessageTime: {},
     aiMessageCooldown: 30 * 60 * 1000,
-    timeDividerThreshold: 10 * 60 * 1000, // 10分钟
+    timeDividerThreshold: 10 * 60 * 1000,
 };
 
 var roles = [];
@@ -1489,64 +1489,6 @@ function loadAllData() {
 }
 
 // ============================================================
-//  🕒 智能时间分隔符 - 核心函数
-// ============================================================
-function parseTimeString(timeStr) {
-    var date = new Date(timeStr);
-    if (!isNaN(date.getTime())) {
-        return date;
-    }
-    var match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
-    if (match) {
-        var now = new Date();
-        var hours = parseInt(match[1]);
-        var minutes = parseInt(match[2]);
-        return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
-    }
-    return new Date();
-}
-
-function getTimeDisplay(date) {
-    var now = new Date();
-    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    var yesterday = new Date(today.getTime() - 86400000);
-    var twoDaysAgo = new Date(today.getTime() - 2 * 86400000);
-    var targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    var timePart = date.toTimeString().slice(0, 5);
-
-    if (targetDate.getTime() === today.getTime()) {
-        return '今天 ' + timePart;
-    } else if (targetDate.getTime() === yesterday.getTime()) {
-        return '昨天 ' + timePart;
-    } else if (targetDate.getTime() === twoDaysAgo.getTime()) {
-        return '前天 ' + timePart;
-    }
-
-    // 检查是否在本周内（周一到周日）
-    var dayDiff = Math.floor((today.getTime() - targetDate.getTime()) / 86400000);
-    if (dayDiff < 7) {
-        var weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-        return weekdays[date.getDay()] + ' ' + timePart;
-    }
-
-    // 检查是否在今年内
-    if (date.getFullYear() === now.getFullYear()) {
-        return (date.getMonth() + 1) + '月' + date.getDate() + '日 ' + timePart;
-    }
-
-    return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日 ' + timePart;
-}
-
-function createTimeDivider(timeStr) {
-    var div = document.createElement('div');
-    div.className = 'time-divider';
-    var date = parseTimeString(timeStr);
-    var displayText = getTimeDisplay(date);
-    div.innerHTML = '<span class="divider-line"></span><span class="divider-text">' + displayText + '</span><span class="divider-line"></span>';
-    return div;
-}
-
-// ============================================================
 //  💪 壁纸压缩工具
 // ============================================================
 function compressImage(dataUrl, maxSizeKB, callback) {
@@ -1675,6 +1617,74 @@ function applyChatBgForRole(role) {
         document.getElementById('chatBgLayer').style.backgroundImage = 'none';
         document.getElementById('chatBgLayer').style.backgroundColor = 'var(--bg-secondary)';
     }
+}
+
+// ============================================================
+//  🕒 智能时间分隔符 - 核心函数
+// ============================================================
+function parseTimeString(timeStr) {
+    var date = new Date(timeStr);
+    if (!isNaN(date.getTime())) {
+        return date;
+    }
+    var match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+    if (match) {
+        var now = new Date();
+        var hours = parseInt(match[1]);
+        var minutes = parseInt(match[2]);
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+    }
+    return new Date();
+}
+
+function getTimeDisplayFromDate(date, timePart) {
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var yesterday = new Date(today.getTime() - 86400000);
+    var twoDaysAgo = new Date(today.getTime() - 2 * 86400000);
+    var targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    if (targetDate.getTime() === today.getTime()) {
+        return '今天 ' + timePart;
+    } else if (targetDate.getTime() === yesterday.getTime()) {
+        return '昨天 ' + timePart;
+    } else if (targetDate.getTime() === twoDaysAgo.getTime()) {
+        return '前天 ' + timePart;
+    }
+
+    var dayDiff = Math.floor((today.getTime() - targetDate.getTime()) / 86400000);
+    if (dayDiff < 7) {
+        var weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        return weekdays[targetDate.getDay()] + ' ' + timePart;
+    }
+
+    if (targetDate.getFullYear() === now.getFullYear()) {
+        return (targetDate.getMonth() + 1) + '月' + targetDate.getDate() + '日 ' + timePart;
+    }
+
+    return targetDate.getFullYear() + '年' + (targetDate.getMonth() + 1) + '月' + targetDate.getDate() + '日 ' + timePart;
+}
+
+function createTimeDividerWithDate(timeStr, actualDate) {
+    var div = document.createElement('div');
+    div.className = 'time-divider';
+    var timePart = timeStr.slice(0, 5);
+    var displayText = getTimeDisplayFromDate(actualDate, timePart);
+    div.innerHTML = '<span class="divider-line"></span><span class="divider-text">' + displayText + '</span><span class="divider-line"></span>';
+    return div;
+}
+
+function getDateFromTime(timeStr) {
+    if (!timeStr) return null;
+    var date = parseTimeString(timeStr);
+    return date.toDateString();
+}
+
+function getTimeDiff(time1, time2) {
+    if (!time1 || !time2) return Infinity;
+    var d1 = parseTimeString(time1);
+    var d2 = parseTimeString(time2);
+    return Math.abs(d2.getTime() - d1.getTime());
 }
 
 // ============================================================
@@ -2168,7 +2178,7 @@ function renderRoleManager() {
 }
 
 // ============================================================
-//  🎁 聊天消息渲染（含智能时间分隔符）
+//  🎁 聊天消息渲染（含智能时间分隔符 - 正确版）
 // ============================================================
 function renderMessages() {
     var role = getCurrentRole();
@@ -2197,8 +2207,6 @@ function renderMessages() {
     applyChatBgForRole(role);
     
     var fragment = document.createDocumentFragment();
-    var lastTime = null;
-    var lastDate = null;
     var threshold = CONFIG.timeDividerThreshold || 10 * 60 * 1000;
     
     if (msgs.length === 0) {
@@ -2219,31 +2227,85 @@ function renderMessages() {
         return;
     }
     
-    msgs.forEach(function(msg, index) {
-        var currentTime = msg.time;
-        var currentDate = getDateFromTime(currentTime);
+    // ===== 🌟 核心：从最新消息往前推算日期 =====
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // 第一步：计算每条消息相对于今天的偏移天数
+    var dayOffsets = [];
+    var lastMinutes = -1;
+    var offset = 0;
+    
+    // 从旧到新遍历，计算偏移
+    for (var i = 0; i < msgs.length; i++) {
+        var timeStr = msgs[i].time;
+        var minutes = 0;
+        var timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})/);
+        if (timeMatch) {
+            minutes = parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2]);
+        } else {
+            var d = new Date(timeStr);
+            if (!isNaN(d.getTime())) {
+                minutes = d.getHours() * 60 + d.getMinutes();
+            }
+        }
         
+        // 如果当前时间 < 上一条时间（回绕），说明跨天了
+        if (lastMinutes !== -1 && minutes < lastMinutes) {
+            offset++;
+        }
+        
+        dayOffsets.push(offset);
+        lastMinutes = minutes;
+    }
+    
+    // 第二步：渲染消息，使用计算出的日期
+    var lastTimeStr = null;
+    var lastDate = null;
+    
+    for (var idx = 0; idx < msgs.length; idx++) {
+        var msg = msgs[idx];
+        var currentTime = msg.time;
+        var currentMinutes = 0;
+        var timeMatch2 = currentTime.match(/^(\d{1,2}):(\d{2})/);
+        if (timeMatch2) {
+            currentMinutes = parseInt(timeMatch2[1]) * 60 + parseInt(timeMatch2[2]);
+        } else {
+            var d2 = new Date(currentTime);
+            if (!isNaN(d2.getTime())) {
+                currentMinutes = d2.getHours() * 60 + d2.getMinutes();
+            }
+        }
+        
+        // 计算这条消息的真实日期
+        var dayOffset = dayOffsets[idx] || 0;
+        var actualDate = new Date(today);
+        actualDate.setDate(actualDate.getDate() - dayOffset);
+        var currentDate = actualDate.toDateString();
+        
+        // 判断是否显示分隔符
         var showDivider = false;
-        if (index === 0) {
+        if (idx === 0) {
             showDivider = true;
-        } else if (lastTime && currentTime) {
-            var diff = getTimeDiff(lastTime, currentTime);
-            if (diff > threshold || currentDate !== lastDate) {
+        } else if (lastTimeStr) {
+            var diff = getTimeDiff(lastTimeStr, currentTime);
+            // 跨天或间隔 > 阈值
+            if (currentDate !== lastDate || diff > threshold) {
                 showDivider = true;
             }
         }
         
         if (showDivider) {
-            var divider = createTimeDivider(currentTime);
+            var divider = createTimeDividerWithDate(currentTime, actualDate);
             fragment.appendChild(divider);
         }
         
         var row = createMessageRow(msg, role);
         fragment.appendChild(row);
         
-        lastTime = currentTime;
+        lastTimeStr = currentTime;
         lastDate = currentDate;
-    });
+    }
     
     container.innerHTML = '';
     container.appendChild(fragment);
@@ -2257,19 +2319,6 @@ function renderMessages() {
     attachLongPressEvents();
     bindMessageActions();
     setTimeout(function() { markVisibleMessagesAsRead(); }, 100);
-}
-
-function getDateFromTime(timeStr) {
-    if (!timeStr) return null;
-    var date = parseTimeString(timeStr);
-    return date.toDateString();
-}
-
-function getTimeDiff(time1, time2) {
-    if (!time1 || !time2) return Infinity;
-    var d1 = parseTimeString(time1);
-    var d2 = parseTimeString(time2);
-    return Math.abs(d2.getTime() - d1.getTime());
 }
 
 function bindMessageActions() {
@@ -4195,8 +4244,8 @@ function init() {
 
     try { registerServiceWorker(); } catch (e) { console.log('PWA 注册跳过'); }
 
-    console.log('🚀 梦女空间 v2.4 已启动！');
-    console.log('✨ 新增：智能时间分隔符（10分钟阈值 + 今天/昨天/前天/周几/月日/年月日）');
+    console.log('🚀 梦女空间 v2.5 已启动！');
+    console.log('✨ 新增：智能时间分隔符（从最新消息往前推算日期）');
     console.log('角色数量:', roles.length);
     console.log('日记数量:', CONFIG.diaries ? CONFIG.diaries.length : 0);
     console.log('表情包数量:', memes.length);
@@ -4304,7 +4353,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dataModalOverlay').addEventListener('click', function(e) { if (e.target === this) closeDataModal(); });
     document.getElementById('dataExportBtn').addEventListener('click', function() {
         var exportType = getSelectedExportType();
-        var exportData = { exportTime: new Date().toISOString(), version: '2.4', type: exportType, config: {}, roles: [], diaries: [] };
+        var exportData = { exportTime: new Date().toISOString(), version: '2.5', type: exportType, config: {}, roles: [], diaries: [] };
         var roleData = [];
         if (exportType === 'all') {
             roleData = JSON.parse(JSON.stringify(roles));
