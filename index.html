@@ -351,7 +351,7 @@
             padding: 12px 14px 8px; 
             display: flex; 
             flex-direction: column; 
-            gap: 8px; 
+            gap: 4px; 
             background: transparent; 
             scroll-behavior: smooth; 
             position: relative; 
@@ -359,7 +359,33 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        .message-row { display: flex; align-items: flex-start; gap: 0; max-width: 92%; animation: fadeInUp 0.2s ease; }
+        /* ===== 时间分隔符 ===== */
+        .time-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 10px 0 8px 0;
+            width: 100%;
+            flex-shrink: 0;
+        }
+        .time-divider .divider-line {
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+            max-width: 40px;
+        }
+        .time-divider .divider-text {
+            font-size: 11px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            padding: 0 8px;
+            opacity: 0.7;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .message-row { display: flex; align-items: flex-start; gap: 0; max-width: 92%; animation: fadeInUp 0.2s ease; flex-shrink: 0; }
         .message-row.self { align-self: flex-end; flex-direction: row-reverse; }
         .avatar { width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0; background-color: #07c160; background-size: cover; background-position: center; overflow: hidden; font-size: 0; line-height: 0; color: transparent; transition: 0.15s; cursor: pointer; margin-top: 2px; }
         .avatar:active { transform: scale(0.92); }
@@ -400,7 +426,7 @@
             border: 1.5px solid var(--gift-card-border);
             border-radius: 12px;
             padding: 10px 14px;
-            min-width: 200px;
+            min-width: 180px;
             max-width: 280px;
             transition: 0.2s;
             cursor: default;
@@ -1226,8 +1252,9 @@
 
 <script>
 // ============================================================
-//  🚀 梦女空间 v2.2 - 礼物卡片 + AI 离线主动消息
-//  新增：礼物卡片渲染、打开聊天时 AI 主动发消息
+//  🚀 梦女空间 v2.3 - 角色独立计时 + 时间分隔符
+//  新增：每个角色独立离线消息检测、微信风格时间分隔符
+//  兼容：自动迁移旧数据格式
 // ============================================================
 
 var CONFIG = {
@@ -1267,8 +1294,9 @@ var CONFIG = {
     lastDiaryCheckDate: null,
     diaryCalendarCollapsed: false,
     floatingHeartPosition: { x: null, y: null },
-    lastChatVisit: null,
-    lastAiMessageTime: null,
+    // 🌟 改为按角色存储
+    lastChatVisit: {},      // { roleId: timestamp }
+    lastAiMessageTime: {},  // { roleId: timestamp }
     aiMessageCooldown: 30 * 60 * 1000, // 30分钟
 };
 
@@ -1341,6 +1369,31 @@ function saveAllData() {
     }));
 }
 
+// ============================================================
+//  🔄 数据迁移：兼容旧格式的 lastChatVisit / lastAiMessageTime
+// ============================================================
+function migrateChatVisitData() {
+    // 如果 lastChatVisit 是数字（旧格式），转为对象
+    if (typeof CONFIG.lastChatVisit === 'number' || CONFIG.lastChatVisit === null || CONFIG.lastChatVisit === undefined) {
+        var oldVisit = CONFIG.lastChatVisit || 0;
+        var oldAiMsg = CONFIG.lastAiMessageTime || 0;
+        CONFIG.lastChatVisit = {};
+        CONFIG.lastAiMessageTime = {};
+        // 给所有角色设置初始值
+        roles.forEach(function(role) {
+            CONFIG.lastChatVisit[role.id] = oldVisit;
+            CONFIG.lastAiMessageTime[role.id] = oldAiMsg;
+        });
+        saveAllData();
+        console.log('🔄 已迁移 lastChatVisit 数据格式');
+    }
+    // 确保所有角色都有条目
+    roles.forEach(function(role) {
+        if (!CONFIG.lastChatVisit[role.id]) CONFIG.lastChatVisit[role.id] = 0;
+        if (!CONFIG.lastAiMessageTime[role.id]) CONFIG.lastAiMessageTime[role.id] = 0;
+    });
+}
+
 function loadAllData() {
     var savedData = null;
     try {
@@ -1371,8 +1424,13 @@ function loadAllData() {
         if (CONFIG.diaryAutoGenerateEnabled === undefined) CONFIG.diaryAutoGenerateEnabled = true;
         if (!CONFIG.lastDiaryCheckDate) CONFIG.lastDiaryCheckDate = null;
         if (CONFIG.diaryCalendarCollapsed === undefined) CONFIG.diaryCalendarCollapsed = false;
-        if (!CONFIG.lastChatVisit) CONFIG.lastChatVisit = null;
-        if (!CONFIG.lastAiMessageTime) CONFIG.lastAiMessageTime = null;
+        // 兼容旧格式的 lastChatVisit
+        if (CONFIG.lastChatVisit === undefined || CONFIG.lastChatVisit === null || typeof CONFIG.lastChatVisit === 'number') {
+            CONFIG.lastChatVisit = {};
+        }
+        if (CONFIG.lastAiMessageTime === undefined || CONFIG.lastAiMessageTime === null || typeof CONFIG.lastAiMessageTime === 'number') {
+            CONFIG.lastAiMessageTime = {};
+        }
         if (!CONFIG.aiMessageCooldown) CONFIG.aiMessageCooldown = 30 * 60 * 1000;
 
         roles = savedData.roles;
@@ -1387,6 +1445,8 @@ function loadAllData() {
             if (!Array.isArray(role.memory)) role.memory = [];
         });
         currentRoleId = savedData.currentRoleId || roles[0].id;
+        // 迁移数据
+        migrateChatVisitData();
     } else {
         CONFIG = {
             apiKey: '', model: 'deepseek-chat', wallpaper: '', chatBg: '', userAvatar: '',
@@ -1396,7 +1456,7 @@ function loadAllData() {
             heart: { bindRoleId: null, value: 65, restingValue: 65, level: '平静', signature: '今天也很想你 💕', color: '#ff6b81', floatingEnabled: true, speed: 'normal', recentTrigger: '等待你的第一句情话', spikeActive: false, spikeTimer: null, recoveryTimer: null, peakValue: 65 },
             aiMemeEnabled: true, diaries: [], diaryAutoGenerateEnabled: true, lastDiaryCheckDate: null, diaryCalendarCollapsed: false,
             floatingHeartPosition: { x: null, y: null },
-            lastChatVisit: null, lastAiMessageTime: null, aiMessageCooldown: 30 * 60 * 1000,
+            lastChatVisit: {}, lastAiMessageTime: {}, aiMessageCooldown: 30 * 60 * 1000,
         };
         var defaultRole = createDefaultRole('温柔学长');
         defaultRole.persona = '25岁音乐系研究生，性格内敛细腻，喜欢弹钢琴';
@@ -1407,6 +1467,9 @@ function loadAllData() {
         defaultRole.messages = [{ role: 'assistant', content: '你好呀~ 我是温柔学长，很高兴认识你 💕', time: new Date().toLocaleTimeString() }];
         roles = [defaultRole];
         currentRoleId = defaultRole.id;
+        // 初始化角色的时间记录
+        CONFIG.lastChatVisit[defaultRole.id] = 0;
+        CONFIG.lastAiMessageTime[defaultRole.id] = 0;
         saveAllData();
     }
 
@@ -1423,6 +1486,9 @@ function loadAllData() {
         if (!role.heartData.restingValue) role.heartData.restingValue = 65;
         if (!role.heartData.value) role.heartData.value = 65;
         if (!role.heartData.peakValue) role.heartData.peakValue = 65;
+        // 确保每个角色都有时间记录
+        if (!CONFIG.lastChatVisit[role.id]) CONFIG.lastChatVisit[role.id] = 0;
+        if (!CONFIG.lastAiMessageTime[role.id]) CONFIG.lastAiMessageTime[role.id] = 0;
     });
 }
 
@@ -1783,40 +1849,38 @@ function startHeartBeatFluctuation() {
 }
 
 // ============================================================
-//  🌟 AI 主动发消息（打开聊天时触发）
+//  🌟 AI 主动发消息（按角色独立检测）
 // ============================================================
 function checkAndSendAiMessage(role) {
     if (!role) return;
-    if (!CONFIG.apiKey) return; // 没有 API Key 就不触发
+    if (!CONFIG.apiKey) return;
 
     var now = Date.now();
-    var lastVisit = CONFIG.lastChatVisit || 0;
-    var lastAiMsg = CONFIG.lastAiMessageTime || 0;
+    var lastVisit = CONFIG.lastChatVisit[role.id] || 0;
+    var lastAiMsg = CONFIG.lastAiMessageTime[role.id] || 0;
     var cooldown = CONFIG.aiMessageCooldown || 30 * 60 * 1000;
 
-    // 检查是否需要发消息
     var timeSinceVisit = now - lastVisit;
     var timeSinceLastAi = now - lastAiMsg;
 
-    // 条件：超过30分钟没来过 + 距离上次AI消息超过30分钟
+    // 条件：超过冷却时间没来过 + 距离上次AI消息超过冷却时间
     if (timeSinceVisit > cooldown && timeSinceLastAi > cooldown) {
         // 随机概率触发（50% 概率，避免每次打开都发）
         if (Math.random() < 0.5) {
             generateAiActiveMessage(role);
-            CONFIG.lastAiMessageTime = now;
-            CONFIG.lastChatVisit = now;
+            CONFIG.lastAiMessageTime[role.id] = now;
+            CONFIG.lastChatVisit[role.id] = now;
             saveAllData();
             return true;
         }
     }
 
-    CONFIG.lastChatVisit = now;
+    CONFIG.lastChatVisit[role.id] = now;
     saveAllData();
     return false;
 }
 
 function generateAiActiveMessage(role) {
-    // 构建 system prompt
     var systemPrompt = '你正在扮演「' + role.name + '」。用户刚刚回来了，但ta已经离开了一段时间。\n\n';
     systemPrompt += '【人设】' + (role.persona || '一个温柔体贴的AI伴侣') + '\n';
     systemPrompt += '【背景】' + (role.background || '生活在充满爱的世界里') + '\n';
@@ -1853,7 +1917,6 @@ function generateAiActiveMessage(role) {
             showToast('💬 ' + role.name + ' 给你发了一条消息 💕');
         }
     }).catch(function(e) {
-        // 降级方案：如果 API 失败，用角色信息生成一个简单消息
         var fallbackMessages = [
             '你终于回来了…我一直在想你 💕',
             '看到你出现，我好开心。',
@@ -2038,6 +2101,9 @@ function renderRoleManager() {
                     }
                     if (CONFIG.heart.bindRoleId === role.id) CONFIG.heart.bindRoleId = null;
                     if (CONFIG.diaries) CONFIG.diaries = CONFIG.diaries.filter(function(d) { return d.roleId !== role.id; });
+                    // 清理时间记录
+                    delete CONFIG.lastChatVisit[role.id];
+                    delete CONFIG.lastAiMessageTime[role.id];
                     saveAllData();
                     renderRoleManager(); renderContacts(); renderMemoryScreen(); renderDiaryAll(); updateChatTitle();
                     showToast('🗑️ 已删除「' + role.name + '」');
@@ -2049,7 +2115,7 @@ function renderRoleManager() {
 }
 
 // ============================================================
-//  🎁 聊天消息渲染（含礼物卡片）
+//  🎁 聊天消息渲染（含礼物卡片 + 时间分隔符）
 // ============================================================
 function renderMessages() {
     var role = getCurrentRole();
@@ -2077,19 +2143,17 @@ function renderMessages() {
     
     applyChatBgForRole(role);
     
-    if (lastMessageCount === -1 || msgs.length === 0) {
+    // 🌟 使用文档碎片批量构建
+    var fragment = document.createDocumentFragment();
+    var lastTime = null;
+    var lastDate = null;
+    
+    if (msgs.length === 0) {
         container.innerHTML = '';
-        if (msgs.length === 0) {
-            var w = document.createElement('div');
-            w.className = 'message-row';
-            w.innerHTML = '<div class="avatar bot"></div><div class="bubble-container"><div class="bubble-row"><div class="bubble">你好呀~ 我是 ' + role.name + '，很高兴认识你 💕</div></div></div>';
-            container.appendChild(w);
-        } else {
-            msgs.forEach(function(msg) {
-                var row = createMessageRow(msg, role);
-                container.appendChild(row);
-            });
-        }
+        var w = document.createElement('div');
+        w.className = 'message-row';
+        w.innerHTML = '<div class="avatar bot"></div><div class="bubble-container"><div class="bubble-row"><div class="bubble">你好呀~ 我是 ' + role.name + '，很高兴认识你 💕</div></div></div>';
+        container.appendChild(w);
         lastMessageCount = msgs.length;
         container.scrollTop = container.scrollHeight;
         applyAvatars();
@@ -2102,30 +2166,39 @@ function renderMessages() {
         return;
     }
     
-    if (msgs.length > lastMessageCount) {
-        for (var i = lastMessageCount; i < msgs.length; i++) {
-            var row = createMessageRow(msgs[i], role);
-            container.appendChild(row);
+    // 构建消息列表
+    msgs.forEach(function(msg, index) {
+        var currentTime = msg.time;
+        var currentDate = getDateFromTime(currentTime);
+        
+        // 🌟 判断是否需要插入时间分隔符
+        var showDivider = false;
+        if (index === 0) {
+            showDivider = true; // 第一条消息
+        } else if (lastTime && currentTime) {
+            var diff = getTimeDiff(lastTime, currentTime);
+            // 间隔 > 15分钟 或者 日期不同
+            if (diff > 15 * 60 * 1000 || currentDate !== lastDate) {
+                showDivider = true;
+            }
         }
-        lastMessageCount = msgs.length;
-        container.scrollTop = container.scrollHeight;
-    } else if (msgs.length < lastMessageCount) {
-        console.log('🔄 消息数量减少，重新渲染');
-        container.innerHTML = '';
-        if (msgs.length === 0) {
-            var w2 = document.createElement('div');
-            w2.className = 'message-row';
-            w2.innerHTML = '<div class="avatar bot"></div><div class="bubble-container"><div class="bubble-row"><div class="bubble">你好呀~ 我是 ' + role.name + '，很高兴认识你 💕</div></div></div>';
-            container.appendChild(w2);
-        } else {
-            msgs.forEach(function(msg) {
-                var row = createMessageRow(msg, role);
-                container.appendChild(row);
-            });
+        
+        if (showDivider) {
+            var divider = createTimeDivider(currentTime);
+            fragment.appendChild(divider);
         }
-        lastMessageCount = msgs.length;
-        container.scrollTop = container.scrollHeight;
-    }
+        
+        var row = createMessageRow(msg, role);
+        fragment.appendChild(row);
+        
+        lastTime = currentTime;
+        lastDate = currentDate;
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(fragment);
+    lastMessageCount = msgs.length;
+    container.scrollTop = container.scrollHeight;
     
     applyAvatars();
     applyBubbleStyle(CONFIG.bubbleStyle || 'default');
@@ -2134,6 +2207,49 @@ function renderMessages() {
     attachLongPressEvents();
     bindMessageActions();
     setTimeout(function() { markVisibleMessagesAsRead(); }, 100);
+}
+
+// ============================================================
+//  🕒 时间分隔符辅助函数
+// ============================================================
+function getDateFromTime(timeStr) {
+    if (!timeStr) return null;
+    var date = new Date(timeStr);
+    if (isNaN(date.getTime())) return null;
+    return date.toDateString();
+}
+
+function getTimeDiff(time1, time2) {
+    if (!time1 || !time2) return Infinity;
+    var d1 = new Date(time1);
+    var d2 = new Date(time2);
+    if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return Infinity;
+    return Math.abs(d2.getTime() - d1.getTime());
+}
+
+function createTimeDivider(timeStr) {
+    var div = document.createElement('div');
+    div.className = 'time-divider';
+    
+    var date = new Date(timeStr);
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var yesterday = new Date(today.getTime() - 86400000);
+    var targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    var displayText;
+    var timePart = date.toTimeString().slice(0, 5);
+    
+    if (targetDate.getTime() === today.getTime()) {
+        displayText = '今天 ' + timePart;
+    } else if (targetDate.getTime() === yesterday.getTime()) {
+        displayText = '昨天 ' + timePart;
+    } else {
+        displayText = date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日 ' + timePart;
+    }
+    
+    div.innerHTML = '<span class="divider-line"></span><span class="divider-text">' + displayText + '</span><span class="divider-line"></span>';
+    return div;
 }
 
 function bindMessageActions() {
@@ -2163,7 +2279,7 @@ function handleRegenerate(e) { e.stopPropagation(); var msgId = this.dataset.msg
 function handleDelete(e) { e.stopPropagation(); var msgId = this.dataset.msgid; var role = getCurrentRole(); if (role && confirm('确定要删除这条消息吗？关联的记忆也会被删除。')) { deleteMessageAndMemory(role.id, msgId); } }
 
 // ============================================================
-//  🎁 礼物消息渲染 - 核心函数
+//  🎁 礼物消息渲染
 // ============================================================
 function createMessageRow(msg, role) {
     var row = document.createElement('div');
@@ -2171,7 +2287,6 @@ function createMessageRow(msg, role) {
     if (msg.id) row.dataset.msgId = msg.id;
     var contentHtml = msg.content;
 
-    // ===== 礼物类型消息 =====
     if (msg.type === 'gift') {
         var giftData = msg.giftData || {};
         var productName = giftData.productName || '礼物';
@@ -2195,7 +2310,6 @@ function createMessageRow(msg, role) {
     } else if (msg.type === 'image') {
         contentHtml = '<img src="' + msg.content + '" alt="图片" />';
     } else {
-        // 文本消息中的表情包渲染
         var memeMatch = contentHtml.match(/\[表情包：([^\]]+)\]/);
         if (memeMatch) {
             var memeName = memeMatch[1];
@@ -2490,7 +2604,6 @@ function sendGiftToRole(roleId, productName, fromName, note, price) {
     if (!CONFIG.unreadCount) CONFIG.unreadCount = {};
     CONFIG.unreadCount[roleId] = (CONFIG.unreadCount[roleId] || 0) + 1;
 
-    // 触发心跳
     var spikeAmount = 10 + Math.floor(Math.random() * 10);
     if (!role.heartData) role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' };
     var newValue = Math.min(99, (role.heartData.value || 65) + spikeAmount);
@@ -2510,7 +2623,6 @@ function sendGiftToRole(roleId, productName, fromName, note, price) {
         }
     }
 
-    // 写入记忆
     if (!Array.isArray(role.memory)) role.memory = [];
     var memoryText = fromName === '你' 
         ? '💝 我送了「' + productName + '」给 ' + role.name + (note ? '（附言：' + note + '）' : '')
@@ -2535,7 +2647,6 @@ function detectAndProcessGift(roleId, reply) {
     var giftMatch = reply.match(/\[送礼：([^\]]+)\]/);
     if (giftMatch) {
         var productName = giftMatch[1].trim();
-        // 从商城数据中匹配商品
         var products = getMallProductsFromStorage();
         var product = products.find(function(p) { return p.name === productName; });
         if (!product) {
@@ -2556,9 +2667,6 @@ function detectAndProcessGift(roleId, reply) {
     return reply;
 }
 
-// ============================================================
-//  从 localStorage 读取商城商品
-// ============================================================
 function getMallProductsFromStorage() {
     try {
         var raw = localStorage.getItem('mall_products_cache');
@@ -3698,7 +3806,7 @@ function openChat(fromContacts) {
         readMessages = {};
         document.getElementById('messageInput').value = loadDraft(role2.id);
         
-        // 🌟 AI 主动发消息检测
+        // 🌟 AI 主动发消息检测（按角色独立）
         checkAndSendAiMessage(role2);
         
         setTimeout(function() {
@@ -4068,8 +4176,8 @@ function init() {
 
     try { registerServiceWorker(); } catch (e) { console.log('PWA 注册跳过'); }
 
-    console.log('🚀 梦女空间 v2.2 已启动！');
-    console.log('✨ 新增：礼物卡片渲染 + AI 离线主动消息');
+    console.log('🚀 梦女空间 v2.3 已启动！');
+    console.log('✨ 新增：角色独立计时 + 时间分隔符');
     console.log('角色数量:', roles.length);
     console.log('日记数量:', CONFIG.diaries ? CONFIG.diaries.length : 0);
     console.log('表情包数量:', memes.length);
@@ -4148,6 +4256,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var newRole = createDefaultRole(name.trim());
             roles.push(newRole);
             currentRoleId = newRole.id;
+            CONFIG.lastChatVisit[newRole.id] = 0;
+            CONFIG.lastAiMessageTime[newRole.id] = 0;
             saveAllData();
             renderRoleManager();
             renderContacts();
@@ -4175,14 +4285,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dataModalOverlay').addEventListener('click', function(e) { if (e.target === this) closeDataModal(); });
     document.getElementById('dataExportBtn').addEventListener('click', function() {
         var exportType = getSelectedExportType();
-        var exportData = { exportTime: new Date().toISOString(), version: '2.1', type: exportType, config: {}, roles: [], diaries: [] };
+        var exportData = { exportTime: new Date().toISOString(), version: '2.3', type: exportType, config: {}, roles: [], diaries: [] };
         var roleData = [];
         if (exportType === 'all') {
             roleData = JSON.parse(JSON.stringify(roles));
             exportData.diaries = JSON.parse(JSON.stringify(CONFIG.diaries || []));
-            exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition };
+            exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition, lastChatVisit: CONFIG.lastChatVisit, lastAiMessageTime: CONFIG.lastAiMessageTime, aiMessageCooldown: CONFIG.aiMessageCooldown };
         } else if (exportType === 'settings') {
-            exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition };
+            exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition, lastChatVisit: CONFIG.lastChatVisit, lastAiMessageTime: CONFIG.lastAiMessageTime, aiMessageCooldown: CONFIG.aiMessageCooldown };
             var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
             var url = URL.createObjectURL(blob);
             var link = document.createElement('a');
@@ -4266,13 +4376,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (CONFIG.aiMemeEnabled === undefined) CONFIG.aiMemeEnabled = true;
                         if (!CONFIG.diaries || !Array.isArray(CONFIG.diaries)) CONFIG.diaries = [];
                         if (!CONFIG.floatingHeartPosition) CONFIG.floatingHeartPosition = { x: null, y: null };
-                        if (!CONFIG.lastChatVisit) CONFIG.lastChatVisit = null;
-                        if (!CONFIG.lastAiMessageTime) CONFIG.lastAiMessageTime = null;
+                        if (!CONFIG.lastChatVisit || typeof CONFIG.lastChatVisit === 'number') CONFIG.lastChatVisit = {};
+                        if (!CONFIG.lastAiMessageTime || typeof CONFIG.lastAiMessageTime === 'number') CONFIG.lastAiMessageTime = {};
                         if (!CONFIG.aiMessageCooldown) CONFIG.aiMessageCooldown = 30 * 60 * 1000;
                     }
                     if (imported.diaries && Array.isArray(imported.diaries)) CONFIG.diaries = imported.diaries;
                     if (roles.length > 0) currentRoleId = roles[0].id;
                     else currentRoleId = null;
+                    // 确保所有角色都有时间记录
+                    roles.forEach(function(role) {
+                        if (!CONFIG.lastChatVisit[role.id]) CONFIG.lastChatVisit[role.id] = 0;
+                        if (!CONFIG.lastAiMessageTime[role.id]) CONFIG.lastAiMessageTime[role.id] = 0;
+                    });
                     saveAllData();
                     renderContacts();
                     renderRoleManager();
