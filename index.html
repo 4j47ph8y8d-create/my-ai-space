@@ -125,7 +125,6 @@
         [data-theme="light"] .status-bar { color: rgba(0,0,0,0.6); text-shadow: none; }
         .status-bar .icons { display: flex; gap: 6px; }
 
-        /* ===== 主题切换按钮 ===== */
         .theme-toggle-btn {
             position: absolute; 
             top: 44px; 
@@ -252,7 +251,6 @@
         .app-icon .app-name { font-size: 10px; color: rgba(255,255,255,0.85); text-align: center; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
         [data-theme="light"] .app-icon .app-name { color: rgba(0,0,0,0.7); text-shadow: none; }
 
-        /* ===== Dock栏 ===== */
         .dock { 
             display: flex; 
             justify-content: center; 
@@ -293,13 +291,15 @@
             gap: 12px; 
             flex-shrink: 0; 
             min-height: 52px; 
+            position: relative;
+            z-index: 2;
         }
         .contacts-header .back-btn { font-size: 20px; color: #576b95; cursor: pointer; border: none; background: none; padding: 4px; }
         .contacts-header .title { font-size: 17px; font-weight: 600; color: var(--text-primary); flex: 1; }
         .contacts-header .actions { font-size: 18px; color: #576b95; cursor: pointer; }
 
-        .contacts-list { flex: 1; overflow-y: auto; padding: 8px 0; }
-        .contact-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--bg-card); margin: 4px 12px; border-radius: 12px; cursor: pointer; transition: 0.15s; box-shadow: 0 1px 4px var(--shadow-color); }
+        .contacts-list { flex: 1; overflow-y: auto; padding: 8px 0; position: relative; z-index: 1; }
+        .contact-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--bg-card); margin: 4px 12px; border-radius: 12px; cursor: pointer; transition: 0.15s; box-shadow: 0 1px 4px var(--shadow-color); position: relative; z-index: 1; }
         .contact-item:active { transform: scale(0.97); background: var(--bg-secondary); }
         .contact-item.pinned { background: var(--pinned-bg); border: 1px solid var(--pinned-border); box-shadow: 0 1px 8px rgba(243,156,18,0.08); }
         .contact-item .contact-avatar { width: 40px; height: 40px; border-radius: 8px; background-size: cover; background-position: center; background-color: #07c160; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; }
@@ -325,7 +325,6 @@
         .screen-chat.open { transform: translateX(0); }
         .chat-bg-layer { position: absolute; inset: 0; z-index: 0; background: var(--bg-secondary); background-size: cover; background-position: center; }
 
-        /* ===== 聊天顶部（加安全区域） ===== */
         .chat-header { 
             background: var(--header-bg); 
             backdrop-filter: blur(10px); 
@@ -337,13 +336,13 @@
             flex-shrink: 0; 
             min-height: 52px; 
             position: relative; 
-            z-index: 1; 
+            z-index: 2; 
         }
-        .chat-header .back-btn { font-size: 20px; color: #576b95; cursor: pointer; border: none; background: none; padding: 4px; }
+        .chat-header .back-btn { font-size: 20px; color: #576b95; cursor: pointer; border: none; background: none; padding: 4px; position: relative; z-index: 3; }
         .chat-header .title { font-size: 17px; font-weight: 600; color: var(--text-primary); flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; }
         .chat-header .title .chat-role-name { font-size: 17px; font-weight: 600; color: var(--text-primary); transition: color 0.2s; }
         .chat-header .title .chat-role-name.typing { color: var(--text-secondary); font-size: 15px; font-weight: 400; }
-        .chat-header .actions { display: flex; gap: 12px; font-size: 17px; color: #576b95; cursor: pointer; }
+        .chat-header .actions { display: flex; gap: 12px; font-size: 17px; color: #576b95; cursor: pointer; position: relative; z-index: 3; }
 
         .chat-messages { 
             flex: 1; 
@@ -359,7 +358,6 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* ===== 时间分隔符 ===== */
         .time-divider {
             display: flex;
             align-items: center;
@@ -385,20 +383,37 @@
             letter-spacing: 0.3px;
         }
 
-        .message-row { display: flex; align-items: flex-start; gap: 0; max-width: 92%; animation: fadeInUp 0.2s ease; flex-shrink: 0; }
+        .message-row { display: flex; align-items: flex-start; gap: 0; max-width: 92%; animation: fadeInUp 0.2s ease; flex-shrink: 0; position: relative; z-index: 1; }
         .message-row.self { align-self: flex-end; flex-direction: row-reverse; }
-        .avatar { width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0; background-color: #07c160; background-size: cover; background-position: center; overflow: hidden; font-size: 0; line-height: 0; color: transparent; transition: 0.15s; cursor: pointer; margin-top: 2px; }
+        .avatar { 
+            width: 32px; 
+            height: 32px; 
+            border-radius: 6px; 
+            flex-shrink: 0; 
+            background-color: #07c160; 
+            background-size: cover; 
+            background-position: center; 
+            overflow: hidden; 
+            font-size: 0; 
+            line-height: 0; 
+            color: transparent; 
+            transition: 0.15s; 
+            cursor: pointer; 
+            margin-top: 2px;
+            position: relative;
+            z-index: 1;
+        }
         .avatar:active { transform: scale(0.92); }
         .avatar.user { background-color: #576b95; }
         .avatar.has-image { background-color: transparent !important; }
         .message-row.self .avatar { margin-left: 6px; }
         .message-row:not(.self) .avatar { margin-right: 6px; }
 
-        .bubble-container { display: flex; flex-direction: column; max-width: 85%; flex-shrink: 1; }
+        .bubble-container { display: flex; flex-direction: column; max-width: 85%; flex-shrink: 1; position: relative; z-index: 1; }
         .message-row.self .bubble-container { align-items: flex-end; }
         .message-row:not(.self) .bubble-container { align-items: flex-start; }
         .msg-time { font-size: 9px; color: var(--msg-time-color); padding: 0 4px 2px 4px; opacity: 0.7; user-select: none; }
-        .bubble-row { display: flex; align-items: flex-end; gap: 4px; width: 100%; }
+        .bubble-row { display: flex; align-items: flex-end; gap: 4px; width: 100%; position: relative; z-index: 1; }
         .message-row.self .bubble-row { flex-direction: row-reverse; }
 
         .bubble { 
@@ -414,11 +429,12 @@
             max-width: 100%; 
             flex-shrink: 1; 
             transition: font-size 0.2s ease, font-weight 0.2s ease; 
+            position: relative;
+            z-index: 1;
         }
         .message-row.self .bubble { background: var(--bg-bubble-self); }
         .bubble img { max-width: 160px; max-height: 160px; border-radius: 6px; display: block; margin: 4px 0; }
 
-        /* ===== 🎁 礼物卡片样式 ===== */
         .gift-card {
             display: flex;
             flex-direction: column;
@@ -430,6 +446,8 @@
             max-width: 280px;
             transition: 0.2s;
             cursor: default;
+            position: relative;
+            z-index: 1;
         }
         .gift-card .gift-row {
             display: flex;
@@ -485,31 +503,7 @@
             color: #2ed573;
         }
 
-        /* ===== 送礼卡片（旧版兼容） ===== */
-        .gift-card {
-            display: flex; align-items: center; gap: 10px;
-            background: linear-gradient(135deg, #fff5f5, #fff0f0);
-            border: 2px solid #ff6b81;
-            border-radius: 10px;
-            padding: 8px 12px;
-            margin: 3px 0;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 2px 12px rgba(255,107,129,0.15);
-        }
-        .gift-card:active { transform: scale(0.97); }
-        .gift-card .gift-icon-box { font-size: 24px; flex-shrink: 0; }
-        .gift-card .gift-info { flex: 1; min-width: 0; }
-        .gift-card .gift-info .gift-name { font-size: 13px; font-weight: 600; color: #1a1a1a; }
-        .gift-card .gift-info .gift-from { font-size: 11px; color: #888; }
-        .gift-card .gift-info .gift-from .from-name { color: #ff6b81; font-weight: 500; }
-        .gift-card .gift-badge { font-size: 10px; background: #ff6b81; color: #fff; padding: 2px 10px; border-radius: 12px; flex-shrink: 0; }
-        .gift-card .gift-price-tag { font-size: 12px; font-weight: 600; color: #2ed573; flex-shrink: 0; }
-        .message-row.self .gift-card { background: linear-gradient(135deg, #f0fff0, #e8f5e8); border-color: #2ed573; }
-        .message-row.self .gift-card .gift-badge { background: #2ed573; }
-        .message-row.self .gift-card .gift-from .from-name { color: #2ed573; }
-
-        .msg-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: center; opacity: 0.3; transition: opacity 0.2s; padding-bottom: 2px; }
+        .msg-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: center; opacity: 0.3; transition: opacity 0.2s; padding-bottom: 2px; position: relative; z-index: 2; }
         .message-row:hover .msg-actions { opacity: 0.8; }
         .msg-actions .action-btn { background: none; border: none; color: #666; font-size: 12px; cursor: pointer; padding: 2px 3px; transition: 0.15s; }
         .msg-actions .action-btn:active { transform: scale(0.85); }
@@ -523,7 +517,7 @@
         .bubble .quote-block .quote-content { font-style: italic; }
         .bubble .quote-divider { border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 3px 0 4px 0; }
 
-        .typing-indicator { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+        .typing-indicator { display: flex; align-items: center; gap: 8px; padding: 4px 0; position: relative; z-index: 1; }
         .typing-dots { padding: 10px 16px; border-radius: 8px; display: flex; gap: 4px; background: var(--bg-bubble-other); }
         .typing-dots span { display: inline-block; width: 7px; height: 7px; background: var(--text-secondary); border-radius: 50%; animation: dotBounce 1.4s infinite both; }
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
@@ -531,7 +525,6 @@
         @keyframes dotBounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ===== 输入区域 ===== */
         .chat-input-area { 
             background: var(--header-bg); 
             backdrop-filter: blur(10px); 
@@ -542,15 +535,15 @@
             gap: 3px; 
             flex-shrink: 0; 
             position: relative; 
-            z-index: 1; 
+            z-index: 2; 
         }
         .chat-input-area .input-row { display: flex; align-items: center; gap: 6px; }
-        .chat-input-area .meme-btn { background: none; border: none; font-size: 20px; color: #576b95; cursor: pointer; padding: 4px; flex-shrink: 0; transition: 0.15s; }
+        .chat-input-area .meme-btn { background: none; border: none; font-size: 20px; color: #576b95; cursor: pointer; padding: 4px; flex-shrink: 0; transition: 0.15s; position: relative; z-index: 3; }
         .chat-input-area .meme-btn:active { transform: scale(0.85); }
-        .chat-input-area .plus-btn { background: none; border: none; font-size: 22px; color: #576b95; cursor: pointer; padding: 4px; flex-shrink: 0; }
-        .chat-input-area input { flex: 1; border: none; outline: none; background: var(--input-bg); padding: 6px 12px; border-radius: 8px; font-size: 14px; color: var(--text-primary); transition: background 0.3s ease; min-height: 34px; }
+        .chat-input-area .plus-btn { background: none; border: none; font-size: 22px; color: #576b95; cursor: pointer; padding: 4px; flex-shrink: 0; position: relative; z-index: 3; }
+        .chat-input-area input { flex: 1; border: none; outline: none; background: var(--input-bg); padding: 6px 12px; border-radius: 8px; font-size: 14px; color: var(--text-primary); transition: background 0.3s ease; min-height: 34px; position: relative; z-index: 1; }
         .chat-input-area input:focus { background: var(--bg-card); box-shadow: 0 0 0 2px rgba(7,193,96,0.2); }
-        .chat-input-area .send-btn { background: #07c160; border: none; color: #fff; width: 34px; height: 34px; border-radius: 50%; font-size: 14px; cursor: pointer; flex-shrink: 0; transition: 0.15s; display: flex; align-items: center; justify-content: center; }
+        .chat-input-area .send-btn { background: #07c160; border: none; color: #fff; width: 34px; height: 34px; border-radius: 50%; font-size: 14px; cursor: pointer; flex-shrink: 0; transition: 0.15s; display: flex; align-items: center; justify-content: center; position: relative; z-index: 3; }
         .chat-input-area .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .chat-input-area .send-btn:active:not(:disabled) { transform: scale(0.9); }
 
@@ -589,12 +582,14 @@
             gap: 12px; 
             flex-shrink: 0; 
             min-height: 52px; 
+            position: relative;
+            z-index: 2;
         }
-        .memory-header-bar .back-btn, .meme-header-bar .back-btn { font-size: 20px; color: #576b95; cursor: pointer; border: none; background: none; padding: 4px; }
+        .memory-header-bar .back-btn, .meme-header-bar .back-btn { font-size: 20px; color: #576b95; cursor: pointer; border: none; background: none; padding: 4px; position: relative; z-index: 3; }
         .memory-header-bar .title, .meme-header-bar .title { font-size: 17px; font-weight: 600; color: var(--text-primary); flex: 1; }
         .memory-header-bar .role-selector { font-size: 13px; padding: 3px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); outline: none; color: var(--text-primary); max-width: 110px; }
 
-        .memory-body-scroll, .meme-body-scroll { flex: 1; overflow-y: auto; padding: 12px 16px 20px; }
+        .memory-body-scroll, .meme-body-scroll { flex: 1; overflow-y: auto; padding: 12px 16px 20px; position: relative; z-index: 1; }
         .memory-role-header { font-size: 14px; font-weight: 600; color: var(--text-primary); padding: 4px 0 10px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
         .memory-role-header .badge-count { font-size: 11px; font-weight: 400; color: var(--text-secondary); }
         .memory-item-card { background: var(--bg-card); border-radius: 10px; padding: 8px 12px; margin-bottom: 6px; box-shadow: 0 1px 4px var(--shadow-color); display: flex; align-items: flex-start; gap: 8px; border-left: 3px solid #a29bfe; }
@@ -603,13 +598,12 @@
         .memory-item-card .mem-delete-btn:active { opacity: 1; transform: scale(0.9); }
         .memory-empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
         .memory-empty-state i { font-size: 36px; opacity: 0.2; display: block; margin-bottom: 10px; }
-        .memory-add-bar { background: var(--header-bg); backdrop-filter: blur(10px); padding: 8px 16px calc(10px + var(--safe-bottom, 0px)); border-top: 1px solid var(--border-color); display: flex; gap: 8px; flex-shrink: 0; }
+        .memory-add-bar { background: var(--header-bg); backdrop-filter: blur(10px); padding: 8px 16px calc(10px + var(--safe-bottom, 0px)); border-top: 1px solid var(--border-color); display: flex; gap: 8px; flex-shrink: 0; position: relative; z-index: 2; }
         .memory-add-bar input { flex: 1; border: none; outline: none; background: var(--input-bg); padding: 6px 12px; border-radius: 8px; font-size: 13px; color: var(--text-primary); transition: background 0.3s ease; }
         .memory-add-bar input:focus { background: var(--bg-card); box-shadow: 0 0 0 2px rgba(162,155,254,0.2); }
         .memory-add-bar .add-mem-btn { background: #a29bfe; border: none; color: #fff; padding: 6px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: 0.15s; white-space: nowrap; }
         .memory-add-bar .add-mem-btn:active { transform: scale(0.95); }
 
-        /* ===== 表情包 ===== */
         .meme-category-list { display: flex; flex-direction: column; gap: 8px; }
         .meme-list-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 10px; }
         .meme-list-title { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
@@ -669,8 +663,10 @@
             gap: 10px; 
             flex-shrink: 0; 
             min-height: 52px; 
+            position: relative;
+            z-index: 2;
         }
-        .diary-header .back-btn { font-size: 18px; color: #8a7a6a; cursor: pointer; border: none; background: none; padding: 4px; }
+        .diary-header .back-btn { font-size: 18px; color: #8a7a6a; cursor: pointer; border: none; background: none; padding: 4px; position: relative; z-index: 3; }
         .diary-header .title { font-size: 16px; font-weight: 600; color: #4a3a2a; flex: 1; display: flex; align-items: center; gap: 6px; }
         .diary-header .title i { color: #d4a574; }
         .diary-header .diary-actions { display: flex; gap: 6px; align-items: center; }
@@ -698,7 +694,7 @@
         .diary-calendar-nav .days-grid .day-cell.today.has-diary::after { background: #fff; }
         .diary-calendar-nav .days-grid .day-cell.selected { border: 2px solid #d4a574; background: rgba(212,165,116,0.15); }
 
-        .diary-body { flex: 1; overflow-y: auto; padding: 10px 14px 8px; }
+        .diary-body { flex: 1; overflow-y: auto; padding: 10px 14px 8px; position: relative; z-index: 1; }
         .diary-card { background: #fdf8ed; border-radius: 12px; padding: 14px 16px 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid rgba(212,165,116,0.1); font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", cursive; max-width: 100%; animation: fadeInUp 0.3s ease; min-height: 120px; }
         .diary-card .diary-header-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed rgba(212,165,116,0.15); }
         .diary-card .diary-date-display { font-size: 14px; color: #4a3a2a; font-weight: 500; letter-spacing: 0.5px; }
@@ -732,7 +728,6 @@
         .diary-notification .notif-btn:active { transform: scale(0.95); }
         .diary-notification .notif-close { background: none; border: none; color: #b0a090; font-size: 12px; cursor: pointer; margin-top: 6px; font-family: inherit; padding: 4px 10px; }
 
-        /* ===== 权限弹窗 ===== */
         .permission-overlay { position: absolute; inset: 0; z-index: 100; background: rgba(0,0,0,0.5); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; border-radius: 32px; overflow: hidden; }
         .permission-overlay.active { display: flex; }
         .permission-dialog { background: var(--bg-card); border-radius: 20px; padding: 24px 20px 18px; max-width: 300px; width: 88%; animation: fadeInUp 0.3s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
@@ -746,7 +741,6 @@
         .permission-dialog .btn-group .btn-deny { background: #fee; color: #e74c3c; }
         .permission-dialog .btn-group .btn-cancel-perm { background: var(--bg-secondary); color: var(--text-secondary); }
 
-        /* ===== 个性化弹窗 ===== */
         .style-picker-overlay { position: absolute; inset: 0; z-index: 90; background: rgba(0,0,0,0.5); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; border-radius: 32px; overflow: hidden; }
         .style-picker-overlay.active { display: flex; }
         .style-picker-panel { background: #1a1a2e; border-radius: 20px; padding: 20px 16px 18px; max-width: 380px; width: 94%; max-height: 85%; overflow-y: auto; animation: fadeInUp 0.3s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); }
@@ -771,7 +765,6 @@
         .style-option .style-check { color: #07c160; font-size: 12px; margin-left: 4px; display: none; }
         .style-option.active .style-check { display: inline; }
 
-        /* ===== 图片选择器 ===== */
         .image-picker-overlay { position: absolute; inset: 0; z-index: 50; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); display: none; justify-content: center; align-items: flex-end; border-radius: 32px; overflow: hidden; }
         .image-picker-overlay.active { display: flex; }
         .image-picker-menu { background: var(--bg-card); width: 100%; padding: 16px 16px calc(24px + var(--safe-bottom, 0px)); border-radius: 20px 20px 0 0; animation: slideUp 0.3s ease; }
@@ -784,7 +777,6 @@
         .image-picker-menu .cancel-btn { width: 100%; margin-top: 12px; padding: 12px; border: none; background: var(--bg-secondary); border-radius: 12px; font-size: 14px; color: var(--text-primary); cursor: pointer; font-weight: 500; }
         .image-picker-menu .cancel-btn:active { background: #e8e8e8; }
 
-        /* ===== 设置抽屉 ===== */
         .settings-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(3px); z-index: 60; display: none; justify-content: flex-end; border-radius: 32px; overflow: hidden; }
         .settings-overlay.active { display: flex; }
         .settings-drawer { background: var(--bg-secondary); width: 88%; max-width: 320px; height: 100%; padding: calc(18px + var(--safe-top, 0px)) 16px calc(24px + var(--safe-bottom, 0px)); overflow-y: auto; box-shadow: -4px 0 25px rgba(0,0,0,0.15); animation: slideInRight 0.25s ease; }
@@ -879,7 +871,6 @@
         .data-modal .role-select-list .role-check { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 12px; color: var(--text-primary); }
         .data-modal .role-select-list .role-check input[type="checkbox"] { accent-color: #07c160; cursor: pointer; }
 
-        /* ===== 心跳悬浮窗 ===== */
         .floating-heart { 
             position: fixed; 
             bottom: 100px; 
@@ -1252,9 +1243,8 @@
 
 <script>
 // ============================================================
-//  🚀 梦女空间 v2.5 - 智能时间分隔符（正确版）
-//  核心：从最新消息往前推，跨天自动累加日期
-//  规则：间隔 > 10分钟才显示分隔符
+//  🚀 梦女空间 v2.6 - 完整修复版
+//  修复：时间分隔符、AI主动消息、头像遮挡、日记定时
 // ============================================================
 
 var CONFIG = {
@@ -1298,6 +1288,7 @@ var CONFIG = {
     lastAiMessageTime: {},
     aiMessageCooldown: 30 * 60 * 1000,
     timeDividerThreshold: 10 * 60 * 1000,
+    diaryGenerateTime: null,
 };
 
 var roles = [];
@@ -1320,6 +1311,7 @@ var memeDeleteMode = false;
 var memeSelectedForDelete = [];
 var heartBeatInterval = null;
 var lastMessageCount = -1;
+var diaryCheckInterval = null;
 
 function generateId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6); }
 function getCurrentRole() { return roles.find(function(r) { return r.id === currentRoleId; }) || roles[0] || null; }
@@ -1370,10 +1362,28 @@ function saveAllData() {
 }
 
 // ============================================================
-//  🔄 数据迁移
+//  🔄 数据迁移（兼容旧版）
 // ============================================================
-function migrateChatVisitData() {
-    if (typeof CONFIG.lastChatVisit === 'number' || CONFIG.lastChatVisit === null || CONFIG.lastChatVisit === undefined) {
+function migrateOldData() {
+    // 修复消息时间格式
+    roles.forEach(function(role) {
+        if (Array.isArray(role.messages)) {
+            role.messages.forEach(function(msg) {
+                // 如果 time 只是 "HH:MM"，升级为完整时间戳
+                if (msg.time && /^\d{1,2}:\d{2}$/.test(msg.time)) {
+                    var now = new Date();
+                    var parts = msg.time.split(':');
+                    var date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(parts[0]), parseInt(parts[1]));
+                    msg.time = date.toISOString();
+                }
+                // 如果没有 id，补一个
+                if (!msg.id) msg.id = generateId();
+            });
+        }
+    });
+    
+    // 迁移 lastChatVisit 格式
+    if (CONFIG.lastChatVisit === undefined || CONFIG.lastChatVisit === null || typeof CONFIG.lastChatVisit === 'number') {
         var oldVisit = CONFIG.lastChatVisit || 0;
         var oldAiMsg = CONFIG.lastAiMessageTime || 0;
         CONFIG.lastChatVisit = {};
@@ -1385,11 +1395,14 @@ function migrateChatVisitData() {
         saveAllData();
         console.log('🔄 已迁移 lastChatVisit 数据格式');
     }
+    
     roles.forEach(function(role) {
         if (!CONFIG.lastChatVisit[role.id]) CONFIG.lastChatVisit[role.id] = 0;
         if (!CONFIG.lastAiMessageTime[role.id]) CONFIG.lastAiMessageTime[role.id] = 0;
     });
+    
     if (!CONFIG.timeDividerThreshold) CONFIG.timeDividerThreshold = 10 * 60 * 1000;
+    if (!CONFIG.diaryGenerateTime) CONFIG.diaryGenerateTime = '20:00';
 }
 
 function loadAllData() {
@@ -1430,6 +1443,7 @@ function loadAllData() {
         }
         if (!CONFIG.aiMessageCooldown) CONFIG.aiMessageCooldown = 30 * 60 * 1000;
         if (!CONFIG.timeDividerThreshold) CONFIG.timeDividerThreshold = 10 * 60 * 1000;
+        if (!CONFIG.diaryGenerateTime) CONFIG.diaryGenerateTime = '20:00';
 
         roles = savedData.roles;
         roles.forEach(function(role) {
@@ -1443,7 +1457,7 @@ function loadAllData() {
             if (!Array.isArray(role.memory)) role.memory = [];
         });
         currentRoleId = savedData.currentRoleId || roles[0].id;
-        migrateChatVisitData();
+        migrateOldData();
     } else {
         CONFIG = {
             apiKey: '', model: 'deepseek-chat', wallpaper: '', chatBg: '', userAvatar: '',
@@ -1455,6 +1469,7 @@ function loadAllData() {
             floatingHeartPosition: { x: null, y: null },
             lastChatVisit: {}, lastAiMessageTime: {}, aiMessageCooldown: 30 * 60 * 1000,
             timeDividerThreshold: 10 * 60 * 1000,
+            diaryGenerateTime: '20:00',
         };
         var defaultRole = createDefaultRole('温柔学长');
         defaultRole.persona = '25岁音乐系研究生，性格内敛细腻，喜欢弹钢琴';
@@ -1462,10 +1477,12 @@ function loadAllData() {
         defaultRole.style = '只说对话内容，不要任何动作、表情、环境描写。用短句，像真人微信聊天一样自然分段回复。';
         defaultRole.extra = '有一只叫「糯米」的白猫';
         defaultRole.memory = ['用户喜欢被叫"小乖"', '用户对猫毛过敏'];
-        defaultRole.messages = [{ role: 'assistant', content: '你好呀~ 我是温柔学长，很高兴认识你 💕', time: new Date().toLocaleTimeString() }];
+        var now = new Date();
+        var timeStr = now.toISOString();
+        defaultRole.messages = [{ id: generateId(), role: 'assistant', content: '你好呀~ 我是温柔学长，很高兴认识你 💕', time: timeStr }];
         roles = [defaultRole];
         currentRoleId = defaultRole.id;
-        CONFIG.lastChatVisit[defaultRole.id] = 0;
+        CONFIG.lastChatVisit[defaultRole.id] = Date.now();
         CONFIG.lastAiMessageTime[defaultRole.id] = 0;
         saveAllData();
     }
@@ -1620,9 +1637,10 @@ function applyChatBgForRole(role) {
 }
 
 // ============================================================
-//  🕒 智能时间分隔符 - 核心函数
+//  🕒 时间工具函数
 // ============================================================
 function parseTimeString(timeStr) {
+    if (!timeStr) return new Date();
     var date = new Date(timeStr);
     if (!isNaN(date.getTime())) {
         return date;
@@ -1668,8 +1686,9 @@ function getTimeDisplayFromDate(date, timePart) {
 function createTimeDividerWithDate(timeStr, actualDate) {
     var div = document.createElement('div');
     div.className = 'time-divider';
-    var timePart = timeStr.slice(0, 5);
-    var displayText = getTimeDisplayFromDate(actualDate, timePart);
+    var date = new Date(timeStr);
+    var timePart = date.toTimeString().slice(0, 5);
+    var displayText = getTimeDisplayFromDate(actualDate || date, timePart);
     div.innerHTML = '<span class="divider-line"></span><span class="divider-text">' + displayText + '</span><span class="divider-line"></span>';
     return div;
 }
@@ -1918,8 +1937,8 @@ function startHeartBeatFluctuation() {
 //  🌟 AI 主动发消息（按角色独立检测）
 // ============================================================
 function checkAndSendAiMessage(role) {
-    if (!role) return;
-    if (!CONFIG.apiKey) return;
+    if (!role) return false;
+    if (!CONFIG.apiKey) return false;
 
     var now = Date.now();
     var lastVisit = CONFIG.lastChatVisit[role.id] || 0;
@@ -1930,7 +1949,8 @@ function checkAndSendAiMessage(role) {
     var timeSinceLastAi = now - lastAiMsg;
 
     if (timeSinceVisit > cooldown && timeSinceLastAi > cooldown) {
-        if (Math.random() < 0.5) {
+        // 提高触发概率到 70%
+        if (Math.random() < 0.7) {
             generateAiActiveMessage(role);
             CONFIG.lastAiMessageTime[role.id] = now;
             CONFIG.lastChatVisit[role.id] = now;
@@ -2178,7 +2198,7 @@ function renderRoleManager() {
 }
 
 // ============================================================
-//  🎁 聊天消息渲染（含智能时间分隔符 - 正确版）
+//  🎁 聊天消息渲染（含智能时间分隔符）
 // ============================================================
 function renderMessages() {
     var role = getCurrentRole();
@@ -2197,15 +2217,6 @@ function renderMessages() {
     if (!container) return;
     
     var msgs = role.messages || [];
-    
-    var domMessageCount = container.querySelectorAll('.message-row').length;
-    if (msgs.length !== domMessageCount) {
-        console.log('🔄 消息数量不匹配 (DOM:', domMessageCount, '数据:', msgs.length, ')，强制重新渲染');
-        lastMessageCount = -1;
-    }
-    
-    applyChatBgForRole(role);
-    
     var fragment = document.createDocumentFragment();
     var threshold = CONFIG.timeDividerThreshold || 10 * 60 * 1000;
     
@@ -2227,30 +2238,16 @@ function renderMessages() {
         return;
     }
     
-    // ===== 🌟 核心：从最新消息往前推算日期 =====
-    var now = new Date();
-    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    // 第一步：计算每条消息相对于今天的偏移天数
-    var dayOffsets = [];
+    // 计算日期偏移（从旧到新）
     var lastMinutes = -1;
     var offset = 0;
+    var dayOffsets = [];
     
-    // 从旧到新遍历，计算偏移
     for (var i = 0; i < msgs.length; i++) {
-        var timeStr = msgs[i].time;
-        var minutes = 0;
-        var timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})/);
-        if (timeMatch) {
-            minutes = parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2]);
-        } else {
-            var d = new Date(timeStr);
-            if (!isNaN(d.getTime())) {
-                minutes = d.getHours() * 60 + d.getMinutes();
-            }
-        }
+        var msg = msgs[i];
+        var date = parseTimeString(msg.time);
+        var minutes = date.getHours() * 60 + date.getMinutes();
         
-        // 如果当前时间 < 上一条时间（回绕），说明跨天了
         if (lastMinutes !== -1 && minutes < lastMinutes) {
             offset++;
         }
@@ -2259,25 +2256,17 @@ function renderMessages() {
         lastMinutes = minutes;
     }
     
-    // 第二步：渲染消息，使用计算出的日期
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     var lastTimeStr = null;
     var lastDate = null;
     
     for (var idx = 0; idx < msgs.length; idx++) {
         var msg = msgs[idx];
         var currentTime = msg.time;
-        var currentMinutes = 0;
-        var timeMatch2 = currentTime.match(/^(\d{1,2}):(\d{2})/);
-        if (timeMatch2) {
-            currentMinutes = parseInt(timeMatch2[1]) * 60 + parseInt(timeMatch2[2]);
-        } else {
-            var d2 = new Date(currentTime);
-            if (!isNaN(d2.getTime())) {
-                currentMinutes = d2.getHours() * 60 + d2.getMinutes();
-            }
-        }
+        var dateObj = parseTimeString(currentTime);
         
-        // 计算这条消息的真实日期
+        // 计算真实日期
         var dayOffset = dayOffsets[idx] || 0;
         var actualDate = new Date(today);
         actualDate.setDate(actualDate.getDate() - dayOffset);
@@ -2289,7 +2278,6 @@ function renderMessages() {
             showDivider = true;
         } else if (lastTimeStr) {
             var diff = getTimeDiff(lastTimeStr, currentTime);
-            // 跨天或间隔 > 阈值
             if (currentDate !== lastDate || diff > threshold) {
                 showDivider = true;
             }
@@ -2643,7 +2631,7 @@ function callDeepSeek(userMessage, role) {
 }
 
 // ============================================================
-//  送礼功能（从商城接收礼物）
+//  送礼功能
 // ============================================================
 function sendGiftToRole(roleId, productName, fromName, note, price) {
     var role = roles.find(function(r) { return r.id === roleId; });
@@ -2659,7 +2647,7 @@ function sendGiftToRole(roleId, productName, fromName, note, price) {
     };
 
     var msgId = generateId();
-    var timeStr = new Date().toLocaleTimeString();
+    var timeStr = new Date().toISOString();
 
     role.messages.push({
         id: msgId,
@@ -2706,9 +2694,6 @@ function sendGiftToRole(roleId, productName, fromName, note, price) {
     return true;
 }
 
-// ============================================================
-//  检测和处理送礼标记
-// ============================================================
 function detectAndProcessGift(roleId, reply) {
     var role = roles.find(function(r) { return r.id === roleId; });
     if (!role) return reply;
@@ -2759,7 +2744,7 @@ function addMessageToRole(roleId, role, content, type, giftData) {
     var r = roles.find(function(ro) { return ro.id === roleId; });
     if (!r) return;
     var msgId = generateId();
-    var timeStr = new Date().toLocaleTimeString();
+    var timeStr = new Date().toISOString();
     var msg = { id: msgId, role: role, content: content, type: type, time: timeStr };
     if (giftData) msg.giftData = giftData;
     r.messages.push(msg);
@@ -3324,6 +3309,70 @@ function generateDiary(roleId, showToastMsg) {
 }
 
 // ============================================================
+//  🕐 日记定时生成
+// ============================================================
+function startDiaryScheduler() {
+    if (diaryCheckInterval) clearInterval(diaryCheckInterval);
+    
+    // 每分钟检查一次
+    diaryCheckInterval = setInterval(function() {
+        if (!CONFIG.diaryAutoGenerateEnabled) return;
+        if (!CONFIG.apiKey) return;
+        
+        var now = new Date();
+        var targetTime = CONFIG.diaryGenerateTime || '20:00';
+        var parts = targetTime.split(':');
+        var targetHour = parseInt(parts[0]) || 20;
+        var targetMinute = parseInt(parts[1]) || 0;
+        
+        // 检查是否到了目标时间（±1分钟误差）
+        if (now.getHours() === targetHour && now.getMinutes() === targetMinute) {
+            var todayKey = getTodayKey();
+            var lastCheckDate = CONFIG.lastDiaryCheckDate;
+            
+            // 如果今天还没生成过日记
+            if (lastCheckDate !== todayKey) {
+                console.log('📖 定时触发日记生成...');
+                CONFIG.lastDiaryCheckDate = todayKey;
+                saveAllData();
+                
+                // 为所有角色生成日记
+                roles.forEach(function(role) {
+                    var existing = getDiaryForDate(role.id, todayKey);
+                    if (!existing) {
+                        setTimeout(function() {
+                            generateDiary(role.id, false).then(function(diary) {
+                                if (diary) {
+                                    console.log('📖 已为「' + role.name + '」生成日记');
+                                    // 如果当前在日记页面，刷新显示
+                                    if (document.getElementById('diaryScreen').classList.contains('open')) {
+                                        renderDiaryAll();
+                                    }
+                                    // 发送通知
+                                    showDiaryNotification(role.name);
+                                }
+                            });
+                        }, 500);
+                    }
+                });
+            }
+        }
+    }, 30000); // 每30秒检查一次
+}
+
+function showDiaryNotification(roleName) {
+    var notification = document.getElementById('diaryNotification');
+    var text = document.getElementById('diaryNotifText');
+    if (notification && text) {
+        text.textContent = '✨ ' + roleName + ' 刚刚写好了今天的日记...';
+        notification.classList.add('active');
+        setTimeout(function() {
+            notification.classList.remove('active');
+        }, 30000);
+    }
+}
+
+// ============================================================
 //  表情包 - IndexedDB
 // ============================================================
 var DEFAULT_CATEGORIES = [
@@ -3832,11 +3881,8 @@ function formatTime(timeStr, mode) {
     try {
         var date = new Date(timeStr);
         if (isNaN(date.getTime())) {
-            if (mode === 'HH:MM') return timeStr.slice(0, 5);
-            if (mode === 'YYYY-MM-DD HH:MM') {
-                var today = new Date();
-                return today.toISOString().slice(0, 10) + ' ' + timeStr.slice(0, 5);
-            }
+            var match = timeStr.match(/^(\d{1,2}):(\d{2})/);
+            if (match) return match[1] + ':' + match[2];
             return timeStr;
         }
         if (mode === 'HH:MM') return date.toTimeString().slice(0, 5);
@@ -3846,7 +3892,7 @@ function formatTime(timeStr, mode) {
 }
 
 // ============================================================
-//  🌟 页面切换 - 打开聊天时检测 AI 主动消息
+//  🌟 页面切换
 // ============================================================
 function openChat(fromContacts) {
     fromContacts = fromContacts || false;
@@ -3875,7 +3921,10 @@ function openChat(fromContacts) {
         readMessages = {};
         document.getElementById('messageInput').value = loadDraft(role2.id);
         
-        checkAndSendAiMessage(role2);
+        // 延迟执行 AI 主动消息
+        setTimeout(function() {
+            checkAndSendAiMessage(role2);
+        }, 1500);
         
         setTimeout(function() {
             document.getElementById('messageInput').focus();
@@ -4242,13 +4291,17 @@ function init() {
 
     try { setInterval(updateStorageDisplay, 30000); } catch (e) { console.error('存储监控启动失败:', e); }
 
+    // 启动日记定时调度
+    try { startDiaryScheduler(); } catch (e) { console.error('日记调度启动失败:', e); }
+
     try { registerServiceWorker(); } catch (e) { console.log('PWA 注册跳过'); }
 
-    console.log('🚀 梦女空间 v2.5 已启动！');
-    console.log('✨ 新增：智能时间分隔符（从最新消息往前推算日期）');
+    console.log('🚀 梦女空间 v2.6 已启动！');
+    console.log('✅ 修复：时间分隔符、AI主动消息、头像遮挡、日记定时');
     console.log('角色数量:', roles.length);
     console.log('日记数量:', CONFIG.diaries ? CONFIG.diaries.length : 0);
     console.log('表情包数量:', memes.length);
+    console.log('📖 日记定时时间:', CONFIG.diaryGenerateTime || '20:00');
 }
 
 // ============================================================
@@ -4353,14 +4406,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dataModalOverlay').addEventListener('click', function(e) { if (e.target === this) closeDataModal(); });
     document.getElementById('dataExportBtn').addEventListener('click', function() {
         var exportType = getSelectedExportType();
-        var exportData = { exportTime: new Date().toISOString(), version: '2.5', type: exportType, config: {}, roles: [], diaries: [] };
+        var exportData = { exportTime: new Date().toISOString(), version: '2.6', type: exportType, config: {}, roles: [], diaries: [] };
         var roleData = [];
         if (exportType === 'all') {
             roleData = JSON.parse(JSON.stringify(roles));
             exportData.diaries = JSON.parse(JSON.stringify(CONFIG.diaries || []));
-            exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition, lastChatVisit: CONFIG.lastChatVisit, lastAiMessageTime: CONFIG.lastAiMessageTime, aiMessageCooldown: CONFIG.aiMessageCooldown, timeDividerThreshold: CONFIG.timeDividerThreshold };
+            exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition, lastChatVisit: CONFIG.lastChatVisit, lastAiMessageTime: CONFIG.lastAiMessageTime, aiMessageCooldown: CONFIG.aiMessageCooldown, timeDividerThreshold: CONFIG.timeDividerThreshold, diaryGenerateTime: CONFIG.diaryGenerateTime };
         } else if (exportType === 'settings') {
-            exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition, lastChatVisit: CONFIG.lastChatVisit, lastAiMessageTime: CONFIG.lastAiMessageTime, aiMessageCooldown: CONFIG.aiMessageCooldown, timeDividerThreshold: CONFIG.timeDividerThreshold };
+            exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition, lastChatVisit: CONFIG.lastChatVisit, lastAiMessageTime: CONFIG.lastAiMessageTime, aiMessageCooldown: CONFIG.aiMessageCooldown, timeDividerThreshold: CONFIG.timeDividerThreshold, diaryGenerateTime: CONFIG.diaryGenerateTime };
             var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
             var url = URL.createObjectURL(blob);
             var link = document.createElement('a');
@@ -4448,6 +4501,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (!CONFIG.lastAiMessageTime || typeof CONFIG.lastAiMessageTime === 'number') CONFIG.lastAiMessageTime = {};
                         if (!CONFIG.aiMessageCooldown) CONFIG.aiMessageCooldown = 30 * 60 * 1000;
                         if (!CONFIG.timeDividerThreshold) CONFIG.timeDividerThreshold = 10 * 60 * 1000;
+                        if (!CONFIG.diaryGenerateTime) CONFIG.diaryGenerateTime = '20:00';
                     }
                     if (imported.diaries && Array.isArray(imported.diaries)) CONFIG.diaries = imported.diaries;
                     if (roles.length > 0) currentRoleId = roles[0].id;
