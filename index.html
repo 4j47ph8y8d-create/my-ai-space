@@ -1252,11 +1252,13 @@
 
 <script>
 // ============================================================
-//  🚀 梦女空间 v2.7 - 修复版
+//  🚀 梦女空间 v2.8 - 完整修复版
 //  修复内容：
-//  1. AI主动回复概率提升到80%，检测到"晚安""午安"后不触发
+//  1. AI主动回复概率 80%，检测到"晚安""午安"后不触发
 //  2. 新旧数据时间分隔符全部修复（自动迁移）
 //  3. 每个角色独立计时，互不干扰
+//  4. 后台轮询每5分钟检查所有角色（真正实现半小时自动回复）
+//  5. 页面可见性变化时立即检查
 // ============================================================
 
 var CONFIG = {
@@ -1300,7 +1302,6 @@ var CONFIG = {
     lastAiMessageTime: {},
     aiMessageCooldown: 30 * 60 * 1000,
     timeDividerThreshold: 10 * 60 * 1000,
-    // 新增：记录每个角色的晚安/午安状态，用于阻止AI主动回复
     sleepMode: {},
 };
 
@@ -1379,7 +1380,6 @@ function saveAllData() {
 function migrateOldData() {
     var migrated = false;
     
-    // 1. 迁移 lastChatVisit 和 lastAiMessageTime 为独立格式
     if (typeof CONFIG.lastChatVisit === 'number' || CONFIG.lastChatVisit === null || CONFIG.lastChatVisit === undefined) {
         var oldVisit = CONFIG.lastChatVisit || 0;
         var oldAiMsg = CONFIG.lastAiMessageTime || 0;
@@ -1395,14 +1395,12 @@ function migrateOldData() {
         console.log('🔄 已迁移 lastChatVisit 数据格式');
     }
     
-    // 2. 确保每个角色都有独立计时
     roles.forEach(function(role) {
         if (!CONFIG.lastChatVisit[role.id]) CONFIG.lastChatVisit[role.id] = 0;
         if (!CONFIG.lastAiMessageTime[role.id]) CONFIG.lastAiMessageTime[role.id] = 0;
         if (CONFIG.sleepMode[role.id] === undefined) CONFIG.sleepMode[role.id] = false;
     });
     
-    // 3. 修复旧消息的时间格式：从 "HH:MM" 转为完整 ISO 日期
     var now = new Date();
     var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
@@ -1410,8 +1408,6 @@ function migrateOldData() {
         var msgs = role.messages || [];
         var lastOffset = 0;
         var lastMinutes = -1;
-        
-        // 先遍历一遍，计算跨天偏移
         var offsets = [];
         for (var i = 0; i < msgs.length; i++) {
             var msg = msgs[i];
@@ -1432,14 +1428,12 @@ function migrateOldData() {
             lastMinutes = minutes;
         }
         
-        // 重新构建消息时间
         for (var j = 0; j < msgs.length; j++) {
             var msg = msgs[j];
             var isHHMM = msg.time && /^\d{1,2}:\d{2}$/.test(msg.time);
             var isDate = msg.time && !isNaN(new Date(msg.time).getTime());
             
             if (isHHMM) {
-                // 旧格式 "HH:MM"，需要补全日期
                 var parts = msg.time.split(':');
                 var h = parseInt(parts[0]);
                 var m = parseInt(parts[1]);
@@ -1450,12 +1444,10 @@ function migrateOldData() {
                 msg.time = date.toISOString();
                 migrated = true;
             } else if (!isDate && msg.time) {
-                // 无法解析的时间，用当前时间
                 var now2 = new Date();
                 msg.time = now2.toISOString();
                 migrated = true;
             } else if (!msg.time) {
-                // 没有时间字段，补充
                 var now3 = new Date();
                 msg.time = now3.toISOString();
                 migrated = true;
@@ -1525,7 +1517,6 @@ function loadAllData() {
         });
         currentRoleId = savedData.currentRoleId || roles[0].id;
         
-        // 执行数据迁移（修复旧消息时间）
         migrateOldData();
         
     } else {
@@ -1577,18 +1568,12 @@ function loadAllData() {
 }
 
 // ============================================================
-//  🕒 智能时间分隔符 - 修复版（支持旧数据）
+//  🕒 智能时间分隔符
 // ============================================================
 function parseTimeString(timeStr) {
     if (!timeStr) return new Date();
-    
-    // 如果是完整日期字符串
     var date = new Date(timeStr);
-    if (!isNaN(date.getTime())) {
-        return date;
-    }
-    
-    // 如果是 "HH:MM" 格式（旧数据兜底）
+    if (!isNaN(date.getTime())) return date;
     var match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
     if (match) {
         var now = new Date();
@@ -1596,7 +1581,6 @@ function parseTimeString(timeStr) {
         var minutes = parseInt(match[2]);
         return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
     }
-    
     return new Date();
 }
 
@@ -1633,11 +1617,25 @@ function getTimeDiff(time1, time2) {
 }
 
 // ============================================================
-//  🌟 AI 主动发消息 - 修复版（独立计时 + 80%概率 + 晚安/午安屏蔽）
+//  🌟 AI 主动发消息 - 核心修复（后台轮询 + 独立计时）
 // ============================================================
+
+// 检查单个角色是否需要发送主动消息
 function checkAndSendAiMessage(role) {
     if (!role) return false;
-    if (!CONFIG.apiKey) return false;
+    if (!CONFIG.apiKey) {
+        return false;
+    }
+    
+    // 如果用户正在和这个角色聊天，不打扰
+    var chatScreen = document.getElementById('chatScreen');
+    if (chatScreen && chatScreen.classList.contains('open')) {
+        var currentRole = getCurrentRole();
+        if (currentRole && currentRole.id === role.id) {
+            console.log('💬 用户正在和 ' + role.name + ' 聊天，跳过主动消息');
+            return false;
+        }
+    }
     
     var now = Date.now();
     var lastVisit = CONFIG.lastChatVisit[role.id] || 0;
@@ -1647,28 +1645,76 @@ function checkAndSendAiMessage(role) {
     var timeSinceVisit = now - lastVisit;
     var timeSinceLastAi = now - lastAiMsg;
     
-    // 检查是否处于"睡眠模式"（用户说了晚安/午安）
     if (CONFIG.sleepMode[role.id] === true) {
         console.log('💤 ' + role.name + ' 处于睡眠模式，不触发主动回复');
         return false;
     }
     
-    // 检查条件：离开超过30分钟 + AI上次主动超过30分钟
     if (timeSinceVisit > cooldown && timeSinceLastAi > cooldown) {
-        // 80%概率触发
+        console.log('✅ ' + role.name + ' 满足主动消息条件，距离上次访问 ' + Math.round(timeSinceVisit/60000) + ' 分钟，距离上次AI主动 ' + Math.round(timeSinceLastAi/60000) + ' 分钟');
+        
         if (Math.random() < 0.8) {
+            console.log('🎯 ' + role.name + ' 触发主动消息（80%概率命中）');
             generateAiActiveMessage(role);
             CONFIG.lastAiMessageTime[role.id] = now;
             CONFIG.lastChatVisit[role.id] = now;
             saveAllData();
             return true;
+        } else {
+            console.log('⏭️ ' + role.name + ' 80%概率未命中，跳过本次');
+            CONFIG.lastAiMessageTime[role.id] = now;
+            saveAllData();
+            return false;
+        }
+    } else {
+        if (timeSinceVisit <= cooldown) {
+            console.log('⏳ ' + role.name + ' 距离上次访问 ' + Math.round(timeSinceVisit/60000) + ' 分钟，需要超过30分钟');
+        }
+        if (timeSinceLastAi <= cooldown) {
+            console.log('⏳ ' + role.name + ' 距离上次AI主动 ' + Math.round(timeSinceLastAi/60000) + ' 分钟，需要超过30分钟');
         }
     }
     
-    CONFIG.lastChatVisit[role.id] = now;
-    saveAllData();
     return false;
 }
+
+// 后台检测所有角色
+function checkAllRolesForAiMessage() {
+    console.log('🔍 后台检测所有角色的主动消息条件...');
+    var anyTriggered = false;
+    roles.forEach(function(role) {
+        var triggered = checkAndSendAiMessage(role);
+        if (triggered) anyTriggered = true;
+    });
+    if (!anyTriggered) {
+        console.log('💤 没有角色满足主动消息条件');
+    }
+}
+
+// 启动后台轮询检测（每5分钟检查一次）
+function startBackgroundCheck() {
+    setTimeout(function() {
+        console.log('🔍 首次后台检测...');
+        checkAllRolesForAiMessage();
+    }, 5000);
+    
+    setInterval(function() {
+        console.log('⏰ 定时后台检测...');
+        checkAllRolesForAiMessage();
+    }, 5 * 60 * 1000);
+    
+    console.log('🔄 后台主动消息检测已启动（每5分钟检查一次）');
+}
+
+// 页面可见性变化时检测
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        console.log('👁️ 页面可见，检查主动消息...');
+        setTimeout(function() {
+            checkAllRolesForAiMessage();
+        }, 1000);
+    }
+});
 
 function generateAiActiveMessage(role) {
     var systemPrompt = '你正在扮演「' + role.name + '」。用户刚刚回来了，但ta已经离开了一段时间。\n\n';
@@ -1728,13 +1774,11 @@ function detectSleepMode(roleId, content) {
     if (!role) return;
     
     var lower = content.toLowerCase();
-    // 检测是否包含"晚安"或"午安"
     if (lower.indexOf('晚安') !== -1 || lower.indexOf('午安') !== -1) {
         CONFIG.sleepMode[roleId] = true;
         saveAllData();
         console.log('💤 ' + role.name + ' 进入睡眠模式（用户说了晚安/午安）');
         
-        // 24小时后自动解除
         setTimeout(function() {
             if (CONFIG.sleepMode[roleId] === true) {
                 CONFIG.sleepMode[roleId] = false;
@@ -1744,7 +1788,6 @@ function detectSleepMode(roleId, content) {
         }, 24 * 60 * 60 * 1000);
     }
     
-    // 检测"早安""下午好"等唤醒词，解除睡眠模式
     if (lower.indexOf('早安') !== -1 || lower.indexOf('早上好') !== -1 || 
         lower.indexOf('下午好') !== -1 || lower.indexOf('晚上好') !== -1 ||
         lower.indexOf('你醒了吗') !== -1 || lower.indexOf('在吗') !== -1) {
@@ -1757,140 +1800,7 @@ function detectSleepMode(roleId, content) {
 }
 
 // ============================================================
-//  💪 其他核心函数（保持不变，已修复 addMessageToRole 保存完整时间）
-// ============================================================
-
-// 压缩图片（保持不变）
-function compressImage(dataUrl, maxSizeKB, callback) {
-    var img = new Image();
-    img.onload = function() {
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-        var quality = 0.9;
-        var width = img.width;
-        var height = img.height;
-        var maxDim = 800;
-        if (width > maxDim || height > maxDim) {
-            var ratio = Math.min(maxDim / width, maxDim / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-        }
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-        var result = canvas.toDataURL('image/jpeg', quality);
-        while (result.length > maxSizeKB * 1024 && quality > 0.2) {
-            quality -= 0.1;
-            result = canvas.toDataURL('image/jpeg', quality);
-        }
-        callback(result);
-    };
-    img.onerror = function() {
-        callback(dataUrl);
-    };
-    img.src = dataUrl;
-}
-
-// 美化功能（保持不变）
-function applyWallpaper(dataUrl) {
-    var screen = document.getElementById('launcherScreen');
-    if (dataUrl) {
-        compressImage(dataUrl, 200, function(compressed) {
-            screen.style.backgroundImage = 'url(' + compressed + ')';
-            screen.style.backgroundSize = 'cover';
-            screen.style.backgroundPosition = 'center';
-            screen.style.pointerEvents = 'auto';
-            document.getElementById('wallpaperPreviewImg').src = compressed;
-            document.getElementById('wallpaperPreviewImg').style.display = 'block';
-            document.getElementById('wallpaperStatus').textContent = '自定义';
-            CONFIG.wallpaper = compressed;
-            saveAllData();
-            var sizeKB = Math.round(compressed.length / 1024);
-            showToast('✅ 壁纸已保存（' + sizeKB + 'KB）');
-        });
-    } else {
-        screen.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
-        screen.style.backgroundSize = 'auto';
-        screen.style.pointerEvents = 'auto';
-        document.getElementById('wallpaperPreviewImg').style.display = 'none';
-        document.getElementById('wallpaperPreviewImg').src = '';
-        document.getElementById('wallpaperStatus').textContent = '默认';
-        CONFIG.wallpaper = '';
-        saveAllData();
-    }
-}
-
-function applyChatBg(dataUrl) {
-    if (dataUrl) {
-        CONFIG.chatBg = dataUrl;
-        var role = getCurrentRole();
-        if (!role || !role.chatBg) {
-            document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + dataUrl + ')';
-            document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
-            document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
-        }
-        document.getElementById('chatBgPreviewImg').src = dataUrl;
-        document.getElementById('chatBgPreviewImg').style.display = 'block';
-        document.getElementById('chatBgStatus').textContent = '自定义';
-    } else {
-        CONFIG.chatBg = '';
-        var role2 = getCurrentRole();
-        if (!role2 || !role2.chatBg) {
-            document.getElementById('chatBgLayer').style.backgroundImage = 'none';
-            document.getElementById('chatBgLayer').style.backgroundColor = 'var(--bg-secondary)';
-        }
-        document.getElementById('chatBgPreviewImg').style.display = 'none';
-        document.getElementById('chatBgPreviewImg').src = '';
-        document.getElementById('chatBgStatus').textContent = '默认';
-    }
-    saveAllData();
-}
-
-function applyUserAvatar(dataUrl) {
-    var els = document.querySelectorAll('.avatar.user');
-    if (dataUrl) {
-        els.forEach(function(el) {
-            el.style.backgroundImage = 'url(' + dataUrl + ')';
-            el.style.backgroundSize = 'cover';
-            el.style.backgroundPosition = 'center';
-            el.classList.add('has-image');
-        });
-        document.getElementById('userAvatarPreviewImg').src = dataUrl;
-        document.getElementById('userAvatarPreviewImg').style.display = 'block';
-        document.getElementById('userAvatarStatus').textContent = '自定义';
-    } else {
-        els.forEach(function(el) {
-            el.style.backgroundImage = '';
-            el.style.backgroundSize = '';
-            el.style.backgroundPosition = '';
-            el.classList.remove('has-image');
-            el.style.backgroundColor = '#576b95';
-        });
-        document.getElementById('userAvatarPreviewImg').style.display = 'none';
-        document.getElementById('userAvatarPreviewImg').src = '';
-        document.getElementById('userAvatarStatus').textContent = '默认';
-    }
-    CONFIG.userAvatar = dataUrl || '';
-    saveAllData();
-}
-
-function applyChatBgForRole(role) {
-    if (role && role.chatBg) {
-        document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + role.chatBg + ')';
-        document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
-        document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
-    } else if (CONFIG.chatBg) {
-        document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + CONFIG.chatBg + ')';
-        document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
-        document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
-    } else {
-        document.getElementById('chatBgLayer').style.backgroundImage = 'none';
-        document.getElementById('chatBgLayer').style.backgroundColor = 'var(--bg-secondary)';
-    }
-}
-
-// ============================================================
-//  心跳系统（保持不变）
+//  心跳系统
 // ============================================================
 var HEART_KEYWORDS = [
     { keywords: ['我爱你', '我喜欢你', '爱死你了', '最爱', '好爱你'], weight: 15, level: '热恋' },
@@ -2117,7 +2027,7 @@ function startHeartBeatFluctuation() {
 }
 
 // ============================================================
-//  联系人（保持不变）
+//  联系人
 // ============================================================
 function togglePinContact(roleId) {
     if (!CONFIG.pinnedContacts) CONFIG.pinnedContacts = [];
@@ -2183,7 +2093,7 @@ function renderContacts() {
 }
 
 // ============================================================
-//  渲染角色管理（保持不变）
+//  渲染角色管理
 // ============================================================
 function renderRoleManager() {
     var container = document.getElementById('roleManagerContainer');
@@ -2301,7 +2211,133 @@ function renderRoleManager() {
 }
 
 // ============================================================
-//  🎁 聊天消息渲染（含最终版时间分隔符 - 修复版）
+//  压缩图片
+// ============================================================
+function compressImage(dataUrl, maxSizeKB, callback) {
+    var img = new Image();
+    img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        var quality = 0.9;
+        var width = img.width;
+        var height = img.height;
+        var maxDim = 800;
+        if (width > maxDim || height > maxDim) {
+            var ratio = Math.min(maxDim / width, maxDim / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+        }
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        var result = canvas.toDataURL('image/jpeg', quality);
+        while (result.length > maxSizeKB * 1024 && quality > 0.2) {
+            quality -= 0.1;
+            result = canvas.toDataURL('image/jpeg', quality);
+        }
+        callback(result);
+    };
+    img.onerror = function() { callback(dataUrl); };
+    img.src = dataUrl;
+}
+
+function applyWallpaper(dataUrl) {
+    var screen = document.getElementById('launcherScreen');
+    if (dataUrl) {
+        compressImage(dataUrl, 200, function(compressed) {
+            screen.style.backgroundImage = 'url(' + compressed + ')';
+            screen.style.backgroundSize = 'cover';
+            screen.style.backgroundPosition = 'center';
+            screen.style.pointerEvents = 'auto';
+            document.getElementById('wallpaperPreviewImg').src = compressed;
+            document.getElementById('wallpaperPreviewImg').style.display = 'block';
+            document.getElementById('wallpaperStatus').textContent = '自定义';
+            CONFIG.wallpaper = compressed;
+            saveAllData();
+        });
+    } else {
+        screen.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
+        screen.style.backgroundSize = 'auto';
+        screen.style.pointerEvents = 'auto';
+        document.getElementById('wallpaperPreviewImg').style.display = 'none';
+        document.getElementById('wallpaperPreviewImg').src = '';
+        document.getElementById('wallpaperStatus').textContent = '默认';
+        CONFIG.wallpaper = '';
+        saveAllData();
+    }
+}
+
+function applyChatBg(dataUrl) {
+    if (dataUrl) {
+        CONFIG.chatBg = dataUrl;
+        var role = getCurrentRole();
+        if (!role || !role.chatBg) {
+            document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + dataUrl + ')';
+            document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
+            document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
+        }
+        document.getElementById('chatBgPreviewImg').src = dataUrl;
+        document.getElementById('chatBgPreviewImg').style.display = 'block';
+        document.getElementById('chatBgStatus').textContent = '自定义';
+    } else {
+        CONFIG.chatBg = '';
+        var role2 = getCurrentRole();
+        if (!role2 || !role2.chatBg) {
+            document.getElementById('chatBgLayer').style.backgroundImage = 'none';
+            document.getElementById('chatBgLayer').style.backgroundColor = 'var(--bg-secondary)';
+        }
+        document.getElementById('chatBgPreviewImg').style.display = 'none';
+        document.getElementById('chatBgPreviewImg').src = '';
+        document.getElementById('chatBgStatus').textContent = '默认';
+    }
+    saveAllData();
+}
+
+function applyUserAvatar(dataUrl) {
+    var els = document.querySelectorAll('.avatar.user');
+    if (dataUrl) {
+        els.forEach(function(el) {
+            el.style.backgroundImage = 'url(' + dataUrl + ')';
+            el.style.backgroundSize = 'cover';
+            el.style.backgroundPosition = 'center';
+            el.classList.add('has-image');
+        });
+        document.getElementById('userAvatarPreviewImg').src = dataUrl;
+        document.getElementById('userAvatarPreviewImg').style.display = 'block';
+        document.getElementById('userAvatarStatus').textContent = '自定义';
+    } else {
+        els.forEach(function(el) {
+            el.style.backgroundImage = '';
+            el.style.backgroundSize = '';
+            el.style.backgroundPosition = '';
+            el.classList.remove('has-image');
+            el.style.backgroundColor = '#576b95';
+        });
+        document.getElementById('userAvatarPreviewImg').style.display = 'none';
+        document.getElementById('userAvatarPreviewImg').src = '';
+        document.getElementById('userAvatarStatus').textContent = '默认';
+    }
+    CONFIG.userAvatar = dataUrl || '';
+    saveAllData();
+}
+
+function applyChatBgForRole(role) {
+    if (role && role.chatBg) {
+        document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + role.chatBg + ')';
+        document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
+        document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
+    } else if (CONFIG.chatBg) {
+        document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + CONFIG.chatBg + ')';
+        document.getElementById('chatBgLayer').style.backgroundSize = 'cover';
+        document.getElementById('chatBgLayer').style.backgroundPosition = 'center';
+    } else {
+        document.getElementById('chatBgLayer').style.backgroundImage = 'none';
+        document.getElementById('chatBgLayer').style.backgroundColor = 'var(--bg-secondary)';
+    }
+}
+
+// ============================================================
+//  🎁 聊天消息渲染
 // ============================================================
 function renderMessages() {
     var role = getCurrentRole();
@@ -2343,7 +2379,6 @@ function renderMessages() {
         return;
     }
     
-    // ===== 渲染消息 =====
     var lastTimeStr = null;
     var lastDate = null;
     
@@ -2351,7 +2386,6 @@ function renderMessages() {
         var msg = msgs[idx];
         var currentTime = msg.time;
         
-        // 如果消息没有时间，补充当前时间
         if (!currentTime) {
             var now2 = new Date();
             msg.time = now2.toISOString();
@@ -2359,17 +2393,14 @@ function renderMessages() {
             saveAllData();
         }
         
-        // 解析当前消息的日期
         var currentDateObj = parseTimeString(currentTime);
         var currentDate = currentDateObj.toDateString();
         
-        // 判断是否显示分隔符
         var showDivider = false;
         if (idx === 0) {
             showDivider = true;
         } else if (lastTimeStr) {
             var diff = getTimeDiff(lastTimeStr, currentTime);
-            // 跨天或超过阈值
             if (currentDate !== lastDate || diff > threshold) {
                 showDivider = true;
             }
@@ -2426,9 +2457,6 @@ function handleGiftCardClick(e) {
 function handleRegenerate(e) { e.stopPropagation(); var msgId = this.dataset.msgid; var role = getCurrentRole(); if (role) regenerateMessage(role.id, msgId); }
 function handleDelete(e) { e.stopPropagation(); var msgId = this.dataset.msgid; var role = getCurrentRole(); if (role && confirm('确定要删除这条消息吗？关联的记忆也会被删除。')) { deleteMessageAndMemory(role.id, msgId); } }
 
-// ============================================================
-//  🎁 礼物消息渲染（保持不变）
-// ============================================================
 function createMessageRow(msg, role) {
     var row = document.createElement('div');
     row.className = 'message-row ' + (msg.role === 'user' ? 'self' : '');
@@ -2634,7 +2662,7 @@ function regenerateMessage(roleId, messageId) {
 }
 
 // ============================================================
-//  API 调用（保持不变）
+//  API 调用
 // ============================================================
 function buildSystemPrompt(role) {
     var parts = [];
@@ -2722,7 +2750,7 @@ function callDeepSeek(userMessage, role) {
 }
 
 // ============================================================
-//  送礼功能（保持不变）
+//  送礼功能
 // ============================================================
 function sendGiftToRole(roleId, productName, fromName, note, price) {
     var role = roles.find(function(r) { return r.id === roleId; });
@@ -2785,9 +2813,6 @@ function sendGiftToRole(roleId, productName, fromName, note, price) {
     return true;
 }
 
-// ============================================================
-//  检测和处理送礼标记（保持不变）
-// ============================================================
 function detectAndProcessGift(roleId, reply) {
     var role = roles.find(function(r) { return r.id === roleId; });
     if (!role) return reply;
@@ -2834,19 +2859,18 @@ function getMallProductsFromStorage() {
 }
 
 // ============================================================
-//  addMessageToRole - 修复版（保存完整 ISO 时间）
+//  addMessageToRole - 保存完整 ISO 时间
 // ============================================================
 function addMessageToRole(roleId, role, content, type, giftData) {
     type = type || 'text';
     var r = roles.find(function(ro) { return ro.id === roleId; });
     if (!r) return;
     var msgId = generateId();
-    var timeStr = new Date().toISOString(); // 修复：保存完整 ISO 时间
+    var timeStr = new Date().toISOString();
     var msg = { id: msgId, role: role, content: content, type: type, time: timeStr };
     if (giftData) msg.giftData = giftData;
     r.messages.push(msg);
     
-    // 检测睡眠模式（用户说了晚安/午安）
     if (role === 'user') {
         detectSleepMode(roleId, content);
     }
@@ -2927,7 +2951,7 @@ function autoExtractMemory(role, sourceMsgId) {
 }
 
 // ============================================================
-//  发送消息（保持不变）
+//  发送消息
 // ============================================================
 var isSending = false;
 
@@ -2998,7 +3022,7 @@ function handleSend() {
 }
 
 // ============================================================
-//  长按引用（保持不变）
+//  长按引用
 // ============================================================
 function attachLongPressEvents() {
     var container = document.getElementById('messageContainer');
@@ -3060,7 +3084,7 @@ function onTouchMove() { clearTimeout(longpressTimer); longpressTimer = null; }
 function hideLongpressMenu() { var menu = document.getElementById('longpressMenu'); if (menu) menu.classList.remove('active'); }
 
 // ============================================================
-//  图片选择器（保持不变）
+//  图片选择器
 // ============================================================
 function openImagePicker(action) {
     currentPickerTarget = action;
@@ -3142,7 +3166,7 @@ function updatePermissionStatusUI() {
 }
 
 // ============================================================
-//  商城数据读写（保持不变）
+//  商城数据读写
 // ============================================================
 function getMallBalance() {
     try { var data = JSON.parse(localStorage.getItem('mall_data') || '{}'); return data.balance !== undefined ? data.balance : 1000; } catch (_) { return 1000; }
@@ -3169,7 +3193,7 @@ function addMallOrder(order) {
 }
 
 // ============================================================
-//  记忆库（保持不变）
+//  记忆库
 // ============================================================
 function renderMemoryScreen() {
     var selector = document.getElementById('memoryRoleSelector');
@@ -3214,7 +3238,7 @@ function renderMemoryList() {
 }
 
 // ============================================================
-//  日记系统（保持不变）
+//  日记系统
 // ============================================================
 function getDiaryDateKey(date) { var d = new Date(date); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function getDiaryDateDisplay(date) { var d = new Date(date); return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
@@ -3412,7 +3436,7 @@ function generateDiary(roleId, showToastMsg) {
 }
 
 // ============================================================
-//  表情包 - IndexedDB（保持不变）
+//  表情包 - IndexedDB
 // ============================================================
 var DEFAULT_CATEGORIES = [
     { id: 'cat_happy', name: '表达开心', icon: '😊' },
@@ -3709,7 +3733,7 @@ function renderMemePickerMemes(categoryId) {
 }
 
 // ============================================================
-//  数据管理（保持不变）
+//  数据管理
 // ============================================================
 function openDataModal() {
     renderRoleSelectList();
@@ -3745,7 +3769,7 @@ function getSelectedRoleIds() {
 }
 
 // ============================================================
-//  悬浮窗（保持不变）
+//  悬浮窗
 // ============================================================
 function showFloatingHeart() {
     var el = document.getElementById('floatingHeart');
@@ -3840,7 +3864,7 @@ function initFloatingDrag() {
 }
 
 // ============================================================
-//  主题（保持不变）
+//  主题
 // ============================================================
 function applyTheme(theme) {
     if (theme === 'auto') {
@@ -3934,7 +3958,7 @@ function formatTime(timeStr, mode) {
 }
 
 // ============================================================
-//  🌟 页面切换 - 打开聊天时检测 AI 主动消息（修复版：独立计时 + 80%概率 + 晚安屏蔽）
+//  🌟 页面切换 - 打开聊天时检测 AI 主动消息
 // ============================================================
 function openChat(fromContacts) {
     fromContacts = fromContacts || false;
@@ -3963,7 +3987,6 @@ function openChat(fromContacts) {
         readMessages = {};
         document.getElementById('messageInput').value = loadDraft(role2.id);
         
-        // 🌟 AI主动发消息检测（修复版：独立计时 + 80%概率 + 晚安屏蔽）
         checkAndSendAiMessage(role2);
         
         setTimeout(function() {
@@ -4333,11 +4356,16 @@ function init() {
 
     try { registerServiceWorker(); } catch (e) { console.log('PWA 注册跳过'); }
 
-    console.log('🚀 梦女空间 v2.7 已启动！');
+    // ===== 启动后台主动消息检测 =====
+    try { startBackgroundCheck(); } catch (e) { console.error('后台检测启动失败:', e); }
+
+    console.log('🚀 梦女空间 v2.8 已启动！');
     console.log('✨ 修复内容：');
     console.log('  1. AI主动回复概率 80%，检测到"晚安""午安"后不触发');
     console.log('  2. 新旧数据时间分隔符全部修复（自动迁移）');
     console.log('  3. 每个角色独立计时，互不干扰');
+    console.log('  4. 后台轮询每5分钟检查所有角色（真正实现半小时自动回复）');
+    console.log('  5. 页面可见性变化时立即检查');
     console.log('角色数量:', roles.length);
     console.log('日记数量:', CONFIG.diaries ? CONFIG.diaries.length : 0);
     console.log('表情包数量:', memes.length);
@@ -4446,7 +4474,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dataModalOverlay').addEventListener('click', function(e) { if (e.target === this) closeDataModal(); });
     document.getElementById('dataExportBtn').addEventListener('click', function() {
         var exportType = getSelectedExportType();
-        var exportData = { exportTime: new Date().toISOString(), version: '2.7', type: exportType, config: {}, roles: [], diaries: [] };
+        var exportData = { exportTime: new Date().toISOString(), version: '2.8', type: exportType, config: {}, roles: [], diaries: [] };
         var roleData = [];
         if (exportType === 'all') {
             roleData = JSON.parse(JSON.stringify(roles));
