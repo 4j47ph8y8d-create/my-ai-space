@@ -1252,13 +1252,14 @@
 
 <script>
 // ============================================================
-//  🚀 梦女空间 v2.8 - 完整修复版
+//  🚀 梦女空间 v2.9 - 最终修复版
 //  修复内容：
 //  1. AI主动回复概率 80%，检测到"晚安""午安"后不触发
-//  2. 新旧数据时间分隔符全部修复（自动迁移）
-//  3. 每个角色独立计时，互不干扰
-//  4. 后台轮询每5分钟检查所有角色（真正实现半小时自动回复）
-//  5. 页面可见性变化时立即检查
+//  2. 用户发任何消息自动解除睡眠模式（核心修复）
+//  3. 新旧数据时间分隔符全部修复（自动迁移）
+//  4. 每个角色独立计时，互不干扰
+//  5. 后台轮询每5分钟检查所有角色（真正实现半小时自动回复）
+//  6. 页面可见性变化时立即检查
 // ============================================================
 
 var CONFIG = {
@@ -1617,7 +1618,7 @@ function getTimeDiff(time1, time2) {
 }
 
 // ============================================================
-//  🌟 AI 主动发消息 - 核心修复（后台轮询 + 独立计时）
+//  🌟 AI 主动发消息 - 核心修复（后台轮询 + 独立计时 + 睡眠模式自动唤醒）
 // ============================================================
 
 // 检查单个角色是否需要发送主动消息
@@ -1645,6 +1646,7 @@ function checkAndSendAiMessage(role) {
     var timeSinceVisit = now - lastVisit;
     var timeSinceLastAi = now - lastAiMsg;
     
+    // 睡眠模式检查
     if (CONFIG.sleepMode[role.id] === true) {
         console.log('💤 ' + role.name + ' 处于睡眠模式，不触发主动回复');
         return false;
@@ -1767,34 +1769,63 @@ function generateAiActiveMessage(role) {
 }
 
 // ============================================================
-//  检测"晚安""午安"关键词，开启睡眠模式
+//  🔥 核心修复：检测"晚安""午安" + 用户发任何消息自动唤醒
 // ============================================================
 function detectSleepMode(roleId, content) {
     var role = roles.find(function(r) { return r.id === roleId; });
     if (!role) return;
     
     var lower = content.toLowerCase();
+    
+    // ===== 检测"晚安""午安" → 进入睡眠模式 =====
     if (lower.indexOf('晚安') !== -1 || lower.indexOf('午安') !== -1) {
         CONFIG.sleepMode[roleId] = true;
         saveAllData();
         console.log('💤 ' + role.name + ' 进入睡眠模式（用户说了晚安/午安）');
+        showToast('💤 ' + role.name + ' 已安静，不会主动打扰你 💕');
         
-        setTimeout(function() {
+        // 24小时后自动解除（兜底）
+        if (CONFIG.sleepMode[roleId + '_timer']) {
+            clearTimeout(CONFIG.sleepMode[roleId + '_timer']);
+        }
+        CONFIG.sleepMode[roleId + '_timer'] = setTimeout(function() {
             if (CONFIG.sleepMode[roleId] === true) {
                 CONFIG.sleepMode[roleId] = false;
                 saveAllData();
-                console.log('☀️ ' + role.name + ' 自动解除睡眠模式');
+                console.log('☀️ ' + role.name + ' 自动解除睡眠模式（24小时已到）');
+                showToast('☀️ ' + role.name + ' 已恢复主动消息 💕');
             }
         }, 24 * 60 * 60 * 1000);
+        return;
     }
     
+    // ===== 🔥 核心修复：用户发任何消息 → 自动解除睡眠模式 =====
+    if (CONFIG.sleepMode[roleId] === true) {
+        CONFIG.sleepMode[roleId] = false;
+        // 清除定时器
+        if (CONFIG.sleepMode[roleId + '_timer']) {
+            clearTimeout(CONFIG.sleepMode[roleId + '_timer']);
+            delete CONFIG.sleepMode[roleId + '_timer'];
+        }
+        saveAllData();
+        console.log('☀️ ' + role.name + ' 被用户消息唤醒（恢复正常主动消息）');
+        // 不显示 toast，避免打扰用户
+    }
+    
+    // ===== 可选：检测唤醒词（保留原有功能） =====
     if (lower.indexOf('早安') !== -1 || lower.indexOf('早上好') !== -1 || 
         lower.indexOf('下午好') !== -1 || lower.indexOf('晚上好') !== -1 ||
         lower.indexOf('你醒了吗') !== -1 || lower.indexOf('在吗') !== -1) {
         if (CONFIG.sleepMode[roleId] === true) {
             CONFIG.sleepMode[roleId] = false;
+            if (CONFIG.sleepMode[roleId + '_timer']) {
+                clearTimeout(CONFIG.sleepMode[roleId + '_timer']);
+                delete CONFIG.sleepMode[roleId + '_timer'];
+            }
             saveAllData();
-            console.log('☀️ ' + role.name + ' 被唤醒（用户说了早安/在吗等）');
+            console.log('☀️ ' + role.name + ' 被唤醒词唤醒');
+            showToast('☀️ ' + role.name + ' 已恢复主动消息 💕');
+            return;
         }
     }
 }
@@ -4359,13 +4390,14 @@ function init() {
     // ===== 启动后台主动消息检测 =====
     try { startBackgroundCheck(); } catch (e) { console.error('后台检测启动失败:', e); }
 
-    console.log('🚀 梦女空间 v2.8 已启动！');
-    console.log('✨ 修复内容：');
+    console.log('🚀 梦女空间 v2.9 已启动！');
+    console.log('✨ 最终修复内容：');
     console.log('  1. AI主动回复概率 80%，检测到"晚安""午安"后不触发');
-    console.log('  2. 新旧数据时间分隔符全部修复（自动迁移）');
-    console.log('  3. 每个角色独立计时，互不干扰');
-    console.log('  4. 后台轮询每5分钟检查所有角色（真正实现半小时自动回复）');
-    console.log('  5. 页面可见性变化时立即检查');
+    console.log('  2. 🔥 用户发任何消息自动解除睡眠模式（核心修复）');
+    console.log('  3. 新旧数据时间分隔符全部修复（自动迁移）');
+    console.log('  4. 每个角色独立计时，互不干扰');
+    console.log('  5. 后台轮询每5分钟检查所有角色');
+    console.log('  6. 页面可见性变化时立即检查');
     console.log('角色数量:', roles.length);
     console.log('日记数量:', CONFIG.diaries ? CONFIG.diaries.length : 0);
     console.log('表情包数量:', memes.length);
@@ -4474,7 +4506,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dataModalOverlay').addEventListener('click', function(e) { if (e.target === this) closeDataModal(); });
     document.getElementById('dataExportBtn').addEventListener('click', function() {
         var exportType = getSelectedExportType();
-        var exportData = { exportTime: new Date().toISOString(), version: '2.8', type: exportType, config: {}, roles: [], diaries: [] };
+        var exportData = { exportTime: new Date().toISOString(), version: '2.9', type: exportType, config: {}, roles: [], diaries: [] };
         var roleData = [];
         if (exportType === 'all') {
             roleData = JSON.parse(JSON.stringify(roles));
