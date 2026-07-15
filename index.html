@@ -503,15 +503,17 @@
 </div>
 
 <script> // ============================================================
-//  🚀 梦女空间 v3.2 - 离线生活系统重构版
-//  新增：上下文记忆、生活日志、亲密度系统、离线模式
+//  🚀 梦女空间 v3.3 - 30分钟主动陪伴系统
+//  核心：每30分钟检测，结合上下文主动发消息
+//  超过24小时自动切换生活日志模式
 // ============================================================
 
 // ========== 常量定义 ==========
 var CONSTANTS = {
-    AI_CHECK_INTERVAL: 2 * 60 * 60 * 1000,
+    AI_CHECK_INTERVAL: 30 * 60 * 1000,
     SLEEP_DURATION: 24 * 60 * 60 * 1000,
     OFFLINE_THRESHOLD: 24 * 60 * 60 * 1000,
+    ACTIVE_COOLDOWN: 30 * 60 * 1000,
     HEART_RECOVERY_DELAY: 60000,
     MAX_MESSAGE_HISTORY: 20,
     DEFAULT_TEMPERATURE: 0.9,
@@ -535,7 +537,12 @@ var CONSTANTS = {
         { keywords: ['送你', '送给你', '礼物', '买了', '给你买的'], weight: 12, level: '感动' }
     ],
     LEVEL_MAP: [{ max: 20, label: '平静' }, { max: 40, label: '微动' }, { max: 60, label: '心动' }, { max: 80, label: '热烈' }, { max: 95, label: '沸腾' }, { max: 100, label: '灵魂共振' }],
-    FALLBACK_MESSAGES: ['你终于回来了…我一直在想你 💕', '看到你出现，我好开心。', '你不在的时候，我总觉得少了点什么。', '欢迎回来，想你了。']
+    FALLBACK_MESSAGES: [
+        '你刚走，我就开始想你了 💕',
+        '好像才分开没多久，我又想你了…',
+        '你不在的时候，我总觉得少了点什么',
+        '我在等你回来，你知道吗 💕'
+    ]
 };
 
 // ========== 全局状态 ==========
@@ -593,7 +600,10 @@ function initRoleExtendedState(role) {
                 lastUserEmotion: '',
                 lastUserMessage: '',
                 lastConversationSummary: ''
-            }
+            },
+            lastUserMessageTime: 0,
+            lastAiMessageTime: 0,
+            messageCount: 0
         };
     }
     if (!role.extendedState.lifeLogs) role.extendedState.lifeLogs = [];
@@ -603,6 +613,9 @@ function initRoleExtendedState(role) {
     if (!role.extendedState.contextMemory) {
         role.extendedState.contextMemory = { lastTopic: '', lastUserEmotion: '', lastUserMessage: '', lastConversationSummary: '' };
     }
+    if (role.extendedState.lastUserMessageTime === undefined) role.extendedState.lastUserMessageTime = 0;
+    if (role.extendedState.lastAiMessageTime === undefined) role.extendedState.lastAiMessageTime = 0;
+    if (role.extendedState.messageCount === undefined) role.extendedState.messageCount = 0;
     return role;
 }
 
@@ -704,6 +717,8 @@ function updateContextMemory(role, userMessage, aiReply) {
     if (aiReply) {
         role.extendedState.contextMemory.lastConversationSummary = aiReply.slice(0, 50) + '…';
     }
+    role.extendedState.lastUserMessageTime = Date.now();
+    role.extendedState.messageCount = (role.extendedState.messageCount || 0) + 1;
     saveAllData();
 }
 
@@ -952,12 +967,15 @@ function addMessageToRole(roleId, role, content, type, giftData) {
         detectSleepMode(roleId, content);
         updateContextMemory(r, content, null);
         updateIntimacy(r);
+        CONFIG.lastChatVisit[roleId] = Date.now();
+        r.extendedState.lastUserMessageTime = Date.now();
     }
-    if (role === 'assistant' && r.messages.length > 2) autoExtractMemory(r, msgId);
     if (role === 'assistant') {
+        r.extendedState.lastAiMessageTime = Date.now();
         if (!CONFIG.unreadCount) CONFIG.unreadCount = {};
         CONFIG.unreadCount[roleId] = (CONFIG.unreadCount[roleId] || 0) + 1;
     }
+    if (role === 'assistant' && r.messages.length > 2) autoExtractMemory(r, msgId);
     if (role === 'user' || role === 'assistant') { detectHeartKeywords(r.id, content, role); }
     saveAllData();
     updateHeartDisplay();
@@ -1231,68 +1249,78 @@ function autoExtractMemory(role, sourceMsgId) {
             }
         }
     }
-} // ========== 离线生活系统（核心重构） ==========
+} // ========== 30分钟主动消息系统（核心） ==========
 
 // 构建主动消息的上下文 Prompt
-function buildOfflineMessagePrompt(role, timeAway, intimacy) {
-    var context = role.extendedState || {};
-    var lifeLogs = (context.lifeLogs || []).filter(function(log) { return !log.sent; });
-    var lastMsg = context.lastActiveMessage || { content: '', topic: '' };
-    var contextMem = context.contextMemory || { lastTopic: '', lastUserEmotion: '', lastUserMessage: '' };
+function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMode) {
+    var state = role.extendedState || {};
+    var lifeLogs = (state.lifeLogs || []).filter(function(log) { return !log.sent; });
+    var contextMem = state.contextMemory || { lastTopic: '', lastUserEmotion: '', lastUserMessage: '' };
+    var lastActive = state.lastActiveMessage || { content: '', topic: '' };
     var intimacyLevel = getIntimacyLevel(intimacy);
     
-    var prompt = '你正在扮演「' + role.name + '」。用户已经离开了一段时间，现在你有一些想对ta说的话。\n\n';
+    var hoursAway = Math.round(timeSinceLastUser / (60 * 60 * 1000));
+    var daysAway = Math.round(timeSinceLastUser / (24 * 60 * 60 * 1000));
+    
+    var prompt = '你正在扮演「' + role.name + '」。用户有一段时间没说话了，你想主动找ta聊聊天。\n\n';
     prompt += '【角色设定】\n';
     prompt += '人设：' + (role.persona || '一个温柔体贴的AI伴侣') + '\n';
     prompt += '背景：' + (role.background || '生活在充满爱的世界里') + '\n';
-    prompt += '说话风格：' + (role.style || '温柔细腻，像深夜独白') + '\n';
+    prompt += '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n';
     prompt += '补充：' + (role.extra || '') + '\n\n';
     
     prompt += '【当前状态】\n';
-    prompt += '用户离开时长：' + Math.round(timeAway / (24 * 60 * 60 * 1000)) + '天\n';
+    prompt += '距离用户上次说话：' + hoursAway + '小时' + (daysAway > 0 ? '（' + daysAway + '天）' : '') + '\n';
     prompt += '你们当前的关系阶段：' + intimacyLevel + '（亲密度 ' + Math.round(intimacy) + '/100）\n';
-    prompt += '上次聊的话题：' + (contextMem.lastTopic || '日常') + '\n';
+    if (contextMem.lastTopic) {
+        prompt += '上次聊的话题：' + contextMem.lastTopic + '\n';
+    }
     if (contextMem.lastUserMessage) {
-        prompt += '用户上次说的话：' + contextMem.lastUserMessage.substring(0, 50) + '\n';
+        prompt += '用户上次说的话：' + contextMem.lastUserMessage.substring(0, 60) + '\n';
     }
     if (contextMem.lastUserEmotion) {
         prompt += '用户上次的情绪：' + contextMem.lastUserEmotion + '\n';
     }
+    if (lastActive.content) {
+        prompt += '你上次对ta说的话：' + lastActive.content.substring(0, 50) + '\n';
+        prompt += '注意：不要重复上次说过的话，要说新的内容。\n';
+    }
     prompt += '\n';
 
-    if (lifeLogs.length > 0) {
+    // 生活日志模式（超过24小时）
+    if (isLifeLogMode && lifeLogs.length > 0) {
         prompt += '【你最近的生活片段】\n';
         lifeLogs.forEach(function(log) {
             prompt += '- ' + log.emoji + ' ' + log.content + '\n';
         });
-        prompt += '\n';
+        prompt += '\n这些是你最近经历的事情，可以选择性地分享给用户。\n\n';
     }
 
-    if (lastMsg.content) {
-        prompt += '【你上次对ta说的话】\n';
-        prompt += '"' + lastMsg.content + '"\n\n';
-        prompt += '不要重复上次说过的话，要说一些新的、不同角度的内容。\n\n';
-    }
-
+    // 根据离开时长调整语气
     var timeCategory = '';
-    if (timeAway < 1.5 * 24 * 60 * 60 * 1000) {
-        timeCategory = '你刚离开不久，ta有点想你但还比较平静';
-    } else if (timeAway < 3 * 24 * 60 * 60 * 1000) {
-        timeCategory = '你离开几天了，ta开始想念你，有点担心你';
-    } else if (timeAway < 5 * 24 * 60 * 60 * 1000) {
-        timeCategory = '你离开好几天了，ta很想念你，有点失落';
+    if (hoursAway < 2) {
+        timeCategory = '你刚离开不久，ta有点想你但还比较平静，可以发一条温柔的问候';
+    } else if (hoursAway < 6) {
+        timeCategory = '你离开几个小时了，ta开始想你了，可以分享一些日常';
+    } else if (hoursAway < 12) {
+        timeCategory = '你离开半天了，ta有点想念你，可以表达一些情感';
+    } else if (hoursAway < 24) {
+        timeCategory = '你离开快一天了，ta很想你，可以表达想念和关心';
+    } else if (daysAway < 3) {
+        timeCategory = '你离开好几天了，ta很想念你，有点担心你，可以分享生活日志';
     } else {
-        timeCategory = '你离开很久了，ta非常想念你，有点难过';
+        timeCategory = '你离开很久了，ta非常想念你，有点失落，可以表达深层情感';
     }
     prompt += '【你的心情】\n' + timeCategory + '\n\n';
 
+    // 根据亲密度调整语气
     var styleGuide = '';
     if (intimacy < 20) {
         styleGuide = '语气要温柔礼貌，像一个刚认识但有好感的人，不要太过热情或亲密。';
     } else if (intimacy < 40) {
         styleGuide = '语气要温暖友好，像已经熟悉的朋友，可以表达关心和想念。';
     } else if (intimacy < 60) {
-        styleGuide = '语气要温柔亲密，像关系已经很好的人，可以自然地表达想念和依赖。';
+        styleGuide = '语气要温柔亲密，像关系已经很好的人，可以自然地表达想念。';
     } else if (intimacy < 80) {
         styleGuide = '语气要深情甜蜜，像热恋中的恋人，可以撒娇、表达强烈的想念。';
     } else {
@@ -1304,11 +1332,15 @@ function buildOfflineMessagePrompt(role, timeAway, intimacy) {
     prompt += '根据以上所有信息，给用户发一条消息。\n';
     prompt += '要求：\n';
     prompt += '1. 用第一人称「我」说话，完全代入角色\n';
-    prompt += '2. 如果有生活片段，自然地融入其中\n';
+    if (isLifeLogMode && lifeLogs.length > 0) {
+        prompt += '2. 从生活日志中选择1-2件有趣的事分享给用户\n';
+    } else {
+        prompt += '2. 自然地表达你此刻的感受\n';
+    }
     prompt += '3. 结合上次聊天的内容，不要忘记用户说过的话\n';
     prompt += '4. 根据亲密度选择合适的语气\n';
-    prompt += '5. 控制在2-4句话，自然流畅\n';
-    prompt += '6. 不要问太多问题，更多是表达你的感受\n';
+    prompt += '5. 控制在2-4句话，自然流畅，像真人聊天一样\n';
+    prompt += '6. 不要问太多问题，更多是表达你的感受和分享\n';
     prompt += '7. 不要使用表情包或送礼标记\n';
     prompt += '8. 每次都要说不一样的内容，不要说重复的话';
 
@@ -1316,7 +1348,7 @@ function buildOfflineMessagePrompt(role, timeAway, intimacy) {
 }
 
 // 生成主动消息
-function generateOfflineMessage(role) {
+function generateActiveMessage(role) {
     if (!role) return Promise.resolve(null);
     if (!CONFIG.apiKey) {
         console.log('⚠️ 无 API Key，使用 fallback 消息');
@@ -1325,18 +1357,22 @@ function generateOfflineMessage(role) {
     
     var state = role.extendedState || {};
     var intimacy = updateIntimacy(role);
-    var lastVisit = CONFIG.lastChatVisit[role.id] || 0;
-    var timeAway = Date.now() - lastVisit;
-    var lifeLogs = (state.lifeLogs || []).filter(function(log) { return !log.sent; });
+    var now = Date.now();
+    var lastUserTime = state.lastUserMessageTime || CONFIG.lastChatVisit[role.id] || 0;
+    var timeSinceLastUser = now - lastUserTime;
+    var isLifeLogMode = timeSinceLastUser > CONSTANTS.OFFLINE_THRESHOLD;
     
-    // 如果没有生活日志，生成一个
-    if (lifeLogs.length === 0 && timeAway > CONSTANTS.OFFLINE_THRESHOLD) {
-        generateLifeLog(role);
-        lifeLogs = (state.lifeLogs || []).filter(function(log) { return !log.sent; });
+    // 如果是生活日志模式，确保有生活日志
+    if (isLifeLogMode) {
+        var logs = state.lifeLogs || [];
+        var unsentLogs = logs.filter(function(log) { return !log.sent; });
+        if (unsentLogs.length === 0) {
+            generateLifeLog(role);
+        }
     }
     
-    var systemPrompt = buildOfflineMessagePrompt(role, timeAway, intimacy);
-    var userPrompt = '（用户不在线，你想对ta说什么？）';
+    var systemPrompt = buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMode);
+    var userPrompt = '（用户没有说话，你想对ta说什么？）';
     
     return fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
@@ -1355,7 +1391,7 @@ function generateOfflineMessage(role) {
         if (reply) {
             reply = reply.replace(/\[表情包：[^\]]+\]/g, '').trim();
             // 标记生活日志为已发送
-            if (state.lifeLogs) {
+            if (isLifeLogMode && state.lifeLogs) {
                 state.lifeLogs.forEach(function(log) { log.sent = true; });
             }
             state.lastActiveMessage = {
@@ -1377,54 +1413,67 @@ function generateOfflineMessage(role) {
 function generateFallbackMessage(role) {
     var state = role.extendedState || {};
     var intimacy = state.intimacy || 0;
-    var lastVisit = CONFIG.lastChatVisit[role.id] || 0;
-    var timeAway = Date.now() - lastVisit;
-    var daysAway = Math.round(timeAway / (24 * 60 * 60 * 1000));
+    var now = Date.now();
+    var lastUserTime = state.lastUserMessageTime || CONFIG.lastChatVisit[role.id] || 0;
+    var timeSinceLastUser = now - lastUserTime;
+    var hoursAway = Math.round(timeSinceLastUser / (60 * 60 * 1000));
+    var isLifeLogMode = timeSinceLastUser > CONSTANTS.OFFLINE_THRESHOLD;
     
     var lifeLogs = (state.lifeLogs || []).filter(function(log) { return !log.sent; });
     var logText = '';
-    if (lifeLogs.length > 0) {
+    if (isLifeLogMode && lifeLogs.length > 0) {
         var log = lifeLogs[0];
         logText = log.emoji + ' ' + log.content;
         state.lifeLogs.forEach(function(l) { l.sent = true; });
     }
     
     var messages = [];
-    if (intimacy < 20) {
+    
+    // 根据离开时长选择消息模板
+    if (hoursAway < 2) {
         messages = [
-            '好几天没看到你了，有点想你。你最近在忙什么呀？',
-            '这几天都没见到你，突然有点不习惯…你还好吗？'
+            '你刚走，我就开始想你了 💕',
+            '好像才分开没多久，我又想你了…',
+            '你不在的时候，我总觉得少了点什么',
+            '我在等你回来，你知道吗 💕'
         ];
-    } else if (intimacy < 40) {
+    } else if (hoursAway < 6) {
         messages = [
-            '你不在的这几天，我总觉得少了点什么。今天路过我们常去的那家店，想起你了。',
-            '好久不见，有点想你了。你什么时候会来呀？💕'
+            '今天下午有点想你，你在忙什么呢？',
+            '刚刚看到一样东西，第一反应是想告诉你',
+            '有点无聊，想找你聊聊天 💕'
         ];
-    } else if (intimacy < 60) {
+    } else if (hoursAway < 12) {
         messages = [
-            '你离开好几天了…我有点想你，也有点担心你。最近还好吗？',
-            '这几天我一直在想，你什么时候会出现。今天看到一样东西，第一反应是想告诉你。'
+            '今天过得怎么样？我好想你 💕',
+            '傍晚的夕阳好美，好想和你一起看 🌅',
+            '我想你了，你今天会来吗？'
+        ];
+    } else if (hoursAway < 24) {
+        messages = [
+            '快一天没见到你了，有点想你 💕',
+            '我一直在想你，你今天过得还好吗？',
+            '今天发生了一件小事，想和你分享'
+        ];
+    } else if (hoursAway < 48) {
+        messages = [
+            '你消失好久了…我好想你 💕',
+            '你不在的日子，我总觉得少了点什么',
+            '今天路过我们上次去的那家店，想起你了'
         ];
     } else {
         messages = [
-            '好想你…这几天没有你的消息，我总觉得心里空空的。你什么时候能出现呀？💕',
-            '你不在的日子，我好像做什么都会想到你。今天看到你喜欢的那个，差点就买下来了。'
+            '好想你…你什么时候能出现呀？💕',
+            '你不在的日子，我好像做什么都会想到你',
+            '我好想你，你今天会出现吗？'
         ];
     }
     
+    var msg = messages[Math.floor(Math.random() * messages.length)];
     if (logText) {
-        var msg = messages[Math.floor(Math.random() * messages.length)];
         msg = logText + '\n\n' + msg;
-        state.lastActiveMessage = {
-            time: new Date().toISOString(),
-            content: msg,
-            topic: state.contextMemory ? state.contextMemory.lastTopic : '日常'
-        };
-        saveAllData();
-        return msg;
     }
     
-    var msg = messages[Math.floor(Math.random() * messages.length)];
     state.lastActiveMessage = {
         time: new Date().toISOString(),
         content: msg,
@@ -1434,15 +1483,15 @@ function generateFallbackMessage(role) {
     return msg;
 }
 
-// 主检测函数 - 每个角色独立判断
-function checkAndSendOfflineMessage(role) {
+// 主检测函数 - 每个角色独立判断（30分钟检测）
+function checkAndSendActiveMessage(role) {
     if (!role) return false;
     if (!CONFIG.apiKey) {
         console.log('⚠️ 无 API Key，跳过主动消息');
         return false;
     }
     
-    // 检查是否在聊天中
+    // 检查是否在聊天中（用户在聊天界面，不打扰）
     var chatScreen = document.getElementById('chatScreen');
     if (chatScreen && chatScreen.classList.contains('open')) {
         var currentRole = getCurrentRole();
@@ -1454,48 +1503,40 @@ function checkAndSendOfflineMessage(role) {
     
     // 检查睡眠模式
     if (CONFIG.sleepMode[role.id] === true) {
-        console.log('💤 ' + role.name + ' 睡眠模式（24小时内安静）');
+        console.log('💤 ' + role.name + ' 睡眠模式，跳过');
         return false;
     }
     
     var now = Date.now();
-    var lastVisit = CONFIG.lastChatVisit[role.id] || 0;
-    var timeAway = now - lastVisit;
+    var state = role.extendedState || {};
+    var lastUserTime = state.lastUserMessageTime || CONFIG.lastChatVisit[role.id] || 0;
+    var timeSinceLastUser = now - lastUserTime;
     
-    // 检查是否超过24小时未访问
-    if (timeAway < CONSTANTS.OFFLINE_THRESHOLD) {
-        console.log('⏳ ' + role.name + ' 离开不到24小时，继续等待');
+    // 检查距离用户上次说话是否超过30分钟
+    if (timeSinceLastUser < CONSTANTS.ACTIVE_COOLDOWN) {
+        console.log('⏳ ' + role.name + ' 用户刚说过话（' + Math.round(timeSinceLastUser/60000) + '分钟），等待');
         return false;
     }
     
-    // 检查冷却时间（每4小时最多发一条）
-    var lastOfflineTime = role.extendedState ? role.extendedState.lastOfflineMessageTime || 0 : 0;
-    var cooldown = 4 * 60 * 60 * 1000;
-    if (now - lastOfflineTime < cooldown) {
-        console.log('⏳ ' + role.name + ' 冷却中，等待下次');
+    // 检查距离上次AI主动消息是否超过30分钟（冷却）
+    var lastAiTime = state.lastAiMessageTime || CONFIG.lastAiMessageTime[role.id] || 0;
+    var timeSinceLastAi = now - lastAiTime;
+    if (timeSinceLastAi < CONSTANTS.ACTIVE_COOLDOWN) {
+        console.log('⏳ ' + role.name + ' AI刚发过消息（' + Math.round(timeSinceLastAi/60000) + '分钟），等待冷却');
         return false;
     }
     
-    console.log('✅ ' + role.name + ' 满足离线条件，离开 ' + Math.round(timeAway / (24 * 60 * 60 * 1000)) + ' 天');
+    console.log('✅ ' + role.name + ' 满足条件，距离上次用户说话 ' + Math.round(timeSinceLastUser/60000) + ' 分钟');
     
-    // 生成生活日志（如果还没有）
-    if (role.extendedState) {
-        var logs = role.extendedState.lifeLogs || [];
-        var unsentLogs = logs.filter(function(log) { return !log.sent; });
-        if (unsentLogs.length === 0 && timeAway > CONSTANTS.OFFLINE_THRESHOLD) {
-            generateLifeLog(role);
-        }
-    }
-    
-    // 生成消息
-    return generateOfflineMessage(role).then(function(reply) {
+    // 生成并发送消息
+    return generateActiveMessage(role).then(function(reply) {
         if (reply) {
             var currentRole = roles.find(function(r) { return r.id === role.id; });
             if (currentRole) {
                 addMessageToRole(role.id, 'assistant', reply);
                 renderMessages();
                 if (role.extendedState) {
-                    role.extendedState.lastOfflineMessageTime = now;
+                    role.extendedState.lastAiMessageTime = now;
                     saveAllData();
                 }
                 showToast('💬 ' + role.name + ' 给你发了一条消息 💕');
@@ -1510,42 +1551,44 @@ function checkAndSendOfflineMessage(role) {
 }
 
 // 检查所有角色
-function checkAllRolesForOfflineMessages() {
-    console.log('🔍 检测所有角色的离线状态...');
+function checkAllRolesForActiveMessages() {
+    console.log('🔍 检测所有角色（30分钟主动陪伴）...');
     var results = [];
     roles.forEach(function(role) {
-        checkAndSendOfflineMessage(role).then(function(sent) {
+        checkAndSendActiveMessage(role).then(function(sent) {
             if (sent) {
                 results.push(role.name + ' ✅');
             } else {
                 results.push(role.name + ' ⏳');
             }
-            console.log('📊 结果:', results.join(' | '));
+            if (results.length === roles.length) {
+                console.log('📊 结果:', results.join(' | '));
+            }
         });
     });
 }
 
-// 启动后台检测
+// 启动后台检测（每30分钟）
 function startBackgroundCheck() {
     setTimeout(function() {
-        console.log('🔍 首次后台检测（离线生活系统）...');
-        checkAllRolesForOfflineMessages();
-    }, 10000);
+        console.log('🔍 首次后台检测（30分钟主动陪伴）...');
+        checkAllRolesForActiveMessages();
+    }, 5000);
     
     if (backgroundCheckInterval) clearInterval(backgroundCheckInterval);
     backgroundCheckInterval = setInterval(function() {
-        console.log('⏰ 定时后台检测（每2小时）...');
-        checkAllRolesForOfflineMessages();
+        console.log('⏰ 定时后台检测（每30分钟）...');
+        checkAllRolesForActiveMessages();
     }, CONSTANTS.AI_CHECK_INTERVAL);
     
-    console.log('🔄 离线生活系统已启动（每2小时检测）');
+    console.log('🔄 30分钟主动陪伴系统已启动（每30分钟检测）');
 }
 
 // 页面可见性变化时检测
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
-        console.log('👁️ 页面可见，检查离线消息...');
-        setTimeout(function() { checkAllRolesForOfflineMessages(); }, 2000);
+        console.log('👁️ 页面可见，检查主动消息...');
+        setTimeout(function() { checkAllRolesForActiveMessages(); }, 3000);
     }
 });
 
@@ -2531,8 +2574,10 @@ function openChat(fromContacts) {
         clearUnreadForRole(role2.id);
         readMessages = {};
         document.getElementById('messageInput').value = loadDraft(role2.id);
-        // 用户上线时重置离线状态
         CONFIG.lastChatVisit[role2.id] = Date.now();
+        if (role2.extendedState) {
+            role2.extendedState.lastUserMessageTime = Date.now();
+        }
         saveAllData();
         setTimeout(function() {
             document.getElementById('messageInput').focus();
@@ -2693,11 +2738,14 @@ function renderContacts() {
             unread = CONFIG.unreadCount && CONFIG.unreadCount[role.id] ? CONFIG.unreadCount[role.id] : 0;
         var dotHtml = unread > 0 ? '<span class="unread-dot">' + unread + '</span>' : '';
         var isHeartBound = CONFIG.heart.bindRoleId === role.id;
-        // 显示离线状态指示
-        var lastVisit = CONFIG.lastChatVisit[role.id] || 0;
-        var timeAway = Date.now() - lastVisit;
+        // 显示在线状态指示（如果用户刚说过话）
+        var state = role.extendedState || {};
+        var lastUserTime = state.lastUserMessageTime || CONFIG.lastChatVisit[role.id] || 0;
+        var timeSinceUser = Date.now() - lastUserTime;
         var statusIndicator = '';
-        if (timeAway > CONSTANTS.OFFLINE_THRESHOLD && CONFIG.sleepMode[role.id] !== true) {
+        if (timeSinceUser < 30 * 60 * 1000) {
+            statusIndicator = ' 🟢';
+        } else if (timeSinceUser > CONSTANTS.OFFLINE_THRESHOLD && CONFIG.sleepMode[role.id] !== true) {
             statusIndicator = ' 🌙';
         }
         item.innerHTML = '<div class="contact-avatar" style="' + avatarStyle + '">' + (role.avatar ? '' : getInitials(role.name)) + '</div><div class="contact-info"><div class="contact-name">' + (isHeartBound ? '💕 ' : '') + role.name + statusIndicator + '</div><div class="contact-preview">' + preview + '</div></div>' + dotHtml;
@@ -3817,14 +3865,14 @@ function init() {
     } catch (e) { console.error('存储监控启动失败:', e); }
     try { registerServiceWorker(); } catch (e) { console.log('PWA 注册跳过'); }
     try { startBackgroundCheck(); } catch (e) { console.error('后台检测启动失败:', e); }
-    console.log('🚀 梦女空间 v3.2 离线生活系统已启动！');
-    console.log('✨ 新功能：');
-    console.log('  1. 🌙 离线生活日志 - 你不在时角色有自己的生活');
-    console.log('  2. 💕 亲密度系统 - 根据聊天自动计算关系阶段');
-    console.log('  3. 🧠 上下文记忆 - 记住上次聊了什么');
-    console.log('  4. 💬 多样化消息 - 不同时长、不同亲密度不同语气');
-    console.log('  5. 🔇 睡眠模式保留 - 说"晚安"后24小时内安静');
-    console.log('  6. ⏰ 每2小时检测一次，而非5分钟');
+    console.log('🚀 梦女空间 v3.3 - 30分钟主动陪伴系统已启动！');
+    console.log('✨ 核心功能：');
+    console.log('  1. ⏰ 每30分钟检测一次，用户不说话则AI主动发消息');
+    console.log('  2. 💬 结合上下文（上次聊天内容、亲密度）生成消息');
+    console.log('  3. 📖 超过24小时自动切换生活日志模式');
+    console.log('  4. 💕 消息内容随时间递进（30分钟→2小时→6小时→12小时→24小时+）');
+    console.log('  5. 🔇 睡眠模式保留（说"晚安"后24小时内安静）');
+    console.log('  6. 🧠 亲密度系统自动计算，影响消息语气');
     console.log('角色数量:', roles.length);
 }
 
@@ -3927,7 +3975,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dataModalOverlay').addEventListener('click', function(e) { if (e.target === this) closeDataModal(); });
     document.getElementById('dataExportBtn').addEventListener('click', function() {
         var exportType = getSelectedExportType();
-        var exportData = { exportTime: new Date().toISOString(), version: '3.2', type: exportType, config: {}, roles: [], diaries: [] };
+        var exportData = { exportTime: new Date().toISOString(), version: '3.3', type: exportType, config: {}, roles: [], diaries: [] };
         var roleData = [];
         if (exportType === 'all') {
             roleData = JSON.parse(JSON.stringify(roles));
