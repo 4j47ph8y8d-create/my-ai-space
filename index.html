@@ -2738,7 +2738,17 @@ function renderContacts() {
             unread = CONFIG.unreadCount && CONFIG.unreadCount[role.id] ? CONFIG.unreadCount[role.id] : 0;
         var dotHtml = unread > 0 ? '<span class="unread-dot">' + unread + '</span>' : '';
         var isHeartBound = CONFIG.heart.bindRoleId === role.id;
-       item.innerHTML = '<div class="contact-avatar" style="' + avatarStyle + '">' + (role.avatar ? '' : getInitials(role.name)) + '</div><div class="contact-info"><div class="contact-name">' + (isHeartBound ? '💕 ' : '') + role.name + '</div><div class="contact-preview">' + preview + '</div></div>' + dotHtml;
+        // 显示在线状态指示（如果用户刚说过话）
+        var state = role.extendedState || {};
+        var lastUserTime = state.lastUserMessageTime || CONFIG.lastChatVisit[role.id] || 0;
+        var timeSinceUser = Date.now() - lastUserTime;
+        var statusIndicator = '';
+        if (timeSinceUser < 30 * 60 * 1000) {
+            statusIndicator = ' 🟢';
+        } else if (timeSinceUser > CONSTANTS.OFFLINE_THRESHOLD && CONFIG.sleepMode[role.id] !== true) {
+            statusIndicator = ' 🌙';
+        }
+        item.innerHTML = '<div class="contact-avatar" style="' + avatarStyle + '">' + (role.avatar ? '' : getInitials(role.name)) + '</div><div class="contact-info"><div class="contact-name">' + (isHeartBound ? '💕 ' : '') + role.name + statusIndicator + '</div><div class="contact-preview">' + preview + '</div></div>' + dotHtml;
         item.addEventListener('click', function() {
             clearUnreadForRole(role.id);
             currentRoleId = role.id;
