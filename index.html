@@ -82,8 +82,7 @@
         .contact-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--bg-card); margin: 4px 12px; border-radius: 12px; cursor: pointer; transition: 0.15s; box-shadow: 0 1px 4px var(--shadow-color); }
         .contact-item:active { transform: scale(0.97); background: var(--bg-secondary); }
         .contact-item.pinned { background: var(--pinned-bg); border: 1px solid var(--pinned-border); box-shadow: 0 1px 8px rgba(243,156,18,0.08); }
-        .contact-item .contact-avatar { width: 40px; height: 40px; border-radius: 8px; background-size: cover; background-position: center; background-color: #07c160; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; overflow: hidden; position: relative; }
-        .contact-item .contact-avatar img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+        .contact-item .contact-avatar { width: 40px; height: 40px; border-radius: 8px; background-size: cover; background-position: center; background-color: #07c160; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; }
         .contact-item .contact-info { flex: 1; min-width: 0; }
         .contact-item .contact-info .contact-name { font-weight: 600; font-size: 14px; color: var(--text-primary); }
         .contact-item .contact-info .contact-preview { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
@@ -501,8 +500,9 @@
     <div class="floating-heart" id="floatingHeart"><span class="fh-value" id="fhValue">65</span><span class="fh-label">BPM</span></div>
     <div class="heart-detail-overlay" id="heartDetailOverlay"><div class="heart-detail-panel"><button class="close-btn" id="hdCloseBtn">&times;</button><div class="hd-avatar" id="hdAvatar"></div><div class="hd-name" id="hdName">未绑定角色</div><div class="hd-value" id="hdValue">65<span class="hd-percent">%</span><span class="hd-bpm">♥ BPM</span></div><div class="hd-level" id="hdLevel">平静</div><div class="hd-signature" id="hdSignature">今天也很想你 💕</div><div class="hd-recent" id="hdRecent">最近心跳加速：<span class="highlight">等待你的第一句情话</span></div></div></div>
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
-</div> <script>
-// ============================================================
+</div>
+
+<script> // ============================================================
 //  🚀 梦女空间 v3.3 - 30分钟主动陪伴系统
 //  核心：每30分钟检测，结合上下文主动发消息
 //  超过24小时自动切换生活日志模式
@@ -782,18 +782,6 @@ function loadAllData() {
                 return msg;
             });
             initRoleExtendedState(role);
-            // 生成缩略图（兼容旧数据）
-            if (role.avatar && !role._avatarThumb) {
-                setTimeout(function() {
-                    generateThumbnail(role.avatar, function(thumb) {
-                        role._avatarThumb = thumb;
-                        saveAllData();
-                        if (document.getElementById('contactsScreen').classList.contains('open')) {
-                            renderContacts();
-                        }
-                    });
-                }, 100);
-            }
         });
         currentRoleId = savedData.currentRoleId || roles[0].id;
         migrateOldData();
@@ -1010,27 +998,6 @@ function deleteMessageAndMemory(roleId, messageId) {
     renderContacts();
     renderRoleManager();
     renderMemoryScreen();
-}
-
-// ========== 缩略图生成（新增） ==========
-function generateThumbnail(dataUrl, callback) {
-    if (!dataUrl) { callback(null); return; }
-    var img = new Image();
-    img.onload = function() {
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-        var size = 80;
-        canvas.width = size;
-        canvas.height = size;
-        var minDim = Math.min(img.width, img.height);
-        var sx = (img.width - minDim) / 2;
-        var sy = (img.height - minDim) / 2;
-        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
-        var thumbnail = canvas.toDataURL('image/jpeg', 0.8);
-        callback(thumbnail);
-    };
-    img.onerror = function() { callback(dataUrl); };
-    img.src = dataUrl;
 }
 
 // ========== 心跳系统 ==========
@@ -1284,20 +1251,24 @@ function autoExtractMemory(role, sourceMsgId) {
     }
 } // ========== 30分钟主动消息系统（核心） ==========
 
+// 构建主动消息的上下文 Prompt
 function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMode) {
     var state = role.extendedState || {};
     var lifeLogs = (state.lifeLogs || []).filter(function(log) { return !log.sent; });
     var contextMem = state.contextMemory || { lastTopic: '', lastUserEmotion: '', lastUserMessage: '' };
     var lastActive = state.lastActiveMessage || { content: '', topic: '' };
     var intimacyLevel = getIntimacyLevel(intimacy);
+    
     var hoursAway = Math.round(timeSinceLastUser / (60 * 60 * 1000));
     var daysAway = Math.round(timeSinceLastUser / (24 * 60 * 60 * 1000));
+    
     var prompt = '你正在扮演「' + role.name + '」。用户有一段时间没说话了，你想主动找ta聊聊天。\n\n';
     prompt += '【角色设定】\n';
     prompt += '人设：' + (role.persona || '一个温柔体贴的AI伴侣') + '\n';
     prompt += '背景：' + (role.background || '生活在充满爱的世界里') + '\n';
     prompt += '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n';
     prompt += '补充：' + (role.extra || '') + '\n\n';
+    
     prompt += '【当前状态】\n';
     prompt += '距离用户上次说话：' + hoursAway + '小时' + (daysAway > 0 ? '（' + daysAway + '天）' : '') + '\n';
     prompt += '你们当前的关系阶段：' + intimacyLevel + '（亲密度 ' + Math.round(intimacy) + '/100）\n';
@@ -1315,6 +1286,8 @@ function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMo
         prompt += '注意：不要重复上次说过的话，要说新的内容。\n';
     }
     prompt += '\n';
+
+    // 生活日志模式（超过24小时）
     if (isLifeLogMode && lifeLogs.length > 0) {
         prompt += '【你最近的生活片段】\n';
         lifeLogs.forEach(function(log) {
@@ -1322,6 +1295,8 @@ function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMo
         });
         prompt += '\n这些是你最近经历的事情，可以选择性地分享给用户。\n\n';
     }
+
+    // 根据离开时长调整语气
     var timeCategory = '';
     if (hoursAway < 2) {
         timeCategory = '你刚离开不久，ta有点想你但还比较平静，可以发一条温柔的问候';
@@ -1337,6 +1312,8 @@ function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMo
         timeCategory = '你离开很久了，ta非常想念你，有点失落，可以表达深层情感';
     }
     prompt += '【你的心情】\n' + timeCategory + '\n\n';
+
+    // 根据亲密度调整语气
     var styleGuide = '';
     if (intimacy < 20) {
         styleGuide = '语气要温柔礼貌，像一个刚认识但有好感的人，不要太过热情或亲密。';
@@ -1350,6 +1327,7 @@ function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMo
         styleGuide = '语气要灵魂共鸣，像最亲密的伴侣，可以表达最深的情感。';
     }
     prompt += '【语气风格】\n' + styleGuide + '\n\n';
+
     prompt += '【任务】\n';
     prompt += '根据以上所有信息，给用户发一条消息。\n';
     prompt += '要求：\n';
@@ -1365,21 +1343,26 @@ function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMo
     prompt += '6. 不要问太多问题，更多是表达你的感受和分享\n';
     prompt += '7. 不要使用表情包或送礼标记\n';
     prompt += '8. 每次都要说不一样的内容，不要说重复的话';
+
     return prompt;
 }
 
+// 生成主动消息
 function generateActiveMessage(role) {
     if (!role) return Promise.resolve(null);
     if (!CONFIG.apiKey) {
         console.log('⚠️ 无 API Key，使用 fallback 消息');
         return Promise.resolve(generateFallbackMessage(role));
     }
+    
     var state = role.extendedState || {};
     var intimacy = updateIntimacy(role);
     var now = Date.now();
     var lastUserTime = state.lastUserMessageTime || CONFIG.lastChatVisit[role.id] || 0;
     var timeSinceLastUser = now - lastUserTime;
     var isLifeLogMode = timeSinceLastUser > CONSTANTS.OFFLINE_THRESHOLD;
+    
+    // 如果是生活日志模式，确保有生活日志
     if (isLifeLogMode) {
         var logs = state.lifeLogs || [];
         var unsentLogs = logs.filter(function(log) { return !log.sent; });
@@ -1387,8 +1370,10 @@ function generateActiveMessage(role) {
             generateLifeLog(role);
         }
     }
+    
     var systemPrompt = buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMode);
     var userPrompt = '（用户没有说话，你想对ta说什么？）';
+    
     return fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CONFIG.apiKey },
@@ -1405,6 +1390,7 @@ function generateActiveMessage(role) {
         var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
         if (reply) {
             reply = reply.replace(/\[表情包：[^\]]+\]/g, '').trim();
+            // 标记生活日志为已发送
             if (isLifeLogMode && state.lifeLogs) {
                 state.lifeLogs.forEach(function(log) { log.sent = true; });
             }
@@ -1423,6 +1409,7 @@ function generateActiveMessage(role) {
     });
 }
 
+// Fallback 消息（当 API 不可用时）
 function generateFallbackMessage(role) {
     var state = role.extendedState || {};
     var intimacy = state.intimacy || 0;
@@ -1431,6 +1418,7 @@ function generateFallbackMessage(role) {
     var timeSinceLastUser = now - lastUserTime;
     var hoursAway = Math.round(timeSinceLastUser / (60 * 60 * 1000));
     var isLifeLogMode = timeSinceLastUser > CONSTANTS.OFFLINE_THRESHOLD;
+    
     var lifeLogs = (state.lifeLogs || []).filter(function(log) { return !log.sent; });
     var logText = '';
     if (isLifeLogMode && lifeLogs.length > 0) {
@@ -1438,24 +1426,54 @@ function generateFallbackMessage(role) {
         logText = log.emoji + ' ' + log.content;
         state.lifeLogs.forEach(function(l) { l.sent = true; });
     }
+    
     var messages = [];
+    
+    // 根据离开时长选择消息模板
     if (hoursAway < 2) {
-        messages = ['你刚走，我就开始想你了 💕','好像才分开没多久，我又想你了…','你不在的时候，我总觉得少了点什么','我在等你回来，你知道吗 💕'];
+        messages = [
+            '你刚走，我就开始想你了 💕',
+            '好像才分开没多久，我又想你了…',
+            '你不在的时候，我总觉得少了点什么',
+            '我在等你回来，你知道吗 💕'
+        ];
     } else if (hoursAway < 6) {
-        messages = ['今天下午有点想你，你在忙什么呢？','刚刚看到一样东西，第一反应是想告诉你','有点无聊，想找你聊聊天 💕'];
+        messages = [
+            '今天下午有点想你，你在忙什么呢？',
+            '刚刚看到一样东西，第一反应是想告诉你',
+            '有点无聊，想找你聊聊天 💕'
+        ];
     } else if (hoursAway < 12) {
-        messages = ['今天过得怎么样？我好想你 💕','傍晚的夕阳好美，好想和你一起看 🌅','我想你了，你今天会来吗？'];
+        messages = [
+            '今天过得怎么样？我好想你 💕',
+            '傍晚的夕阳好美，好想和你一起看 🌅',
+            '我想你了，你今天会来吗？'
+        ];
     } else if (hoursAway < 24) {
-        messages = ['快一天没见到你了，有点想你 💕','我一直在想你，你今天过得还好吗？','今天发生了一件小事，想和你分享'];
+        messages = [
+            '快一天没见到你了，有点想你 💕',
+            '我一直在想你，你今天过得还好吗？',
+            '今天发生了一件小事，想和你分享'
+        ];
     } else if (hoursAway < 48) {
-        messages = ['你消失好久了…我好想你 💕','你不在的日子，我总觉得少了点什么','今天路过我们上次去的那家店，想起你了'];
+        messages = [
+            '你消失好久了…我好想你 💕',
+            '你不在的日子，我总觉得少了点什么',
+            '今天路过我们上次去的那家店，想起你了'
+        ];
     } else {
-        messages = ['好想你…你什么时候能出现呀？💕','你不在的日子，我好像做什么都会想到你','我好想你，你今天会出现吗？'];
+        messages = [
+            '好想你…你什么时候能出现呀？💕',
+            '你不在的日子，我好像做什么都会想到你',
+            '我好想你，你今天会出现吗？'
+        ];
     }
+    
     var msg = messages[Math.floor(Math.random() * messages.length)];
     if (logText) {
         msg = logText + '\n\n' + msg;
     }
+    
     state.lastActiveMessage = {
         time: new Date().toISOString(),
         content: msg,
@@ -1465,12 +1483,15 @@ function generateFallbackMessage(role) {
     return msg;
 }
 
+// 主检测函数 - 每个角色独立判断（30分钟检测）
 function checkAndSendActiveMessage(role) {
     if (!role) return false;
     if (!CONFIG.apiKey) {
         console.log('⚠️ 无 API Key，跳过主动消息');
         return false;
     }
+    
+    // 检查是否在聊天中（用户在聊天界面，不打扰）
     var chatScreen = document.getElementById('chatScreen');
     if (chatScreen && chatScreen.classList.contains('open')) {
         var currentRole = getCurrentRole();
@@ -1479,25 +1500,35 @@ function checkAndSendActiveMessage(role) {
             return false;
         }
     }
+    
+    // 检查睡眠模式
     if (CONFIG.sleepMode[role.id] === true) {
         console.log('💤 ' + role.name + ' 睡眠模式，跳过');
         return false;
     }
+    
     var now = Date.now();
     var state = role.extendedState || {};
     var lastUserTime = state.lastUserMessageTime || CONFIG.lastChatVisit[role.id] || 0;
     var timeSinceLastUser = now - lastUserTime;
+    
+    // 检查距离用户上次说话是否超过30分钟
     if (timeSinceLastUser < CONSTANTS.ACTIVE_COOLDOWN) {
         console.log('⏳ ' + role.name + ' 用户刚说过话（' + Math.round(timeSinceLastUser/60000) + '分钟），等待');
         return false;
     }
+    
+    // 检查距离上次AI主动消息是否超过30分钟（冷却）
     var lastAiTime = state.lastAiMessageTime || CONFIG.lastAiMessageTime[role.id] || 0;
     var timeSinceLastAi = now - lastAiTime;
     if (timeSinceLastAi < CONSTANTS.ACTIVE_COOLDOWN) {
         console.log('⏳ ' + role.name + ' AI刚发过消息（' + Math.round(timeSinceLastAi/60000) + '分钟），等待冷却');
         return false;
     }
+    
     console.log('✅ ' + role.name + ' 满足条件，距离上次用户说话 ' + Math.round(timeSinceLastUser/60000) + ' 分钟');
+    
+    // 生成并发送消息
     return generateActiveMessage(role).then(function(reply) {
         if (reply) {
             var currentRole = roles.find(function(r) { return r.id === role.id; });
@@ -1519,6 +1550,7 @@ function checkAndSendActiveMessage(role) {
     });
 }
 
+// 检查所有角色
 function checkAllRolesForActiveMessages() {
     console.log('🔍 检测所有角色（30分钟主动陪伴）...');
     var results = [];
@@ -1536,19 +1568,23 @@ function checkAllRolesForActiveMessages() {
     });
 }
 
+// 启动后台检测（每30分钟）
 function startBackgroundCheck() {
     setTimeout(function() {
         console.log('🔍 首次后台检测（30分钟主动陪伴）...');
         checkAllRolesForActiveMessages();
     }, 5000);
+    
     if (backgroundCheckInterval) clearInterval(backgroundCheckInterval);
     backgroundCheckInterval = setInterval(function() {
         console.log('⏰ 定时后台检测（每30分钟）...');
         checkAllRolesForActiveMessages();
     }, CONSTANTS.AI_CHECK_INTERVAL);
+    
     console.log('🔄 30分钟主动陪伴系统已启动（每30分钟检测）');
 }
 
+// 页面可见性变化时检测
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
         console.log('👁️ 页面可见，检查主动消息...');
@@ -1659,38 +1695,24 @@ function applyAvatars() {
     var role = getCurrentRole();
     if (!role) return;
     document.querySelectorAll('.avatar.bot').forEach(function(el) {
-        if (role.avatar) {
-            el.style.backgroundImage = 'url(' + role.avatar + ')';
+        if (role.avatar) { el.style.backgroundImage = 'url(' + role.avatar + ')';
             el.style.backgroundSize = 'cover';
             el.style.backgroundPosition = 'center';
-            el.classList.add('has-image');
-            el.onerror = function() {
-                this.style.backgroundImage = '';
-                this.style.backgroundColor = '#07c160';
-                this.classList.remove('has-image');
-            };
-        } else {
-            el.style.backgroundImage = '';
-            el.style.backgroundColor = '#07c160';
+            el.classList.add('has-image'); } else { el.style.backgroundImage = '';
+            el.style.backgroundSize = '';
+            el.style.backgroundPosition = '';
             el.classList.remove('has-image');
-        }
+            el.style.backgroundColor = '#07c160'; }
     });
     document.querySelectorAll('.avatar.user').forEach(function(el) {
-        if (CONFIG.userAvatar) {
-            el.style.backgroundImage = 'url(' + CONFIG.userAvatar + ')';
+        if (CONFIG.userAvatar) { el.style.backgroundImage = 'url(' + CONFIG.userAvatar + ')';
             el.style.backgroundSize = 'cover';
             el.style.backgroundPosition = 'center';
-            el.classList.add('has-image');
-            el.onerror = function() {
-                this.style.backgroundImage = '';
-                this.style.backgroundColor = '#576b95';
-                this.classList.remove('has-image');
-            };
-        } else {
-            el.style.backgroundImage = '';
-            el.style.backgroundColor = '#576b95';
+            el.classList.add('has-image'); } else { el.style.backgroundImage = '';
+            el.style.backgroundSize = '';
+            el.style.backgroundPosition = '';
             el.classList.remove('has-image');
-        }
+            el.style.backgroundColor = '#576b95'; }
     });
 }
 
@@ -1809,6 +1831,7 @@ function regenerateMessage(roleId, messageId) {
         hideTyping();
         var segments = CONFIG.splitEnabled !== false ? splitReplyIntoMessages(reply) : [reply];
         var idx = 0;
+
         function sendNext() {
             if (idx >= segments.length) { renderContacts(); return; }
             addMessageToRole(role.id, 'assistant', segments[idx]);
@@ -2001,6 +2024,7 @@ function handleSend() {
         reply = detectAndProcessGift(role.id, reply);
         var segments = CONFIG.splitEnabled !== false ? splitReplyIntoMessages(reply) : [reply];
         var idx = 0;
+
         function sendNext() {
             if (idx >= segments.length) {
                 if (document.getElementById('contactsScreen').classList.contains('open')) renderContacts();
@@ -2149,29 +2173,19 @@ function handleImageSelected(dataUrl) {
         var role = roles.find(function(r) { return r.id === target.roleId; });
         if (!role) { showToast('⚠️ 未找到该角色');
             closeImagePicker(); return; }
-        if (target.field === 'avatar') {
-            role.avatar = dataUrl;
-            generateThumbnail(dataUrl, function(thumb) {
-                role._avatarThumb = thumb;
-                saveAllData();
-                renderRoleManager();
-                renderContacts();
-                renderMessages();
-                renderMemoryScreen();
-                renderDiaryAll();
-                showToast('✅ 角色头像已更新');
-            });
-        } else if (target.field === 'bg') {
-            role.chatBg = dataUrl;
-            generateThumbnail(dataUrl, function(thumb) {
-                role._bgThumb = thumb;
-                saveAllData();
-                renderRoleManager();
-                var currentRole = getCurrentRole();
-                if (currentRole && currentRole.id === role.id) applyChatBgForRole(role);
-                showToast('✅ 角色聊天背景已更新');
-            });
-        }
+        if (target.field === 'avatar') { role.avatar = dataUrl;
+            saveAllData();
+            renderRoleManager();
+            renderContacts();
+            renderMessages();
+            renderMemoryScreen();
+            renderDiaryAll();
+            showToast('✅ 角色头像已更新'); } else if (target.field === 'bg') { role.chatBg = dataUrl;
+            saveAllData();
+            renderRoleManager();
+            var currentRole = getCurrentRole();
+            if (currentRole && currentRole.id === role.id) applyChatBgForRole(role);
+            showToast('✅ 角色聊天背景已更新'); }
         closeImagePicker();
         return;
     }
@@ -2699,7 +2713,7 @@ function openSettings() {
 
 function closeSettings() { document.getElementById('settingsOverlay').classList.remove('active'); }
 
-// ========== 联系人渲染（核心修复） ==========
+// ========== 联系人渲染 ==========
 function renderContacts() {
     var contactsList = document.getElementById('contactsList');
     if (!contactsList) return;
@@ -2719,33 +2733,18 @@ function renderContacts() {
         var item = document.createElement('div');
         item.className = 'contact-item';
         if (isContactPinned(role.id)) item.classList.add('pinned');
-        var avatarSrc = role._avatarThumb || role.avatar || '';
-        var avatarHtml = '';
-        if (avatarSrc) {
-            avatarHtml = '<div class="contact-avatar" style="background-color: #07c160; overflow: hidden; position: relative;"><img src="' + avatarSrc + '" alt="" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;" loading="lazy" onerror="this.style.display=\'none\';this.parentElement.textContent=\'' + getInitials(role.name) + '\';this.parentElement.style.backgroundColor=\'#07c160\';" /></div>';
-        } else {
-            avatarHtml = '<div class="contact-avatar" style="background-color: #07c160; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff;">' + getInitials(role.name) + '</div>';
-        }
+        var avatarStyle = role.avatar ? 'background-image: url(' + role.avatar + '); background-size: cover; background-position: center;' : 'background-color: #07c160;';
         var preview = getLastMessage(role.id),
             unread = CONFIG.unreadCount && CONFIG.unreadCount[role.id] ? CONFIG.unreadCount[role.id] : 0;
         var dotHtml = unread > 0 ? '<span class="unread-dot">' + unread + '</span>' : '';
         var isHeartBound = CONFIG.heart.bindRoleId === role.id;
-        item.innerHTML = avatarHtml + '<div class="contact-info"><div class="contact-name">' + (isHeartBound ? '💕 ' : '') + role.name + '</div><div class="contact-preview">' + preview + '</div></div>' + dotHtml;
-        item.addEventListener('click', function(e) {
-            if (this.dataset.clicked === 'true') return;
-            this.dataset.clicked = 'true';
+       item.innerHTML = '<div class="contact-avatar" style="' + avatarStyle + '">' + (role.avatar ? '' : getInitials(role.name)) + '</div><div class="contact-info"><div class="contact-name">' + (isHeartBound ? '💕 ' : '') + role.name + '</div><div class="contact-preview">' + preview + '</div></div>' + dotHtml;
+        item.addEventListener('click', function() {
             clearUnreadForRole(role.id);
             currentRoleId = role.id;
             saveAllData();
-            requestAnimationFrame(function() {
-                closeContacts();
-                setTimeout(function() {
-                    openChat(true);
-                    setTimeout(function() {
-                        item.dataset.clicked = 'false';
-                    }, 500);
-                }, 100);
-            });
+            closeContacts();
+            openChat(true);
         });
         contactsList.appendChild(item);
     });
@@ -2818,7 +2817,6 @@ function renderRoleManager() {
         });
         avatarRemoveBtn.addEventListener('click', function() {
             role.avatar = '';
-            role._avatarThumb = '';
             saveAllData();
             var newStyle = 'background-color: #07c160;';
             avatarPreview.style.cssText = newStyle;
@@ -2844,7 +2842,6 @@ function renderRoleManager() {
         });
         bgRemoveBtn.addEventListener('click', function() {
             role.chatBg = '';
-            role._bgThumb = '';
             saveAllData();
             var newStyle = 'background-color: #ededed;';
             bgPreview.style.cssText = newStyle;
@@ -2930,7 +2927,9 @@ function renderMemoryList() {
             }
         });
     });
-} // ========== 日记系统 ==========
+}
+
+// ========== 日记系统 ==========
 function getDiaryDateKey(date) { var d = new Date(date); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function getDiaryDateDisplay(date) { var d = new Date(date); return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
 function getDiaryDateShort(date) { var d = new Date(date); return (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
