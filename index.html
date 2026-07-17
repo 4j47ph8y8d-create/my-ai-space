@@ -500,13 +500,8 @@
 
 <script>
 // ============================================================
-//  🚀 梦女空间 v3.3 - 最终修复版
-//  修复内容：
-//    1. z-index 统一规划（image:100, permission:110, settings:120, style:130）
-//    2. gift-card 样式合并为单一完整定义
-//    3. 气泡预览 CSS 类（bubble-preview, bp-row, bp-avatar, bp-bubble）
-//    4. 日记自动书写：generateDiary 改为每30分钟自动检测并写入
-//    5. 所有 overlay 关闭函数强制 display:none 防叠加遮挡
+//  🚀 梦女空间 v3.3 - 最终修复版（记忆系统增强版）
+//  新增：记忆分级、自然化输出、自动遗忘、亲密度加权
 //  完全兼容旧数据 ✅
 // ============================================================
 
@@ -526,6 +521,12 @@ var CONSTANTS = {
     INTIMACY_DECREASE_RATE: 0.1,
     MAX_INTIMACY: 100,
     DIARY_AUTO_INTERVAL: 30 * 60 * 1000,
+    // 记忆系统常量
+    MAX_CORE_MEMORIES: 10,
+    MAX_RECENT_MEMORIES: 15,
+    CORE_MEMORY_DAYS: 90,
+    RECENT_MEMORY_DAYS: 30,
+    FORGET_DAYS: 90,
     HEART_KEYWORDS: [
         { keywords: ['我爱你', '我喜欢你', '爱死你了', '最爱', '好爱你'], weight: 15, level: '热恋' },
         { keywords: ['想你', '好想你', '想你了', '想见你'], weight: 10, level: '思念' },
@@ -899,11 +900,73 @@ function detectSleepMode(roleId, content) {
     if (lower.indexOf('早安') !== -1 || lower.indexOf('早上好') !== -1 || lower.indexOf('下午好') !== -1 || lower.indexOf('晚上好') !== -1 || lower.indexOf('你醒了吗') !== -1 || lower.indexOf('在吗') !== -1) { if (CONFIG.sleepMode[roleId] === true) { CONFIG.sleepMode[roleId] = false; if (sleepTimers[roleId]) { clearTimeout(sleepTimers[roleId]); delete sleepTimers[roleId]; } saveAllData(); console.log('☀️ ' + role.name + ' 被唤醒词唤醒'); showToast('☀️ ' + role.name + ' 已恢复主动消息 💕'); } }
 }
 
+// ========== ★ 全新记忆系统 ★ ==========
+function generateNaturalMemoryText(role) {
+    var memories = Array.isArray(role.memory) ? role.memory : [];
+    if (memories.length === 0) return '';
+    var coreMemories = memories.filter(function(m) { return m.level === 'core' || !m.level; });
+    var recentMemories = memories.filter(function(m) { return m.level === 'recent'; });
+    if (coreMemories.length > 10) coreMemories = coreMemories.slice(0, 10);
+    if (recentMemories.length > 15) recentMemories = recentMemories.slice(0, 15);
+    var intimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
+    var prefix, connector;
+    if (intimacy < 20) { prefix = '关于你，我记得：'; connector = '。'; }
+    else if (intimacy < 40) { prefix = '我记得你的事：'; connector = '～'; }
+    else if (intimacy < 60) { prefix = '我记得好多关于你的事呢💕'; connector = '呢～'; }
+    else if (intimacy < 80) { prefix = '关于你的每件事我都记得 💕'; connector = '哦～'; }
+    else { prefix = '你的一切我都记在心里 💕'; connector = '呀～'; }
+    var lines = [];
+    coreMemories.forEach(function(mem) {
+        var text = mem.text || '';
+        if (!text) return;
+        if (text.indexOf('用户') === 0) { text = text.replace(/用户名字：/, '你的名字是'); text = text.replace(/用户喜欢：/, '你喜欢'); text = text.replace(/用户不喜欢：/, '你不喜欢'); text = text.replace(/用户所在地：/, '你住在'); text = text.replace(/用户生日：/, '你的生日是'); text = text.replace(/用户宠物：/, '你养了'); }
+        var sentence = text;
+        if (sentence.charAt(sentence.length - 1) !== '。' && sentence.charAt(sentence.length - 1) !== '～' && sentence.charAt(sentence.length - 1) !== '呀') { sentence += connector; }
+        lines.push(sentence);
+    });
+    var contextMem = role.extendedState ? role.extendedState.contextMemory || {} : {};
+    if (contextMem.lastTopic && contextMem.lastTopic !== '日常' && contextMem.lastTopic !== '') {
+        var topicText = '上次你提到了' + contextMem.lastTopic;
+        if (contextMem.lastUserEmotion) { topicText += '，感觉你有点' + contextMem.lastUserEmotion; }
+        topicText += connector;
+        var duplicate = false;
+        for (var i = 0; i < lines.length; i++) { if (lines[i].indexOf(contextMem.lastTopic) !== -1) { duplicate = true; break; } }
+        if (!duplicate) lines.push(topicText);
+    }
+    if (lines.length === 0) return '';
+    return prefix + '\n' + lines.join('\n');
+}
+
+function consolidateMemory(role) {
+    if (!Array.isArray(role.memory)) role.memory = [];
+    var now = Date.now(); var newMemory = []; var seen = {};
+    role.memory.forEach(function(mem) {
+        var text = mem.text || ''; if (!text) return;
+        var normalized = text.replace(/[\s,，。！？]+/g, '').substring(0, 20);
+        if (seen[normalized]) return; seen[normalized] = true;
+        if (!mem.level) { var coreKeywords = ['名字', '生日', '喜欢', '讨厌', '害怕', '家住', '职业', '工作', '学校', '宠物', '过敏', '不爱吃', '不爱']; var isCore = false; for (var k = 0; k < coreKeywords.length; k++) { if (text.indexOf(coreKeywords[k]) !== -1) { isCore = true; break; } } mem.level = isCore ? 'core' : 'recent'; }
+        if (mem.timestamp) { var age = now - mem.timestamp; if (age > 90 * 24 * 60 * 60 * 1000) { return; } if (age > 30 * 24 * 60 * 60 * 1000 && mem.level === 'recent') { return; } }
+        newMemory.push(mem);
+    });
+    role.memory = newMemory; debouncedSaveAllData();
+}
+
 function autoExtractMemory(role, sourceMsgId) {
     var recentMsgs = role.messages.slice(-6); if (recentMsgs.length < 4) return;
     var userMsgs = recentMsgs.filter(function(m) { return m.role === 'user'; }).map(function(m) { return m.content; }); var fullText = userMsgs.join(' ');
-    var patterns = [{ keywords: ['我叫', '我是', '我的名字'], prefix: '用户名字' }, { keywords: ['我喜欢', '我爱'], prefix: '用户喜欢' }, { keywords: ['我讨厌', '我恨', '我不喜欢'], prefix: '用户不喜欢' }, { keywords: ['我生日', '生日是', '生日在'], prefix: '用户生日' }, { keywords: ['我住在', '我来自', '家在'], prefix: '用户所在地' }, { keywords: ['我养了', '我有只', '我的猫', '我的狗'], prefix: '用户宠物' }];
-    for (var p = 0; p < patterns.length; p++) { var pattern = patterns[p]; for (var k = 0; k < pattern.keywords.length; k++) { var kw = pattern.keywords[k]; var idx = fullText.indexOf(kw); if (idx !== -1) { var start = idx + kw.length; var end = fullText.length; var puncts = ['。', '！', '？', '.', '!', '?']; for (var q = 0; q < puncts.length; q++) { var pIdx = fullText.indexOf(puncts[q], start); if (pIdx !== -1 && pIdx < end) end = pIdx + 1; } var extract = fullText.substring(start, end).trim(); if (extract.length > 30) extract = extract.substring(0, 30) + '…'; if (extract.length > 2) { var newEntry = pattern.prefix + '：' + extract; var exists = role.memory.some(function(m) { return m.text && m.text.indexOf(pattern.prefix) !== -1 && m.text.indexOf(extract.substring(0, 10)) !== -1; }); if (!exists) { role.memory.push({ text: newEntry, sourceMessageId: sourceMsgId }); debouncedSaveAllData(); } } break; } } }
+    function isDuplicate(text) { if (!Array.isArray(role.memory)) return false; var norm = text.replace(/[\s,，。！？]+/g, '').substring(0, 20); for (var i = 0; i < role.memory.length; i++) { var existing = (role.memory[i].text || '').replace(/[\s,，。！？]+/g, '').substring(0, 20); if (existing === norm) return true; } return false; }
+    var now = Date.now();
+    var patterns = [
+        { keywords: ['我叫', '我是', '我的名字', '叫我', '你可以叫我'], prefix: '用户名字：', level: 'core' },
+        { keywords: ['我喜欢', '我爱', '我超爱', '我特别爱'], prefix: '用户喜欢：', level: 'core' },
+        { keywords: ['我讨厌', '我恨', '我不喜欢', '我不爱吃', '我害怕'], prefix: '用户不喜欢：', level: 'core' },
+        { keywords: ['我生日', '生日是', '生日在', '生日'], prefix: '用户生日：', level: 'core' },
+        { keywords: ['我住在', '我来自', '家在', '我家在', '住址'], prefix: '用户所在地：', level: 'core' },
+        { keywords: ['我养了', '我有只', '我的猫', '我的狗', '我家猫', '我家狗'], prefix: '用户宠物：', level: 'core' },
+        { keywords: ['我在', '我工作', '我上学', '我是做', '我的职业'], prefix: '用户工作：', level: 'core' },
+        { keywords: ['我今天', '我最近', '我在忙', '我打算', '我想去'], prefix: '用户近况：', level: 'recent' }
+    ];
+    for (var p = 0; p < patterns.length; p++) { var pattern = patterns[p]; for (var k = 0; k < pattern.keywords.length; k++) { var kw = pattern.keywords[k]; var idx = fullText.indexOf(kw); if (idx !== -1) { var start = idx + kw.length; var end = fullText.length; var puncts = ['。', '！', '？', '.', '!', '?', '，', ',']; for (var q = 0; q < puncts.length; q++) { var pIdx = fullText.indexOf(puncts[q], start); if (pIdx !== -1 && pIdx < end) end = pIdx + 1; } var extract = fullText.substring(start, end).trim(); if (extract.length > 30) extract = extract.substring(0, 30) + '…'; if (extract.length > 2 && !isDuplicate(pattern.prefix + extract)) { if (!Array.isArray(role.memory)) role.memory = []; role.memory.push({ text: pattern.prefix + extract, level: pattern.level, timestamp: now, sourceMessageId: sourceMsgId }); debouncedSaveAllData(); } break; } } }
 }
 // ========== 30分钟主动消息系统 ==========
 function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMode) {
@@ -914,6 +977,7 @@ function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMo
     var intimacyLevel = getIntimacyLevel(intimacy);
     var hoursAway = Math.round(timeSinceLastUser / (60 * 60 * 1000));
     var daysAway = Math.round(timeSinceLastUser / (24 * 60 * 60 * 1000));
+    var naturalMemory = generateNaturalMemoryText(role);
     var prompt = '你正在扮演「' + role.name + '」。用户有一段时间没说话了，你想主动找ta聊聊天。\n\n';
     prompt += '【角色设定】\n人设：' + (role.persona || '一个温柔体贴的AI伴侣') + '\n背景：' + (role.background || '生活在充满爱的世界里') + '\n说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n补充：' + (role.extra || '') + '\n\n';
     prompt += '【当前状态】\n距离用户上次说话：' + hoursAway + '小时' + (daysAway > 0 ? '（' + daysAway + '天）' : '') + '\n你们当前的关系阶段：' + intimacyLevel + '（亲密度 ' + Math.round(intimacy) + '/100）\n';
@@ -922,6 +986,7 @@ function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMo
     if (contextMem.lastUserEmotion) { prompt += '用户上次的情绪：' + contextMem.lastUserEmotion + '\n'; }
     if (lastActive.content) { prompt += '你上次对ta说的话：' + lastActive.content.substring(0, 50) + '\n注意：不要重复上次说过的话，要说新的内容。\n'; }
     prompt += '\n';
+    if (naturalMemory) { prompt += '【我记得的关于你的事】\n' + naturalMemory + '\n\n这些是你告诉过我的事，聊天时要自然地用上，不要生硬地列出来。\n\n'; }
     if (isLifeLogMode && lifeLogs.length > 0) { prompt += '【你最近的生活片段】\n'; lifeLogs.forEach(function(log) { prompt += '- ' + log.emoji + ' ' + log.content + '\n'; }); prompt += '\n这些是你最近经历的事情，可以选择性地分享给用户。\n\n'; }
     var timeCategory = '';
     if (hoursAway < 2) { timeCategory = '你刚离开不久，ta有点想你但还比较平静，可以发一条温柔的问候'; }
@@ -1109,10 +1174,10 @@ function buildSystemPrompt(role) {
     if (role.background && role.background.trim()) parts.push('【背景】' + role.background.trim());
     if (role.style && role.style.trim()) parts.push('【说话风格】' + role.style.trim());
     if (role.extra && role.extra.trim()) parts.push('【补充项】' + role.extra.trim());
-    var memories = Array.isArray(role.memory) ? role.memory : []; var memoryTexts = memories.map(function(m) { return m.text || m; }).filter(function(t) { return t; });
-    if (memoryTexts.length > 0) { parts.push('【记忆库】' + memoryTexts.join('；')); }
+    var naturalMemory = generateNaturalMemoryText(role);
+    if (naturalMemory) { parts.push('【我记得的关于你的事】\n' + naturalMemory + '\n\n以上是你告诉过我的信息，在对话中自然地用上，不要生硬地列出来。'); }
     if (parts.length === 0) return '你是一个温柔体贴的AI伴侣，说话轻声细语，会关心人。';
-    return parts.join('\n') + '\n\n【核心指令】\n1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n2. 严格遵守【人设】中的身份和性格，不要偏离。\n3. 回复时必须符合【说话风格】的语气和习惯。\n4. 对话中自然地融入【背景】、【补充项】和【记忆库】中的内容。\n5. 保持角色一致性，不要出戏。\n6. 当你觉得想表达心意时，可以用 [送礼：商品名称] 来送礼物给用户。';
+    return parts.join('\n') + '\n\n【核心指令】\n1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n2. 严格遵守【人设】中的身份和性格，不要偏离。\n3. 回复时必须符合【说话风格】的语气和习惯。\n4. 对话中自然地融入【背景】、【补充项】和记忆中的信息。\n5. 保持角色一致性，不要出戏。\n6. 当你觉得想表达心意时，可以用 [送礼：商品名称] 来送礼物给用户。';
 }
 
 function splitReplyIntoMessages(text) {
@@ -1187,7 +1252,7 @@ function setupLongPress() {
     document.addEventListener('click', function(e) { if (!e.target.closest('.longpress-menu')) { hideLongpressMenu(); } });
 }
 
-// ========== 图片选择器（修复：关闭时强制 display:none 防叠加遮挡） ==========
+// ========== 图片选择器 ==========
 function openImagePicker(action) { currentPickerTarget = action; var titles = { 'wallpaper': '选择桌面壁纸', 'chatBg': '选择聊天背景（全局）', 'userAvatar': '选择我的头像', 'chatImage': '选择图片发送' }; document.getElementById('pickerTitle').textContent = titles[action] || '选择图片'; document.getElementById('imagePickerOverlay').classList.add('active'); }
 function closeImagePicker() { var el = document.getElementById('imagePickerOverlay'); el.classList.remove('active'); el.style.display = 'none'; currentPickerTarget = null; }
 function selectImageFromGallery(callback) { var input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.onchange = function(e) { var file = e.target.files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function(ev) { callback(ev.target.result); }; reader.readAsDataURL(file); }; input.click(); }
@@ -1197,16 +1262,15 @@ function openImagePickerForRole(roleId, type) { var titles = { 'avatar': '选择
 function showPermissionDialog(action) { pendingPickerAction = action; document.getElementById('permissionOverlay').classList.add('active'); }
 function updatePermissionStatusUI() { var status = document.getElementById('permissionStatus'); if (CONFIG.permission === 'allowed') { status.textContent = '✅ 已允许'; status.style.color = '#07c160'; } else if (CONFIG.permission === 'denied') { status.textContent = '🚫 已拒绝'; status.style.color = '#e74c3c'; } else { status.textContent = '⏳ 未设置'; status.style.color = '#999'; } }
 
-// ========== 美化功能 ==========
 function compressImage(dataUrl, maxSizeKB, callback) { var img = new Image(); img.onload = function() { var canvas = document.createElement('canvas'), ctx = canvas.getContext('2d'), quality = 0.9; var width = img.width, height = img.height, maxDim = 800; if (width > maxDim || height > maxDim) { var ratio = Math.min(maxDim / width, maxDim / height); width = Math.round(width * ratio); height = Math.round(height * ratio); } canvas.width = width; canvas.height = height; ctx.drawImage(img, 0, 0, width, height); var result = canvas.toDataURL('image/jpeg', quality); while (result.length > maxSizeKB * 1024 && quality > 0.2) { quality -= 0.1; result = canvas.toDataURL('image/jpeg', quality); } callback(result); }; img.onerror = function() { callback(dataUrl); }; img.src = dataUrl; }
 function applyWallpaper(dataUrl) { var screen = document.getElementById('launcherScreen'); if (dataUrl) { compressImage(dataUrl, 200, function(compressed) { screen.style.backgroundImage = 'url(' + compressed + ')'; screen.style.backgroundSize = 'cover'; screen.style.backgroundPosition = 'center'; screen.style.pointerEvents = 'auto'; document.getElementById('wallpaperPreviewImg').src = compressed; document.getElementById('wallpaperPreviewImg').style.display = 'block'; document.getElementById('wallpaperStatus').textContent = '自定义'; CONFIG.wallpaper = compressed; saveAllData(); }); } else { screen.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)'; screen.style.backgroundSize = 'auto'; screen.style.pointerEvents = 'auto'; document.getElementById('wallpaperPreviewImg').style.display = 'none'; document.getElementById('wallpaperPreviewImg').src = ''; document.getElementById('wallpaperStatus').textContent = '默认'; CONFIG.wallpaper = ''; saveAllData(); } }
 function applyChatBg(dataUrl) { if (dataUrl) { CONFIG.chatBg = dataUrl; var role = getCurrentRole(); if (!role || !role.chatBg) { document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + dataUrl + ')'; document.getElementById('chatBgLayer').style.backgroundSize = 'cover'; document.getElementById('chatBgLayer').style.backgroundPosition = 'center'; } document.getElementById('chatBgPreviewImg').src = dataUrl; document.getElementById('chatBgPreviewImg').style.display = 'block'; document.getElementById('chatBgStatus').textContent = '自定义'; } else { CONFIG.chatBg = ''; var role2 = getCurrentRole(); if (!role2 || !role2.chatBg) { document.getElementById('chatBgLayer').style.backgroundImage = 'none'; document.getElementById('chatBgLayer').style.backgroundColor = 'var(--bg-secondary)'; } document.getElementById('chatBgPreviewImg').style.display = 'none'; document.getElementById('chatBgPreviewImg').src = ''; document.getElementById('chatBgStatus').textContent = '默认'; } saveAllData(); }
 function applyUserAvatar(dataUrl) { var els = document.querySelectorAll('.avatar.user'); if (dataUrl) { els.forEach(function(el) { el.style.backgroundImage = 'url(' + dataUrl + ')'; el.style.backgroundSize = 'cover'; el.style.backgroundPosition = 'center'; el.classList.add('has-image'); }); document.getElementById('userAvatarPreviewImg').src = dataUrl; document.getElementById('userAvatarPreviewImg').style.display = 'block'; document.getElementById('userAvatarStatus').textContent = '自定义'; } else { els.forEach(function(el) { el.style.backgroundImage = ''; el.style.backgroundSize = ''; el.style.backgroundPosition = ''; el.classList.remove('has-image'); el.style.backgroundColor = '#576b95'; }); document.getElementById('userAvatarPreviewImg').style.display = 'none'; document.getElementById('userAvatarPreviewImg').src = ''; document.getElementById('userAvatarStatus').textContent = '默认'; } CONFIG.userAvatar = dataUrl || ''; saveAllData(); }
 function applyChatBgForRole(role) { if (role && role.chatBg) { document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + role.chatBg + ')'; document.getElementById('chatBgLayer').style.backgroundSize = 'cover'; document.getElementById('chatBgLayer').style.backgroundPosition = 'center'; } else if (CONFIG.chatBg) { document.getElementById('chatBgLayer').style.backgroundImage = 'url(' + CONFIG.chatBg + ')'; document.getElementById('chatBgLayer').style.backgroundSize = 'cover'; document.getElementById('chatBgLayer').style.backgroundPosition = 'center'; } else { document.getElementById('chatBgLayer').style.backgroundImage = 'none'; document.getElementById('chatBgLayer').style.backgroundColor = 'var(--bg-secondary)'; } }
 
-// ========== 主题与样式 ==========
 function applyTheme(theme) { if (theme === 'auto') { var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light'); } else { document.documentElement.setAttribute('data-theme', theme); } var icon = document.getElementById('themeIcon'); if (icon) { var isDark = document.documentElement.getAttribute('data-theme') === 'dark'; icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun'; } CONFIG.theme = theme; saveAllData(); }
 function toggleTheme() { var current = document.documentElement.getAttribute('data-theme') || 'dark'; var next = current === 'dark' ? 'light' : 'dark'; applyTheme(next); showToast('🌓 已切换至 ' + (next === 'dark' ? '深色' : '浅色') + ' 模式'); }
+
 function applyIconStyle(styleId) {
     var oldStyle = document.getElementById('dynamicIconStyle'); if (oldStyle) oldStyle.remove();
     var STYLE_CSS = {
@@ -1243,7 +1307,6 @@ function loadFontSize() { var FONT_SIZE_MAP = ['small', 'medium', 'large', 'xlar
 function loadFontWeight() { var FONT_WEIGHT_MAP = ['light', 'regular', 'medium', 'bold'], FONT_WEIGHT_LABELS = ['细', '常规', '中', '粗']; var key = CONFIG.fontWeight || 'regular'; var idx = FONT_WEIGHT_MAP.indexOf(key); if (idx !== -1) { document.getElementById('fontWeightSlider').value = idx; document.getElementById('fontWeightDisplay').textContent = FONT_WEIGHT_LABELS[idx]; } else { document.getElementById('fontWeightSlider').value = 1; document.getElementById('fontWeightDisplay').textContent = '常规'; } applyFontSettings(); }
 function loadSplitToggle() { var val = CONFIG.splitEnabled !== false ? 1 : 0; document.getElementById('splitToggleSlider').value = val; document.getElementById('splitToggleDisplay').textContent = val === 1 ? '开启' : '关闭'; }
 
-// ========== 悬浮窗 ==========
 function showFloatingHeart() { var el = document.getElementById('floatingHeart'); if (el && CONFIG.heart.floatingEnabled !== false) { el.classList.add('visible'); el.style.display = 'flex'; el.style.opacity = '1'; el.style.pointerEvents = 'auto'; if (CONFIG.floatingHeartPosition && CONFIG.floatingHeartPosition.x !== null) { el.style.left = CONFIG.floatingHeartPosition.x + 'px'; el.style.top = CONFIG.floatingHeartPosition.y + 'px'; el.style.right = 'auto'; el.style.bottom = 'auto'; } } }
 function initFloatingDrag() { var el = document.getElementById('floatingHeart'); if (!el) return; var dragData = { isDragging: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0, hasMoved: false }; el.addEventListener('touchstart', function(e) { var touch = e.touches[0]; var rect = el.getBoundingClientRect(); dragData.isDragging = true; dragData.startX = touch.clientX; dragData.startY = touch.clientY; dragData.offsetX = touch.clientX - rect.left; dragData.offsetY = touch.clientY - rect.top; dragData.hasMoved = false; el.style.transition = 'none'; }, { passive: true }); el.addEventListener('touchmove', function(e) { if (!dragData.isDragging) return; e.preventDefault(); var touch = e.touches[0]; var newX = touch.clientX - dragData.offsetX; var newY = touch.clientY - dragData.offsetY; var maxX = window.innerWidth - el.offsetWidth; var maxY = window.innerHeight - el.offsetHeight; newX = Math.max(0, Math.min(maxX, newX)); newY = Math.max(0, Math.min(maxY, newY)); el.style.left = newX + 'px'; el.style.top = newY + 'px'; el.style.right = 'auto'; el.style.bottom = 'auto'; dragData.hasMoved = true; }, { passive: false }); el.addEventListener('touchend', function() { if (!dragData.isDragging) return; dragData.isDragging = false; el.style.transition = ''; CONFIG.floatingHeartPosition = { x: parseInt(el.style.left) || 0, y: parseInt(el.style.top) || 0 }; saveAllData(); if (!dragData.hasMoved) { document.getElementById('heartDetailOverlay').classList.add('active'); } dragData.hasMoved = false; }, { passive: true }); el.addEventListener('mousedown', function(e) { var rect = el.getBoundingClientRect(); dragData.isDragging = true; dragData.startX = e.clientX; dragData.startY = e.clientY; dragData.offsetX = e.clientX - rect.left; dragData.offsetY = e.clientY - rect.top; dragData.hasMoved = false; el.style.transition = 'none'; e.preventDefault(); }); document.addEventListener('mousemove', function(e) { if (!dragData.isDragging) return; var newX = e.clientX - dragData.offsetX; var newY = e.clientY - dragData.offsetY; var maxX = window.innerWidth - el.offsetWidth; var maxY = window.innerHeight - el.offsetHeight; newX = Math.max(0, Math.min(maxX, newX)); newY = Math.max(0, Math.min(maxY, newY)); el.style.left = newX + 'px'; el.style.top = newY + 'px'; el.style.right = 'auto'; el.style.bottom = 'auto'; dragData.hasMoved = true; }); document.addEventListener('mouseup', function() { if (dragData.isDragging) { dragData.isDragging = false; el.style.transition = ''; CONFIG.floatingHeartPosition = { x: parseInt(el.style.left) || 0, y: parseInt(el.style.top) || 0 }; saveAllData(); if (!dragData.hasMoved) { document.getElementById('heartDetailOverlay').classList.add('active'); } dragData.hasMoved = false; } }); }
 
@@ -1262,7 +1325,6 @@ function openMall() { window.open('mall.html', '_blank'); }
 function openPhone() { window.open('phone.html', '_blank'); }
 function openSettings() { document.getElementById('apiKeyInput').value = CONFIG.apiKey || ''; document.getElementById('modelSelect').value = CONFIG.model || 'deepseek-chat'; renderRoleManager(); updatePermissionStatusUI(); loadTemperature(); loadFontSize(); loadFontWeight(); loadSplitToggle(); if (CONFIG.wallpaper) { document.getElementById('wallpaperPreviewImg').src = CONFIG.wallpaper; document.getElementById('wallpaperPreviewImg').style.display = 'block'; document.getElementById('wallpaperStatus').textContent = '自定义'; } else { document.getElementById('wallpaperPreviewImg').style.display = 'none'; document.getElementById('wallpaperStatus').textContent = '默认'; } if (CONFIG.chatBg) { document.getElementById('chatBgPreviewImg').src = CONFIG.chatBg; document.getElementById('chatBgPreviewImg').style.display = 'block'; document.getElementById('chatBgStatus').textContent = '自定义'; } else { document.getElementById('chatBgPreviewImg').style.display = 'none'; document.getElementById('chatBgStatus').textContent = '默认'; } if (CONFIG.userAvatar) { document.getElementById('userAvatarPreviewImg').src = CONFIG.userAvatar; document.getElementById('userAvatarPreviewImg').style.display = 'block'; document.getElementById('userAvatarStatus').textContent = '自定义'; } else { document.getElementById('userAvatarPreviewImg').style.display = 'none'; document.getElementById('userAvatarStatus').textContent = '默认'; } updateStorageDisplay(); document.getElementById('settingsOverlay').classList.add('active'); }
 function closeSettings() { document.getElementById('settingsOverlay').classList.remove('active'); }
-
 // ========== 联系人渲染 ==========
 function renderContacts() {
     var contactsList = document.getElementById('contactsList'); if (!contactsList) return;
@@ -1311,24 +1373,7 @@ function renderRoleManager() {
         var bgPreview = card.querySelector('#bgPreview_' + role.id);
         bgUploadBtn.addEventListener('click', function() { closeSettings(); setTimeout(function() { if (CONFIG.permission === 'denied') { showToast('🚫 相册权限已被拒绝，请在设置中重新请求'); return; } if (CONFIG.permission === 'allowed') { openImagePickerForRole(role.id, 'bg'); return; } showPermissionDialog('roleBg'); pendingPickerAction = { type: 'roleBg', roleId: role.id }; }, 300); });
         bgRemoveBtn.addEventListener('click', function() { role.chatBg = ''; saveAllData(); var newStyle = 'background-color: #ededed;'; bgPreview.style.cssText = newStyle; bgRemoveBtn.style.display = 'none'; var currentRole = getCurrentRole(); if (currentRole && currentRole.id === role.id) { applyChatBgForRole(role); } showToast('✅ 已移除聊天背景'); });
-        card.querySelector('.role-delete').addEventListener('click', function() {
-            if (roles.length <= 1) { showToast('⚠️ 至少保留一个角色'); return; }
-            if (confirm('确定要删除角色「' + role.name + '」吗？')) {
-                var idx = roles.findIndex(function(r) { return r.id === role.id; });
-                if (idx > -1) {
-                    roles.splice(idx, 1);
-                    if (currentRoleId === role.id) currentRoleId = roles[0] ? roles[0].id : null;
-                    if (CONFIG.unreadCount) delete CONFIG.unreadCount[role.id];
-                    if (CONFIG.pinnedContacts) { var pinIdx = CONFIG.pinnedContacts.indexOf(role.id); if (pinIdx !== -1) CONFIG.pinnedContacts.splice(pinIdx, 1); }
-                    if (CONFIG.heart.bindRoleId === role.id) CONFIG.heart.bindRoleId = null;
-                    if (CONFIG.diaries) CONFIG.diaries = CONFIG.diaries.filter(function(d) { return d.roleId !== role.id; });
-                    delete CONFIG.lastChatVisit[role.id]; delete CONFIG.lastAiMessageTime[role.id]; delete CONFIG.sleepMode[role.id];
-                    delete draftCache[role.id];
-                    if (sleepTimers[role.id]) { clearTimeout(sleepTimers[role.id]); delete sleepTimers[role.id]; }
-                    saveAllData(); renderRoleManager(); renderContacts(); renderMemoryScreen(); renderDiaryAll(); updateChatTitle(); showToast('🗑️ 已删除「' + role.name + '」');
-                }
-            }
-        });
+        card.querySelector('.role-delete').addEventListener('click', function() { if (roles.length <= 1) { showToast('⚠️ 至少保留一个角色'); return; } if (confirm('确定要删除角色「' + role.name + '」吗？')) { var idx = roles.findIndex(function(r) { return r.id === role.id; }); if (idx > -1) { roles.splice(idx, 1); if (currentRoleId === role.id) currentRoleId = roles[0] ? roles[0].id : null; if (CONFIG.unreadCount) delete CONFIG.unreadCount[role.id]; if (CONFIG.pinnedContacts) { var pinIdx = CONFIG.pinnedContacts.indexOf(role.id); if (pinIdx !== -1) CONFIG.pinnedContacts.splice(pinIdx, 1); } if (CONFIG.heart.bindRoleId === role.id) CONFIG.heart.bindRoleId = null; if (CONFIG.diaries) CONFIG.diaries = CONFIG.diaries.filter(function(d) { return d.roleId !== role.id; }); delete CONFIG.lastChatVisit[role.id]; delete CONFIG.lastAiMessageTime[role.id]; delete CONFIG.sleepMode[role.id]; delete draftCache[role.id]; if (sleepTimers[role.id]) { clearTimeout(sleepTimers[role.id]); delete sleepTimers[role.id]; } saveAllData(); renderRoleManager(); renderContacts(); renderMemoryScreen(); renderDiaryAll(); updateChatTitle(); showToast('🗑️ 已删除「' + role.name + '」'); } } });
         container.appendChild(card);
     });
 }
@@ -1459,14 +1504,16 @@ function init() {
     try { registerServiceWorker(); } catch (e) { console.log('PWA 注册跳过'); }
     try { startBackgroundCheck(); } catch (e) { console.error('后台检测启动失败:', e); }
     try { startDiaryAutoCheck(); } catch (e) { console.error('日记自动检测启动失败:', e); }
+    try { startMemoryConsolidation(); } catch (e) { console.error('记忆整合启动失败:', e); }
     var signatureInput = document.getElementById('signatureInput');
     if (signatureInput) { signatureInput.addEventListener('blur', function() { var text = document.getElementById('signatureText'); var input = document.getElementById('signatureInput'); if (input.classList.contains('show')) { var newText = input.value.trim() || '今天也很想你 💕'; text.textContent = newText; text.classList.remove('hide'); input.classList.remove('show'); var bindRoleId = CONFIG.heart.bindRoleId; if (bindRoleId) { var role = roles.find(function(r) { return r.id === bindRoleId; }); if (role) { if (!role.heartData) role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: newText, recentTrigger: '初次相遇' }; role.heartData.signature = newText; CONFIG.heart.signature = newText; saveAllData(); updateHeartDisplay(); } } else { CONFIG.heart.signature = newText; saveAllData(); updateHeartDisplay(); } } }); }
-    console.log('🚀 梦女空间 v3.3 - 最终修复版已启动！');
-    console.log('📖 日记自动书写：每晚9:00触发');
-    console.log('🔄 主动消息：每30分钟检测');
-    console.log('🎨 z-index 已统一规划，换头像不再卡住');
-    console.log('🎁 gift-card 样式已合并修复');
-    console.log('🫧 气泡预览 CSS 类已添加');
+    console.log('🚀 梦女空间 v3.3 - 记忆系统增强版已启动！');
+    console.log('📖 记忆系统升级：');
+    console.log('  1. ✅ 记忆分级（核心/近期/归档）');
+    console.log('  2. ✅ 自然化输出（告别"记忆库：xxx；yyy"）');
+    console.log('  3. ✅ 自动遗忘（30天降级，90天删除）');
+    console.log('  4. ✅ 亲密度加权（不同关系不同语气）');
+    console.log('  5. ✅ 重复记忆合并');
 }
 
 // ========== DOM 事件绑定 ==========
@@ -1489,17 +1536,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dataModalClose').addEventListener('click', closeDataModal);
     document.getElementById('dataModalCancel').addEventListener('click', closeDataModal);
     document.getElementById('dataModalOverlay').addEventListener('click', function(e) { if (e.target === this) closeDataModal(); });
-    document.getElementById('dataExportBtn').addEventListener('click', function() {
-        var exportType = getSelectedExportType(); var exportData = { exportTime: new Date().toISOString(), version: '3.3', type: exportType, config: {}, roles: [], diaries: [] }; var roleData = [];
-        if (exportType === 'all') { roleData = JSON.parse(JSON.stringify(roles)); exportData.diaries = JSON.parse(JSON.stringify(CONFIG.diaries || [])); exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition, lastChatVisit: CONFIG.lastChatVisit, lastAiMessageTime: CONFIG.lastAiMessageTime, aiMessageCooldown: CONFIG.aiMessageCooldown, timeDividerThreshold: CONFIG.timeDividerThreshold, sleepMode: CONFIG.sleepMode }; }
-        else if (exportType === 'settings') { exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition, lastChatVisit: CONFIG.lastChatVisit, lastAiMessageTime: CONFIG.lastAiMessageTime, aiMessageCooldown: CONFIG.aiMessageCooldown, timeDividerThreshold: CONFIG.timeDividerThreshold, sleepMode: CONFIG.sleepMode }; var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' }); var url = URL.createObjectURL(blob); var link = document.createElement('a'); link.href = url; link.download = '梦女空间_美化设置_' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); showToast('✅ 美化设置已导出'); closeDataModal(); return; }
-        else if (exportType === 'roles') { roleData = JSON.parse(JSON.stringify(roles)); roleData.forEach(function(r) { r.messages = []; r.memory = []; }); }
-        else if (exportType === 'chats') { roleData = JSON.parse(JSON.stringify(roles)); roleData.forEach(function(r) { var msgs = r.messages || []; var mem = r.memory || []; r.persona = ''; r.background = ''; r.style = ''; r.extra = ''; r.avatar = ''; r.chatBg = ''; r.messages = msgs; r.memory = mem; }); }
-        else if (exportType === 'diaries') { exportData.diaries = JSON.parse(JSON.stringify(CONFIG.diaries || [])); }
-        else if (exportType === 'selected') { var selectedIds = getSelectedRoleIds(); if (selectedIds.length === 0) { showToast('⚠️ 请至少选择一个角色'); return; } roleData = JSON.parse(JSON.stringify(roles.filter(function(r) { return selectedIds.indexOf(r.id) !== -1; }))); exportData.diaries = JSON.parse(JSON.stringify((CONFIG.diaries || []).filter(function(d) { return selectedIds.indexOf(d.roleId) !== -1; }))); if (roleData.length === 0) { showToast('⚠️ 未找到选中的角色'); return; } }
-        exportData.roles = roleData; var typeNames = { 'all': '全部数据', 'settings': '美化设置', 'roles': '角色设定', 'chats': '聊天记录', 'diaries': '日记数据', 'selected': '按角色导出' };
-        var blob2 = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' }); var url2 = URL.createObjectURL(blob2); var link2 = document.createElement('a'); link2.href = url2; link2.download = '梦女空间_' + (typeNames[exportType] || '数据') + '_' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(link2); link2.click(); document.body.removeChild(link2); URL.revokeObjectURL(url2); showToast('✅ ' + (typeNames[exportType] || '数据') + '已导出'); closeDataModal();
-    });
+    document.getElementById('dataExportBtn').addEventListener('click', function() { var exportType = getSelectedExportType(); var exportData = { exportTime: new Date().toISOString(), version: '3.3', type: exportType, config: {}, roles: [], diaries: [] }; var roleData = []; if (exportType === 'all') { roleData = JSON.parse(JSON.stringify(roles)); exportData.diaries = JSON.parse(JSON.stringify(CONFIG.diaries || [])); exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition, lastChatVisit: CONFIG.lastChatVisit, lastAiMessageTime: CONFIG.lastAiMessageTime, aiMessageCooldown: CONFIG.aiMessageCooldown, timeDividerThreshold: CONFIG.timeDividerThreshold, sleepMode: CONFIG.sleepMode }; } else if (exportType === 'settings') { exportData.config = { theme: CONFIG.theme, iconStyle: CONFIG.iconStyle, bubbleStyle: CONFIG.bubbleStyle, timeMode: CONFIG.timeMode, fontSize: CONFIG.fontSize, fontWeight: CONFIG.fontWeight, splitEnabled: CONFIG.splitEnabled, heart: CONFIG.heart, wallpaper: CONFIG.wallpaper, chatBg: CONFIG.chatBg, userAvatar: CONFIG.userAvatar, floatingHeartPosition: CONFIG.floatingHeartPosition, lastChatVisit: CONFIG.lastChatVisit, lastAiMessageTime: CONFIG.lastAiMessageTime, aiMessageCooldown: CONFIG.aiMessageCooldown, timeDividerThreshold: CONFIG.timeDividerThreshold, sleepMode: CONFIG.sleepMode }; var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' }); var url = URL.createObjectURL(blob); var link = document.createElement('a'); link.href = url; link.download = '梦女空间_美化设置_' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); showToast('✅ 美化设置已导出'); closeDataModal(); return; } else if (exportType === 'roles') { roleData = JSON.parse(JSON.stringify(roles)); roleData.forEach(function(r) { r.messages = []; r.memory = []; }); } else if (exportType === 'chats') { roleData = JSON.parse(JSON.stringify(roles)); roleData.forEach(function(r) { var msgs = r.messages || []; var mem = r.memory || []; r.persona = ''; r.background = ''; r.style = ''; r.extra = ''; r.avatar = ''; r.chatBg = ''; r.messages = msgs; r.memory = mem; }); } else if (exportType === 'diaries') { exportData.diaries = JSON.parse(JSON.stringify(CONFIG.diaries || [])); } else if (exportType === 'selected') { var selectedIds = getSelectedRoleIds(); if (selectedIds.length === 0) { showToast('⚠️ 请至少选择一个角色'); return; } roleData = JSON.parse(JSON.stringify(roles.filter(function(r) { return selectedIds.indexOf(r.id) !== -1; }))); exportData.diaries = JSON.parse(JSON.stringify((CONFIG.diaries || []).filter(function(d) { return selectedIds.indexOf(d.roleId) !== -1; }))); if (roleData.length === 0) { showToast('⚠️ 未找到选中的角色'); return; } } exportData.roles = roleData; var typeNames = { 'all': '全部数据', 'settings': '美化设置', 'roles': '角色设定', 'chats': '聊天记录', 'diaries': '日记数据', 'selected': '按角色导出' }; var blob2 = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' }); var url2 = URL.createObjectURL(blob2); var link2 = document.createElement('a'); link2.href = url2; link2.download = '梦女空间_' + (typeNames[exportType] || '数据') + '_' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(link2); link2.click(); document.body.removeChild(link2); URL.revokeObjectURL(url2); showToast('✅ ' + (typeNames[exportType] || '数据') + '已导出'); closeDataModal(); });
     document.getElementById('dataImportBtn').addEventListener('click', function() { var input = document.createElement('input'); input.type = 'file'; input.accept = '.json'; input.onchange = function(e) { var file = e.target.files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function(ev) { try { var imported = JSON.parse(ev.target.result); if (!imported.roles || !Array.isArray(imported.roles)) { showToast('❌ 无效的数据文件，请检查'); return; } if (!confirm('即将导入 ' + imported.roles.length + ' 个角色的数据，当前数据将被覆盖。是否继续？')) return; var cleanedRoles = imported.roles.map(function(role) { if (!role.id) role.id = 'role_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6); if (!role.name) role.name = '未命名角色'; if (!role.messages || !Array.isArray(role.messages)) role.messages = []; if (!role.memory || !Array.isArray(role.memory)) role.memory = []; if (!role.heartData) role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; if (!role.heartData.signature) role.heartData.signature = '今天也很想你 💕'; if (!role.heartData.recentTrigger) role.heartData.recentTrigger = '初次相遇'; if (!role.heartData.restingValue) role.heartData.restingValue = 65; if (!role.heartData.value) role.heartData.value = 65; if (!role.heartData.peakValue) role.heartData.peakValue = 65; if (!role.avatar) role.avatar = ''; if (!role.chatBg) role.chatBg = ''; if (!role.persona) role.persona = '一个温柔体贴的AI伴侣，善解人意。'; if (!role.background) role.background = '生活在充满爱的世界里。'; if (!role.style) role.style = '只说对话内容，不要任何动作、表情、环境描写。用短句，像真人微信聊天一样自然分段回复。'; if (!role.extra) role.extra = ''; if (!role.createdAt) role.createdAt = new Date().toISOString(); initRoleExtendedState(role); return role; }); roles = cleanedRoles; if (imported.config) { var oldApiKey = CONFIG.apiKey; CONFIG = { ...CONFIG, ...imported.config }; CONFIG.apiKey = oldApiKey; if (!CONFIG.pinnedContacts || !Array.isArray(CONFIG.pinnedContacts)) CONFIG.pinnedContacts = []; if (!CONFIG.heart) CONFIG.heart = { bindRoleId: null, value: 65, restingValue: 65, level: '平静', signature: '今天也很想你 💕', color: '#ff6b81', floatingEnabled: true, speed: 'normal', recentTrigger: '等待你的第一句情话', spikeActive: false, peakValue: 65 }; if (CONFIG.aiMemeEnabled === undefined) CONFIG.aiMemeEnabled = true; if (!CONFIG.diaries || !Array.isArray(CONFIG.diaries)) CONFIG.diaries = []; if (!CONFIG.floatingHeartPosition) CONFIG.floatingHeartPosition = { x: null, y: null }; if (!CONFIG.lastChatVisit || typeof CONFIG.lastChatVisit === 'number') CONFIG.lastChatVisit = {}; if (!CONFIG.lastAiMessageTime || typeof CONFIG.lastAiMessageTime === 'number') CONFIG.lastAiMessageTime = {}; if (!CONFIG.aiMessageCooldown) CONFIG.aiMessageCooldown = 30 * 60 * 1000; if (!CONFIG.timeDividerThreshold) CONFIG.timeDividerThreshold = 10 * 60 * 1000; if (!CONFIG.sleepMode) CONFIG.sleepMode = {}; } if (imported.diaries && Array.isArray(imported.diaries)) CONFIG.diaries = imported.diaries; if (roles.length > 0) currentRoleId = roles[0].id; else currentRoleId = null; roles.forEach(function(role) { if (!CONFIG.lastChatVisit[role.id]) CONFIG.lastChatVisit[role.id] = 0; if (!CONFIG.lastAiMessageTime[role.id]) CONFIG.lastAiMessageTime[role.id] = 0; if (CONFIG.sleepMode[role.id] === undefined) CONFIG.sleepMode[role.id] = false; initRoleExtendedState(role); }); saveAllData(); renderContacts(); renderRoleManager(); renderMemoryScreen(); renderDiaryAll(); updateChatTitle(); if (document.getElementById('chatScreen').classList.contains('open')) renderMessages(); updateHeartDisplay(); if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 500); showToast('✅ 成功导入 ' + roles.length + ' 个角色，' + CONFIG.diaries.length + ' 篇日记'); closeDataModal(); closeSettings(); } catch (err) { showToast('❌ 导入失败，文件格式错误'); console.error('导入错误:', err); } }; reader.readAsText(file); }; input.click(); });
     document.getElementById('clearAllChatsBtn').addEventListener('click', function() { if (confirm('⚠️ 确定要清空所有角色的聊天记录吗？此操作不可恢复！')) { roles.forEach(function(role) { role.messages = []; clearUnreadForRole(role.id); }); saveAllData(); renderMessages(); renderContacts(); renderRoleManager(); renderMemoryScreen(); showToast('🗑️ 已清空所有角色的聊天记录'); } });
     document.getElementById('clearChatBtn').addEventListener('click', function() { var role = getCurrentRole(); if (!role) return; if (confirm('确定要清空「' + role.name + '」的所有聊天记录吗？')) { role.messages = []; clearUnreadForRole(role.id); saveAllData(); renderMessages(); renderContacts(); showToast('🗑️ 已清空「' + role.name + '」的聊天记录'); } });
@@ -1526,7 +1563,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('memeExportBtn').addEventListener('click', function() { var data = { version: '1.0', exportTime: new Date().toISOString(), categories: memeCategories, memes: memes }; var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); var url = URL.createObjectURL(blob); var link = document.createElement('a'); link.href = url; link.download = '表情包库_' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); showToast('✅ 表情包已导出'); });
     document.getElementById('memeImportBtn').addEventListener('click', function() { var input = document.createElement('input'); input.type = 'file'; input.accept = '.json'; input.onchange = function(e) { var file = e.target.files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function(ev) { try { var data = JSON.parse(ev.target.result); if (!data.memes || !Array.isArray(data.memes)) { showToast('❌ 无效的表情包数据文件'); return; } if (!confirm('即将导入 ' + data.memes.length + ' 个表情包，当前数据将被覆盖。是否继续？')) return; if (data.categories && Array.isArray(data.categories)) memeCategories = data.categories; memes = data.memes; if (!memeCategories.find(function(c) { return c.id === 'uncategorized'; })) memeCategories.push({ id: 'uncategorized', name: '未分类', icon: '📁' }); saveMemeData().then(function() { renderMemeScreen(); showToast('✅ 成功导入 ' + memes.length + ' 个表情包'); }); } catch (err) { showToast('❌ 导入失败，文件格式错误'); } }; reader.readAsText(file); }; input.click(); });
     document.getElementById('memoryRoleSelector').addEventListener('change', renderMemoryList);
-    document.getElementById('memoryAddBtn').addEventListener('click', function() { var roleId = document.getElementById('memoryRoleSelector').value; if (!roleId) { showToast('⚠️ 请先选择一个角色'); return; } var text = document.getElementById('memoryAddInput').value.trim(); if (!text) { showToast('⚠️ 请输入记忆内容'); return; } var role = roles.find(function(r) { return r.id === roleId; }); if (!role) { showToast('⚠️ 未找到该角色'); return; } if (!Array.isArray(role.memory)) role.memory = []; role.memory.push({ text: text }); document.getElementById('memoryAddInput').value = ''; saveAllData(); renderMemoryList(); renderRoleManager(); renderContacts(); showToast('🧠 已添加记忆'); });
+    document.getElementById('memoryAddBtn').addEventListener('click', function() { var roleId = document.getElementById('memoryRoleSelector').value; if (!roleId) { showToast('⚠️ 请先选择一个角色'); return; } var text = document.getElementById('memoryAddInput').value.trim(); if (!text) { showToast('⚠️ 请输入记忆内容'); return; } var role = roles.find(function(r) { return r.id === roleId; }); if (!role) { showToast('⚠️ 未找到该角色'); return; } if (!Array.isArray(role.memory)) role.memory = []; role.memory.push({ text: text, level: 'core', timestamp: Date.now() }); document.getElementById('memoryAddInput').value = ''; saveAllData(); renderMemoryList(); renderRoleManager(); renderContacts(); showToast('🧠 已添加核心记忆'); });
     document.getElementById('memoryAddInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('memoryAddBtn').click(); });
     document.getElementById('diaryRoleSelector').addEventListener('change', function() { selectedDiaryRoleId = this.value; var dates = getAllDiaryDates(selectedDiaryRoleId); if (dates.length > 0) selectedDiaryDate = new Date(dates[dates.length - 1] + 'T00:00:00'); else selectedDiaryDate = new Date(); renderDiaryAll(); });
     document.getElementById('writeDiaryBtn').addEventListener('click', function() { var roleId = selectedDiaryRoleId || currentRoleId; var role = roles.find(function(r) { return r.id === roleId; }); if (!role) { showToast('⚠️ 请先选择一个角色'); return; } if (!CONFIG.apiKey) { showToast('⚠️ 请先在设置中配置 API Key'); return; } this.disabled = true; this.textContent = '⏳ 生成中...'; generateDiary(roleId, true).then(function(diary) { if (diary) { selectedDiaryDate = new Date(diary.dateKey + 'T00:00:00'); renderDiaryAll(); } else { showToast('❌ 日记生成失败，请检查 API Key 或网络'); } document.getElementById('writeDiaryBtn').disabled = false; document.getElementById('writeDiaryBtn').innerHTML = '<i class="fas fa-feather-alt"></i> 写今日'; }).catch(function(e) { showToast('❌ 生成失败：' + e.message); document.getElementById('writeDiaryBtn').disabled = false; document.getElementById('writeDiaryBtn').innerHTML = '<i class="fas fa-feather-alt"></i> 写今日'; }); });
@@ -1548,5 +1585,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
 
 
