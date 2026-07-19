@@ -70,7 +70,6 @@
             padding: 20px;
         }
 
-        /* ===== 三个细圆环 + 中间斜的细胶囊 ===== */
         .rings-container {
             position: relative;
             width: 140px;
@@ -121,7 +120,6 @@
         @keyframes spinMiddle { to { transform: rotate(-360deg); } }
         @keyframes spinInner { to { transform: rotate(360deg); } }
 
-        /* ===== 中间：斜的细胶囊 ===== */
         .capsule-wrapper {
             position: relative;
             z-index: 2;
@@ -192,7 +190,6 @@
             50% { transform: translateY(-3px) scale(1.01); }
         }
 
-        /* ===== 加载文字 ===== */
         .loader-text {
             display: flex;
             flex-direction: column;
@@ -223,7 +220,6 @@
             50% { opacity: 0.9; }
         }
 
-        /* ===== 加载进度条 ===== */
         .loader-progress {
             width: 160px;
             height: 2px;
@@ -254,7 +250,6 @@
             margin-top: 2px;
         }
 
-        /* ===== 亮色模式加载动画 ===== */
         [data-theme="light"] .loader-overlay {
             background: #f5f3f7;
         }
@@ -292,7 +287,7 @@
             border-bottom-color: rgba(251, 191, 36, 0.04);
         }
 
-        /* ===== 主内容样式（原有的） ===== */
+        /* ===== 主内容样式 ===== */
         .memory-header {
             background: var(--header-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: calc(14px + var(--safe-top, 0px)) 16px 12px;
@@ -529,6 +524,60 @@
             opacity: 0.5; margin-top: 4px;
         }
 
+        /* ===== 记忆库添加板块 ===== */
+        .memory-add-section {
+            margin-top: 12px;
+            padding: 12px 14px;
+            background: var(--bg-card);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .memory-add-section input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+        .memory-add-section input:focus {
+            border-color: var(--tab-active);
+            box-shadow: 0 0 0 3px rgba(167,139,250,0.12);
+        }
+        .memory-add-section input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.4;
+        }
+        .memory-add-section .add-mem-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .memory-add-section .add-mem-btn:active {
+            transform: scale(0.95);
+        }
+        .memory-add-section .add-mem-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .confirm-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -710,8 +759,8 @@
 
 <script>
 // ============================================================
-//  📦 时光胶囊 v1.0 - 带加载动画
-//  独立记忆系统 - 对话摘要 / 生活日志 / 记忆库
+//  📦 时光胶囊 v1.1 - 修复版
+//  独立记忆系统 - 对话摘要 / 生活日志 / 记忆库 + 添加记忆
 //  完全兼容主应用数据 ✅
 // ============================================================
 
@@ -722,6 +771,7 @@ var currentTab = 'summary';
 var toastTimer = null;
 var confirmCallback = null;
 var CONFIG = { theme: 'dark' };
+var isAddingMemory = false;
 
 // ========== 工具函数 ==========
 function generateId() {
@@ -1064,7 +1114,9 @@ function renderSummary(role) {
                     if (role.extendedState) {
                         role.extendedState.contextSummary = '你们还没有深入聊过，ta好像还在了解你。';
                         saveData();
-                        renderAll();
+                        // 只刷新当前Tab，不触发加载动画
+                        renderSummary(role);
+                        renderRelationCard(role);
                         showToast('✅ 已删除当前摘要');
                     }
                 });
@@ -1075,7 +1127,8 @@ function renderSummary(role) {
                         if (idx !== -1) {
                             role.extendedState.summaryHistory.splice(idx, 1);
                             saveData();
-                            renderAll();
+                            renderSummary(role);
+                            renderRelationCard(role);
                             showToast('✅ 已删除摘要');
                         }
                     }
@@ -1142,7 +1195,8 @@ function renderLogs(role) {
                 if (role.extendedState && role.extendedState.lifeLogs && logIdx < role.extendedState.lifeLogs.length) {
                     role.extendedState.lifeLogs.splice(logIdx, 1);
                     saveData();
-                    renderAll();
+                    renderLogs(role);
+                    renderRelationCard(role);
                     showToast('✅ 已删除日志');
                 }
             });
@@ -1150,7 +1204,7 @@ function renderLogs(role) {
     });
 }
 
-// ========== 记忆库渲染 ==========
+// ========== 记忆库渲染（带添加板块） ==========
 function renderMemory(role) {
     var panel = document.getElementById('panelMemory');
     if (!panel) return;
@@ -1160,59 +1214,66 @@ function renderMemory(role) {
     }
 
     var memories = role.memory || [];
-    if (memories.length === 0) {
-        panel.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>还没有保存任何记忆</p><span class="empty-hint">聊天中会慢慢积累关于你的事 📭</span></div>';
-        return;
-    }
-
-    var core = memories.filter(function(m) { return m.level === 'core' || !m.level; });
-    var recent = memories.filter(function(m) { return m.level === 'recent'; });
-    var archived = memories.filter(function(m) { return m.level === 'archived'; });
-
     var html = '';
 
-    if (core.length > 0) {
-        html += '<div style="font-size:10px;color:var(--text-secondary);font-weight:600;margin:6px 0 6px;padding-left:4px;letter-spacing:0.5px;">📌 核心记忆</div>';
-        core.forEach(function(mem) {
-            var text = mem.text || mem;
-            if (typeof text !== 'string') text = text.text || '';
-            html += '<div class="timeline-item" style="border-left-color:#a78bfa;">';
-            html += '<div class="item-header"><span class="item-time">💎 永久</span><div class="item-actions"><button class="del-btn" data-memtext="' + escapeHtml(text) + '" title="删除"><i class="fas fa-times"></i></button></div></div>';
-            html += '<div class="item-content">' + escapeHtml(text) + '</div>';
-            html += '<div class="item-footer"><span class="item-badge core">核心</span></div>';
-            html += '</div>';
-        });
+    // 记忆列表
+    if (memories.length === 0) {
+        html += '<div class="empty-state"><i class="fas fa-inbox"></i><p>还没有保存任何记忆</p><span class="empty-hint">聊天中会慢慢积累关于你的事 📭</span></div>';
+    } else {
+        var core = memories.filter(function(m) { return m.level === 'core' || !m.level; });
+        var recent = memories.filter(function(m) { return m.level === 'recent'; });
+        var archived = memories.filter(function(m) { return m.level === 'archived'; });
+
+        if (core.length > 0) {
+            html += '<div style="font-size:10px;color:var(--text-secondary);font-weight:600;margin:6px 0 6px;padding-left:4px;letter-spacing:0.5px;">📌 核心记忆</div>';
+            core.forEach(function(mem) {
+                var text = mem.text || mem;
+                if (typeof text !== 'string') text = text.text || '';
+                html += '<div class="timeline-item" style="border-left-color:#a78bfa;">';
+                html += '<div class="item-header"><span class="item-time">💎 永久</span><div class="item-actions"><button class="del-btn" data-memtext="' + escapeHtml(text) + '" title="删除"><i class="fas fa-times"></i></button></div></div>';
+                html += '<div class="item-content">' + escapeHtml(text) + '</div>';
+                html += '<div class="item-footer"><span class="item-badge core">核心</span></div>';
+                html += '</div>';
+            });
+        }
+
+        if (recent.length > 0) {
+            html += '<div style="font-size:10px;color:var(--text-secondary);font-weight:600;margin:10px 0 6px;padding-left:4px;letter-spacing:0.5px;">🕐 近期记忆</div>';
+            recent.forEach(function(mem) {
+                var text = mem.text || mem;
+                if (typeof text !== 'string') text = text.text || '';
+                var timeDisplay = mem.timestamp ? formatDateDisplay(new Date(mem.timestamp)) : '近期';
+                html += '<div class="timeline-item" style="border-left-color:#fbbf24;">';
+                html += '<div class="item-header"><span class="item-time">' + timeDisplay + '</span><div class="item-actions"><button class="del-btn" data-memtext="' + escapeHtml(text) + '" title="删除"><i class="fas fa-times"></i></button></div></div>';
+                html += '<div class="item-content">' + escapeHtml(text) + '</div>';
+                html += '<div class="item-footer"><span class="item-badge recent">近期</span></div>';
+                html += '</div>';
+            });
+        }
+
+        if (archived.length > 0) {
+            html += '<div style="font-size:10px;color:var(--text-secondary);font-weight:600;margin:10px 0 6px;padding-left:4px;letter-spacing:0.5px;">📦 归档记忆</div>';
+            archived.forEach(function(mem) {
+                var text = mem.text || mem;
+                if (typeof text !== 'string') text = text.text || '';
+                html += '<div class="timeline-item" style="border-left-color:#94a3b8;opacity:0.7;">';
+                html += '<div class="item-header"><span class="item-time">📦 已归档</span><div class="item-actions"><button class="del-btn" data-memtext="' + escapeHtml(text) + '" title="删除"><i class="fas fa-times"></i></button></div></div>';
+                html += '<div class="item-content">' + escapeHtml(text) + '</div>';
+                html += '<div class="item-footer"><span class="item-badge archived">归档</span></div>';
+                html += '</div>';
+            });
+        }
     }
 
-    if (recent.length > 0) {
-        html += '<div style="font-size:10px;color:var(--text-secondary);font-weight:600;margin:10px 0 6px;padding-left:4px;letter-spacing:0.5px;">🕐 近期记忆</div>';
-        recent.forEach(function(mem) {
-            var text = mem.text || mem;
-            if (typeof text !== 'string') text = text.text || '';
-            var timeDisplay = mem.timestamp ? formatDateDisplay(new Date(mem.timestamp)) : '近期';
-            html += '<div class="timeline-item" style="border-left-color:#fbbf24;">';
-            html += '<div class="item-header"><span class="item-time">' + timeDisplay + '</span><div class="item-actions"><button class="del-btn" data-memtext="' + escapeHtml(text) + '" title="删除"><i class="fas fa-times"></i></button></div></div>';
-            html += '<div class="item-content">' + escapeHtml(text) + '</div>';
-            html += '<div class="item-footer"><span class="item-badge recent">近期</span></div>';
-            html += '</div>';
-        });
-    }
-
-    if (archived.length > 0) {
-        html += '<div style="font-size:10px;color:var(--text-secondary);font-weight:600;margin:10px 0 6px;padding-left:4px;letter-spacing:0.5px;">📦 归档记忆</div>';
-        archived.forEach(function(mem) {
-            var text = mem.text || mem;
-            if (typeof text !== 'string') text = text.text || '';
-            html += '<div class="timeline-item" style="border-left-color:#94a3b8;opacity:0.7;">';
-            html += '<div class="item-header"><span class="item-time">📦 已归档</span><div class="item-actions"><button class="del-btn" data-memtext="' + escapeHtml(text) + '" title="删除"><i class="fas fa-times"></i></button></div></div>';
-            html += '<div class="item-content">' + escapeHtml(text) + '</div>';
-            html += '<div class="item-footer"><span class="item-badge archived">归档</span></div>';
-            html += '</div>';
-        });
-    }
+    // ===== 添加记忆板块 =====
+    html += '<div class="memory-add-section">';
+    html += '<input type="text" id="memoryAddInput" placeholder="添加新记忆..." maxlength="100" />';
+    html += '<button class="add-mem-btn" id="memoryAddBtn"><i class="fas fa-plus"></i> 添加</button>';
+    html += '</div>';
 
     panel.innerHTML = html;
 
+    // 绑定删除事件
     panel.querySelectorAll('.del-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -1227,13 +1288,60 @@ function renderMemory(role) {
                     if (idx !== -1) {
                         role.memory.splice(idx, 1);
                         saveData();
-                        renderAll();
+                        // 只刷新记忆库，不触发加载动画
+                        renderMemory(role);
+                        renderRelationCard(role);
                         showToast('✅ 已删除记忆');
                     }
                 }
             });
         });
     });
+
+    // ===== 绑定添加事件 =====
+    var addInput = document.getElementById('memoryAddInput');
+    var addBtn = document.getElementById('memoryAddBtn');
+
+    function handleAddMemory() {
+        if (isAddingMemory) return;
+        var text = addInput ? addInput.value.trim() : '';
+        if (!text) {
+            showToast('⚠️ 请输入记忆内容');
+            return;
+        }
+
+        isAddingMemory = true;
+        if (addBtn) addBtn.disabled = true;
+
+        if (!Array.isArray(role.memory)) role.memory = [];
+        role.memory.push({
+            text: text,
+            level: 'core',
+            timestamp: Date.now()
+        });
+
+        saveData();
+        if (addInput) addInput.value = '';
+        renderMemory(role);
+        renderRelationCard(role);
+        showToast('🧠 已添加核心记忆');
+
+        isAddingMemory = false;
+        if (addBtn) addBtn.disabled = false;
+        if (addInput) addInput.focus();
+    }
+
+    if (addBtn) {
+        addBtn.addEventListener('click', handleAddMemory);
+    }
+    if (addInput) {
+        addInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddMemory();
+            }
+        });
+    }
 }
 
 // ========== 确认弹窗 ==========
@@ -1379,10 +1487,8 @@ function hideLoader() {
 function init() {
     console.log('📦 时光胶囊初始化中...');
 
-    // 先加载数据
     var dataLoaded = loadData();
 
-    // 渲染主内容
     if (dataLoaded) {
         renderRoleSelector();
         bindRoleSelector();
@@ -1397,7 +1503,7 @@ function init() {
         if (refreshBtn) refreshBtn.addEventListener('click', refreshData);
         if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
 
-        console.log('📦 时光胶囊 v1.0 已加载');
+        console.log('📦 时光胶囊 v1.1 已加载');
         console.log('📊 共 ' + roles.length + ' 个角色');
         var currentRole = getCurrentRole();
         console.log('💕 当前角色: ' + (currentRole ? currentRole.name : '无'));
@@ -1408,11 +1514,9 @@ function init() {
         }
     }
 
-    // 隐藏加载动画
     setTimeout(hideLoader, 800);
 }
 
-// DOM加载完成后初始化
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
