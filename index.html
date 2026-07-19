@@ -486,6 +486,7 @@
 </div> <script>
 // ============================================================
 //  🚀 梦女空间 v3.5 - 精简版（记忆库已独立为时光胶囊）
+//  修复：强制禁止动作/环境/心理描写 ✅
 //  完全兼容旧数据，所有功能不变 ✅
 // ============================================================
 
@@ -1917,9 +1918,11 @@ function regenerateMessage(roleId, messageId) {
     });
 }
 
-// ========== AI调用 ==========
+// ========== AI调用（核心修复：强制禁止动作描写） ==========
 function buildSystemPrompt(role) {
     var parts = [];
+
+    // ===== 1. 表情包能力 =====
     if (CONFIG.aiMemeEnabled !== false && memes.length > 0) {
         var memePrompt = '【表情包库】\n你可以在对话中发送以下表情包（用 [表情包：名称] 表示）：\n';
         var catsWithMemes = memeCategories.filter(function(cat) {
@@ -1936,13 +1939,42 @@ function buildSystemPrompt(role) {
         memePrompt += '\n【使用规则】\n1. 当你觉得某个表情包很贴合当前对话时，在回复末尾加上 [表情包：名称]\n2. 表情包是对文字的补充，不要为了发表情包而发表情包\n3. 只有真正贴合语境时才使用，每轮最多发一个表情包\n';
         parts.push(memePrompt);
     }
+
+    // ===== 2. 送礼能力 =====
     parts.push('【送礼能力】\n你可以在商城中挑选礼物送给用户。当你想送礼物时，在回复末尾加上 [送礼：商品名称] 格式。例如：[送礼：纯白衬衫]\n注意：1. 只有当你真的觉得想表达心意时才送礼 2. 礼物要符合当前对话氛围 3. 不要为了送礼而送礼');
+
+    // ===== 3. 角色设定 =====
     if (role.persona && role.persona.trim()) parts.push('【人设】' + role.persona.trim());
     if (role.background && role.background.trim()) parts.push('【背景】' + role.background.trim());
     if (role.style && role.style.trim()) parts.push('【说话风格】' + role.style.trim());
     if (role.extra && role.extra.trim()) parts.push('【补充项】' + role.extra.trim());
-    if (parts.length === 0) return '你是一个温柔体贴的AI伴侣，说话轻声细语，会关心人。';
-    return parts.join('\n') + '\n\n【核心指令】\n1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n2. 严格遵守【人设】中的身份和性格，不要偏离。\n3. 回复时必须符合【说话风格】的语气和习惯。\n4. 对话中自然地融入【背景】、【补充项】中的信息。\n5. 保持角色一致性，不要出戏。\n6. 当你觉得想表达心意时，可以用 [送礼：商品名称] 来送礼物给用户。';
+
+    // ===== 4. 硬性约束（⭐核心修复：强制禁止动作描写） =====
+    var hardRules = '\n\n【🚨 硬性约束 - 必须严格遵守】\n';
+    hardRules += '你的回复中「绝对禁止」出现以下内容：\n';
+    hardRules += '1. ❌ 任何动作描写（如：我坐下、我拿起、我抬头、我微笑、我转身、我伸手）\n';
+    hardRules += '2. ❌ 任何环境描写（如：灯光、窗外、声音、味道、天气）\n';
+    hardRules += '3. ❌ 任何表情描写（如：脸红、低头、挑眉、眨眼、抿嘴）\n';
+    hardRules += '4. ❌ 任何心理描写（如：心想、忍不住、觉得、感到、暗自）\n';
+    hardRules += '5. ❌ 任何叙述性文字（如：我坐在吧台前、我拿着手机、他经过）\n';
+    hardRules += '\n✅ 你「只能」输出对话内容，像真人微信聊天一样。\n';
+    hardRules += '✅ 每句话独立成行，不加任何叙述前缀。\n';
+    hardRules += '✅ 示例正确回复："你今天怎么这么晚才回我呀？\\n我好想你哦 💕"';
+    hardRules += '\n✅ 示例错误回复："我坐在沙发上，拿起手机，看到你的消息，忍不住笑了。你今天怎么这么晚才回我呀？"（包含动作、环境、心理描写，❌ 禁止！）\n';
+    hardRules += '\n⚠️ 如果违反以上规则，你的回复将被视为无效！';
+    parts.push(hardRules);
+
+    // ===== 5. 核心指令 =====
+    var coreInstruction = '\n\n【核心指令】\n1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n';
+    coreInstruction += '2. 严格遵守【人设】中的身份和性格，不要偏离。\n';
+    coreInstruction += '3. 回复时必须符合【说话风格】的语气和习惯。\n';
+    coreInstruction += '4. 对话中自然地融入【背景】、【补充项】中的信息。\n';
+    coreInstruction += '5. 保持角色一致性，不要出戏。\n';
+    coreInstruction += '6. 当你觉得想表达心意时，可以用 [送礼：商品名称] 来送礼物给用户。\n';
+    coreInstruction += '7. ⚠️ 再次强调：只输出对话内容，绝对禁止任何动作/环境/表情/心理描写！';
+    parts.push(coreInstruction);
+
+    return parts.join('\n');
 }
 
 function splitReplyIntoMessages(text) {
@@ -2006,6 +2038,17 @@ function callDeepSeek(userMessage, role) {
     }).then(function(data) {
         var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
         if (!reply) throw new Error('未获取到回复');
+
+        // ===== ⭐ 后处理：进一步清理可能出现的描写 =====
+        // 去掉以"我"开头的叙述句（如"我坐在..."，"我拿起..."）
+        reply = reply.replace(/^我[^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
+        // 去掉以"他/她"开头的叙述句
+        reply = reply.replace(/^[他她][^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
+        // 去掉可能残留的"忍不住"、"心想"等词开头的句子
+        reply = reply.replace(/^[忍不住心想觉得感到][^，。！？]*[，。！？]?\s*/gm, '');
+        // 清理多余的空行
+        reply = reply.replace(/\n{3,}/g, '\n\n').trim();
+
         return reply;
     }).catch(function(e) {
         clearTimeout(timeoutId);
@@ -4280,6 +4323,7 @@ function init() {
     console.log('🚀 梦女空间 v3.5 精简版已启动！');
     console.log('📦 记忆库已独立为「时光胶囊」页面 (memory.html)');
     console.log('✅ 完全兼容旧数据');
+    console.log('✅ 已强制禁止动作/环境/心理描写');
 } // ========== DOM 事件绑定 ==========
 document.addEventListener('DOMContentLoaded', function() {
     // 应用图标点击
@@ -4952,4 +4996,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 </body>
-</html>ll
+</html>
