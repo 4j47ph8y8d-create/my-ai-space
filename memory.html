@@ -1,6 +1,418 @@
-<script>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="时光胶囊" />
+    <title>时光胶囊 - 我的AI空间</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+        html, body { height: 100%; overflow: hidden; }
+        body { background: #1a1a1a; display: flex; justify-content: center; align-items: center; padding: 0; margin: 0; }
+        .phone-frame { 
+            width: 100%; max-width: 430px; height: 100vh; max-height: 100vh; 
+            background: #1a1a1a; border-radius: 0; box-shadow: none; 
+            overflow: hidden; position: relative; 
+            display: flex; flex-direction: column;
+        }
+        :root { 
+            --bg-primary: #1a1a1a; --bg-secondary: #12121a; 
+            --bg-card: rgba(255,255,255,0.06); --bg-card-hover: rgba(255,255,255,0.10);
+            --text-primary: #f0edf5; --text-secondary: #8a84a0; 
+            --border-color: rgba(255,255,255,0.06); --shadow-color: rgba(0,0,0,0.3); 
+            --header-bg: rgba(20,20,30,0.85); --safe-top: 0px; --safe-bottom: 0px; 
+            --tab-active: #a78bfa; --heart-color: #f472b6; 
+            --gradient-start: #a78bfa; --gradient-end: #6c5ce7;
+        }
+        @supports (padding: env(safe-area-inset-top)) { :root { --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); } }
+        
+        [data-theme="light"] { 
+            --bg-primary: #f5f3f7; --bg-secondary: #ebe8f0; 
+            --bg-card: rgba(255,255,255,0.7); --bg-card-hover: rgba(255,255,255,0.9);
+            --text-primary: #1a1a2e; --text-secondary: #6b6580; 
+            --border-color: rgba(0,0,0,0.06); --shadow-color: rgba(0,0,0,0.04); 
+            --header-bg: rgba(255,255,255,0.85); 
+            --gradient-start: #a78bfa; --gradient-end: #7c3aed;
+        }
+
+        ::-webkit-scrollbar { width: 3px; } 
+        ::-webkit-scrollbar-thumb { background: var(--tab-active); border-radius: 4px; } 
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        /* ===== 顶部导航 ===== */
+        .memory-header { 
+            background: var(--header-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: calc(14px + var(--safe-top, 0px)) 16px 12px; 
+            border-bottom: 1px solid var(--border-color); 
+            display: flex; align-items: center; gap: 12px; 
+            flex-shrink: 0; min-height: 56px; position: relative; z-index: 5;
+        }
+        .memory-header .back-btn { 
+            font-size: 18px; color: var(--text-secondary); cursor: pointer; 
+            border: none; background: none; padding: 4px; transition: 0.2s; 
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+        }
+        .memory-header .back-btn:active { background: var(--bg-card); transform: scale(0.92); }
+        .memory-header .title { 
+            font-size: 17px; font-weight: 700; color: var(--text-primary); flex: 1; 
+            display: flex; align-items: center; gap: 8px; 
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .memory-header .title i { -webkit-text-fill-color: var(--tab-active); font-size: 18px; }
+        .memory-header .header-actions { display: flex; gap: 4px; }
+        .memory-header .header-actions button { 
+            background: none; border: none; 
+            width: 32px; height: 32px; border-radius: 50%;
+            font-size: 14px; color: var(--text-secondary); cursor: pointer; 
+            transition: 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .memory-header .header-actions button:active { background: var(--bg-card); transform: scale(0.92); }
+
+        /* ===== 角色选择器 ===== */
+        .role-selector-bar { 
+            background: var(--header-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 8px 16px; border-bottom: 1px solid var(--border-color); 
+            display: flex; align-items: center; gap: 10px; flex-shrink: 0; z-index: 4;
+        }
+        .role-selector-bar label { 
+            font-size: 11px; color: var(--text-secondary); font-weight: 500; 
+            display: flex; align-items: center; gap: 4px;
+        }
+        .role-selector-bar select { 
+            flex: 1; padding: 6px 12px; 
+            border: 1px solid var(--border-color); border-radius: 10px; 
+            background: var(--bg-card); 
+            font-size: 13px; font-weight: 500; color: var(--text-primary); 
+            outline: none; max-width: 140px; transition: 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .role-selector-bar select:focus { border-color: var(--tab-active); box-shadow: 0 0 0 3px rgba(167,139,250,0.15); }
+        .role-selector-bar select option { background: var(--bg-secondary); color: var(--text-primary); }
+
+        /* ===== 关系卡片 ===== */
+        .relation-card { 
+            background: var(--bg-card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            margin: 10px 14px 6px; border-radius: 16px; 
+            padding: 14px 16px 12px; 
+            box-shadow: 0 4px 20px var(--shadow-color); 
+            border: 1px solid var(--border-color); 
+            flex-shrink: 0; position: relative; z-index: 3;
+            overflow: hidden;
+        }
+        .relation-card::before {
+            content: ''; position: absolute; top: -50%; right: -30%; 
+            width: 200px; height: 200px; 
+            background: radial-gradient(circle, rgba(167,139,250,0.06), transparent 70%);
+            pointer-events: none;
+        }
+        .relation-card .rc-title { 
+            font-size: 10px; color: var(--text-secondary); letter-spacing: 1.5px; 
+            margin-bottom: 10px; font-weight: 600; text-transform: uppercase;
+        }
+        .relation-card .rc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; text-align: center; position: relative; z-index: 1; }
+        .relation-card .rc-grid .rc-item { padding: 2px 0; }
+        .relation-card .rc-grid .rc-item .rc-number { 
+            font-size: 20px; font-weight: 800; color: var(--text-primary); 
+            letter-spacing: -0.5px; transition: 0.3s;
+        }
+        .relation-card .rc-grid .rc-item .rc-number.heart-color { 
+            color: var(--heart-color); 
+            text-shadow: 0 0 30px rgba(244,114,182,0.15);
+        }
+        .relation-card .rc-grid .rc-item .rc-label { 
+            font-size: 9px; color: var(--text-secondary); margin-top: 1px; 
+            font-weight: 400; letter-spacing: 0.3px;
+        }
+        .relation-card .rc-progress { 
+            margin-top: 10px; display: flex; align-items: center; gap: 10px; position: relative; z-index: 1;
+        }
+        .relation-card .rc-progress .rc-bar { 
+            flex: 1; height: 5px; background: var(--border-color); 
+            border-radius: 4px; overflow: hidden; 
+        }
+        .relation-card .rc-progress .rc-bar .rc-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end), var(--heart-color));
+            border-radius: 4px; transition: width 0.8s ease; 
+        }
+        .relation-card .rc-progress .rc-percent { 
+            font-size: 12px; font-weight: 700; color: var(--tab-active); 
+            min-width: 36px; text-align: right; font-variant-numeric: tabular-nums;
+        }
+        .relation-card .rc-stages { 
+            display: flex; justify-content: space-between; 
+            margin-top: 5px; font-size: 8px; color: var(--text-secondary); 
+            padding: 0 2px; position: relative; z-index: 1;
+        }
+        .relation-card .rc-stages .stage { 
+            opacity: 0.25; transition: all 0.4s ease; font-weight: 400;
+            padding: 1px 4px; border-radius: 4px;
+        }
+        .relation-card .rc-stages .stage.active { 
+            opacity: 1; color: var(--tab-active); font-weight: 700; 
+            background: rgba(167,139,250,0.08);
+        }
+
+        /* ===== Tab切换 ===== */
+        .tab-bar { 
+            display: flex; 
+            background: var(--bg-secondary); 
+            border-bottom: 1px solid var(--border-color); 
+            flex-shrink: 0; padding: 0 4px;
+            position: relative; z-index: 3;
+        }
+        .tab-bar .tab-btn { 
+            flex: 1; padding: 10px 0 8px; 
+            text-align: center; font-size: 12px; font-weight: 500; 
+            color: var(--text-secondary); cursor: pointer; 
+            border: none; background: none; 
+            border-bottom: 2.5px solid transparent; 
+            transition: all 0.25s ease; font-family: inherit;
+            position: relative;
+        }
+        .tab-bar .tab-btn .tab-icon { margin-right: 4px; font-size: 13px; }
+        .tab-bar .tab-btn.active { 
+            color: var(--tab-active); 
+            border-bottom-color: var(--tab-active); 
+        }
+        .tab-bar .tab-btn:active { transform: scale(0.95); }
+
+        /* ===== 内容区域 - 修复滚动 ===== */
+        .tab-content { 
+            flex: 1; 
+            overflow-y: auto; 
+            overflow-x: hidden;
+            padding: 10px 14px 16px; 
+            -webkit-overflow-scrolling: touch;
+            position: relative; z-index: 2;
+            min-height: 0;
+        }
+        .tab-panel { display: none; animation: fadeInUp 0.3s ease; }
+        .tab-panel.active { display: block; }
+
+        /* ===== 时间线卡片 ===== */
+        .timeline-item { 
+            background: var(--bg-card); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            border-radius: 14px; padding: 12px 14px; 
+            margin-bottom: 8px; 
+            box-shadow: 0 2px 12px var(--shadow-color); 
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--tab-active);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .timeline-item:active { transform: scale(0.99); background: var(--bg-card-hover); }
+        .timeline-item .item-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 4px; 
+        }
+        .timeline-item .item-header .item-time { 
+            font-size: 10px; color: var(--text-secondary); 
+            font-weight: 500; letter-spacing: 0.3px;
+        }
+        .timeline-item .item-header .item-actions { display: flex; gap: 2px; }
+        .timeline-item .item-header .item-actions button { 
+            background: none; border: none; 
+            font-size: 12px; color: var(--text-secondary); 
+            cursor: pointer; padding: 2px 5px; 
+            border-radius: 6px; transition: 0.15s;
+        }
+        .timeline-item .item-header .item-actions button:active { transform: scale(0.85); background: var(--bg-card); }
+        .timeline-item .item-header .item-actions .del-btn { 
+            color: #f87171; opacity: 0.3; 
+        }
+        .timeline-item .item-header .item-actions .del-btn:active { opacity: 1; background: rgba(248,113,113,0.1); }
+        .timeline-item .item-content { 
+            font-size: 13px; color: var(--text-primary); 
+            line-height: 1.7; word-break: break-word; 
+            padding: 2px 0;
+        }
+        .timeline-item .item-content .item-emoji { font-size: 16px; margin-right: 6px; }
+        .timeline-item .item-footer { 
+            margin-top: 8px; padding-top: 8px; 
+            border-top: 1px solid var(--border-color); 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .timeline-item .item-footer .jump-btn { 
+            font-size: 10px; color: var(--tab-active); 
+            cursor: pointer; background: none; border: none; 
+            font-family: inherit; padding: 3px 10px; 
+            border-radius: 12px; transition: 0.15s;
+            background: rgba(167,139,250,0.08);
+        }
+        .timeline-item .item-footer .jump-btn:active { background: rgba(167,139,250,0.2); transform: scale(0.95); }
+        .timeline-item .item-footer .jump-btn i { margin-right: 3px; font-size: 9px; }
+        .timeline-item .item-badge { 
+            font-size: 9px; padding: 1px 10px; border-radius: 12px; 
+            background: var(--border-color); color: var(--text-secondary); 
+            font-weight: 500; letter-spacing: 0.3px;
+        }
+        .timeline-item .item-badge.core { background: rgba(167,139,250,0.15); color: var(--tab-active); }
+        .timeline-item .item-badge.recent { background: rgba(251,191,36,0.12); color: #fbbf24; }
+        .timeline-item .item-badge.archived { background: rgba(148,163,184,0.1); color: #94a3b8; }
+
+        /* ===== 空状态 ===== */
+        .empty-state { 
+            text-align: center; padding: 60px 20px; 
+            color: var(--text-secondary); 
+        }
+        .empty-state i { 
+            font-size: 44px; opacity: 0.15; display: block; 
+            margin-bottom: 12px; color: var(--tab-active); 
+        }
+        .empty-state p { font-size: 14px; font-weight: 500; color: var(--text-primary); line-height: 1.6; }
+        .empty-state .empty-hint { 
+            font-size: 11px; color: var(--text-secondary); 
+            opacity: 0.5; margin-top: 4px; 
+        }
+
+        /* ===== 确认弹窗 ===== */
+        .confirm-overlay { 
+            position: fixed; inset: 0; 
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            z-index: 100; display: none; 
+            justify-content: center; align-items: center; 
+            animation: fadeIn 0.2s ease;
+        }
+        .confirm-overlay.active { display: flex; }
+        .confirm-dialog { 
+            background: var(--bg-card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: 18px; padding: 24px 20px 18px; 
+            max-width: 300px; width: 88%; 
+            animation: scaleIn 0.25s ease; 
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        .confirm-dialog h3 { 
+            font-size: 16px; font-weight: 700; color: var(--text-primary); 
+            text-align: center; margin-bottom: 4px; 
+        }
+        .confirm-dialog p { 
+            font-size: 13px; color: var(--text-secondary); 
+            text-align: center; margin-bottom: 18px; line-height: 1.5; 
+        }
+        .confirm-dialog .btn-group { display: flex; gap: 8px; }
+        .confirm-dialog .btn-group button { 
+            flex: 1; padding: 10px; border: none; 
+            border-radius: 12px; font-size: 14px; font-weight: 600; 
+            cursor: pointer; transition: 0.15s; font-family: inherit;
+        }
+        .confirm-dialog .btn-group button:active { transform: scale(0.96); }
+        .confirm-dialog .btn-group .btn-confirm { 
+            background: linear-gradient(135deg, #f87171, #ef4444); color: #fff; 
+        }
+        .confirm-dialog .btn-group .btn-cancel { 
+            background: var(--border-color); color: var(--text-secondary); 
+        }
+
+        /* ===== Toast ===== */
+        .custom-toast { 
+            position: fixed; bottom: 100px; left: 50%; 
+            transform: translateX(-50%); 
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(12px);
+            color: #fff; padding: 10px 24px; 
+            border-radius: 14px; font-size: 13px; 
+            z-index: 200; animation: fadeInUp 0.3s ease; 
+            text-align: center; max-width: 80%;
+            border: 1px solid rgba(255,255,255,0.05);
+            font-weight: 500;
+        }
+        [data-theme="light"] .custom-toast { background: rgba(40,40,50,0.85); }
+
+        /* ===== 动画 ===== */
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+
+        @media (max-width: 460px) { 
+            .phone-frame { border-radius: 0; height: 100vh; max-height: 100vh; } 
+            body { padding: 0; } 
+        }
+        @media (min-width: 431px) { 
+            .phone-frame { border-radius: 32px; height: 780px; max-height: 90vh; box-shadow: 0 20px 60px rgba(0,0,0,0.5); } 
+            body { padding: 12px; } 
+        }
+    </style>
+</head>
+<body>
+<div class="phone-frame" id="app">
+    <!-- 顶部导航 -->
+    <div class="memory-header">
+        <button class="back-btn" id="backBtn"><i class="fas fa-chevron-left"></i></button>
+        <div class="title"><i class="fas fa-brain"></i> 时光胶囊</div>
+        <div class="header-actions">
+            <button id="refreshBtn" title="刷新数据"><i class="fas fa-sync-alt"></i></button>
+            <button id="themeToggleBtn" title="切换主题"><i class="fas fa-moon" id="themeIcon"></i></button>
+        </div>
+    </div>
+
+    <!-- 角色选择器 -->
+    <div class="role-selector-bar">
+        <label><i class="fas fa-user"></i> 角色</label>
+        <select id="roleSelector"></select>
+    </div>
+
+    <!-- 关系卡片 -->
+    <div class="relation-card" id="relationCard">
+        <div class="rc-title">💕 关系概览</div>
+        <div class="rc-grid">
+            <div class="rc-item"><div class="rc-number heart-color" id="intimacyValue">0%</div><div class="rc-label">亲密度</div></div>
+            <div class="rc-item"><div class="rc-number" id="daysValue">0</div><div class="rc-label">相识天数</div></div>
+            <div class="rc-item"><div class="rc-number" id="stageValue">--</div><div class="rc-label">当前阶段</div></div>
+            <div class="rc-item"><div class="rc-number" id="msgCountValue">0</div><div class="rc-label">消息总数</div></div>
+        </div>
+        <div class="rc-progress">
+            <div class="rc-bar"><div class="rc-fill" id="intimacyBar" style="width:0%;"></div></div>
+            <span class="rc-percent" id="intimacyPercent">0%</span>
+        </div>
+        <div class="rc-stages" id="stageLabels">
+            <span class="stage" data-stage="0">初识</span>
+            <span class="stage" data-stage="1">熟悉</span>
+            <span class="stage" data-stage="2">亲密</span>
+            <span class="stage" data-stage="3">依赖</span>
+            <span class="stage" data-stage="4">灵魂伴侣</span>
+        </div>
+    </div>
+
+    <!-- Tab切换 -->
+    <div class="tab-bar">
+        <button class="tab-btn active" data-tab="summary"><span class="tab-icon">📝</span>对话摘要</button>
+        <button class="tab-btn" data-tab="logs"><span class="tab-icon">📖</span>生活日志</button>
+        <button class="tab-btn" data-tab="memory"><span class="tab-icon">🧠</span>记忆库</button>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="tab-content" id="tabContent">
+        <div class="tab-panel active" id="panelSummary"></div>
+        <div class="tab-panel" id="panelLogs"></div>
+        <div class="tab-panel" id="panelMemory"></div>
+    </div>
+
+    <!-- 删除确认弹窗 -->
+    <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-dialog">
+            <h3 id="confirmTitle">确认删除</h3>
+            <p id="confirmMessage">确定要删除这条内容吗？</p>
+            <div class="btn-group">
+                <button class="btn-confirm" id="confirmBtn">删除</button>
+                <button class="btn-cancel" id="cancelBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="custom-toast" id="toast" style="display:none;"></div>
+</div> <script>
 // ============================================================
-//  📦 时光胶囊 v1.0 - 美化版
+//  📦 时光胶囊 v1.0 - 修复版
 //  独立记忆系统 - 对话摘要 / 生活日志 / 记忆库
 //  完全兼容主应用数据 ✅
 // ============================================================
@@ -14,7 +426,9 @@ var confirmCallback = null;
 var CONFIG = { theme: 'dark' };
 
 // ========== 工具函数 ==========
-function generateId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6); }
+function generateId() {
+    return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+}
 
 function escapeHtml(text) {
     if (text === null || text === undefined) return '';
@@ -57,10 +471,13 @@ function getStageIndex(intimacy) {
 
 function showToast(msg) {
     var el = document.getElementById('toast');
+    if (!el) return;
     el.textContent = msg;
     el.style.display = 'block';
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function() { el.style.display = 'none'; }, 2500);
+    toastTimer = setTimeout(function() {
+        if (el) el.style.display = 'none';
+    }, 2500);
 }
 
 function getDaysBetween(date1, date2) {
@@ -76,16 +493,21 @@ function getTodayKey() {
 }
 
 function formatDateDisplay(dateStr) {
-    var d = new Date(dateStr);
-    var now = new Date();
-    var today = getTodayKey();
-    var targetKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    if (targetKey === today) return '今天 ' + d.toTimeString().slice(0, 5);
-    var yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    var yesterdayKey = yesterday.getFullYear() + '-' + String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + String(yesterday.getDate()).padStart(2, '0');
-    if (targetKey === yesterdayKey) return '昨天 ' + d.toTimeString().slice(0, 5);
-    return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + d.toTimeString().slice(0, 5);
+    try {
+        var d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '未知时间';
+        var now = new Date();
+        var today = getTodayKey();
+        var targetKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        if (targetKey === today) return '今天 ' + d.toTimeString().slice(0, 5);
+        var yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        var yesterdayKey = yesterday.getFullYear() + '-' + String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + String(yesterday.getDate()).padStart(2, '0');
+        if (targetKey === yesterdayKey) return '昨天 ' + d.toTimeString().slice(0, 5);
+        return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + d.toTimeString().slice(0, 5);
+    } catch (e) {
+        return '未知时间';
+    }
 }
 
 // ========== 数据加载 ==========
@@ -207,6 +629,7 @@ function getCurrentRole() {
 // ========== 角色选择器渲染 ==========
 function renderRoleSelector() {
     var selector = document.getElementById('roleSelector');
+    if (!selector) return;
     selector.innerHTML = '';
     roles.forEach(function(role) {
         var opt = document.createElement('option');
@@ -220,11 +643,6 @@ function renderRoleSelector() {
         selector.value = roles[0].id;
         currentRoleId = roles[0].id;
     }
-    selector.addEventListener('change', function() {
-        currentRoleId = this.value;
-        saveData();
-        renderAll();
-    });
 }
 
 // ========== 关系卡片渲染 ==========
@@ -237,15 +655,21 @@ function renderRelationCard(role) {
     var stage = getIntimacyLevel(intimacy);
     var stageIdx = getStageIndex(intimacy);
 
-    document.getElementById('intimacyValue').textContent = intimacy + '%';
-    document.getElementById('daysValue').textContent = days;
-    document.getElementById('stageValue').textContent = stage;
-    document.getElementById('msgCountValue').textContent = messages.length;
-
+    var intimacyEl = document.getElementById('intimacyValue');
+    var daysEl = document.getElementById('daysValue');
+    var stageEl = document.getElementById('stageValue');
+    var msgEl = document.getElementById('msgCountValue');
     var bar = document.getElementById('intimacyBar');
+    var percentEl = document.getElementById('intimacyPercent');
+
+    if (intimacyEl) intimacyEl.textContent = intimacy + '%';
+    if (daysEl) daysEl.textContent = days;
+    if (stageEl) stageEl.textContent = stage;
+    if (msgEl) msgEl.textContent = messages.length;
+
     var percent = Math.min(100, intimacy);
-    bar.style.width = percent + '%';
-    document.getElementById('intimacyPercent').textContent = percent + '%';
+    if (bar) bar.style.width = percent + '%';
+    if (percentEl) percentEl.textContent = percent + '%';
 
     document.querySelectorAll('#stageLabels .stage').forEach(function(el) {
         var idx = parseInt(el.dataset.stage);
@@ -256,6 +680,7 @@ function renderRelationCard(role) {
 // ========== 对话摘要渲染 ==========
 function renderSummary(role) {
     var panel = document.getElementById('panelSummary');
+    if (!panel) return;
     if (!role) {
         panel.innerHTML = '<div class="empty-state"><i class="fas fa-comment-dots"></i><p>请先选择一个角色</p></div>';
         return;
@@ -342,6 +767,7 @@ function renderSummary(role) {
 // ========== 生活日志渲染 ==========
 function renderLogs(role) {
     var panel = document.getElementById('panelLogs');
+    if (!panel) return;
     if (!role) {
         panel.innerHTML = '<div class="empty-state"><i class="fas fa-book-open"></i><p>请先选择一个角色</p></div>';
         return;
@@ -390,6 +816,7 @@ function renderLogs(role) {
 // ========== 记忆库渲染 ==========
 function renderMemory(role) {
     var panel = document.getElementById('panelMemory');
+    if (!panel) return;
     if (!role) {
         panel.innerHTML = '<div class="empty-state"><i class="fas fa-brain"></i><p>请先选择一个角色</p></div>';
         return;
@@ -474,14 +901,18 @@ function renderMemory(role) {
 
 // ========== 确认弹窗 ==========
 function showConfirm(title, message, callback) {
-    document.getElementById('confirmTitle').textContent = title;
-    document.getElementById('confirmMessage').textContent = message;
-    document.getElementById('confirmOverlay').classList.add('active');
+    var titleEl = document.getElementById('confirmTitle');
+    var msgEl = document.getElementById('confirmMessage');
+    var overlay = document.getElementById('confirmOverlay');
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+    if (overlay) overlay.classList.add('active');
     confirmCallback = callback;
 }
 
 document.getElementById('confirmBtn').addEventListener('click', function() {
-    document.getElementById('confirmOverlay').classList.remove('active');
+    var overlay = document.getElementById('confirmOverlay');
+    if (overlay) overlay.classList.remove('active');
     if (confirmCallback) {
         confirmCallback();
         confirmCallback = null;
@@ -489,7 +920,8 @@ document.getElementById('confirmBtn').addEventListener('click', function() {
 });
 
 document.getElementById('cancelBtn').addEventListener('click', function() {
-    document.getElementById('confirmOverlay').classList.remove('active');
+    var overlay = document.getElementById('confirmOverlay');
+    if (overlay) overlay.classList.remove('active');
     confirmCallback = null;
 });
 
@@ -504,13 +936,15 @@ document.getElementById('confirmOverlay').addEventListener('click', function(e) 
 function renderAll() {
     var role = getCurrentRole();
     if (!role) {
-        document.getElementById('panelSummary').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>未找到角色</p></div>';
-        document.getElementById('panelLogs').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>未找到角色</p></div>';
-        document.getElementById('panelMemory').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>未找到角色</p></div>';
+        var panelSummary = document.getElementById('panelSummary');
+        var panelLogs = document.getElementById('panelLogs');
+        var panelMemory = document.getElementById('panelMemory');
+        if (panelSummary) panelSummary.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>未找到角色</p></div>';
+        if (panelLogs) panelLogs.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>未找到角色</p></div>';
+        if (panelMemory) panelMemory.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>未找到角色</p></div>';
         return;
     }
     renderRelationCard(role);
-    // 只渲染当前激活的Tab
     if (currentTab === 'summary') renderSummary(role);
     else if (currentTab === 'logs') renderLogs(role);
     else if (currentTab === 'memory') renderMemory(role);
@@ -560,29 +994,54 @@ window.addEventListener('storage', function(e) {
     }
 });
 
+// ========== 角色选择器事件绑定 ==========
+function bindRoleSelector() {
+    var selector = document.getElementById('roleSelector');
+    if (!selector) return;
+    selector.addEventListener('change', function() {
+        currentRoleId = this.value;
+        saveData();
+        renderAll();
+    });
+}
+
 // ========== 初始化 ==========
 function init() {
+    console.log('📦 时光胶囊初始化中...');
+
     if (!loadData()) {
-        document.getElementById('panelSummary').innerHTML = '<div class="empty-state"><i class="fas fa-database"></i><p>请先打开主应用</p><span class="empty-hint">在「我的AI空间」中创建角色后，再来这里查看时光胶囊 📦</span></div>';
-        document.getElementById('panelLogs').innerHTML = '';
-        document.getElementById('panelMemory').innerHTML = '';
+        var panelSummary = document.getElementById('panelSummary');
+        if (panelSummary) {
+            panelSummary.innerHTML = '<div class="empty-state"><i class="fas fa-database"></i><p>请先打开主应用</p><span class="empty-hint">在「我的AI空间」中创建角色后，再来这里查看时光胶囊 📦</span></div>';
+        }
         return;
     }
 
     renderRoleSelector();
+    bindRoleSelector();
     setupTabs();
     renderAll();
 
-    document.getElementById('backBtn').addEventListener('click', goBack);
-    document.getElementById('refreshBtn').addEventListener('click', refreshData);
-    document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+    var backBtn = document.getElementById('backBtn');
+    var refreshBtn = document.getElementById('refreshBtn');
+    var themeBtn = document.getElementById('themeToggleBtn');
+
+    if (backBtn) backBtn.addEventListener('click', goBack);
+    if (refreshBtn) refreshBtn.addEventListener('click', refreshData);
+    if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
 
     console.log('📦 时光胶囊 v1.0 已加载');
     console.log('📊 共 ' + roles.length + ' 个角色');
-    console.log('💕 当前角色: ' + (getCurrentRole() ? getCurrentRole().name : '无'));
+    var currentRole = getCurrentRole();
+    console.log('💕 当前角色: ' + (currentRole ? currentRole.name : '无'));
 }
 
-document.addEventListener('DOMContentLoaded', init);
+// DOM加载完成后初始化
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 </script>
 </body>
 </html>
