@@ -27,6 +27,7 @@
             --header-bg: rgba(20,20,30,0.85); --safe-top: 0px; --safe-bottom: 0px;
             --tab-active: #a78bfa; --heart-color: #f472b6;
             --gradient-start: #a78bfa; --gradient-end: #6c5ce7;
+            --cleanup-badge: #34d399;
         }
         @supports (padding: env(safe-area-inset-top)) { :root { --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); } }
 
@@ -37,6 +38,7 @@
             --border-color: rgba(0,0,0,0.06); --shadow-color: rgba(0,0,0,0.04);
             --header-bg: rgba(255,255,255,0.85);
             --gradient-start: #a78bfa; --gradient-end: #7c3aed;
+            --cleanup-badge: #059669;
         }
 
         ::-webkit-scrollbar { width: 3px; }
@@ -172,7 +174,7 @@
         .tab-panel { display: none; animation: fadeSlideIn 0.35s ease; }
         .tab-panel.active { display: block; }
 
-        /* ===== 记忆库专用样式 ===== */
+        /* ===== 记忆库样式 ===== */
         .memory-search-bar {
             display: flex;
             gap: 8px;
@@ -191,25 +193,9 @@
             transition: 0.2s;
             font-family: inherit;
         }
-        .memory-search-bar input:focus {
-            border-color: var(--tab-active);
-            box-shadow: 0 0 0 3px rgba(167,139,250,0.12);
-        }
-        .memory-search-bar input::placeholder {
-            color: var(--text-secondary);
-            opacity: 0.4;
-        }
-        .memory-search-bar .search-clear {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 14px;
-            padding: 4px 8px;
-            border-radius: 50%;
-            transition: 0.2s;
-            display: none;
-        }
+        .memory-search-bar input:focus { border-color: var(--tab-active); box-shadow: 0 0 0 3px rgba(167,139,250,0.12); }
+        .memory-search-bar input::placeholder { color: var(--text-secondary); opacity: 0.4; }
+        .memory-search-bar .search-clear { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 14px; padding: 4px 8px; border-radius: 50%; transition: 0.2s; display: none; }
         .memory-search-bar .search-clear.show { display: block; }
         .memory-search-bar .search-clear:active { background: var(--bg-card); transform: scale(0.9); }
 
@@ -225,50 +211,18 @@
             justify-content: space-between;
         }
         .memory-batch-actions.show { display: flex; }
-        .memory-batch-actions .batch-info {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-        .memory-batch-actions .batch-info span {
-            color: var(--tab-active);
-            font-weight: 600;
-        }
-        .memory-batch-actions .batch-btns {
-            display: flex;
-            gap: 6px;
-        }
-        .memory-batch-actions .batch-btns button {
-            padding: 4px 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: 0.15s;
-            font-family: inherit;
-        }
+        .memory-batch-actions .batch-info { font-size: 12px; color: var(--text-secondary); }
+        .memory-batch-actions .batch-info span { color: var(--tab-active); font-weight: 600; }
+        .memory-batch-actions .batch-btns { display: flex; gap: 6px; }
+        .memory-batch-actions .batch-btns button { padding: 4px 12px; border: none; border-radius: 8px; font-size: 11px; font-weight: 500; cursor: pointer; transition: 0.15s; font-family: inherit; }
         .memory-batch-actions .batch-btns button:active { transform: scale(0.95); }
-        .memory-batch-actions .batch-btns .btn-upgrade {
-            background: rgba(167,139,250,0.2);
-            color: var(--tab-active);
-        }
-        .memory-batch-actions .batch-btns .btn-delete {
-            background: rgba(248,113,113,0.15);
-            color: #f87171;
-        }
-        .memory-batch-actions .batch-btns .btn-cancel {
-            background: var(--border-color);
-            color: var(--text-secondary);
-        }
+        .memory-batch-actions .batch-btns .btn-upgrade { background: rgba(167,139,250,0.2); color: var(--tab-active); }
+        .memory-batch-actions .batch-btns .btn-delete { background: rgba(248,113,113,0.15); color: #f87171; }
+        .memory-batch-actions .batch-btns .btn-cancel { background: var(--border-color); color: var(--text-secondary); }
 
-        /* ===== 折叠分类 ===== */
-        .memory-category {
-            margin-bottom: 8px;
-        }
+        .memory-category { margin-bottom: 8px; }
         .memory-category .cat-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            display: flex; align-items: center; gap: 8px;
             padding: 8px 10px;
             background: var(--bg-card);
             border-radius: 10px;
@@ -279,49 +233,16 @@
         }
         .memory-category .cat-header:active { background: var(--bg-card-hover); }
         .memory-category .cat-header .cat-icon { font-size: 14px; }
-        .memory-category .cat-header .cat-name {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-primary);
-            flex: 1;
-        }
-        .memory-category .cat-header .cat-count {
-            font-size: 10px;
-            color: var(--text-secondary);
-            background: var(--bg-secondary);
-            padding: 1px 8px;
-            border-radius: 10px;
-        }
-        .memory-category .cat-header .cat-arrow {
-            font-size: 11px;
-            color: var(--text-secondary);
-            transition: transform 0.3s ease;
-        }
+        .memory-category .cat-header .cat-name { font-size: 12px; font-weight: 600; color: var(--text-primary); flex: 1; }
+        .memory-category .cat-header .cat-count { font-size: 10px; color: var(--text-secondary); background: var(--bg-secondary); padding: 1px 8px; border-radius: 10px; }
+        .memory-category .cat-header .cat-arrow { font-size: 11px; color: var(--text-secondary); transition: transform 0.3s ease; }
         .memory-category .cat-header .cat-arrow.open { transform: rotate(180deg); }
-        .memory-category .cat-header .cat-checkbox {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--tab-active);
-            cursor: pointer;
-        }
-        .memory-category .cat-body {
-            padding-left: 4px;
-            margin-top: 4px;
-            display: block;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-            max-height: 9999px;
-        }
-        .memory-category .cat-body.collapsed {
-            max-height: 0;
-            padding: 0;
-            margin: 0;
-        }
+        .memory-category .cat-header .cat-checkbox { width: 16px; height: 16px; accent-color: var(--tab-active); cursor: pointer; }
+        .memory-category .cat-body { padding-left: 4px; margin-top: 4px; display: block; overflow: hidden; transition: max-height 0.3s ease; max-height: 9999px; }
+        .memory-category .cat-body.collapsed { max-height: 0; padding: 0; margin: 0; }
 
         .memory-item-check {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            display: flex; align-items: center; gap: 8px;
             background: var(--bg-card);
             border-radius: 10px;
             padding: 8px 10px;
@@ -329,54 +250,31 @@
             border: 1px solid var(--border-color);
             transition: 0.2s;
         }
-        .memory-item-check .item-checkbox {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--tab-active);
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        .memory-item-check .item-text {
-            flex: 1;
-            font-size: 13px;
-            color: var(--text-primary);
-            line-height: 1.5;
-            word-break: break-word;
-        }
-        .memory-item-check .item-actions {
-            display: flex;
-            gap: 2px;
-            flex-shrink: 0;
-        }
-        .memory-item-check .item-actions button {
-            background: none;
-            border: none;
-            font-size: 12px;
-            cursor: pointer;
-            padding: 2px 5px;
-            border-radius: 6px;
-            transition: 0.15s;
-            color: var(--text-secondary);
-        }
+        .memory-item-check .item-checkbox { width: 16px; height: 16px; accent-color: var(--tab-active); cursor: pointer; flex-shrink: 0; }
+        .memory-item-check .item-text { flex: 1; font-size: 13px; color: var(--text-primary); line-height: 1.5; word-break: break-word; }
+        .memory-item-check .item-actions { display: flex; gap: 2px; flex-shrink: 0; }
+        .memory-item-check .item-actions button { background: none; border: none; font-size: 12px; cursor: pointer; padding: 2px 5px; border-radius: 6px; transition: 0.15s; color: var(--text-secondary); }
         .memory-item-check .item-actions button:active { transform: scale(0.85); background: var(--bg-card); }
-        .memory-item-check .item-actions .btn-upgrade-item {
-            color: var(--tab-active);
-            opacity: 0.4;
-        }
+        .memory-item-check .item-actions .btn-upgrade-item { color: var(--tab-active); opacity: 0.4; }
         .memory-item-check .item-actions .btn-upgrade-item:active { opacity: 1; }
-        .memory-item-check .item-actions .btn-del-item {
-            color: #f87171;
-            opacity: 0.3;
-        }
+        .memory-item-check .item-actions .btn-del-item { color: #f87171; opacity: 0.3; }
         .memory-item-check .item-actions .btn-del-item:active { opacity: 1; }
 
-        /* ===== 空状态 ===== */
+        /* 清理状态标签 */
+        .cleanup-badge {
+            font-size: 9px;
+            padding: 1px 8px;
+            border-radius: 10px;
+            background: rgba(52, 211, 153, 0.12);
+            color: var(--cleanup-badge);
+            margin-left: 4px;
+        }
+
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
         .empty-state i { font-size: 36px; opacity: 0.15; display: block; margin-bottom: 10px; color: var(--tab-active); }
         .empty-state p { font-size: 13px; font-weight: 500; color: var(--text-primary); line-height: 1.6; }
         .empty-state .empty-hint { font-size: 11px; color: var(--text-secondary); opacity: 0.5; margin-top: 4px; }
 
-        /* ===== 添加记忆（紧凑版） ===== */
         .memory-add-section {
             margin-top: 8px;
             padding: 10px 12px;
@@ -401,14 +299,8 @@
             transition: 0.2s;
             font-family: inherit;
         }
-        .memory-add-section input:focus {
-            border-color: var(--tab-active);
-            box-shadow: 0 0 0 3px rgba(167,139,250,0.12);
-        }
-        .memory-add-section input::placeholder {
-            color: var(--text-secondary);
-            opacity: 0.4;
-        }
+        .memory-add-section input:focus { border-color: var(--tab-active); box-shadow: 0 0 0 3px rgba(167,139,250,0.12); }
+        .memory-add-section input::placeholder { color: var(--text-secondary); opacity: 0.4; }
         .memory-add-section .add-mem-btn {
             padding: 6px 14px;
             border: none;
@@ -425,7 +317,6 @@
         .memory-add-section .add-mem-btn:active { transform: scale(0.95); }
         .memory-add-section .add-mem-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* ===== 通用 ===== */
         .timeline-item {
             background: var(--bg-card); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
             border-radius: 14px; padding: 12px 14px;
@@ -614,9 +505,17 @@
 
 <script>
 // ============================================================
-//  📦 时光胶囊 v1.2 - 记忆库管理增强版
-//  折叠分类 / 搜索 / 批量管理 / 升级记忆
+//  📦 时光胶囊 v1.3 - 自动清理版
+//  记忆自动管理：近期(30天)→归档(90天)→删除
+//  完全兼容主应用数据 ✅
 // ============================================================
+
+// ========== 清理规则 ==========
+var CLEANUP_RULES = {
+    RECENT_TO_ARCHIVE_DAYS: 30,   // 近期记忆 → 归档记忆（30天）
+    ARCHIVE_TO_DELETE_DAYS: 90,   // 归档记忆 → 删除（90天）
+    CHECK_INTERVAL: 24 * 60 * 60 * 1000  // 每天检查一次
+};
 
 // ========== 全局状态 ==========
 var roles = [];
@@ -627,7 +526,6 @@ var confirmCallback = null;
 var CONFIG = { theme: 'dark' };
 var isAddingMemory = false;
 
-// 记忆库状态
 var memorySearchKeyword = '';
 var selectedMemories = [];
 var categoryStates = {
@@ -732,6 +630,79 @@ function getMemoryText(mem) {
     return text;
 }
 
+// ========== 自动清理记忆 ==========
+function cleanupMemories() {
+    var now = Date.now();
+    var recentToArchiveDays = CLEANUP_RULES.RECENT_TO_ARCHIVE_DAYS || 30;
+    var archiveToDeleteDays = CLEANUP_RULES.ARCHIVE_TO_DELETE_DAYS || 90;
+    var totalCleaned = 0;
+    var totalArchived = 0;
+
+    roles.forEach(function(role) {
+        if (!Array.isArray(role.memory)) return;
+        var newMemory = [];
+        var archivedCount = 0;
+        var deletedCount = 0;
+
+        role.memory.forEach(function(mem) {
+            var timestamp = mem.timestamp || Date.now();
+            var age = (now - timestamp) / (24 * 60 * 60 * 1000);
+            var level = mem.level || 'core';
+
+            if (level === 'core') {
+                // 核心记忆永不删除
+                newMemory.push(mem);
+                return;
+            }
+
+            if (level === 'recent') {
+                if (age > recentToArchiveDays) {
+                    // 超过30天 → 降级为归档记忆
+                    mem.level = 'archived';
+                    newMemory.push(mem);
+                    archivedCount++;
+                    totalArchived++;
+                } else {
+                    newMemory.push(mem);
+                }
+                return;
+            }
+
+            if (level === 'archived') {
+                if (age > archiveToDeleteDays) {
+                    // 超过90天 → 删除
+                    deletedCount++;
+                    totalCleaned++;
+                } else {
+                    newMemory.push(mem);
+                }
+                return;
+            }
+
+            // 未知类型，保留
+            newMemory.push(mem);
+        });
+
+        role.memory = newMemory;
+    });
+
+    if (totalCleaned > 0 || totalArchived > 0) {
+        var msg = '';
+        if (totalArchived > 0) msg += '📦 ' + totalArchived + ' 条近期记忆已归档 ';
+        if (totalCleaned > 0) msg += '🗑️ ' + totalCleaned + ' 条归档记忆已清理';
+        if (msg) {
+            showToast('🧹 记忆已自动整理：' + msg);
+        }
+        saveData();
+        // 如果当前在记忆库Tab，刷新视图
+        if (currentTab === 'memory') {
+            var role = getCurrentRole();
+            if (role) renderMemory(role);
+        }
+        console.log('🧹 记忆清理完成: 归档 ' + totalArchived + ' 条，删除 ' + totalCleaned + ' 条');
+    }
+}
+
 // ========== 数据加载 ==========
 function loadData() {
     try {
@@ -788,6 +759,9 @@ function loadData() {
             CONFIG.theme = data.config.theme;
             applyTheme(CONFIG.theme);
         }
+
+        // 加载数据后执行自动清理
+        cleanupMemories();
 
         return true;
     } catch (e) {
@@ -1056,7 +1030,7 @@ function renderLogs(role) {
     });
 }
 
-// ========== 记忆库（重构版：折叠 + 搜索 + 批量管理） ==========
+// ========== 记忆库（折叠 + 搜索 + 批量管理 + 清理标签） ==========
 function renderMemory(role) {
     var panel = document.getElementById('panelMemory');
     if (!panel) return;
@@ -1106,13 +1080,13 @@ function renderMemory(role) {
     }
 
     // ---- 核心记忆 ----
-    html += renderCategory('核心记忆', 'core', core, '📌', '#a78bfa');
+    html += renderCategory('核心记忆', 'core', core, '📌', '#a78bfa', true);
 
     // ---- 近期记忆 ----
-    html += renderCategory('近期记忆', 'recent', recent, '🕐', '#fbbf24');
+    html += renderCategory('近期记忆', 'recent', recent, '🕐', '#fbbf24', false, '30天后自动归档');
 
     // ---- 归档记忆 ----
-    html += renderCategory('归档记忆', 'archived', archived, '📦', '#94a3b8');
+    html += renderCategory('归档记忆', 'archived', archived, '📦', '#94a3b8', false, '90天后自动删除');
 
     // ===== 添加记忆 =====
     html += '<div class="memory-add-section">';
@@ -1185,7 +1159,6 @@ function renderMemory(role) {
                     selectedMemories.splice(idx, 1);
                 }
             }
-            // 更新全选状态
             var catId = this.dataset.catId;
             var items = document.querySelectorAll('.memory-item-check[data-cat="' + catId + '"] .item-checkbox');
             var checked = document.querySelectorAll('.memory-item-check[data-cat="' + catId + '"] .item-checkbox:checked');
@@ -1193,7 +1166,6 @@ function renderMemory(role) {
             if (catCb) {
                 catCb.checked = items.length > 0 && checked.length === items.length;
             }
-            // 更新批量操作栏
             updateBatchActions(role);
         });
     });
@@ -1236,10 +1208,11 @@ function renderMemory(role) {
                         return selectedMemories.indexOf(text) === -1;
                     });
                     saveData();
+                    var count = selectedMemories.length;
                     selectedMemories = [];
                     renderMemory(role);
                     renderRelationCard(role);
-                    showToast('🗑️ 已删除 ' + selectedMemories.length + ' 条记忆');
+                    showToast('🗑️ 已删除 ' + count + ' 条记忆');
                 }
             });
         });
@@ -1331,7 +1304,7 @@ function renderMemory(role) {
     }
 }
 
-function renderCategory(label, catId, items, icon, color) {
+function renderCategory(label, catId, items, icon, color, isCore, hint) {
     if (items.length === 0) {
         return '<div class="memory-category" style="opacity:0.3;"><div class="cat-header" style="cursor:default;background:transparent;border-color:transparent;"><span class="cat-icon">' + icon + '</span><span class="cat-name">' + label + '</span><span class="cat-count">0 条</span></div></div>';
     }
@@ -1346,6 +1319,9 @@ function renderCategory(label, catId, items, icon, color) {
     html += '<span class="cat-icon">' + icon + '</span>';
     html += '<span class="cat-name">' + label + '</span>';
     html += '<span class="cat-count">' + items.length + ' 条</span>';
+    if (hint) {
+        html += '<span class="cleanup-badge">' + hint + '</span>';
+    }
     html += '<span class="cat-arrow ' + arrowClass + '"><i class="fas fa-chevron-down"></i></span>';
     html += '</div>';
     html += '<div class="cat-body ' + bodyClass + '">';
@@ -1357,12 +1333,13 @@ function renderCategory(label, catId, items, icon, color) {
         var isCore = level === 'core' || !level;
         var isRecent = level === 'recent';
         var isArchived = level === 'archived';
+        var showUpgrade = isRecent || isArchived;
 
         html += '<div class="memory-item-check" data-cat="' + catId + '">';
         html += '<input type="checkbox" class="item-checkbox" data-text="' + escapeHtml(text) + '" data-cat-id="' + catId + '" ' + (isSelected ? 'checked' : '') + ' />';
         html += '<span class="item-text">' + escapeHtml(text) + '</span>';
         html += '<div class="item-actions">';
-        if (isRecent || isArchived) {
+        if (showUpgrade) {
             html += '<button class="btn-upgrade-item" data-text="' + escapeHtml(text) + '" title="升级为核心记忆"><i class="fas fa-arrow-up"></i></button>';
         }
         html += '<button class="btn-del-item" data-text="' + escapeHtml(text) + '" title="删除"><i class="fas fa-times"></i></button>';
@@ -1483,6 +1460,7 @@ function refreshData() {
     }
     loadData();
     renderRoleSelector();
+    selectedMemories = [];
     renderAll();
     showToast('🔄 已刷新');
 }
@@ -1519,9 +1497,24 @@ function hideLoader() {
     }
 }
 
+// ========== 启动定时清理 ==========
+function startCleanupTimer() {
+    // 每天检查一次
+    setInterval(function() {
+        console.log('🧹 执行定时记忆清理...');
+        cleanupMemories();
+        // 如果当前在记忆库Tab，刷新视图
+        if (currentTab === 'memory') {
+            var role = getCurrentRole();
+            if (role) renderMemory(role);
+        }
+    }, CLEANUP_RULES.CHECK_INTERVAL);
+    console.log('🧹 记忆自动清理已启动（每天检查一次）');
+}
+
 // ========== 初始化 ==========
 function init() {
-    console.log('📦 时光胶囊 v1.2 初始化中...');
+    console.log('📦 时光胶囊 v1.3 初始化中...');
 
     var dataLoaded = loadData();
 
@@ -1535,10 +1528,14 @@ function init() {
         document.getElementById('refreshBtn').addEventListener('click', refreshData);
         document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
 
-        console.log('📦 时光胶囊 v1.2 已加载');
+        // 启动定时清理
+        startCleanupTimer();
+
+        console.log('📦 时光胶囊 v1.3 已加载');
         console.log('📊 共 ' + roles.length + ' 个角色');
         var currentRole = getCurrentRole();
         console.log('💕 当前角色: ' + (currentRole ? currentRole.name : '无'));
+        console.log('🧹 清理规则: 近期记忆30天→归档, 归档记忆90天→删除');
     } else {
         var ps = document.getElementById('panelSummary');
         if (ps) {
