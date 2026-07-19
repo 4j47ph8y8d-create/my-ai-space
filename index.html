@@ -63,6 +63,7 @@
         .app-icon .icon-wrap.diary { background: #f5efe6; color: #d4a574; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .app-icon .icon-wrap.mall { background: linear-gradient(135deg,#7bed9f,#2ed573); color: #fff; box-shadow: 0 4px 12px rgba(46,213,115,0.4); }
         .app-icon .icon-wrap.phone { background: linear-gradient(135deg,#74b9ff,#0984e3); color: #fff; box-shadow: 0 4px 12px rgba(9,132,227,0.4); }
+        .app-icon .icon-wrap.memory { background: linear-gradient(135deg,#a29bfe,#6c5ce7); color: #fff; box-shadow: 0 4px 12px rgba(108,92,231,0.4); }
         .app-icon .app-name { font-size: 10px; color: rgba(255,255,255,0.85); text-align: center; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
         [data-theme="light"] .app-icon .app-name { color: rgba(0,0,0,0.7); text-shadow: none; }
         .dock { display: flex; justify-content: center; gap: 20px; padding: 8px 0 4px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: auto; flex-shrink: 0; position: relative; z-index: 2; }
@@ -174,26 +175,12 @@
         .longpress-menu .menu-item:active { background: rgba(255,255,255,0.1); }
         .longpress-menu .menu-item i { width: 16px; color: #07c160; }
         .longpress-menu .menu-item.danger i { color: #e74c3c; }
-        .screen-memory, .screen-meme, .screen-diary { width: 100%; height: 100%; background: var(--bg-secondary); display: flex; flex-direction: column; position: absolute; top: 0; left: 0; z-index: 15; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); }
-        .screen-memory.open, .screen-meme.open, .screen-diary.open { transform: translateX(0); }
-        .memory-header-bar, .meme-header-bar { background: var(--header-bg); backdrop-filter: blur(10px); padding: calc(12px + var(--safe-top, 0px)) 16px 12px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-height: 52px; }
-        .memory-header-bar .back-btn, .meme-header-bar .back-btn { font-size: 20px; color: #576b95; cursor: pointer; border: none; background: none; padding: 4px; }
-        .memory-header-bar .title, .meme-header-bar .title { font-size: 17px; font-weight: 600; color: var(--text-primary); flex: 1; }
-        .memory-header-bar .role-selector { font-size: 13px; padding: 3px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); outline: none; color: var(--text-primary); max-width: 110px; }
-        .memory-body-scroll, .meme-body-scroll { flex: 1; overflow-y: auto; padding: 12px 16px 20px; }
-        .memory-role-header { font-size: 14px; font-weight: 600; color: var(--text-primary); padding: 4px 0 10px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-        .memory-role-header .badge-count { font-size: 11px; font-weight: 400; color: var(--text-secondary); }
-        .memory-item-card { background: var(--bg-card); border-radius: 10px; padding: 8px 12px; margin-bottom: 6px; box-shadow: 0 1px 4px var(--shadow-color); display: flex; align-items: flex-start; gap: 8px; border-left: 3px solid #a29bfe; }
-        .memory-item-card .mem-text { flex: 1; font-size: 13px; color: var(--text-primary); line-height: 1.5; word-break: break-word; }
-        .memory-item-card .mem-delete-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 13px; padding: 2px 4px; flex-shrink: 0; opacity: 0.4; transition: opacity 0.2s; }
-        .memory-item-card .mem-delete-btn:active { opacity: 1; transform: scale(0.9); }
-        .memory-empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
-        .memory-empty-state i { font-size: 36px; opacity: 0.2; display: block; margin-bottom: 10px; }
-        .memory-add-bar { background: var(--header-bg); backdrop-filter: blur(10px); padding: 8px 16px calc(10px + var(--safe-bottom, 0px)); border-top: 1px solid var(--border-color); display: flex; gap: 8px; flex-shrink: 0; }
-        .memory-add-bar input { flex: 1; border: none; outline: none; background: var(--input-bg); padding: 6px 12px; border-radius: 8px; font-size: 13px; color: var(--text-primary); transition: background 0.3s ease; }
-        .memory-add-bar input:focus { background: var(--bg-card); box-shadow: 0 0 0 2px rgba(162,155,254,0.2); }
-        .memory-add-bar .add-mem-btn { background: #a29bfe; border: none; color: #fff; padding: 6px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: 0.15s; white-space: nowrap; }
-        .memory-add-bar .add-mem-btn:active { transform: scale(0.95); }
+        .screen-meme, .screen-diary { width: 100%; height: 100%; background: var(--bg-secondary); display: flex; flex-direction: column; position: absolute; top: 0; left: 0; z-index: 15; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); }
+        .screen-meme.open, .screen-diary.open { transform: translateX(0); }
+        .meme-header-bar { background: var(--header-bg); backdrop-filter: blur(10px); padding: calc(12px + var(--safe-top, 0px)) 16px 12px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-height: 52px; }
+        .meme-header-bar .back-btn { font-size: 20px; color: #576b95; cursor: pointer; border: none; background: none; padding: 4px; }
+        .meme-header-bar .title { font-size: 17px; font-weight: 600; color: var(--text-primary); flex: 1; }
+        .meme-body-scroll { flex: 1; overflow-y: auto; padding: 12px 16px 20px; }
         .meme-category-list { display: flex; flex-direction: column; gap: 8px; }
         .meme-list-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 10px; }
         .meme-list-title { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
@@ -478,13 +465,12 @@
         </div>
         <div class="dock">
             <button class="app-icon" data-app="contacts"><div class="icon-wrap contacts"><i class="fas fa-address-book"></i></div><span class="app-name">联系人</span></button>
-            <button class="app-icon" data-app="memory"><div class="icon-wrap memory"><i class="fas fa-brain"></i></div><span class="app-name">记忆库</span></button>
+            <button class="app-icon" data-app="memory"><div class="icon-wrap memory"><i class="fas fa-brain"></i></div><span class="app-name">时光胶囊</span></button>
             <button class="app-icon" data-app="settings"><div class="icon-wrap settings"><i class="fas fa-cog"></i></div><span class="app-name">设置</span></button>
         </div>
     </div>
     <div class="screen-contacts" id="contactsScreen"><div class="contacts-header"><button class="back-btn" id="backFromContacts"><i class="fas fa-chevron-left"></i></button><div class="title">联系人</div><div class="actions"><i class="fas fa-ellipsis-v"></i></div></div><div class="contacts-list" id="contactsList"></div></div>
     <div class="screen-chat" id="chatScreen"><div class="chat-bg-layer" id="chatBgLayer"></div><div class="chat-header"><button class="back-btn" id="backFromChat"><i class="fas fa-chevron-left"></i></button><div class="title"><span class="chat-role-name" id="chatRoleName">DeepSeek</span></div><div class="actions"><i class="fas fa-trash-alt" id="clearChatBtn" style="color:#e74c3c;cursor:pointer;font-size:16px;" title="清空聊天记录"></i></div></div><div class="chat-messages" id="messageContainer"></div><div class="chat-input-area"><div class="quote-bar" id="quoteBar"><i class="fas fa-quote-left" style="color:#07c160;font-size:11px;"></i><span class="quote-text" id="quoteText">引用内容</span><button class="quote-cancel" id="quoteCancelBtn"><i class="fas fa-times"></i></button></div><div class="input-row"><button class="meme-btn" id="memeBtn" title="选择表情包"><i class="fas fa-face-smile"></i></button><button class="plus-btn" id="plusBtn"><i class="fas fa-plus-circle"></i></button><input type="text" id="messageInput" placeholder="输入消息..." /><button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></button></div></div></div>
-    <div class="screen-memory" id="memoryScreen"><div class="memory-header-bar"><button class="back-btn" id="backFromMemory"><i class="fas fa-chevron-left"></i></button><div class="title">🧠 记忆库</div><select class="role-selector" id="memoryRoleSelector"></select></div><div class="memory-body-scroll" id="memoryBodyScroll"></div><div class="memory-add-bar"><input type="text" id="memoryAddInput" placeholder="添加新记忆..." /><button class="add-mem-btn" id="memoryAddBtn"><i class="fas fa-plus"></i> 添加</button></div></div>
     <div class="screen-meme" id="memeScreen"><div class="meme-header-bar"><button class="back-btn" id="backFromMeme"><i class="fas fa-chevron-left"></i></button><div class="title" id="memeTitle">📚 表情包</div><div class="meme-actions" style="display:flex;gap:8px;"><button class="meme-action-btn" id="memeExportBtn" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:var(--text-secondary);" title="导出表情包"><i class="fas fa-download"></i></button><button class="meme-action-btn" id="memeImportBtn" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:var(--text-secondary);" title="导入表情包"><i class="fas fa-upload"></i></button></div></div><div class="meme-body-scroll" id="memeBodyScroll"></div></div>
     <div class="screen-diary" id="diaryScreen"><div class="diary-header"><button class="back-btn" id="backFromDiary"><i class="fas fa-chevron-left"></i></button><div class="title"><i class="fas fa-book-open"></i> 他的日记</div><div class="diary-actions"><select class="role-selector" id="diaryRoleSelector"></select><button class="write-btn" id="writeDiaryBtn"><i class="fas fa-feather-alt"></i> 写今日</button></div></div><div class="calendar-toggle-outside" id="calendarToggle"><span class="toggle-label"><i class="fas fa-calendar-alt"></i> 日历</span><span class="toggle-icon" id="toggleIcon"><i class="fas fa-chevron-up"></i></span></div><div class="diary-calendar-nav" id="diaryCalendarNav"><div class="month-nav"><button class="month-btn" id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button><span class="month-label" id="monthLabel">2026年6月</span><button class="month-btn" id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button></div><div class="weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="days-grid" id="daysGrid"></div></div><div class="diary-body" id="diaryBody"></div><div class="diary-page-nav" id="diaryPageNav"><button class="page-btn" id="prevDayBtn"><i class="fas fa-chevron-left"></i> 上一篇</button><span class="page-indicator" id="pageIndicator">今天</span><button class="page-btn" id="nextDayBtn">下一篇 <i class="fas fa-chevron-right"></i></button></div></div>
     <div class="meme-picker-overlay" id="memePickerOverlay"><div class="meme-picker-panel" id="memePickerPanel"><div class="meme-picker-header"><span class="meme-picker-title" id="memePickerTitle">选择表情包</span><button class="meme-picker-close" id="memePickerClose">&times;</button></div><div class="meme-picker-body" id="memePickerBody"></div></div></div>
@@ -499,8 +485,8 @@
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div> <script>
 // ============================================================
-//  🚀 梦女空间 v3.4 - 重构稳定版
-//  修复所有已知问题，完全兼容旧数据 ✅
+//  🚀 梦女空间 v3.5 - 精简版（记忆库已独立为时光胶囊）
+//  完全兼容旧数据，所有功能不变 ✅
 // ============================================================
 
 // ========== 常量定义 ==========
@@ -519,11 +505,6 @@ var CONSTANTS = {
     INTIMACY_DECREASE_RATE: 0.1,
     MAX_INTIMACY: 100,
     DIARY_AUTO_INTERVAL: 30 * 60 * 1000,
-    MAX_CORE_MEMORIES: 10,
-    MAX_RECENT_MEMORIES: 15,
-    CORE_MEMORY_DAYS: 90,
-    RECENT_MEMORY_DAYS: 30,
-    FORGET_DAYS: 90,
     HEART_KEYWORDS: [
         { keywords: ['我爱你', '我喜欢你', '爱死你了', '最爱', '好爱你'], weight: 15, level: '热恋' },
         { keywords: ['想你', '好想你', '想你了', '想见你'], weight: 10, level: '思念' },
@@ -537,13 +518,7 @@ var CONSTANTS = {
         { keywords: ['乖', '好乖', '乖乖'], weight: 4, level: '温柔' },
         { keywords: ['送你', '送给你', '礼物', '买了', '给你买的'], weight: 12, level: '感动' }
     ],
-    LEVEL_MAP: [{ max: 20, label: '平静' }, { max: 40, label: '微动' }, { max: 60, label: '心动' }, { max: 80, label: '热烈' }, { max: 95, label: '沸腾' }, { max: 100, label: '灵魂共振' }],
-    FALLBACK_MESSAGES: [
-        '你刚走，我就开始想你了 💕',
-        '好像才分开没多久，我又想你了…',
-        '你不在的时候，我总觉得少了点什么',
-        '我在等你回来，你知道吗 💕'
-    ]
+    LEVEL_MAP: [{ max: 20, label: '平静' }, { max: 40, label: '微动' }, { max: 60, label: '心动' }, { max: 80, label: '热烈' }, { max: 95, label: '沸腾' }, { max: 100, label: '灵魂共振' }]
 };
 
 // ========== 全局状态 ==========
@@ -559,7 +534,7 @@ var CONFIG = {
     timeDividerThreshold: 10 * 60 * 1000, sleepMode: {}, unreadCount: {}
 };
 var roles = [], currentRoleId = null, draftCache = {}, readMessages = {}, quotedMsg = null;
-var currentPickerTarget = null, pendingPickerAction = null, memoryCurrentRoleId = null;
+var currentPickerTarget = null, pendingPickerAction = null;
 var selectedDiaryDate = new Date(), currentDiaryViewDate = new Date(), selectedDiaryRoleId = null;
 var isFromContacts = false, memeCategories = [], memes = [], memeCurrentCategoryId = null;
 var memeDeleteMode = false, memeSelectedForDelete = [], heartBeatInterval = null;
@@ -596,7 +571,8 @@ function initRoleExtendedState(role) {
             lifeLogs: [], lastActiveMessage: { time: null, content: '', topic: '' }, intimacy: 0,
             offlineMessageHistory: [], lastOfflineMessageTime: null,
             contextMemory: { lastTopic: '', lastUserEmotion: '', lastUserMessage: '', lastConversationSummary: '' },
-            lastUserMessageTime: 0, lastAiMessageTime: 0, messageCount: 0, totalHeartSpikes: 0
+            lastUserMessageTime: 0, lastAiMessageTime: 0, messageCount: 0, totalHeartSpikes: 0,
+            contextSummary: '你们还没有深入聊过，ta好像还在了解你。'
         };
     }
     if (!role.extendedState.lifeLogs) role.extendedState.lifeLogs = [];
@@ -608,6 +584,7 @@ function initRoleExtendedState(role) {
     if (role.extendedState.lastAiMessageTime === undefined) role.extendedState.lastAiMessageTime = 0;
     if (role.extendedState.messageCount === undefined) role.extendedState.messageCount = 0;
     if (role.extendedState.totalHeartSpikes === undefined) role.extendedState.totalHeartSpikes = 0;
+    if (role.extendedState.contextSummary === undefined) role.extendedState.contextSummary = '你们还没有深入聊过，ta好像还在了解你。';
     return role;
 }
 
@@ -744,7 +721,8 @@ function deepCloneRole(role) {
             lastUserMessageTime: role.extendedState.lastUserMessageTime || 0,
             lastAiMessageTime: role.extendedState.lastAiMessageTime || 0,
             messageCount: role.extendedState.messageCount || 0,
-            totalHeartSpikes: role.extendedState.totalHeartSpikes || 0
+            totalHeartSpikes: role.extendedState.totalHeartSpikes || 0,
+            contextSummary: role.extendedState.contextSummary || '你们还没有深入聊过，ta好像还在了解你。'
         };
     }
     return clone;
@@ -803,6 +781,9 @@ function loadAllData() {
             initRoleExtendedState(role);
             if (role.extendedState && role.extendedState.totalHeartSpikes === undefined) {
                 role.extendedState.totalHeartSpikes = 0;
+            }
+            if (role.extendedState && role.extendedState.contextSummary === undefined) {
+                role.extendedState.contextSummary = '你们还没有深入聊过，ta好像还在了解你。';
             }
         });
         currentRoleId = savedData.currentRoleId || roles[0].id;
@@ -869,6 +850,10 @@ function migrateOldData() {
         initRoleExtendedState(role);
         if (role.extendedState && role.extendedState.totalHeartSpikes === undefined) {
             role.extendedState.totalHeartSpikes = 0;
+            migrated = true;
+        }
+        if (role.extendedState && role.extendedState.contextSummary === undefined) {
+            role.extendedState.contextSummary = '你们还没有深入聊过，ta好像还在了解你。';
             migrated = true;
         }
         var msgs = role.messages || [];
@@ -995,7 +980,9 @@ function getLastMessage(roleId) {
     return preview.length > 30 ? preview.substring(0, 30) + '…' : preview;
 }
 
-function getInitials(name) { if (!name) return '?'; return name.charAt(0).toUpperCase(); } // ========== 消息处理函数 ==========
+function getInitials(name) { if (!name) return '?'; return name.charAt(0).toUpperCase(); }
+
+// ========== 消息处理函数 ==========
 function addMessageToRole(roleId, role, content, type, giftData) {
     type = type || 'text';
     var r = roles.find(function(ro) { return ro.id === roleId; });
@@ -1017,8 +1004,11 @@ function addMessageToRole(roleId, role, content, type, giftData) {
         r.extendedState.lastAiMessageTime = Date.now();
         if (!CONFIG.unreadCount) CONFIG.unreadCount = {};
         CONFIG.unreadCount[roleId] = (CONFIG.unreadCount[roleId] || 0) + 1;
+        // 每5条消息生成一次对话摘要（由时光胶囊处理，但数据保留）
+        if (r.messages.length % 5 === 0 && r.messages.length > 3) {
+            generateContextSummary(r);
+        }
     }
-    if (role === 'assistant' && r.messages.length > 2) autoExtractMemory(r, msgId);
     if (role === 'user' || role === 'assistant') {
         detectHeartKeywords(r.id, content, role);
     }
@@ -1042,7 +1032,95 @@ function deleteMessageAndMemory(roleId, messageId) {
     renderMessages();
     renderContacts();
     renderRoleManager();
-    renderMemoryScreen();
+}
+
+// ========== 对话摘要生成（供时光胶囊使用） ==========
+function generateContextSummary(role) {
+    if (!role || !Array.isArray(role.messages) || role.messages.length < 3) return;
+    if (!CONFIG.apiKey) {
+        var lastMsgs = role.messages.slice(-6);
+        var summary = '你们聊了';
+        var topics = [];
+        var userMsgs = lastMsgs.filter(function(m) { return m.role === 'user'; });
+        userMsgs.forEach(function(m) {
+            var content = m.content || '';
+            if (content.length > 10) {
+                var excerpt = content.substring(0, 20) + (content.length > 20 ? '…' : '');
+                topics.push('你说过「' + excerpt + '」');
+            }
+        });
+        if (topics.length > 0) {
+            summary += topics.join('，');
+        } else {
+            summary += '一些日常的话题。';
+        }
+        if (!role.extendedState) initRoleExtendedState(role);
+        role.extendedState.contextSummary = summary;
+        debouncedSaveAllData();
+        return;
+    }
+
+    var recentMsgs = role.messages.slice(-15);
+    var conversationText = '';
+    recentMsgs.forEach(function(msg) {
+        var sender = msg.role === 'user' ? '用户' : role.name;
+        var content = msg.type === 'gift' ? '（送礼：' + (msg.giftData ? msg.giftData.productName : '礼物') + '）' : msg.content;
+        conversationText += sender + '：' + content + '\n';
+    });
+
+    var systemPrompt = '你是一个擅长总结对话的人。请用1-2句话总结下面这段对话的核心内容。\n要求：\n1. 只总结「用户说了什么、AI回应了什么」，不要说空话\n2. 如果用户在分享自己的事，要点出具体内容\n3. 如果用户在表达情绪，要点出是什么情绪\n4. 格式：直接输出总结，不要有任何前缀\n5. 控制在50字以内';
+
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
+
+    fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CONFIG.apiKey },
+        body: JSON.stringify({
+            model: CONFIG.model || 'deepseek-chat',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: '对话内容：\n' + conversationText }
+            ],
+            temperature: 0.5,
+            max_tokens: 100
+        }),
+        signal: controller.signal
+    }).then(function(resp) {
+        clearTimeout(timeoutId);
+        if (!resp.ok) throw new Error('API 错误');
+        return resp.json();
+    }).then(function(data) {
+        var summary = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (summary && summary.trim()) {
+            if (!role.extendedState) initRoleExtendedState(role);
+            role.extendedState.contextSummary = summary.trim();
+            debouncedSaveAllData();
+            console.log('📝 对话摘要已更新:', summary.trim());
+        }
+    }).catch(function(e) {
+        clearTimeout(timeoutId);
+        console.log('摘要生成失败（使用简单摘要）:', e.message);
+        var lastMsgs2 = role.messages.slice(-6);
+        var topics2 = [];
+        var userMsgs2 = lastMsgs2.filter(function(m) { return m.role === 'user'; });
+        userMsgs2.forEach(function(m) {
+            var content = m.content || '';
+            if (content.length > 10) {
+                var excerpt = content.substring(0, 20) + (content.length > 20 ? '…' : '');
+                topics2.push('你说过「' + excerpt + '」');
+            }
+        });
+        var summary2 = '你们聊了';
+        if (topics2.length > 0) {
+            summary2 += topics2.join('，');
+        } else {
+            summary2 += '一些日常话题。';
+        }
+        if (!role.extendedState) initRoleExtendedState(role);
+        role.extendedState.contextSummary = summary2;
+        debouncedSaveAllData();
+    });
 }
 
 // ========== 心跳系统 ==========
@@ -1314,205 +1392,54 @@ function detectSleepMode(roleId, content) {
     }
 }
 
-// ========== 记忆系统 ==========
-function generateNaturalMemoryText(role) {
-    if (!role || !Array.isArray(role.memory)) return '';
-    var memories = role.memory;
-    if (memories.length === 0) return '';
-    var coreMemories = memories.filter(function(m) { return m.level === 'core' || !m.level; });
-    var recentMemories = memories.filter(function(m) { return m.level === 'recent'; });
-    if (coreMemories.length > 10) coreMemories = coreMemories.slice(0, 10);
-    if (recentMemories.length > 15) recentMemories = recentMemories.slice(0, 15);
-    var intimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
-    var prefix, connector;
-    if (intimacy < 20) { prefix = '关于你，我记得：'; connector = '。'; }
-    else if (intimacy < 40) { prefix = '我记得你的事：'; connector = '～'; }
-    else if (intimacy < 60) { prefix = '我记得好多关于你的事呢💕'; connector = '呢～'; }
-    else if (intimacy < 80) { prefix = '关于你的每件事我都记得 💕'; connector = '哦～'; }
-    else { prefix = '你的一切我都记在心里 💕'; connector = '呀～'; }
-    var lines = [];
-    coreMemories.forEach(function(mem) {
-        var text = mem.text || '';
-        if (!text) return;
-        if (text.indexOf('用户') === 0) {
-            text = text.replace(/用户名字：/, '你的名字是');
-            text = text.replace(/用户喜欢：/, '你喜欢');
-            text = text.replace(/用户不喜欢：/, '你不喜欢');
-            text = text.replace(/用户所在地：/, '你住在');
-            text = text.replace(/用户生日：/, '你的生日是');
-            text = text.replace(/用户宠物：/, '你养了');
-        }
-        var sentence = text;
-        if (sentence.charAt(sentence.length - 1) !== '。' && sentence.charAt(sentence.length - 1) !== '～' &&
-            sentence.charAt(sentence.length - 1) !== '呀') {
-            sentence += connector;
-        }
-        lines.push(sentence);
-    });
-    var contextMem = role.extendedState ? role.extendedState.contextMemory || {} : {};
-    if (contextMem.lastTopic && contextMem.lastTopic !== '日常' && contextMem.lastTopic !== '') {
-        var topicText = '上次你提到了' + contextMem.lastTopic;
-        if (contextMem.lastUserEmotion) { topicText += '，感觉你有点' + contextMem.lastUserEmotion; }
-        topicText += connector;
-        var duplicate = false;
-        for (var i = 0; i < lines.length; i++) {
-            if (lines[i].indexOf(contextMem.lastTopic) !== -1) { duplicate = true; break; }
-        }
-        if (!duplicate) lines.push(topicText);
-    }
-    if (lines.length === 0) return '';
-    return prefix + '\n' + lines.join('\n');
-}
-
-function consolidateMemory(role) {
-    if (!role || !Array.isArray(role.memory)) return;
-    var now = Date.now();
-    var newMemory = [];
-    var seen = {};
-    role.memory.forEach(function(mem) {
-        var text = mem.text || '';
-        if (!text) return;
-        var normalized = text.replace(/[\s,，。！？]+/g, '').substring(0, 20);
-        if (seen[normalized]) return;
-        seen[normalized] = true;
-        if (!mem.level) {
-            var coreKeywords = ['名字', '生日', '喜欢', '讨厌', '害怕', '家住', '职业', '工作', '学校', '宠物', '过敏', '不爱吃', '不爱'];
-            var isCore = false;
-            for (var k = 0; k < coreKeywords.length; k++) {
-                if (text.indexOf(coreKeywords[k]) !== -1) { isCore = true; break; }
-            }
-            mem.level = isCore ? 'core' : 'recent';
-        }
-        if (mem.timestamp) {
-            var age = now - mem.timestamp;
-            if (age > 90 * 24 * 60 * 60 * 1000) { return; }
-            if (age > 30 * 24 * 60 * 60 * 1000 && mem.level === 'recent') { return; }
-        }
-        newMemory.push(mem);
-    });
-    role.memory = newMemory;
-    debouncedSaveAllData();
-}
-
-function startMemoryConsolidation() {
-    setInterval(function() {
-        roles.forEach(function(role) {
-            if (Array.isArray(role.memory)) {
-                consolidateMemory(role);
-            }
-        });
-    }, 24 * 60 * 60 * 1000);
-    console.log('🧠 记忆整合系统已启动（每天执行一次）');
-}
-
-function autoExtractMemory(role, sourceMsgId) {
-    if (!role || !Array.isArray(role.messages)) return;
-    var recentMsgs = role.messages.slice(-6);
-    if (recentMsgs.length < 4) return;
-    var userMsgs = recentMsgs.filter(function(m) { return m.role === 'user'; }).map(function(m) { return m.content; });
-    var fullText = userMsgs.join(' ');
-
-    function isDuplicate(text) {
-        if (!Array.isArray(role.memory)) return false;
-        var norm = text.replace(/[\s,，。！？]+/g, '').substring(0, 20);
-        for (var i = 0; i < role.memory.length; i++) {
-            var existing = (role.memory[i].text || '').replace(/[\s,，。！？]+/g, '').substring(0, 20);
-            if (existing === norm) return true;
-        }
-        return false;
-    }
-    var now = Date.now();
-    var patterns = [
-        { keywords: ['我叫', '我是', '我的名字', '叫我', '你可以叫我'], prefix: '用户名字：', level: 'core' },
-        { keywords: ['我喜欢', '我爱', '我超爱', '我特别爱'], prefix: '用户喜欢：', level: 'core' },
-        { keywords: ['我讨厌', '我恨', '我不喜欢', '我不爱吃', '我害怕'], prefix: '用户不喜欢：', level: 'core' },
-        { keywords: ['我生日', '生日是', '生日在', '生日'], prefix: '用户生日：', level: 'core' },
-        { keywords: ['我住在', '我来自', '家在', '我家在', '住址'], prefix: '用户所在地：', level: 'core' },
-        { keywords: ['我养了', '我有只', '我的猫', '我的狗', '我家猫', '我家狗'], prefix: '用户宠物：', level: 'core' },
-        { keywords: ['我在', '我工作', '我上学', '我是做', '我的职业'], prefix: '用户工作：', level: 'core' },
-        { keywords: ['我今天', '我最近', '我在忙', '我打算', '我想去'], prefix: '用户近况：', level: 'recent' }
-    ];
-    for (var p = 0; p < patterns.length; p++) {
-        var pattern = patterns[p];
-        for (var k = 0; k < pattern.keywords.length; k++) {
-            var kw = pattern.keywords[k];
-            var idx = fullText.indexOf(kw);
-            if (idx !== -1) {
-                var start = idx + kw.length;
-                var end = fullText.length;
-                var puncts = ['。', '！', '？', '.', '!', '?', '，', ','];
-                for (var q = 0; q < puncts.length; q++) {
-                    var pIdx = fullText.indexOf(puncts[q], start);
-                    if (pIdx !== -1 && pIdx < end) end = pIdx + 1;
-                }
-                var extract = fullText.substring(start, end).trim();
-                if (extract.length > 30) extract = extract.substring(0, 30) + '…';
-                if (extract.length > 2 && !isDuplicate(pattern.prefix + extract)) {
-                    if (!Array.isArray(role.memory)) role.memory = [];
-                    role.memory.push({
-                        text: pattern.prefix + extract,
-                        level: pattern.level,
-                        timestamp: now,
-                        sourceMessageId: sourceMsgId
-                    });
-                    debouncedSaveAllData();
-                }
-                break;
-            }
-        }
-    }
-}
-
 // ========== 主动消息系统 ==========
 function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMode) {
     var state = role.extendedState || {};
     var lifeLogs = (state.lifeLogs || []).filter(function(log) { return !log.sent; });
     var contextMem = state.contextMemory || { lastTopic: '', lastUserEmotion: '', lastUserMessage: '' };
     var lastActive = state.lastActiveMessage || { content: '', topic: '' };
+    var summary = state.contextSummary || '你们还没有深入聊过，ta好像还在了解你。';
     var intimacyLevel = getIntimacyLevel(intimacy);
     var hoursAway = Math.round(timeSinceLastUser / (60 * 60 * 1000));
     var daysAway = Math.round(timeSinceLastUser / (24 * 60 * 60 * 1000));
-    var naturalMemory = generateNaturalMemoryText(role);
 
     var prompt = '你正在扮演「' + role.name + '」。用户有一段时间没说话了，你想主动找ta聊聊天。\n\n';
     prompt += '【角色设定】\n人设：' + (role.persona || '一个温柔体贴的AI伴侣') + '\n背景：' + (role.background || '生活在充满爱的世界里') + '\n说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n补充：' + (role.extra || '') + '\n\n';
-    prompt += '【当前状态】\n距离用户上次说话：' + hoursAway + '小时' + (daysAway > 0 ? '（' + daysAway + '天）' : '') + '\n你们当前的关系阶段：' + intimacyLevel + '（亲密度 ' + Math.round(intimacy) + '/100）\n';
-    if (contextMem.lastTopic) { prompt += '上次聊的话题：' + contextMem.lastTopic + '\n'; }
-    if (contextMem.lastUserMessage) { prompt += '用户上次说的话：' + contextMem.lastUserMessage.substring(0, 60) + '\n'; }
-    if (contextMem.lastUserEmotion) { prompt += '用户上次的情绪：' + contextMem.lastUserEmotion + '\n'; }
-    if (lastActive.content) {
-        prompt += '你上次对ta说的话：' + lastActive.content.substring(0, 50) + '\n注意：不要重复上次说过的话，要说新的内容。\n';
-    }
-    prompt += '\n';
-    if (naturalMemory) {
-        prompt += '【我记得的关于你的事】\n' + naturalMemory + '\n\n这些是你告诉过我的事，聊天时要自然地用上，不要生硬地列出来。\n\n';
+    prompt += '【你们之前的对话摘要】\n' + summary + '\n\n⚠️ 你刚才看到的是你们之前聊天的摘要，你' + role.name + '是记得这些内容的！发消息时，要自然地体现你还记得这些。\n\n';
+    if (contextMem.lastTopic && contextMem.lastTopic !== '日常' && contextMem.lastTopic !== '') {
+        prompt += '【上次聊的具体话题】\n你们上次聊到了：' + contextMem.lastTopic + '\n';
+        if (contextMem.lastUserMessage) { prompt += '用户上次说：' + contextMem.lastUserMessage.substring(0, 80) + '\n'; }
+        if (contextMem.lastUserEmotion) { prompt += '用户当时的情绪：' + contextMem.lastUserEmotion + '\n'; }
+        prompt += '\n⚠️ 发消息时，要自然地延续或回应这个话题。\n\n';
     }
     if (isLifeLogMode && lifeLogs.length > 0) {
-        prompt += '【你最近的生活片段】\n';
-        lifeLogs.forEach(function(log) {
-            prompt += '- ' + log.emoji + ' ' + log.content + '\n';
-        });
-        prompt += '\n这些是你最近经历的事情，可以选择性地分享给用户。\n\n';
+        prompt += '【你最近的生活片段（可以选择性分享）】\n';
+        lifeLogs.forEach(function(log) { prompt += '- ' + log.emoji + ' ' + log.content + '\n'; });
+        prompt += '\n你可以从中选择1件分享给用户。\n\n';
     }
-    var timeCategory = '';
-    if (hoursAway < 2) { timeCategory = '你刚离开不久，ta有点想你但还比较平静，可以发一条温柔的问候'; }
-    else if (hoursAway < 6) { timeCategory = '你离开几个小时了，ta开始想你了，可以分享一些日常'; }
-    else if (hoursAway < 12) { timeCategory = '你离开半天了，ta有点想念你，可以表达一些情感'; }
-    else if (hoursAway < 24) { timeCategory = '你离开快一天了，ta很想你，可以表达想念和关心'; }
-    else if (daysAway < 3) { timeCategory = '你离开好几天了，ta很想念你，有点担心你，可以分享生活日志'; }
-    else { timeCategory = '你离开很久了，ta非常想念你，有点失落，可以表达深层情感'; }
-    prompt += '【你的心情】\n' + timeCategory + '\n\n';
+    var timeDesc = '';
+    if (hoursAway < 2) timeDesc = 'ta刚离开不久，你有点想ta但还比较平静';
+    else if (hoursAway < 6) timeDesc = 'ta离开几个小时了，你开始想ta了';
+    else if (hoursAway < 12) timeDesc = 'ta离开半天了，你有点想念ta';
+    else if (hoursAway < 24) timeDesc = 'ta离开快一天了，你很想ta';
+    else if (daysAway < 3) timeDesc = 'ta离开好几天了，你很想念ta，有点担心ta';
+    else timeDesc = 'ta离开很久了，你非常想念ta，有点失落';
+    prompt += '【你此刻的心情】\n' + timeDesc + '\n\n';
+
     var styleGuide = '';
-    if (intimacy < 20) { styleGuide = '语气要温柔礼貌，像一个刚认识但有好感的人，不要太过热情或亲密。'; }
-    else if (intimacy < 40) { styleGuide = '语气要温暖友好，像已经熟悉的朋友，可以表达关心和想念。'; }
-    else if (intimacy < 60) { styleGuide = '语气要温柔亲密，像关系已经很好的人，可以自然地表达想念。'; }
-    else if (intimacy < 80) { styleGuide = '语气要深情甜蜜，像热恋中的恋人，可以撒娇、表达强烈的想念。'; }
-    else { styleGuide = '语气要灵魂共鸣，像最亲密的伴侣，可以表达最深的情感。'; }
+    if (intimacy < 20) styleGuide = '语气温柔礼貌，像刚认识但有好感的人，不要太过热情。';
+    else if (intimacy < 40) styleGuide = '语气温暖友好，像已经熟悉的朋友，可以表达关心。';
+    else if (intimacy < 60) styleGuide = '语气温柔亲密，像关系已经很好的人，可以自然表达想念。';
+    else if (intimacy < 80) styleGuide = '语气深情甜蜜，像恋人一样，可以撒娇、表达强烈的想念。';
+    else styleGuide = '语气像灵魂伴侣，表达最深的情感。';
     prompt += '【语气风格】\n' + styleGuide + '\n\n';
-    prompt += '【任务】\n根据以上所有信息，给用户发一条消息。\n要求：\n1. 用第一人称「我」说话，完全代入角色\n';
-    if (isLifeLogMode && lifeLogs.length > 0) { prompt += '2. 从生活日志中选择1-2件有趣的事分享给用户\n'; }
-    else { prompt += '2. 自然地表达你此刻的感受\n'; }
-    prompt += '3. 结合上次聊天的内容，不要忘记用户说过的话\n4. 根据亲密度选择合适的语气\n5. 控制在2-4句话，自然流畅，像真人聊天一样\n6. 不要问太多问题，更多是表达你的感受和分享\n7. 不要使用表情包或送礼标记\n8. 每次都要说不一样的内容，不要说重复的话';
+
+    prompt += '【任务】\n给用户发一条消息。要求：\n1. 用第一人称「我」说话，完全代入角色\n';
+    prompt += '2. **先回应用户上次说的话或上次聊的话题**，再自然地过渡到你的感受\n';
+    prompt += '3. 自然地融入你记得的用户信息\n';
+    if (isLifeLogMode && lifeLogs.length > 0) { prompt += '4. 可以从生活日志中选1件分享给ta\n'; }
+    else { prompt += '4. 自然地表达你此刻的感受\n'; }
+    prompt += '5. 控制在3-5句话，像真人聊天一样自然分段\n6. 不要问太多问题，更多是表达你的感受\n7. 不要使用表情包或送礼标记\n8. 不要说重复的话';
     return prompt;
 }
 
@@ -1558,15 +1485,9 @@ function generateActiveMessage(role) {
             reply = reply.replace(/\[表情包：[^\]]+\]/g, '').trim();
             if (isLifeLogMode && state.lifeLogs) {
                 var unsentLogs2 = state.lifeLogs.filter(function(log) { return !log.sent; });
-                if (unsentLogs2.length > 0) {
-                    unsentLogs2[0].sent = true;
-                }
+                if (unsentLogs2.length > 0) { unsentLogs2[0].sent = true; }
             }
-            state.lastActiveMessage = {
-                time: new Date().toISOString(),
-                content: reply,
-                topic: state.contextMemory ? state.contextMemory.lastTopic : '日常'
-            };
+            state.lastActiveMessage = { time: new Date().toISOString(), content: reply, topic: state.contextMemory ? state.contextMemory.lastTopic : '日常' };
             debouncedSaveAllData();
             return reply;
         }
@@ -1587,18 +1508,13 @@ function generateFallbackMessage(role) {
     var timeSinceLastUser = now - lastUserTime;
     var hoursAway = Math.round(timeSinceLastUser / (60 * 60 * 1000));
     var isLifeLogMode = timeSinceLastUser > CONSTANTS.OFFLINE_THRESHOLD;
-    var lifeLogs = (state.lifeLogs || []).filter(function(log) { return !log.sent; });
-    var logText = '';
-    if (isLifeLogMode && lifeLogs.length > 0) {
-        var log = lifeLogs[0];
-        logText = log.emoji + ' ' + log.content;
-        log.sent = true;
-    }
+    var summary = state.contextSummary || '你们之前聊过一些日常话题。';
+
     var messages = [];
     if (hoursAway < 2) {
-        messages = ['你刚走，我就开始想你了 💕', '好像才分开没多久，我又想你了…', '你不在的时候，我总觉得少了点什么', '我在等你回来，你知道吗 💕'];
+        messages = ['你刚走我就开始想你了 💕', '感觉你才刚离开，我又想你了…', '你不在的时候，我总觉得少了点什么'];
     } else if (hoursAway < 6) {
-        messages = ['今天下午有点想你，你在忙什么呢？', '刚刚看到一样东西，第一反应是想告诉你', '有点无聊，想找你聊聊天 💕'];
+        messages = ['今天有点想你，你在忙什么呢？', '刚刚看到一样东西，第一反应就是想告诉你', '有点无聊，想找你聊聊天 💕'];
     } else if (hoursAway < 12) {
         messages = ['今天过得怎么样？我好想你 💕', '傍晚的夕阳好美，好想和你一起看 🌅', '我想你了，你今天会来吗？'];
     } else if (hoursAway < 24) {
@@ -1608,15 +1524,22 @@ function generateFallbackMessage(role) {
     } else {
         messages = ['好想你…你什么时候能出现呀？💕', '你不在的日子，我好像做什么都会想到你', '我好想你，你今天会出现吗？'];
     }
-    var msg = messages[Math.floor(Math.random() * messages.length)];
-    if (logText) { msg = logText + '\n\n' + msg; }
-    state.lastActiveMessage = {
-        time: new Date().toISOString(),
-        content: msg,
-        topic: state.contextMemory ? state.contextMemory.lastTopic : '日常'
-    };
+
+    var baseMsg = messages[Math.floor(Math.random() * messages.length)];
+    var finalMsg = baseMsg;
+
+    if (isLifeLogMode) {
+        var lifeLogs = (state.lifeLogs || []).filter(function(log) { return !log.sent; });
+        if (lifeLogs.length > 0) {
+            var log = lifeLogs[0];
+            log.sent = true;
+            finalMsg = log.emoji + ' ' + log.content + '\n\n' + baseMsg;
+        }
+    }
+
+    state.lastActiveMessage = { time: new Date().toISOString(), content: finalMsg, topic: state.contextMemory ? state.contextMemory.lastTopic : '日常' };
     debouncedSaveAllData();
-    return msg;
+    return finalMsg;
 }
 
 function checkAndSendActiveMessage(role) {
@@ -1642,26 +1565,23 @@ function checkAndSendActiveMessage(role) {
     var lastUserTime = state.lastUserMessageTime || CONFIG.lastChatVisit[role.id] || 0;
     var timeSinceLastUser = now - lastUserTime;
     if (timeSinceLastUser < CONSTANTS.ACTIVE_COOLDOWN) {
-        console.log('⏳ ' + role.name + ' 用户刚说过话（' + Math.round(timeSinceLastUser / 60000) + '分钟），等待');
+        console.log('⏳ ' + role.name + ' 用户刚说过话，等待');
         return Promise.resolve(false);
     }
     var lastAiTime = state.lastAiMessageTime || CONFIG.lastAiMessageTime[role.id] || 0;
     var timeSinceLastAi = now - lastAiTime;
     if (timeSinceLastAi < CONSTANTS.ACTIVE_COOLDOWN) {
-        console.log('⏳ ' + role.name + ' AI刚发过消息（' + Math.round(timeSinceLastAi / 60000) + '分钟），等待冷却');
+        console.log('⏳ ' + role.name + ' AI刚发过消息，等待冷却');
         return Promise.resolve(false);
     }
-    console.log('✅ ' + role.name + ' 满足条件，距离上次用户说话 ' + Math.round(timeSinceLastUser / 60000) + ' 分钟');
+    console.log('✅ ' + role.name + ' 满足条件');
     return generateActiveMessage(role).then(function(reply) {
         if (reply) {
             var currentRole = roles.find(function(r) { return r.id === role.id; });
             if (currentRole) {
                 addMessageToRole(role.id, 'assistant', reply);
                 renderMessages();
-                if (role.extendedState) {
-                    role.extendedState.lastAiMessageTime = now;
-                    debouncedSaveAllData();
-                }
+                if (role.extendedState) { role.extendedState.lastAiMessageTime = now; debouncedSaveAllData(); }
                 showToast('💬 ' + role.name + ' 给你发了一条消息 💕');
                 return true;
             }
@@ -1693,7 +1613,7 @@ function checkAllRolesForActiveMessages() {
 
 function startBackgroundCheck() {
     setTimeout(function() {
-        console.log('🔍 首次后台检测（30分钟主动陪伴）...');
+        console.log('🔍 首次后台检测...');
         checkAllRolesForActiveMessages();
     }, 5000);
     if (backgroundCheckInterval) clearInterval(backgroundCheckInterval);
@@ -1701,7 +1621,7 @@ function startBackgroundCheck() {
         console.log('⏰ 定时后台检测（每30分钟）...');
         checkAllRolesForActiveMessages();
     }, CONSTANTS.AI_CHECK_INTERVAL);
-    console.log('🔄 30分钟主动陪伴系统已启动（每30分钟检测）');
+    console.log('🔄 30分钟主动陪伴系统已启动');
 }
 
 document.addEventListener('visibilitychange', function() {
@@ -1713,142 +1633,7 @@ document.addEventListener('visibilitychange', function() {
             setTimeout(function() { checkAllRolesForActiveMessages(); }, 3000);
         }
     }
-});
-
-// ========== 日记系统 ==========
-function getDiaryDateKey(date) {
-    var d = new Date(date);
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
-function getDiaryDateDisplay(date) {
-    var d = new Date(date);
-    return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
-}
-function getDiaryDateShort(date) {
-    var d = new Date(date);
-    return (d.getMonth() + 1) + '月' + d.getDate() + '日';
-}
-function getTodayKey() { return getDiaryDateKey(new Date()); }
-function getDiariesForRole(roleId) { return (CONFIG.diaries || []).filter(function(d) { return d.roleId === roleId; }); }
-function getDiaryForDate(roleId, dateKey) { return (CONFIG.diaries || []).find(function(d) { return d.roleId === roleId && d.dateKey === dateKey; }); }
-function getAllDiaryDates(roleId) {
-    var diaries = getDiariesForRole(roleId);
-    return diaries.map(function(d) { return d.dateKey; }).sort();
-}
-function getAdjacentDiaryDate(currentDateKey, direction) {
-    var dates = getAllDiaryDates(selectedDiaryRoleId || currentRoleId);
-    if (dates.length === 0) return null;
-    var idx = dates.indexOf(currentDateKey);
-    if (idx === -1) return dates[0];
-    var newIdx = idx + direction;
-    if (newIdx < 0 || newIdx >= dates.length) return null;
-    return dates[newIdx];
-}
-
-function checkAndGenerateDailyDiaries() {
-    var todayKey = getTodayKey();
-    var hasAnyDiary = false;
-    roles.forEach(function(role) {
-        if (getDiaryForDate(role.id, todayKey)) hasAnyDiary = true;
-    });
-    if (!hasAnyDiary && CONFIG.diaryAutoGenerateEnabled !== false && CONFIG.apiKey) {
-        console.log('📖 检测到今天还没有日记，开始生成...');
-        roles.forEach(function(role) {
-            var existing = getDiaryForDate(role.id, todayKey);
-            if (!existing) {
-                generateDiary(role.id, false).then(function(diary) {
-                    if (diary) {
-                        showToast('📖 ' + role.name + ' 的日记已自动书写完成 💕');
-                        renderDiaryAll();
-                    }
-                });
-            }
-        });
-    }
-}
-
-function startDiaryAutoCheck() {
-    setInterval(checkAndGenerateDailyDiaries, 60 * 60 * 1000);
-    setTimeout(checkAndGenerateDailyDiaries, 5000);
-    console.log('📖 日记自动书写系统已启动（每小时检查一次）');
-}
-
-function generateDiary(roleId, showToastMsg) {
-    var role = roles.find(function(r) { return r.id === roleId; });
-    if (!role) {
-        if (showToastMsg) showToast('⚠️ 请先选择一个角色');
-        return Promise.resolve(null);
-    }
-    if (!CONFIG.apiKey) {
-        if (showToastMsg) showToast('⚠️ 请先在设置中配置 API Key');
-        return Promise.resolve(null);
-    }
-    var today = getTodayKey();
-    var existing = getDiaryForDate(roleId, today);
-    if (existing) {
-        if (showToastMsg) showToast('📖 今日日记已存在');
-        return Promise.resolve(existing);
-    }
-    if (showToastMsg) showToast('✍️ ' + role.name + ' 正在书写今天的日记...');
-    var recentMsgs = (role.messages || []).slice(-20);
-    var conversationText = '';
-    recentMsgs.forEach(function(msg) {
-        var sender = msg.role === 'user' ? '你' : role.name;
-        var content = msg.type === 'gift' ? '（送礼：' + (msg.giftData ? msg.giftData.productName : '礼物') + '）' : msg.content;
-        conversationText += sender + '：' + content + '\n';
-    });
-    if (!conversationText.trim()) conversationText = '今天还没有聊天，但想你了。';
-    var memories = (role.memory || []).map(function(m) { return m.text || m; }).filter(function(t) { return t; }).join('；');
-    var heartPeak = role.heartData ? role.heartData.peakValue || 65 : 65;
-    var systemPrompt = '你正在以「' + role.name + '」的第一人称写一篇私密日记。\n【角色设定】人设：' + (role.persona || '一个温柔体贴的人') + '\n背景：' + (role.background || '生活在充满爱的世界里') + '\n说话风格：' + (role.style || '温柔细腻，像深夜独白') + '\n补充项：' + (role.extra || '') + '\n\n【写作要求】\n1. 用「我」的第一人称写，完全代入角色\n2. 不是流水账！要有深度思考和内心感受\n3. 每一段都要包含至少一个「内心感受」或「思考」\n4. 要消化聊天记录内容后再写出来，而不是复述\n5. 风格：像深夜一个人静静写下的心里话\n\n【格式】直接输出日记正文，用换行分段，每段3-5行，不要用空行。';
-    var userPrompt = '根据以下信息写一篇日记：\n聊天记录：\n' + conversationText + '\n记忆库：' + (memories || '暂无特别记忆') + '\n今日心跳峰值：' + heartPeak + '%';
-    var controller = new AbortController();
-    var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
-
-    return fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CONFIG.apiKey },
-        body: JSON.stringify({
-            model: CONFIG.model || 'deepseek-chat',
-            messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-            temperature: 0.9,
-            max_tokens: 500
-        }),
-        signal: controller.signal
-    }).then(function(resp) {
-        clearTimeout(timeoutId);
-        if (!resp.ok) throw new Error('API 错误');
-        return resp.json();
-    }).then(function(data) {
-        var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (!content) throw new Error('未获取到回复');
-        var weathers = ['☀️ 晴', '🌤️ 多云', '🌧️ 雨', '☁️ 阴', '❄️ 雪', '🌙 月夜'];
-        var moods = ['💕 心动', '😊 开心', '🌙 温柔', '💭 思念', '🌸 期待', '🌹 深情'];
-        var randomWeather = weathers[Math.floor(Math.random() * weathers.length)];
-        var randomMood = moods[Math.floor(Math.random() * moods.length)];
-        var newDiary = {
-            id: generateId(),
-            roleId: roleId,
-            dateKey: today,
-            dateDisplay: getDiaryDateDisplay(new Date()),
-            content: content.trim(),
-            weather: randomWeather,
-            mood: randomMood,
-            heartPeak: heartPeak,
-            createdAt: new Date().toISOString()
-        };
-        if (!CONFIG.diaries) CONFIG.diaries = [];
-        CONFIG.diaries.push(newDiary);
-        saveAllData();
-        if (showToastMsg) showToast('📖 日记已生成 ✨');
-        return newDiary;
-    }).catch(function(e) {
-        clearTimeout(timeoutId);
-        if (showToastMsg) showToast('❌ 生成日记失败：' + e.message);
-        console.error('生成日记失败:', e);
-        return null;
-    });
-} // ========== 消息渲染 ==========
+}); // ========== 消息渲染 ==========
 function renderMessages() {
     var role = getCurrentRole();
     if (!role) { console.warn('⚠️ 没有当前角色'); return; }
@@ -2156,13 +1941,8 @@ function buildSystemPrompt(role) {
     if (role.background && role.background.trim()) parts.push('【背景】' + role.background.trim());
     if (role.style && role.style.trim()) parts.push('【说话风格】' + role.style.trim());
     if (role.extra && role.extra.trim()) parts.push('【补充项】' + role.extra.trim());
-
-    var naturalMemory = generateNaturalMemoryText(role);
-    if (naturalMemory) {
-        parts.push('【我记得的关于你的事】\n' + naturalMemory + '\n\n以上是你告诉过我的信息，在对话中自然地用上，不要生硬地列出来。');
-    }
     if (parts.length === 0) return '你是一个温柔体贴的AI伴侣，说话轻声细语，会关心人。';
-    return parts.join('\n') + '\n\n【核心指令】\n1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n2. 严格遵守【人设】中的身份和性格，不要偏离。\n3. 回复时必须符合【说话风格】的语气和习惯。\n4. 对话中自然地融入【背景】、【补充项】和记忆中的信息。\n5. 保持角色一致性，不要出戏。\n6. 当你觉得想表达心意时，可以用 [送礼：商品名称] 来送礼物给用户。';
+    return parts.join('\n') + '\n\n【核心指令】\n1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n2. 严格遵守【人设】中的身份和性格，不要偏离。\n3. 回复时必须符合【说话风格】的语气和习惯。\n4. 对话中自然地融入【背景】、【补充项】中的信息。\n5. 保持角色一致性，不要出戏。\n6. 当你觉得想表达心意时，可以用 [送礼：商品名称] 来送礼物给用户。';
 }
 
 function splitReplyIntoMessages(text) {
@@ -2477,7 +2257,9 @@ function setupLongPress() {
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.longpress-menu')) { hideLongpressMenu(); }
     });
-} // ========== 图片选择器 ==========
+}
+
+// ========== 图片选择器 ==========
 function openImagePicker(action) {
     currentPickerTarget = action;
     var titles = {
@@ -2537,7 +2319,6 @@ function handleImageSelected(dataUrl) {
             renderRoleManager();
             renderContacts();
             renderMessages();
-            renderMemoryScreen();
             renderDiaryAll();
             showToast('✅ 角色头像已更新');
         } else if (target.field === 'bg') {
@@ -2840,9 +2621,7 @@ function loadSplitToggle() {
     var val = CONFIG.splitEnabled !== false ? 1 : 0;
     document.getElementById('splitToggleSlider').value = val;
     document.getElementById('splitToggleDisplay').textContent = val === 1 ? '开启' : '关闭';
-}
-
-// ========== 悬浮窗 ==========
+} // ========== 悬浮窗 ==========
 function showFloatingHeart() {
     var el = document.getElementById('floatingHeart');
     if (el && CONFIG.heart.floatingEnabled !== false) {
@@ -2950,7 +2729,9 @@ function initFloatingDrag() {
             dragData.hasMoved = false;
         }
     });
-} // ========== 联系人渲染 ==========
+}
+
+// ========== 联系人渲染 ==========
 function renderContacts() {
     var contactsList = document.getElementById('contactsList');
     if (!contactsList) return;
@@ -3033,7 +2814,7 @@ function renderRoleManager() {
         var nameInput = card.querySelector('.role-name-input');
         nameInput.addEventListener('change', function() {
             var val = nameInput.value.trim();
-            if (val) { role.name = val; saveAllData(); renderContacts(); updateChatTitle(); renderMemoryScreen(); renderDiaryAll(); showToast('✅ 已更新角色名'); }
+            if (val) { role.name = val; saveAllData(); renderContacts(); updateChatTitle(); renderDiaryAll(); showToast('✅ 已更新角色名'); }
             else { nameInput.value = role.name; showToast('⚠️ 名字不能为空'); }
         });
 
@@ -3068,7 +2849,6 @@ function renderRoleManager() {
             avatarRemoveBtn.style.display = 'none';
             renderContacts();
             renderMessages();
-            renderMemoryScreen();
             renderDiaryAll();
             showToast('✅ 已移除头像');
         });
@@ -3129,7 +2909,6 @@ function renderRoleManager() {
                     saveAllData();
                     renderRoleManager();
                     renderContacts();
-                    renderMemoryScreen();
                     renderDiaryAll();
                     updateChatTitle();
                     showToast('🗑️ 已删除「' + role.name + '」');
@@ -3137,68 +2916,6 @@ function renderRoleManager() {
             }
         });
         container.appendChild(card);
-    });
-}
-
-// ========== 记忆库渲染 ==========
-function renderMemoryScreen() {
-    var selector = document.getElementById('memoryRoleSelector');
-    if (!selector) return;
-    selector.innerHTML = '';
-    roles.forEach(function(role) {
-        var opt = document.createElement('option');
-        opt.value = role.id;
-        opt.textContent = role.name;
-        selector.appendChild(opt);
-    });
-    if (memoryCurrentRoleId && roles.find(function(r) { return r.id === memoryCurrentRoleId; })) {
-        selector.value = memoryCurrentRoleId;
-    } else if (roles.length > 0) {
-        memoryCurrentRoleId = roles[0].id;
-        selector.value = memoryCurrentRoleId;
-    }
-    renderMemoryList();
-}
-
-function renderMemoryList() {
-    var roleId = document.getElementById('memoryRoleSelector').value;
-    var body = document.getElementById('memoryBodyScroll');
-    if (!roleId) {
-        body.innerHTML = '<div class="memory-empty-state"><i class="fas fa-brain"></i><p>请先选择一个角色</p></div>';
-        return;
-    }
-    memoryCurrentRoleId = roleId;
-    var role = roles.find(function(r) { return r.id === roleId; });
-    if (!role) {
-        body.innerHTML = '<div class="memory-empty-state"><i class="fas fa-exclamation-triangle"></i><p>角色不存在</p></div>';
-        return;
-    }
-    var memories = Array.isArray(role.memory) ? role.memory : [];
-    var html = '<div class="memory-role-header">🧠 ' + role.name + ' 的记忆库<span class="badge-count">' + memories.length + ' 条</span></div>';
-    if (memories.length === 0) {
-        html += '<div class="memory-empty-state"><i class="fas fa-inbox"></i><p>还没有记忆，在下方添加吧</p></div>';
-    } else {
-        memories.forEach(function(mem, index) {
-            var text = mem.text || mem;
-            html += '<div class="memory-item-card"><div class="mem-text">' + text + '</div><button class="mem-delete-btn" data-roleid="' + role.id + '" data-memidx="' + index + '" title="删除记忆"><i class="fas fa-times"></i></button></div>';
-        });
-    }
-    body.innerHTML = html;
-    body.querySelectorAll('.mem-delete-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var r = roles.find(function(ro) { return ro.id === btn.dataset.roleid; });
-            var idx = parseInt(btn.dataset.memidx);
-            if (r && Array.isArray(r.memory) && r.memory.length > idx) {
-                if (confirm('确定要删除这条记忆吗？')) {
-                    r.memory.splice(idx, 1);
-                    saveAllData();
-                    renderMemoryList();
-                    renderRoleManager();
-                    renderContacts();
-                    showToast('🗑️ 已删除记忆');
-                }
-            }
-        });
     });
 }
 
@@ -3361,6 +3078,141 @@ function updateDiaryPageNav(roleId) {
     }
     prevBtn.disabled = idx <= 0;
     nextBtn.disabled = idx >= dates.length - 1 || isToday;
+}
+
+// ========== 日记系统函数 ==========
+function getDiaryDateKey(date) {
+    var d = new Date(date);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function getDiaryDateDisplay(date) {
+    var d = new Date(date);
+    return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+}
+function getDiaryDateShort(date) {
+    var d = new Date(date);
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+}
+function getTodayKey() { return getDiaryDateKey(new Date()); }
+function getDiariesForRole(roleId) { return (CONFIG.diaries || []).filter(function(d) { return d.roleId === roleId; }); }
+function getDiaryForDate(roleId, dateKey) { return (CONFIG.diaries || []).find(function(d) { return d.roleId === roleId && d.dateKey === dateKey; }); }
+function getAllDiaryDates(roleId) {
+    var diaries = getDiariesForRole(roleId);
+    return diaries.map(function(d) { return d.dateKey; }).sort();
+}
+function getAdjacentDiaryDate(currentDateKey, direction) {
+    var dates = getAllDiaryDates(selectedDiaryRoleId || currentRoleId);
+    if (dates.length === 0) return null;
+    var idx = dates.indexOf(currentDateKey);
+    if (idx === -1) return dates[0];
+    var newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= dates.length) return null;
+    return dates[newIdx];
+}
+
+function checkAndGenerateDailyDiaries() {
+    var todayKey = getTodayKey();
+    var hasAnyDiary = false;
+    roles.forEach(function(role) {
+        if (getDiaryForDate(role.id, todayKey)) hasAnyDiary = true;
+    });
+    if (!hasAnyDiary && CONFIG.diaryAutoGenerateEnabled !== false && CONFIG.apiKey) {
+        console.log('📖 检测到今天还没有日记，开始生成...');
+        roles.forEach(function(role) {
+            var existing = getDiaryForDate(role.id, todayKey);
+            if (!existing) {
+                generateDiary(role.id, false).then(function(diary) {
+                    if (diary) {
+                        showToast('📖 ' + role.name + ' 的日记已自动书写完成 💕');
+                        renderDiaryAll();
+                    }
+                });
+            }
+        });
+    }
+}
+
+function startDiaryAutoCheck() {
+    setInterval(checkAndGenerateDailyDiaries, 60 * 60 * 1000);
+    setTimeout(checkAndGenerateDailyDiaries, 5000);
+    console.log('📖 日记自动书写系统已启动（每小时检查一次）');
+}
+
+function generateDiary(roleId, showToastMsg) {
+    var role = roles.find(function(r) { return r.id === roleId; });
+    if (!role) {
+        if (showToastMsg) showToast('⚠️ 请先选择一个角色');
+        return Promise.resolve(null);
+    }
+    if (!CONFIG.apiKey) {
+        if (showToastMsg) showToast('⚠️ 请先在设置中配置 API Key');
+        return Promise.resolve(null);
+    }
+    var today = getTodayKey();
+    var existing = getDiaryForDate(roleId, today);
+    if (existing) {
+        if (showToastMsg) showToast('📖 今日日记已存在');
+        return Promise.resolve(existing);
+    }
+    if (showToastMsg) showToast('✍️ ' + role.name + ' 正在书写今天的日记...');
+    var recentMsgs = (role.messages || []).slice(-20);
+    var conversationText = '';
+    recentMsgs.forEach(function(msg) {
+        var sender = msg.role === 'user' ? '你' : role.name;
+        var content = msg.type === 'gift' ? '（送礼：' + (msg.giftData ? msg.giftData.productName : '礼物') + '）' : msg.content;
+        conversationText += sender + '：' + content + '\n';
+    });
+    if (!conversationText.trim()) conversationText = '今天还没有聊天，但想你了。';
+    var memories = (role.memory || []).map(function(m) { return m.text || m; }).filter(function(t) { return t; }).join('；');
+    var heartPeak = role.heartData ? role.heartData.peakValue || 65 : 65;
+    var systemPrompt = '你正在以「' + role.name + '」的第一人称写一篇私密日记。\n【角色设定】人设：' + (role.persona || '一个温柔体贴的人') + '\n背景：' + (role.background || '生活在充满爱的世界里') + '\n说话风格：' + (role.style || '温柔细腻，像深夜独白') + '\n补充项：' + (role.extra || '') + '\n\n【写作要求】\n1. 用「我」的第一人称写，完全代入角色\n2. 不是流水账！要有深度思考和内心感受\n3. 每一段都要包含至少一个「内心感受」或「思考」\n4. 要消化聊天记录内容后再写出来，而不是复述\n5. 风格：像深夜一个人静静写下的心里话\n\n【格式】直接输出日记正文，用换行分段，每段3-5行，不要用空行。';
+    var userPrompt = '根据以下信息写一篇日记：\n聊天记录：\n' + conversationText + '\n记忆库：' + (memories || '暂无特别记忆') + '\n今日心跳峰值：' + heartPeak + '%';
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
+
+    return fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CONFIG.apiKey },
+        body: JSON.stringify({
+            model: CONFIG.model || 'deepseek-chat',
+            messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+            temperature: 0.9,
+            max_tokens: 500
+        }),
+        signal: controller.signal
+    }).then(function(resp) {
+        clearTimeout(timeoutId);
+        if (!resp.ok) throw new Error('API 错误');
+        return resp.json();
+    }).then(function(data) {
+        var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (!content) throw new Error('未获取到回复');
+        var weathers = ['☀️ 晴', '🌤️ 多云', '🌧️ 雨', '☁️ 阴', '❄️ 雪', '🌙 月夜'];
+        var moods = ['💕 心动', '😊 开心', '🌙 温柔', '💭 思念', '🌸 期待', '🌹 深情'];
+        var randomWeather = weathers[Math.floor(Math.random() * weathers.length)];
+        var randomMood = moods[Math.floor(Math.random() * moods.length)];
+        var newDiary = {
+            id: generateId(),
+            roleId: roleId,
+            dateKey: today,
+            dateDisplay: getDiaryDateDisplay(new Date()),
+            content: content.trim(),
+            weather: randomWeather,
+            mood: randomMood,
+            heartPeak: heartPeak,
+            createdAt: new Date().toISOString()
+        };
+        if (!CONFIG.diaries) CONFIG.diaries = [];
+        CONFIG.diaries.push(newDiary);
+        saveAllData();
+        if (showToastMsg) showToast('📖 日记已生成 ✨');
+        return newDiary;
+    }).catch(function(e) {
+        clearTimeout(timeoutId);
+        if (showToastMsg) showToast('❌ 生成日记失败：' + e.message);
+        console.error('生成日记失败:', e);
+        return null;
+    });
 }
 
 // ========== 表情包系统（IndexedDB） ==========
@@ -3817,7 +3669,9 @@ function renderMemePickerMemes(categoryId) {
     document.getElementById('memePickerClose').onclick = function() {
         document.getElementById('memePickerOverlay').classList.remove('active');
     };
-} // ========== 数据管理 ==========
+}
+
+// ========== 数据管理 ==========
 function openDataModal() {
     renderRoleSelectList();
     var checkboxes = document.querySelectorAll('#dataModalOptions .export-option input[type="checkbox"]');
@@ -4117,7 +3971,6 @@ function openChat(fromContacts) {
     if (fromContacts) { document.getElementById('contactsScreen').classList.add('open'); }
     else { document.getElementById('contactsScreen').classList.remove('open'); }
     document.getElementById('chatScreen').classList.add('open');
-    document.getElementById('memoryScreen').classList.remove('open');
     document.getElementById('memeScreen').classList.remove('open');
     document.getElementById('diaryScreen').classList.remove('open');
 
@@ -4158,7 +4011,6 @@ function closeChat() {
 function openContacts() {
     document.getElementById('launcherScreen').classList.add('hidden');
     document.getElementById('chatScreen').classList.remove('open');
-    document.getElementById('memoryScreen').classList.remove('open');
     document.getElementById('memeScreen').classList.remove('open');
     document.getElementById('diaryScreen').classList.remove('open');
     document.getElementById('contactsScreen').classList.add('open');
@@ -4171,27 +4023,10 @@ function closeContacts() {
     document.getElementById('launcherScreen').classList.remove('hidden');
 }
 
-function openMemory() {
-    document.getElementById('launcherScreen').classList.add('hidden');
-    document.getElementById('chatScreen').classList.remove('open');
-    document.getElementById('contactsScreen').classList.remove('open');
-    document.getElementById('memeScreen').classList.remove('open');
-    document.getElementById('diaryScreen').classList.remove('open');
-    document.getElementById('memoryScreen').classList.add('open');
-    renderMemoryScreen();
-    if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300);
-}
-
-function closeMemory() {
-    document.getElementById('memoryScreen').classList.remove('open');
-    document.getElementById('launcherScreen').classList.remove('hidden');
-}
-
 function openMeme() {
     document.getElementById('launcherScreen').classList.add('hidden');
     document.getElementById('chatScreen').classList.remove('open');
     document.getElementById('contactsScreen').classList.remove('open');
-    document.getElementById('memoryScreen').classList.remove('open');
     document.getElementById('diaryScreen').classList.remove('open');
     document.getElementById('memeScreen').classList.add('open');
     renderMemeScreen();
@@ -4207,7 +4042,6 @@ function openDiary() {
     document.getElementById('launcherScreen').classList.add('hidden');
     document.getElementById('chatScreen').classList.remove('open');
     document.getElementById('contactsScreen').classList.remove('open');
-    document.getElementById('memoryScreen').classList.remove('open');
     document.getElementById('memeScreen').classList.remove('open');
     document.getElementById('diaryScreen').classList.add('open');
     if (selectedDiaryRoleId === null) selectedDiaryRoleId = currentRoleId;
@@ -4218,6 +4052,10 @@ function openDiary() {
 function closeDiary() {
     document.getElementById('diaryScreen').classList.remove('open');
     document.getElementById('launcherScreen').classList.remove('hidden');
+}
+
+function openMemoryApp() {
+    window.open('memory.html', '_blank');
 }
 
 function openMall() { window.open('mall.html', '_blank'); }
@@ -4380,7 +4218,6 @@ function init() {
     try {
         updateChatTitle();
         renderContacts();
-        renderMemoryScreen();
         renderDiaryAll();
         updateStatusTime();
         setInterval(updateStatusTime, 30000);
@@ -4392,7 +4229,6 @@ function init() {
         document.getElementById('launcherScreen').classList.remove('hidden');
         document.getElementById('chatScreen').classList.remove('open');
         document.getElementById('contactsScreen').classList.remove('open');
-        document.getElementById('memoryScreen').classList.remove('open');
         document.getElementById('memeScreen').classList.remove('open');
         document.getElementById('diaryScreen').classList.remove('open');
     } catch (e) { console.error('页面切换失败:', e); }
@@ -4411,7 +4247,6 @@ function init() {
     try { registerServiceWorker(); } catch (e) { console.log('PWA 注册跳过'); }
     try { startBackgroundCheck(); } catch (e) { console.error('后台检测启动失败:', e); }
     try { startDiaryAutoCheck(); } catch (e) { console.error('日记自动检测启动失败:', e); }
-    try { startMemoryConsolidation(); } catch (e) { console.error('记忆整合启动失败:', e); }
 
     var signatureInput = document.getElementById('signatureInput');
     if (signatureInput) {
@@ -4442,18 +4277,17 @@ function init() {
         });
     }
 
-    console.log('🚀 梦女空间 v3.4 重构稳定版已启动！');
-    console.log('✅ 修复所有已知问题，完全兼容旧数据');
-}
-
-// ========== DOM 事件绑定 ==========
+    console.log('🚀 梦女空间 v3.5 精简版已启动！');
+    console.log('📦 记忆库已独立为「时光胶囊」页面 (memory.html)');
+    console.log('✅ 完全兼容旧数据');
+} // ========== DOM 事件绑定 ==========
 document.addEventListener('DOMContentLoaded', function() {
     // 应用图标点击
     document.querySelectorAll('.app-icon[data-app]').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var app = this.dataset.app;
             if (app === 'contacts') openContacts();
-            else if (app === 'memory') openMemory();
+            else if (app === 'memory') openMemoryApp();
             else if (app === 'meme') openMeme();
             else if (app === 'style') openStylePicker();
             else if (app === 'settings') openSettings();
@@ -4467,7 +4301,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 返回按钮
     document.getElementById('backFromContacts').addEventListener('click', closeContacts);
     document.getElementById('backFromChat').addEventListener('click', closeChat);
-    document.getElementById('backFromMemory').addEventListener('click', closeMemory);
     document.getElementById('backFromMeme').addEventListener('click', closeMeme);
     document.getElementById('backFromDiary').addEventListener('click', closeDiary);
 
@@ -4534,7 +4367,6 @@ document.addEventListener('DOMContentLoaded', function() {
             saveAllData();
             renderRoleManager();
             renderContacts();
-            renderMemoryScreen();
             renderDiaryAll();
             updateChatTitle();
             showToast('✨ 已创建角色「' + newRole.name + '」');
@@ -4570,7 +4402,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var exportType = getSelectedExportType();
         var exportData = {
             exportTime: new Date().toISOString(),
-            version: '3.4',
+            version: '3.5',
             type: exportType,
             config: {},
             roles: [],
@@ -4728,7 +4560,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     saveAllData();
                     renderContacts();
                     renderRoleManager();
-                    renderMemoryScreen();
                     renderDiaryAll();
                     updateChatTitle();
                     if (document.getElementById('chatScreen').classList.contains('open')) renderMessages();
@@ -4758,7 +4589,6 @@ document.addEventListener('DOMContentLoaded', function() {
             renderMessages();
             renderContacts();
             renderRoleManager();
-            renderMemoryScreen();
             showToast('🗑️ 已清空所有角色的聊天记录');
         }
     });
@@ -4948,28 +4778,6 @@ document.addEventListener('DOMContentLoaded', function() {
         input.click();
     });
 
-    // 记忆库
-    document.getElementById('memoryRoleSelector').addEventListener('change', renderMemoryList);
-    document.getElementById('memoryAddBtn').addEventListener('click', function() {
-        var roleId = document.getElementById('memoryRoleSelector').value;
-        if (!roleId) { showToast('⚠️ 请先选择一个角色'); return; }
-        var text = document.getElementById('memoryAddInput').value.trim();
-        if (!text) { showToast('⚠️ 请输入记忆内容'); return; }
-        var role = roles.find(function(r) { return r.id === roleId; });
-        if (!role) { showToast('⚠️ 未找到该角色'); return; }
-        if (!Array.isArray(role.memory)) role.memory = [];
-        role.memory.push({ text: text, level: 'core', timestamp: Date.now() });
-        document.getElementById('memoryAddInput').value = '';
-        saveAllData();
-        renderMemoryList();
-        renderRoleManager();
-        renderContacts();
-        showToast('🧠 已添加核心记忆');
-    });
-    document.getElementById('memoryAddInput').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') document.getElementById('memoryAddBtn').click();
-    });
-
     // 日记
     document.getElementById('diaryRoleSelector').addEventListener('change', function() {
         selectedDiaryRoleId = this.value;
@@ -5144,4 +4952,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 </body>
-</html>
+</html>ll
