@@ -538,12 +538,12 @@
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div> <script>
 // ============================================================
-//  🚀 梦女空间 v3.8 - 修复版
+//  🚀 梦女空间 v3.8 - IndexedDB 壁纸存储版
 //  修复：壁纸保存失效 ✅ | 表情包导入后无法保存 ✅
 //  修复：亲密度计算 ✅ | 主动消息错误处理 ✅ | 清理旧消息同步记忆 ✅
+//  新增：壁纸改用 IndexedDB 存储（支持 5MB+ 原图）✅
 //  新增：清理旧消息支持换角色 ✅ | 表情包限制 500KB ✅
 //  新增：API 请求重试机制 ✅ | 加载状态优化 ✅
-//  壁纸：支持原图（9999KB限制）✅
 //  完全兼容旧数据，所有功能不变 ✅
 // ============================================================
 
@@ -737,6 +737,8 @@ function saveAllData() {
         if (configToSave.heart) {
             delete configToSave.heart.recoveryTimer;
         }
+        var wallpaperFlag = configToSave.wallpaper ? 'saved' : '';
+        configToSave.wallpaper = wallpaperFlag;
         var data = { config: configToSave, roles: roles.map(function(r) { return deepCloneRole(r); }), currentRoleId: currentRoleId };
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
         saveMemeData().catch(function(e) { console.error('表情包保存失败:', e); });
@@ -2464,7 +2466,33 @@ function handleImageSelected(dataUrl) {
         return;
     }
     if (target === 'wallpaper') {
-        applyWallpaper(dataUrl);
+        setTimeout(function() {
+            if (typeof applyWallpaper === 'function') {
+                applyWallpaper(dataUrl);
+            } else {
+                var screen = document.getElementById('launcherScreen');
+                screen.style.backgroundImage = 'url(' + dataUrl + ')';
+                screen.style.backgroundSize = 'cover';
+                screen.style.backgroundPosition = 'center';
+                screen.style.pointerEvents = 'auto';
+                document.getElementById('wallpaperPreviewImg').src = dataUrl;
+                document.getElementById('wallpaperPreviewImg').style.display = 'block';
+                document.getElementById('wallpaperStatus').textContent = '自定义';
+                CONFIG.wallpaper = 'saved';
+                if (typeof saveWallpaperToIndexedDB === 'function') {
+                    saveWallpaperToIndexedDB(dataUrl).then(function() {
+                        console.log('✅ 壁纸已保存到 IndexedDB');
+                        debouncedSaveAllData();
+                    }).catch(function(e) {
+                        console.error('❌ 壁纸保存失败:', e);
+                        showToast('⚠️ 壁纸保存失败');
+                    });
+                }
+            }
+        }, 100);
+        closeImagePicker();
+        showToast('✅ 壁纸已更新');
+        return;
     } else if (target === 'chatBg') {
         applyChatBg(dataUrl);
     } else if (target === 'userAvatar') {
@@ -2527,30 +2555,132 @@ function compressImage(dataUrl, maxSizeKB, callback) {
     img.src = dataUrl;
 }
 
-// ========== ⭐ 修复：壁纸保存（支持原图，限制改为9999KB） ==========
+// ========== ⭐ 壁纸 IndexedDB 存储 ==========
+function openWallpaperDB() {
+    return new Promise(function(resolve, reject) {
+        var request = indexedDB.open('WallpaperDB', 1);
+        request.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('wallpaper')) {
+                db.createObjectStore('wallpaper', { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = function(e) { resolve(e.target.result); };
+        request.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+function saveWallpaperToIndexedDB(dataUrl) {
+    return openWallpaperDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('wallpaper', 'readwrite');
+            var store = tx.objectStore('wallpaper');
+            var request = store.put({ id: 'main', data: dataUrl, updatedAt: Date.now() });
+            request.onsuccess = function() { 
+                console.log('✅ 壁纸已保存到 IndexedDB，大小:', Math.round(dataUrl.length / 1024), 'KB');
+                db.close();
+                resolve(); 
+            };
+            request.onerror = function() { 
+                console.error('壁纸保存到 IndexedDB 失败:', request.error);
+                db.close();
+                reject(request.error); 
+            };
+        });
+    });
+}
+
+function loadWallpaperFromIndexedDB() {
+    return openWallpaperDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('wallpaper', 'readonly');
+            var store = tx.objectStore('wallpaper');
+            var request = store.get('main');
+            request.onsuccess = function() {
+                db.close();
+                if (request.result && request.result.data) {
+                    console.log('✅ 从 IndexedDB 加载壁纸，大小:', Math.round(request.result.data.length / 1024), 'KB');
+                    resolve(request.result.data);
+                } else {
+                    resolve(null);
+                }
+            };
+            request.onerror = function() {
+                db.close();
+                reject(request.error);
+            };
+        });
+    }).catch(function(e) {
+        console.log('⚠️ 壁纸加载失败（可能没有壁纸）:', e);
+        return null;
+    });
+}
+
+function deleteWallpaperFromIndexedDB() {
+    return openWallpaperDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('wallpaper', 'readwrite');
+            var store = tx.objectStore('wallpaper');
+            var request = store.delete('main');
+            request.onsuccess = function() {
+                console.log('🗑️ 壁纸已从 IndexedDB 删除');
+                db.close();
+                resolve();
+            };
+            request.onerror = function() {
+                db.close();
+                reject(request.error);
+            };
+        });
+    });
+}
+
+function migrateOldWallpaper() {
+    return new Promise(function(resolve) {
+        try {
+            var raw = localStorage.getItem('ds_multirole_v2');
+            if (raw) {
+                var data = JSON.parse(raw);
+                if (data.config && data.config.wallpaper && data.config.wallpaper.length > 100) {
+                    console.log('🔄 检测到旧壁纸，正在迁移到 IndexedDB...');
+                    var oldWallpaper = data.config.wallpaper;
+                    data.config.wallpaper = 'migrated';
+                    localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+                    saveWallpaperToIndexedDB(oldWallpaper).then(function() {
+                        console.log('✅ 壁纸迁移成功！');
+                        resolve(oldWallpaper);
+                    }).catch(function() {
+                        resolve(null);
+                    });
+                    return;
+                }
+            }
+        } catch (e) {
+            console.log('⚠️ 壁纸迁移失败:', e);
+        }
+        resolve(null);
+    });
+}
+
+// ========== ⭐ 修复：壁纸保存（存到 IndexedDB，支持原图） ==========
 function applyWallpaper(dataUrl) {
     var screen = document.getElementById('launcherScreen');
     if (dataUrl) {
-        compressImage(dataUrl, 9999, function(compressed) {
-            screen.style.backgroundImage = 'url(' + compressed + ')';
-            screen.style.backgroundSize = 'cover';
-            screen.style.backgroundPosition = 'center';
-            screen.style.pointerEvents = 'auto';
-            document.getElementById('wallpaperPreviewImg').src = compressed;
-            document.getElementById('wallpaperPreviewImg').style.display = 'block';
-            document.getElementById('wallpaperStatus').textContent = '自定义';
-            CONFIG.wallpaper = compressed;
-            // ⭐ 强制立即保存到 localStorage
-            try {
-                var allData = JSON.parse(localStorage.getItem('ds_multirole_v2') || '{}');
-                if (!allData.config) allData.config = {};
-                allData.config.wallpaper = compressed;
-                localStorage.setItem('ds_multirole_v2', JSON.stringify(allData));
-                console.log('✅ 壁纸已强制保存，大小:', Math.round(compressed.length / 1024), 'KB');
-            } catch (e) {
-                console.error('壁纸保存失败:', e);
-                showToast('⚠️ 壁纸太大（超过5MB），请选择更小的图片');
-            }
+        screen.style.backgroundImage = 'url(' + dataUrl + ')';
+        screen.style.backgroundSize = 'cover';
+        screen.style.backgroundPosition = 'center';
+        screen.style.pointerEvents = 'auto';
+        document.getElementById('wallpaperPreviewImg').src = dataUrl;
+        document.getElementById('wallpaperPreviewImg').style.display = 'block';
+        document.getElementById('wallpaperStatus').textContent = '自定义';
+        CONFIG.wallpaper = 'saved';
+        saveWallpaperToIndexedDB(dataUrl).then(function() {
+            console.log('✅ 壁纸已保存到 IndexedDB');
+            debouncedSaveAllData();
+        }).catch(function(e) {
+            console.error('❌ 壁纸保存到 IndexedDB 失败:', e);
+            showToast('⚠️ 壁纸保存失败，请尝试更小的图片');
+            CONFIG.wallpaper = '';
             debouncedSaveAllData();
         });
     } else {
@@ -2561,13 +2691,12 @@ function applyWallpaper(dataUrl) {
         document.getElementById('wallpaperPreviewImg').src = '';
         document.getElementById('wallpaperStatus').textContent = '默认';
         CONFIG.wallpaper = '';
-        try {
-            var allData2 = JSON.parse(localStorage.getItem('ds_multirole_v2') || '{}');
-            if (!allData2.config) allData2.config = {};
-            allData2.config.wallpaper = '';
-            localStorage.setItem('ds_multirole_v2', JSON.stringify(allData2));
-        } catch (e) {}
-        debouncedSaveAllData();
+        deleteWallpaperFromIndexedDB().then(function() {
+            console.log('🗑️ 壁纸已从 IndexedDB 删除');
+            debouncedSaveAllData();
+        }).catch(function() {
+            debouncedSaveAllData();
+        });
     }
 }
 
@@ -3513,7 +3642,6 @@ function saveMemeData() {
     });
 }
 
-// ========== ⭐ 修复：表情包加载（导入后强制保存） ==========
 function loadMemeData() {
     return openMemeDB().then(function(db) {
         var catTx = db.transaction('categories', 'readonly');
@@ -3555,7 +3683,6 @@ function loadMemeData() {
                         m.categoryId = 'uncategorized';
                     }
                 });
-                // ⭐ 加载完成后强制保存一次，确保数据持久化
                 saveMemeData().catch(function(e) { console.error('表情包保存失败:', e); });
                 updateStorageDisplay();
             });
@@ -4319,14 +4446,18 @@ function openSettings() {
     loadFontWeight();
     loadSplitToggle();
 
-    if (CONFIG.wallpaper) {
-        document.getElementById('wallpaperPreviewImg').src = CONFIG.wallpaper;
-        document.getElementById('wallpaperPreviewImg').style.display = 'block';
-        document.getElementById('wallpaperStatus').textContent = '自定义';
-    } else {
-        document.getElementById('wallpaperPreviewImg').style.display = 'none';
-        document.getElementById('wallpaperStatus').textContent = '默认';
-    }
+    loadWallpaperFromIndexedDB().then(function(wallpaperData) {
+        if (wallpaperData) {
+            document.getElementById('wallpaperPreviewImg').src = wallpaperData;
+            document.getElementById('wallpaperPreviewImg').style.display = 'block';
+            document.getElementById('wallpaperStatus').textContent = '自定义';
+        } else {
+            document.getElementById('wallpaperPreviewImg').style.display = 'none';
+            document.getElementById('wallpaperPreviewImg').src = '';
+            document.getElementById('wallpaperStatus').textContent = '默认';
+        }
+    });
+
     if (CONFIG.chatBg) {
         document.getElementById('chatBgPreviewImg').src = CONFIG.chatBg;
         document.getElementById('chatBgPreviewImg').style.display = 'block';
@@ -4404,32 +4535,50 @@ function init() {
     } catch (e) { console.error('加载表情包失败:', e); }
 
     try {
-        roles.forEach(function(role) {
-            if (Array.isArray(role.memory)) {
-                role.memory = role.memory.map(function(m) {
-                    if (typeof m === 'string') return { text: m };
-                    return m;
+        migrateOldWallpaper().then(function(migratedData) {
+            if (migratedData) {
+                var screen = document.getElementById('launcherScreen');
+                screen.style.backgroundImage = 'url(' + migratedData + ')';
+                screen.style.backgroundSize = 'cover';
+                screen.style.backgroundPosition = 'center';
+                screen.style.pointerEvents = 'auto';
+                document.getElementById('wallpaperPreviewImg').src = migratedData;
+                document.getElementById('wallpaperPreviewImg').style.display = 'block';
+                document.getElementById('wallpaperStatus').textContent = '自定义';
+                CONFIG.wallpaper = 'saved';
+                console.log('✅ 旧壁纸迁移完成');
+            } else {
+                loadWallpaperFromIndexedDB().then(function(wallpaperData) {
+                    if (wallpaperData) {
+                        var screen = document.getElementById('launcherScreen');
+                        screen.style.backgroundImage = 'url(' + wallpaperData + ')';
+                        screen.style.backgroundSize = 'cover';
+                        screen.style.backgroundPosition = 'center';
+                        screen.style.pointerEvents = 'auto';
+                        document.getElementById('wallpaperPreviewImg').src = wallpaperData;
+                        document.getElementById('wallpaperPreviewImg').style.display = 'block';
+                        document.getElementById('wallpaperStatus').textContent = '自定义';
+                        CONFIG.wallpaper = 'saved';
+                        console.log('✅ 壁纸从 IndexedDB 加载成功');
+                    } else {
+                        var screen2 = document.getElementById('launcherScreen');
+                        screen2.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
+                        screen2.style.backgroundSize = 'auto';
+                        screen2.style.pointerEvents = 'auto';
+                        CONFIG.wallpaper = '';
+                        console.log('ℹ️ 没有壁纸，使用默认背景');
+                    }
+                }).catch(function() {
+                    var screen2 = document.getElementById('launcherScreen');
+                    screen2.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
+                    screen2.style.backgroundSize = 'auto';
+                    screen2.style.pointerEvents = 'auto';
                 });
             }
         });
-    } catch (e) { console.error('角色数据修复失败:', e); }
+    } catch (e) { console.error('壁纸加载失败:', e); }
 
     try {
-        if (CONFIG.wallpaper) {
-            var screen = document.getElementById('launcherScreen');
-            screen.style.backgroundImage = 'url(' + CONFIG.wallpaper + ')';
-            screen.style.backgroundSize = 'cover';
-            screen.style.backgroundPosition = 'center';
-            screen.style.pointerEvents = 'auto';
-            document.getElementById('wallpaperPreviewImg').src = CONFIG.wallpaper;
-            document.getElementById('wallpaperPreviewImg').style.display = 'block';
-            document.getElementById('wallpaperStatus').textContent = '自定义';
-        } else {
-            var screen2 = document.getElementById('launcherScreen');
-            screen2.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
-            screen2.style.backgroundSize = 'auto';
-            screen2.style.pointerEvents = 'auto';
-        }
         if (CONFIG.chatBg) applyChatBg(CONFIG.chatBg);
         else applyChatBg(null);
         if (CONFIG.userAvatar) applyUserAvatar(CONFIG.userAvatar);
@@ -4558,13 +4707,14 @@ function init() {
         });
     }
 
-    console.log('🚀 梦女空间 v3.8 已启动！');
-    console.log('✅ 壁纸保存已修复（9999KB ≈ 原图）');
+    console.log('🚀 梦女空间 v3.8 - IndexedDB 壁纸存储版 已启动！');
+    console.log('✅ 壁纸改用 IndexedDB 存储（支持 5MB+ 原图）');
+    console.log('✅ 壁纸保存已修复（不再受 localStorage 限制）');
     console.log('✅ 表情包导入保存已修复（强制保存）');
     console.log('✅ 亲密度计算优化（最大可达95%）');
     console.log('✅ API 请求重试机制（失败自动重试1次）');
     console.log('✅ 清理旧消息支持换角色');
-    console.log('✅ 表情包限制提升至 500KB');
+    console.log('✅ 表情包限制 500KB');
     console.log('✅ 完全兼容旧数据');
 }
 
@@ -5046,7 +5196,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!memeCategories.find(function(c) { return c.id === 'uncategorized'; })) {
                         memeCategories.push({ id: 'uncategorized', name: '未分类', icon: '📁' });
                     }
-                    // ⭐ 导入后立即保存到IndexedDB
                     saveMemeData().then(function() {
                         renderMemeScreen();
                         updateStorageDisplay();
