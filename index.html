@@ -543,6 +543,7 @@
 //  修复：亲密度计算 ✅ | 主动消息错误处理 ✅ | 清理旧消息同步记忆 ✅
 //  新增：清理旧消息支持换角色 ✅ | 表情包限制 500KB ✅
 //  新增：API 请求重试机制 ✅ | 加载状态优化 ✅
+//  壁纸：支持原图（9999KB限制）✅
 //  完全兼容旧数据，所有功能不变 ✅
 // ============================================================
 
@@ -2526,11 +2527,11 @@ function compressImage(dataUrl, maxSizeKB, callback) {
     img.src = dataUrl;
 }
 
-// ========== ⭐ 修复：壁纸保存（强制保存到 localStorage） ==========
+// ========== ⭐ 修复：壁纸保存（支持原图，限制改为9999KB） ==========
 function applyWallpaper(dataUrl) {
     var screen = document.getElementById('launcherScreen');
     if (dataUrl) {
-        compressImage(dataUrl, 200, function(compressed) {
+        compressImage(dataUrl, 9999, function(compressed) {
             screen.style.backgroundImage = 'url(' + compressed + ')';
             screen.style.backgroundSize = 'cover';
             screen.style.backgroundPosition = 'center';
@@ -2548,7 +2549,7 @@ function applyWallpaper(dataUrl) {
                 console.log('✅ 壁纸已强制保存，大小:', Math.round(compressed.length / 1024), 'KB');
             } catch (e) {
                 console.error('壁纸保存失败:', e);
-                showToast('⚠️ 壁纸太大，请选择更小的图片（建议 < 200KB）');
+                showToast('⚠️ 壁纸太大（超过5MB），请选择更小的图片');
             }
             debouncedSaveAllData();
         });
@@ -4558,7 +4559,7 @@ function init() {
     }
 
     console.log('🚀 梦女空间 v3.8 已启动！');
-    console.log('✅ 壁纸保存已修复（强制保存）');
+    console.log('✅ 壁纸保存已修复（9999KB ≈ 原图）');
     console.log('✅ 表情包导入保存已修复（强制保存）');
     console.log('✅ 亲密度计算优化（最大可达95%）');
     console.log('✅ API 请求重试机制（失败自动重试1次）');
