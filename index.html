@@ -538,7 +538,8 @@
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div> <script>
 // ============================================================
-//  🚀 梦女空间 v3.7 - 修复版
+//  🚀 梦女空间 v3.8 - 修复版
+//  修复：壁纸保存失效 ✅ | 表情包导入后无法保存 ✅
 //  修复：亲密度计算 ✅ | 主动消息错误处理 ✅ | 清理旧消息同步记忆 ✅
 //  新增：清理旧消息支持换角色 ✅ | 表情包限制 500KB ✅
 //  新增：API 请求重试机制 ✅ | 加载状态优化 ✅
@@ -2461,9 +2462,13 @@ function handleImageSelected(dataUrl) {
         });
         return;
     }
-    if (target === 'wallpaper') applyWallpaper(dataUrl);
-    else if (target === 'chatBg') applyChatBg(dataUrl);
-    else if (target === 'userAvatar') applyUserAvatar(dataUrl);
+    if (target === 'wallpaper') {
+        applyWallpaper(dataUrl);
+    } else if (target === 'chatBg') {
+        applyChatBg(dataUrl);
+    } else if (target === 'userAvatar') {
+        applyUserAvatar(dataUrl);
+    }
     closeImagePicker();
     showToast('✅ 已更新');
 }
@@ -2521,6 +2526,7 @@ function compressImage(dataUrl, maxSizeKB, callback) {
     img.src = dataUrl;
 }
 
+// ========== ⭐ 修复：壁纸保存（强制保存到 localStorage） ==========
 function applyWallpaper(dataUrl) {
     var screen = document.getElementById('launcherScreen');
     if (dataUrl) {
@@ -2533,7 +2539,18 @@ function applyWallpaper(dataUrl) {
             document.getElementById('wallpaperPreviewImg').style.display = 'block';
             document.getElementById('wallpaperStatus').textContent = '自定义';
             CONFIG.wallpaper = compressed;
-            saveAllData();
+            // ⭐ 强制立即保存到 localStorage
+            try {
+                var allData = JSON.parse(localStorage.getItem('ds_multirole_v2') || '{}');
+                if (!allData.config) allData.config = {};
+                allData.config.wallpaper = compressed;
+                localStorage.setItem('ds_multirole_v2', JSON.stringify(allData));
+                console.log('✅ 壁纸已强制保存，大小:', Math.round(compressed.length / 1024), 'KB');
+            } catch (e) {
+                console.error('壁纸保存失败:', e);
+                showToast('⚠️ 壁纸太大，请选择更小的图片（建议 < 200KB）');
+            }
+            debouncedSaveAllData();
         });
     } else {
         screen.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
@@ -2543,7 +2560,13 @@ function applyWallpaper(dataUrl) {
         document.getElementById('wallpaperPreviewImg').src = '';
         document.getElementById('wallpaperStatus').textContent = '默认';
         CONFIG.wallpaper = '';
-        saveAllData();
+        try {
+            var allData2 = JSON.parse(localStorage.getItem('ds_multirole_v2') || '{}');
+            if (!allData2.config) allData2.config = {};
+            allData2.config.wallpaper = '';
+            localStorage.setItem('ds_multirole_v2', JSON.stringify(allData2));
+        } catch (e) {}
+        debouncedSaveAllData();
     }
 }
 
@@ -3489,6 +3512,7 @@ function saveMemeData() {
     });
 }
 
+// ========== ⭐ 修复：表情包加载（导入后强制保存） ==========
 function loadMemeData() {
     return openMemeDB().then(function(db) {
         var catTx = db.transaction('categories', 'readonly');
@@ -3530,6 +3554,8 @@ function loadMemeData() {
                         m.categoryId = 'uncategorized';
                     }
                 });
+                // ⭐ 加载完成后强制保存一次，确保数据持久化
+                saveMemeData().catch(function(e) { console.error('表情包保存失败:', e); });
                 updateStorageDisplay();
             });
         });
@@ -4388,12 +4414,20 @@ function init() {
     } catch (e) { console.error('角色数据修复失败:', e); }
 
     try {
-        if (CONFIG.wallpaper) applyWallpaper(CONFIG.wallpaper);
-        else {
+        if (CONFIG.wallpaper) {
             var screen = document.getElementById('launcherScreen');
-            screen.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
-            screen.style.backgroundSize = 'auto';
+            screen.style.backgroundImage = 'url(' + CONFIG.wallpaper + ')';
+            screen.style.backgroundSize = 'cover';
+            screen.style.backgroundPosition = 'center';
             screen.style.pointerEvents = 'auto';
+            document.getElementById('wallpaperPreviewImg').src = CONFIG.wallpaper;
+            document.getElementById('wallpaperPreviewImg').style.display = 'block';
+            document.getElementById('wallpaperStatus').textContent = '自定义';
+        } else {
+            var screen2 = document.getElementById('launcherScreen');
+            screen2.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
+            screen2.style.backgroundSize = 'auto';
+            screen2.style.pointerEvents = 'auto';
         }
         if (CONFIG.chatBg) applyChatBg(CONFIG.chatBg);
         else applyChatBg(null);
@@ -4523,12 +4557,13 @@ function init() {
         });
     }
 
-    console.log('🚀 梦女空间 v3.7 已启动！');
+    console.log('🚀 梦女空间 v3.8 已启动！');
+    console.log('✅ 壁纸保存已修复（强制保存）');
+    console.log('✅ 表情包导入保存已修复（强制保存）');
     console.log('✅ 亲密度计算优化（最大可达95%）');
     console.log('✅ API 请求重试机制（失败自动重试1次）');
     console.log('✅ 清理旧消息支持换角色');
     console.log('✅ 表情包限制提升至 500KB');
-    console.log('✅ 发送消息加载状态优化');
     console.log('✅ 完全兼容旧数据');
 }
 
@@ -4647,7 +4682,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var exportType = getSelectedExportType();
         var exportData = {
             exportTime: new Date().toISOString(),
-            version: '3.7',
+            version: '3.8',
             type: exportType,
             config: {},
             roles: [],
@@ -5010,9 +5045,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!memeCategories.find(function(c) { return c.id === 'uncategorized'; })) {
                         memeCategories.push({ id: 'uncategorized', name: '未分类', icon: '📁' });
                     }
+                    // ⭐ 导入后立即保存到IndexedDB
                     saveMemeData().then(function() {
                         renderMemeScreen();
-                        showToast('✅ 成功导入 ' + memes.length + ' 个表情包');
+                        updateStorageDisplay();
+                        showToast('✅ 成功导入 ' + memes.length + ' 个表情包（已保存）');
                     });
                 } catch (err) {
                     showToast('❌ 导入失败，文件格式错误');
