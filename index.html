@@ -538,12 +538,13 @@
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div> <script>
 // ============================================================
-//  🚀 梦女空间 v3.8 - IndexedDB 壁纸存储版
+//  🚀 梦女空间 v3.8 - 完整修复版
+//  修复：壁纸更换失效 ✅ | AI人称混乱 ✅
 //  修复：壁纸保存失效 ✅ | 表情包导入后无法保存 ✅
-//  修复：亲密度计算 ✅ | 主动消息错误处理 ✅ | 清理旧消息同步记忆 ✅
-//  新增：壁纸改用 IndexedDB 存储（支持 5MB+ 原图）✅
+//  修复：亲密度计算 ✅ | 主动消息错误处理 ✅
 //  新增：清理旧消息支持换角色 ✅ | 表情包限制 500KB ✅
 //  新增：API 请求重试机制 ✅ | 加载状态优化 ✅
+//  壁纸改用 IndexedDB 存储（支持 5MB+ 原图）✅
 //  完全兼容旧数据，所有功能不变 ✅
 // ============================================================
 
@@ -2002,6 +2003,7 @@ function regenerateMessage(roleId, messageId) {
     });
 }
 
+// ========== ⭐ 修复 AI 人称混乱 ==========
 function buildSystemPrompt(role) {
     var parts = [];
 
@@ -2043,13 +2045,19 @@ function buildSystemPrompt(role) {
     hardRules += '\n⚠️ 如果违反以上规则，你的回复将被视为无效！';
     parts.push(hardRules);
 
-    var coreInstruction = '\n\n【核心指令】\n1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n';
+    // ⭐ 核心指令 - 加强人称身份标识
+    var coreInstruction = '\n\n【核心指令】\n';
+    coreInstruction += '⚠️ 首先明确身份：你是「' + role.name + '」，我是「用户」。\n';
+    coreInstruction += '⚠️ 说话时「我」= ' + role.name + '，「你」= 用户。\n';
+    coreInstruction += '⚠️ 所有动作的主人公是你自己（' + role.name + '），不是用户。\n\n';
+    coreInstruction += '1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n';
     coreInstruction += '2. 严格遵守【人设】中的身份和性格，不要偏离。\n';
     coreInstruction += '3. 回复时必须符合【说话风格】的语气和习惯。\n';
     coreInstruction += '4. 对话中自然地融入【背景】、【补充项】中的信息。\n';
     coreInstruction += '5. 保持角色一致性，不要出戏。\n';
     coreInstruction += '6. 当你觉得想表达心意时，可以用 [送礼：商品名称] 来送礼物给用户。\n';
-    coreInstruction += '7. ⚠️ 再次强调：只输出对话内容，绝对禁止任何动作/环境/表情/心理描写！';
+    coreInstruction += '7. ⚠️ 再次强调：只输出对话内容，绝对禁止任何动作/环境/表情/心理描写！\n';
+    coreInstruction += '8. ⚠️ 再次强调：「我」= ' + role.name + '，「你」= 用户，不要搞混！';
     parts.push(coreInstruction);
 
     return parts.join('\n');
@@ -2662,26 +2670,46 @@ function migrateOldWallpaper() {
     });
 }
 
-// ========== ⭐ 修复：壁纸保存（存到 IndexedDB，支持原图） ==========
+// ========== ⭐ 修复：壁纸保存（支持更换，先删后存） ==========
 function applyWallpaper(dataUrl) {
     var screen = document.getElementById('launcherScreen');
     if (dataUrl) {
-        screen.style.backgroundImage = 'url(' + dataUrl + ')';
-        screen.style.backgroundSize = 'cover';
-        screen.style.backgroundPosition = 'center';
-        screen.style.pointerEvents = 'auto';
-        document.getElementById('wallpaperPreviewImg').src = dataUrl;
-        document.getElementById('wallpaperPreviewImg').style.display = 'block';
-        document.getElementById('wallpaperStatus').textContent = '自定义';
-        CONFIG.wallpaper = 'saved';
-        saveWallpaperToIndexedDB(dataUrl).then(function() {
-            console.log('✅ 壁纸已保存到 IndexedDB');
-            debouncedSaveAllData();
-        }).catch(function(e) {
-            console.error('❌ 壁纸保存到 IndexedDB 失败:', e);
-            showToast('⚠️ 壁纸保存失败，请尝试更小的图片');
-            CONFIG.wallpaper = '';
-            debouncedSaveAllData();
+        // ⭐ 先删除旧壁纸，再存新的
+        deleteWallpaperFromIndexedDB().then(function() {
+            screen.style.backgroundImage = 'url(' + dataUrl + ')';
+            screen.style.backgroundSize = 'cover';
+            screen.style.backgroundPosition = 'center';
+            screen.style.pointerEvents = 'auto';
+            document.getElementById('wallpaperPreviewImg').src = dataUrl;
+            document.getElementById('wallpaperPreviewImg').style.display = 'block';
+            document.getElementById('wallpaperStatus').textContent = '自定义';
+            CONFIG.wallpaper = 'saved';
+            saveWallpaperToIndexedDB(dataUrl).then(function() {
+                console.log('✅ 新壁纸已保存到 IndexedDB');
+                debouncedSaveAllData();
+                showToast('✅ 壁纸已更换');
+            }).catch(function(e) {
+                console.error('❌ 壁纸保存失败:', e);
+                showToast('⚠️ 壁纸保存失败，请尝试更小的图片');
+            });
+        }).catch(function() {
+            // 如果删除失败，直接覆盖保存
+            screen.style.backgroundImage = 'url(' + dataUrl + ')';
+            screen.style.backgroundSize = 'cover';
+            screen.style.backgroundPosition = 'center';
+            screen.style.pointerEvents = 'auto';
+            document.getElementById('wallpaperPreviewImg').src = dataUrl;
+            document.getElementById('wallpaperPreviewImg').style.display = 'block';
+            document.getElementById('wallpaperStatus').textContent = '自定义';
+            CONFIG.wallpaper = 'saved';
+            saveWallpaperToIndexedDB(dataUrl).then(function() {
+                console.log('✅ 新壁纸已保存到 IndexedDB');
+                debouncedSaveAllData();
+                showToast('✅ 壁纸已更换');
+            }).catch(function(e) {
+                console.error('❌ 壁纸保存失败:', e);
+                showToast('⚠️ 壁纸保存失败');
+            });
         });
     } else {
         screen.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
@@ -2694,8 +2722,10 @@ function applyWallpaper(dataUrl) {
         deleteWallpaperFromIndexedDB().then(function() {
             console.log('🗑️ 壁纸已从 IndexedDB 删除');
             debouncedSaveAllData();
+            showToast('✅ 已恢复默认壁纸');
         }).catch(function() {
             debouncedSaveAllData();
+            showToast('✅ 已恢复默认壁纸');
         });
     }
 }
@@ -4707,9 +4737,10 @@ function init() {
         });
     }
 
-    console.log('🚀 梦女空间 v3.8 - IndexedDB 壁纸存储版 已启动！');
+    console.log('🚀 梦女空间 v3.8 - 完整修复版 已启动！');
     console.log('✅ 壁纸改用 IndexedDB 存储（支持 5MB+ 原图）');
-    console.log('✅ 壁纸保存已修复（不再受 localStorage 限制）');
+    console.log('✅ 壁纸更换已修复（先删后存）');
+    console.log('✅ AI 人称混乱已修复（明确「我」=角色，「你」=用户）');
     console.log('✅ 表情包导入保存已修复（强制保存）');
     console.log('✅ 亲密度计算优化（最大可达95%）');
     console.log('✅ API 请求重试机制（失败自动重试1次）');
@@ -5379,3 +5410,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+   
