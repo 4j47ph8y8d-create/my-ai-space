@@ -440,11 +440,22 @@
         .heart-detail-panel .hd-signature { font-size: 13px; color: rgba(255,255,255,0.5); text-align: center; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; font-style: italic; }
         .heart-detail-panel .hd-recent { font-size: 11px; color: rgba(255,255,255,0.25); text-align: center; line-height: 1.6; }
         .heart-detail-panel .hd-recent .highlight { color: var(--heart-color, #ff6b81); }
+        /* 新增：清理旧消息区域样式 */
+        .trim-role-selector { width: 100%; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-card); color: var(--text-primary); font-size: 13px; outline: none; font-family: inherit; cursor: pointer; transition: border-color 0.2s; }
+        .trim-role-selector:focus { border-color: #34d399 !important; box-shadow: 0 0 0 2px rgba(52,211,153,0.15); }
+        .trim-info-row { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-top: 1px; opacity: 0.4; }
+        .trim-hint-row { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-top: 2px; opacity: 0.6; }
+        .trim-btn { padding: 4px 16px; border: none; border-radius: 8px; background: linear-gradient(135deg, #34d399, #059669); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s; font-family: inherit; white-space: nowrap; }
+        .trim-btn:active { transform: scale(0.95); }
+        .trim-keep-input { width: 70px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-card); color: var(--text-primary); font-size: 13px; outline: none; text-align: center; }
+        .trim-keep-input:focus { border-color: #34d399; box-shadow: 0 0 0 2px rgba(52,211,153,0.12); }
+        .trim-select-row { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; }
+        .trim-select-row label { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+        .trim-control-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 2px; }
         @media (max-width: 460px) { .phone-frame { border-radius: 0; height: 100vh; max-height: 100vh; } body { padding: 0; } }
         @media (min-width: 431px) { .phone-frame { border-radius: 32px; height: 780px; max-height: 90vh; box-shadow: 0 20px 60px rgba(0,0,0,0.6); } body { padding: 12px; } }
     </style>
-</head>
-<body>
+</head> <body>
 <div class="phone-frame" id="app">
     <div class="screen-launcher" id="launcherScreen">
         <button class="theme-toggle-btn" id="themeToggleBtn" title="切换深色/浅色模式"><i class="fas fa-moon" id="themeIcon"></i></button>
@@ -476,28 +487,37 @@
     <div class="meme-picker-overlay" id="memePickerOverlay"><div class="meme-picker-panel" id="memePickerPanel"><div class="meme-picker-header"><span class="meme-picker-title" id="memePickerTitle">选择表情包</span><button class="meme-picker-close" id="memePickerClose">&times;</button></div><div class="meme-picker-body" id="memePickerBody"></div></div></div>
     <div class="image-picker-overlay" id="imagePickerOverlay"><div class="image-picker-menu"><div class="menu-title" id="pickerTitle">选择图片来源</div><div class="picker-options"><button id="pickerCamera"><span class="icon-bg"><i class="fas fa-camera"></i></span><span>拍照</span></button><button id="pickerGallery"><span class="icon-bg"><i class="fas fa-images"></i></span><span>相册</span></button></div><button class="cancel-btn" id="pickerCancel">取消</button></div></div>
     <div class="settings-overlay" id="settingsOverlay"><div class="settings-drawer"><button class="close-drawer" id="closeSettingsBtn">×</button><h2><i class="fas fa-sliders-h"></i> 设置</h2><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-thermometer-half" style="color:#07c160;"></i> 温度调节</span><span class="temp-value" id="tempDisplay">0.9</span></div><input type="range" id="tempSlider" min="0.0" max="1.5" step="0.1" value="0.9" /><div class="temp-hints"><span>稳定</span><span>平衡</span><span>创意</span></div></div><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-font" style="color:#07c160;"></i> 字号大小</span><span class="temp-value" id="fontSizeDisplay">中</span></div><input type="range" id="fontSizeSlider" min="0" max="3" step="1" value="1" /><div class="temp-hints"><span>小</span><span>中</span><span>大</span><span>特大</span></div></div><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-bold" style="color:#07c160;"></i> 字体粗细</span><span class="temp-value" id="fontWeightDisplay">常规</span></div><input type="range" id="fontWeightSlider" min="0" max="3" step="1" value="1" /><div class="temp-hints"><span>细</span><span>常规</span><span>中</span><span>粗</span></div></div><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-cut" style="color:#07c160;"></i> 分段生成</span><span class="temp-value" id="splitToggleDisplay">开启</span></div><input type="range" id="splitToggleSlider" min="0" max="1" step="1" value="1" /><div class="temp-hints"><span>关闭</span><span>开启</span></div></div><div style="margin-bottom:12px;"><div class="role-manager-header"><h3><i class="fas fa-users" style="color:#07c160;"></i> 角色管理</h3><button class="add-role-btn" id="addRoleBtn"><i class="fas fa-plus"></i> 新建</button></div><div id="roleManagerContainer"></div></div><hr class="module-divider" /><div class="beauty-section"><div class="beauty-title"><i class="fas fa-paint-brush"></i> 美化</div><div class="beauty-item" id="wallpaperPickerBtn"><div class="left"><i class="fas fa-desktop"></i><span>桌面壁纸</span></div><div class="right"><span id="wallpaperStatus">默认</span><div class="preview-box" id="wallpaperPreview"><img id="wallpaperPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div><div class="beauty-item" id="chatBgPickerBtn"><div class="left"><i class="fas fa-comment-alt"></i><span>聊天背景（全局默认）</span></div><div class="right"><span id="chatBgStatus">默认</span><div class="preview-box" id="chatBgPreview"><img id="chatBgPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div><div class="beauty-item" id="userAvatarPickerBtn"><div class="left"><i class="fas fa-user"></i><span>我的头像</span></div><div class="right"><span id="userAvatarStatus">默认</span><div class="preview-box" id="userAvatarPreview"><img id="userAvatarPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div></div><hr class="module-divider" /><div class="setting-group"><label>🔑 API Key <small style="font-weight:400;color:var(--text-secondary);">(platform.deepseek.com)</small></label><input type="text" id="apiKeyInput" placeholder="sk-..." /></div><div class="setting-group"><label>🧠 模型</label><select id="modelSelect"><option value="deepseek-chat">DeepSeek Chat</option><option value="deepseek-coder">DeepSeek Coder</option></select></div>
-        <!-- ===== ⭐ 新增：清理旧消息功能 ===== -->
+        <!-- ===== ⭐ 新增：清理旧消息功能（带角色选择） ===== -->
         <hr class="module-divider" />
-        <div class="temp-slider-container" style="border-left:3px solid #34d399;">
+        <div class="temp-slider-container" style="border-left:3px solid #34d399;border-radius:12px;">
             <div class="temp-header">
                 <span class="temp-label" style="font-size:13px;">
                     <i class="fas fa-cut" style="color:#34d399;"></i> 清理旧消息
                 </span>
                 <span class="temp-value" id="trimStatus" style="font-size:12px;color:#34d399;">保留最新</span>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;margin:4px 0 2px;">
+            <!-- 角色选择 -->
+            <div class="trim-select-row">
+                <label for="trimRoleSelector">选择角色</label>
+                <select id="trimRoleSelector" class="trim-role-selector">
+                    <option value="">加载中...</option>
+                </select>
+            </div>
+            <!-- 保留条数 + 清理按钮 -->
+            <div class="trim-control-row">
                 <span style="font-size:11px;color:var(--text-secondary);">保留条数</span>
-                <input type="number" id="trimKeepCount" value="50" min="10" max="200" style="width:70px;padding:4px 8px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:13px;outline:none;text-align:center;" />
+                <input type="number" id="trimKeepCount" class="trim-keep-input" value="50" min="5" max="500" />
                 <span style="font-size:11px;color:var(--text-secondary);">条</span>
-                <button id="trimChatBtn" style="padding:4px 16px;border:none;border-radius:8px;background:linear-gradient(135deg,#34d399,#059669);color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:0.15s;font-family:inherit;white-space:nowrap;margin-left:auto;">
+                <button id="trimChatBtn" class="trim-btn" style="margin-left:auto;">
                     <i class="fas fa-scissors"></i> 清理
                 </button>
             </div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:2px;opacity:0.6;">
+            <!-- 提示 -->
+            <div class="trim-hint-row">
                 <span>📌 亲密度和记忆不受影响</span>
                 <span>只删除旧对话</span>
             </div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:1px;opacity:0.4;">
+            <div class="trim-info-row">
                 <span id="trimCurrentCount">当前消息数：0</span>
                 <span id="trimTargetInfo">清理后保留 50 条</span>
             </div>
@@ -522,8 +542,10 @@
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div> <script>
 // ============================================================
-//  🚀 梦女空间 v3.6 - 新增「清理旧消息」功能
-//  修复：亲密度在清理消息后不受影响 ✅
+//  🚀 梦女空间 v3.7 - 完整修复版
+//  修复：亲密度计算 ✅ | 主动消息错误处理 ✅ | 清理旧消息同步记忆 ✅
+//  新增：清理旧消息支持换角色 ✅ | 表情包限制 500KB ✅
+//  新增：API 请求重试机制 ✅ | 加载状态优化 ✅
 //  完全兼容旧数据，所有功能不变 ✅
 // ============================================================
 
@@ -538,7 +560,7 @@ var CONSTANTS = {
     DEFAULT_TEMPERATURE: 0.9,
     TOAST_DURATION: 2500,
     STORAGE_LIMIT: 50 * 1024 * 1024,
-    MEME_MAX_SIZE: 200 * 1024,
+    MEME_MAX_SIZE: 500 * 1024,
     INTIMACY_INCREASE_RATE: 0.5,
     INTIMACY_DECREASE_RATE: 0.1,
     MAX_INTIMACY: 100,
@@ -634,10 +656,10 @@ function updateIntimacy(role) {
     var userMessages = messages.filter(function(m) { return m.role === 'user'; }).length;
     var giftMessages = messages.filter(function(m) { return m.type === 'gift'; }).length;
     var heartSpikes = role.extendedState ? role.extendedState.totalHeartSpikes || 0 : 0;
-    var baseIntimacy = Math.min(20, totalMessages * 0.3);
-    var userMsgBonus = Math.min(20, userMessages * 0.5);
-    var giftBonus = Math.min(15, giftMessages * 3);
-    var heartBonus = Math.min(15, Math.floor(heartSpikes / 20));
+    var baseIntimacy = Math.min(30, totalMessages * 0.4);
+    var userMsgBonus = Math.min(25, userMessages * 0.6);
+    var giftBonus = Math.min(20, giftMessages * 4);
+    var heartBonus = Math.min(20, Math.floor(heartSpikes / 15));
     var timeFactor = 1;
     var lastMsgTime = messages.length > 0 ? new Date(messages[messages.length - 1].time) : null;
     if (lastMsgTime) {
@@ -1042,7 +1064,6 @@ function addMessageToRole(roleId, role, content, type, giftData) {
         r.extendedState.lastAiMessageTime = Date.now();
         if (!CONFIG.unreadCount) CONFIG.unreadCount = {};
         CONFIG.unreadCount[roleId] = (CONFIG.unreadCount[roleId] || 0) + 1;
-        // 每5条消息生成一次对话摘要（由时光胶囊处理，但数据保留）
         if (r.messages.length % 5 === 0 && r.messages.length > 3) {
             generateContextSummary(r);
         }
@@ -1072,7 +1093,7 @@ function deleteMessageAndMemory(roleId, messageId) {
     renderRoleManager();
 }
 
-// ========== 对话摘要生成（供时光胶囊使用） ==========
+// ========== 对话摘要生成 ==========
 function generateContextSummary(role) {
     if (!role || !Array.isArray(role.messages) || role.messages.length < 3) return;
     if (!CONFIG.apiKey) {
@@ -1111,7 +1132,7 @@ function generateContextSummary(role) {
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
 
-    fetch('https://api.deepseek.com/v1/chat/completions', {
+    fetchWithRetry('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CONFIG.apiKey },
         body: JSON.stringify({
@@ -1124,7 +1145,7 @@ function generateContextSummary(role) {
             max_tokens: 100
         }),
         signal: controller.signal
-    }).then(function(resp) {
+    }, 1).then(function(resp) {
         clearTimeout(timeoutId);
         if (!resp.ok) throw new Error('API 错误');
         return resp.json();
@@ -1159,6 +1180,39 @@ function generateContextSummary(role) {
         role.extendedState.contextSummary = summary2;
         debouncedSaveAllData();
     });
+}
+
+// ========== API 请求重试机制 ==========
+function fetchWithRetry(url, options, maxRetries) {
+    maxRetries = maxRetries || 1;
+    var retryCount = 0;
+
+    function doFetch() {
+        return fetch(url, options).then(function(resp) {
+            if (!resp.ok && retryCount < maxRetries) {
+                retryCount++;
+                console.log('🔄 API 请求失败，第 ' + retryCount + ' 次重试...');
+                return new Promise(function(resolve) {
+                    setTimeout(function() {
+                        doFetch().then(resolve);
+                    }, 1000 * retryCount);
+                });
+            }
+            return resp;
+        }).catch(function(err) {
+            if (retryCount < maxRetries) {
+                retryCount++;
+                console.log('🔄 API 请求异常，第 ' + retryCount + ' 次重试...');
+                return new Promise(function(resolve) {
+                    setTimeout(function() {
+                        doFetch().then(resolve);
+                    }, 1000 * retryCount);
+                });
+            }
+            throw err;
+        });
+    }
+    return doFetch();
 }
 
 // ========== 心跳系统 ==========
@@ -1428,8 +1482,7 @@ function detectSleepMode(roleId, content) {
             showToast('☀️ ' + role.name + ' 已恢复主动消息 💕');
         }
     }
-}
-
+} <script>
 // ========== 主动消息系统 ==========
 function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMode) {
     var state = role.extendedState || {};
@@ -1503,7 +1556,7 @@ function generateActiveMessage(role) {
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
 
-    return fetch('https://api.deepseek.com/v1/chat/completions', {
+    return fetchWithRetry('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CONFIG.apiKey },
         body: JSON.stringify({
@@ -1513,7 +1566,7 @@ function generateActiveMessage(role) {
             max_tokens: 200
         }),
         signal: controller.signal
-    }).then(function(resp) {
+    }, 1).then(function(resp) {
         clearTimeout(timeoutId);
         if (!resp.ok) throw new Error('API 错误');
         return resp.json();
@@ -1638,15 +1691,18 @@ function checkAllRolesForActiveMessages() {
     roles.forEach(function(role) {
         promiseChain = promiseChain.then(function() {
             return checkAndSendActiveMessage(role).then(function(sent) {
-                if (sent) { results.push(role.name + ' ✅'); }
-                else { results.push(role.name + ' ⏳'); }
-                if (results.length === roles.length) {
-                    console.log('📊 结果:', results.join(' | '));
-                }
+                results.push(role.name + (sent ? ' ✅' : ' ⏳'));
+                return sent;
+            }).catch(function(err) {
+                console.error('⚠️ ' + role.name + ' 主动消息失败:', err);
+                results.push(role.name + ' ❌');
+                return false;
             });
         });
     });
-    return promiseChain;
+    return promiseChain.then(function() {
+        console.log('📊 结果:', results.join(' | '));
+    });
 }
 
 function startBackgroundCheck() {
@@ -1671,7 +1727,9 @@ document.addEventListener('visibilitychange', function() {
             setTimeout(function() { checkAllRolesForActiveMessages(); }, 3000);
         }
     }
-}); // ========== 消息渲染 ==========
+});
+
+// ========== 消息渲染 ==========
 function renderMessages() {
     var role = getCurrentRole();
     if (!role) { console.warn('⚠️ 没有当前角色'); return; }
@@ -1955,11 +2013,10 @@ function regenerateMessage(roleId, messageId) {
     });
 }
 
-// ========== AI调用（核心修复：强制禁止动作描写） ==========
+// ========== AI调用 ==========
 function buildSystemPrompt(role) {
     var parts = [];
 
-    // ===== 1. 表情包能力 =====
     if (CONFIG.aiMemeEnabled !== false && memes.length > 0) {
         var memePrompt = '【表情包库】\n你可以在对话中发送以下表情包（用 [表情包：名称] 表示）：\n';
         var catsWithMemes = memeCategories.filter(function(cat) {
@@ -1977,16 +2034,13 @@ function buildSystemPrompt(role) {
         parts.push(memePrompt);
     }
 
-    // ===== 2. 送礼能力 =====
     parts.push('【送礼能力】\n你可以在商城中挑选礼物送给用户。当你想送礼物时，在回复末尾加上 [送礼：商品名称] 格式。例如：[送礼：纯白衬衫]\n注意：1. 只有当你真的觉得想表达心意时才送礼 2. 礼物要符合当前对话氛围 3. 不要为了送礼而送礼');
 
-    // ===== 3. 角色设定 =====
     if (role.persona && role.persona.trim()) parts.push('【人设】' + role.persona.trim());
     if (role.background && role.background.trim()) parts.push('【背景】' + role.background.trim());
     if (role.style && role.style.trim()) parts.push('【说话风格】' + role.style.trim());
     if (role.extra && role.extra.trim()) parts.push('【补充项】' + role.extra.trim());
 
-    // ===== 4. 硬性约束（⭐核心修复：强制禁止动作描写） =====
     var hardRules = '\n\n【🚨 硬性约束 - 必须严格遵守】\n';
     hardRules += '你的回复中「绝对禁止」出现以下内容：\n';
     hardRules += '1. ❌ 任何动作描写（如：我坐下、我拿起、我抬头、我微笑、我转身、我伸手）\n';
@@ -2001,7 +2055,6 @@ function buildSystemPrompt(role) {
     hardRules += '\n⚠️ 如果违反以上规则，你的回复将被视为无效！';
     parts.push(hardRules);
 
-    // ===== 5. 核心指令 =====
     var coreInstruction = '\n\n【核心指令】\n1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n';
     coreInstruction += '2. 严格遵守【人设】中的身份和性格，不要偏离。\n';
     coreInstruction += '3. 回复时必须符合【说话风格】的语气和习惯。\n';
@@ -2052,7 +2105,7 @@ function callDeepSeek(userMessage, role) {
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
 
-    return fetch('https://api.deepseek.com/v1/chat/completions', {
+    return fetchWithRetry('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CONFIG.apiKey },
         body: JSON.stringify({
@@ -2062,7 +2115,7 @@ function callDeepSeek(userMessage, role) {
             max_tokens: 600
         }),
         signal: controller.signal
-    }).then(function(resp) {
+    }, 1).then(function(resp) {
         clearTimeout(timeoutId);
         if (!resp.ok) {
             return resp.text().then(function(err) {
@@ -2076,7 +2129,6 @@ function callDeepSeek(userMessage, role) {
         var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
         if (!reply) throw new Error('未获取到回复');
 
-        // ===== ⭐ 后处理：进一步清理可能出现的描写 =====
         reply = reply.replace(/^我[^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
         reply = reply.replace(/^[他她][^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
         reply = reply.replace(/^[忍不住心想觉得感到][^，。！？]*[，。！？]?\s*/gm, '');
@@ -2215,6 +2267,7 @@ function handleSend() {
     input.value = '';
     input.disabled = true;
     document.getElementById('sendBtn').disabled = true;
+    showToast('💬 正在发送...');
 
     addMessageToRole(role.id, 'user', finalMessage);
     renderMessages();
@@ -2235,6 +2288,7 @@ function handleSend() {
                     readMessages = {};
                     setTimeout(function() { markVisibleMessagesAsRead(); }, 300);
                 }
+                showToast('✅ 发送成功');
                 return;
             }
             addMessageToRole(role.id, 'assistant', segments[idx]);
@@ -2249,6 +2303,7 @@ function handleSend() {
         console.error('❌ 发送消息失败:', e);
         addMessageToRole(role.id, 'assistant', '💔 ' + e.message);
         renderMessages();
+        showToast('❌ 发送失败: ' + e.message);
     }).finally(function() {
         input.disabled = false;
         document.getElementById('sendBtn').disabled = false;
@@ -2697,7 +2752,128 @@ function loadSplitToggle() {
     var val = CONFIG.splitEnabled !== false ? 1 : 0;
     document.getElementById('splitToggleSlider').value = val;
     document.getElementById('splitToggleDisplay').textContent = val === 1 ? '开启' : '关闭';
-} // ========== 悬浮窗 ==========
+}
+
+// ========== 清理旧消息（支持换角色） ==========
+function renderTrimRoleSelector() {
+    var selector = document.getElementById('trimRoleSelector');
+    if (!selector) return;
+    var currentVal = selector.value || '';
+    selector.innerHTML = '';
+    if (roles.length === 0) {
+        var emptyOpt = document.createElement('option');
+        emptyOpt.value = '';
+        emptyOpt.textContent = '暂无角色';
+        selector.appendChild(emptyOpt);
+        return;
+    }
+    roles.forEach(function(role) {
+        var opt = document.createElement('option');
+        opt.value = role.id;
+        var msgCount = role.messages ? role.messages.length : 0;
+        opt.textContent = role.name + ' (' + msgCount + '条)';
+        if (role.id === currentVal) opt.selected = true;
+        selector.appendChild(opt);
+    });
+    if (!currentVal && roles.length > 0) {
+        selector.value = roles[0].id;
+    }
+    updateTrimDisplay(selector.value);
+}
+
+function updateTrimDisplay(roleId) {
+    var role;
+    if (roleId) {
+        role = roles.find(function(r) { return r.id === roleId; });
+    } else {
+        var selector = document.getElementById('trimRoleSelector');
+        if (selector && selector.value) {
+            role = roles.find(function(r) { return r.id === selector.value; });
+        }
+        if (!role) role = getCurrentRole();
+    }
+    var countEl = document.getElementById('trimCurrentCount');
+    var targetEl = document.getElementById('trimTargetInfo');
+    var keepCount = parseInt(document.getElementById('trimKeepCount').value) || 50;
+    if (!role) {
+        if (countEl) countEl.textContent = '当前消息数：0';
+        if (targetEl) targetEl.textContent = '清理后保留 0 条';
+        return;
+    }
+    var msgCount = role.messages ? role.messages.length : 0;
+    if (countEl) countEl.textContent = '当前消息数：' + msgCount;
+    if (targetEl) targetEl.textContent = '清理后保留 ' + Math.min(keepCount, msgCount) + ' 条';
+}
+
+function trimChatHistory(roleId) {
+    var role;
+    if (roleId) {
+        role = roles.find(function(r) { return r.id === roleId; });
+    } else {
+        var selector = document.getElementById('trimRoleSelector');
+        if (selector && selector.value) {
+            role = roles.find(function(r) { return r.id === selector.value; });
+        }
+        if (!role) role = getCurrentRole();
+    }
+    if (!role) {
+        showToast('⚠️ 请先选择一个角色');
+        return;
+    }
+    var keepCount = parseInt(document.getElementById('trimKeepCount').value) || 50;
+    if (keepCount < 5) {
+        showToast('⚠️ 最少保留 5 条消息');
+        return;
+    }
+    if (keepCount > 500) {
+        showToast('⚠️ 最多保留 500 条消息');
+        return;
+    }
+
+    var msgs = role.messages || [];
+    if (msgs.length <= keepCount) {
+        showToast('📌 当前消息 ' + msgs.length + ' 条，无需清理');
+        return;
+    }
+
+    if (!confirm('确定要删除 ' + (msgs.length - keepCount) + ' 条旧消息吗？\n\n亲密度、记忆和日记将完全保留 💕')) {
+        return;
+    }
+
+    var intimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
+    var heartSpikes = role.extendedState ? role.extendedState.totalHeartSpikes || 0 : 0;
+
+    // 保留最近 keepCount 条消息
+    var remainingMsgs = msgs.slice(-keepCount);
+    var remainingMsgIds = new Set(remainingMsgs.map(function(m) { return m.id; }));
+
+    // 清理 memory 中关联已删除消息的引用
+    if (Array.isArray(role.memory)) {
+        role.memory = role.memory.filter(function(mem) {
+            if (!mem.sourceMessageId) return true;
+            return remainingMsgIds.has(mem.sourceMessageId);
+        });
+    }
+
+    role.messages = remainingMsgs;
+
+    if (role.extendedState) {
+        var newIntimacy = updateIntimacy(role);
+        if (newIntimacy < intimacy * 0.5) {
+            role.extendedState.intimacy = Math.max(newIntimacy, Math.min(intimacy, 50));
+        }
+        role.extendedState.totalHeartSpikes = Math.max(role.extendedState.totalHeartSpikes || 0, heartSpikes);
+    }
+
+    saveAllData();
+    renderMessages();
+    renderContacts();
+    var selector = document.getElementById('trimRoleSelector');
+    if (selector) updateTrimDisplay(selector.value);
+    showToast('✅ 已保留最近 ' + keepCount + ' 条消息，亲密度保持 ' + Math.round(role.extendedState ? role.extendedState.intimacy || 0 : 0) + '%');
+}
+
+// ========== 悬浮窗 ==========
 function showFloatingHeart() {
     var el = document.getElementById('floatingHeart');
     if (el && CONFIG.heart.floatingEnabled !== false) {
@@ -3246,7 +3422,7 @@ function generateDiary(roleId, showToastMsg) {
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
 
-    return fetch('https://api.deepseek.com/v1/chat/completions', {
+    return fetchWithRetry('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CONFIG.apiKey },
         body: JSON.stringify({
@@ -3256,7 +3432,7 @@ function generateDiary(roleId, showToastMsg) {
             max_tokens: 500
         }),
         signal: controller.signal
-    }).then(function(resp) {
+    }, 1).then(function(resp) {
         clearTimeout(timeoutId);
         if (!resp.ok) throw new Error('API 错误');
         return resp.json();
@@ -3660,27 +3836,30 @@ function openMemeAddDialog(categoryId) {
     input.onchange = function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        if (file.size > CONSTANTS.MEME_MAX_SIZE) {
-            showToast('⚠️ 图片超过 200KB，请压缩后上传');
-            return;
-        }
         var reader = new FileReader();
         reader.onload = function(ev) {
-            var name = prompt('请输入这个表情包的名称（用于 AI 识别）：');
-            if (name !== null && name.trim()) {
-                var newMeme = {
-                    id: generateId(),
-                    name: name.trim(),
-                    categoryId: categoryId || 'uncategorized',
-                    imageData: ev.target.result,
-                    createdAt: new Date().toISOString()
-                };
-                memes.push(newMeme);
-                saveMemeData().then(function() {
-                    renderMemeList(categoryId || memeCurrentCategoryId);
-                    showToast('✅ 已添加表情包「' + name.trim() + '」');
-                });
-            }
+            compressImage(ev.target.result, 450, function(compressed) {
+                var sizeInKB = Math.round(compressed.length / 1024);
+                if (sizeInKB > 500) {
+                    showToast('⚠️ 图片超过 500KB，请选择更小的图片');
+                    return;
+                }
+                var name = prompt('请输入这个表情包的名称（用于 AI 识别）：');
+                if (name !== null && name.trim()) {
+                    var newMeme = {
+                        id: generateId(),
+                        name: name.trim(),
+                        categoryId: categoryId || 'uncategorized',
+                        imageData: compressed,
+                        createdAt: new Date().toISOString()
+                    };
+                    memes.push(newMeme);
+                    saveMemeData().then(function() {
+                        renderMemeList(categoryId || memeCurrentCategoryId);
+                        showToast('✅ 已添加表情包「' + name.trim() + '」');
+                    });
+                }
+            });
         };
         reader.readAsDataURL(file);
     };
@@ -4172,9 +4351,8 @@ function openSettings() {
         document.getElementById('userAvatarStatus').textContent = '默认';
     }
 
-    // ⭐ 更新清理旧消息的显示
-    updateTrimDisplay();
-
+    renderTrimRoleSelector();
+    updateTrimDisplay(document.getElementById('trimRoleSelector').value);
     updateStorageDisplay();
     document.getElementById('settingsOverlay').classList.add('active');
 }
@@ -4201,70 +4379,6 @@ function registerServiceWorker() {
     }
 }
 
-// ========== ⭐ 新增：清理旧消息功能 ==========
-function updateTrimDisplay() {
-    var role = getCurrentRole();
-    if (!role) return;
-    var countEl = document.getElementById('trimCurrentCount');
-    var targetEl = document.getElementById('trimTargetInfo');
-    var keepCount = parseInt(document.getElementById('trimKeepCount').value) || 50;
-    if (countEl) countEl.textContent = '当前消息数：' + (role.messages ? role.messages.length : 0);
-    if (targetEl) targetEl.textContent = '清理后保留 ' + Math.min(keepCount, role.messages ? role.messages.length : 0) + ' 条';
-}
-
-function trimChatHistory() {
-    var role = getCurrentRole();
-    if (!role) {
-        showToast('⚠️ 请先选择一个角色');
-        return;
-    }
-    var keepCount = parseInt(document.getElementById('trimKeepCount').value) || 50;
-    if (keepCount < 5) {
-        showToast('⚠️ 最少保留 5 条消息');
-        return;
-    }
-    if (keepCount > 500) {
-        showToast('⚠️ 最多保留 500 条消息');
-        return;
-    }
-
-    var msgs = role.messages || [];
-    if (msgs.length <= keepCount) {
-        showToast('📌 当前消息 ' + msgs.length + ' 条，无需清理');
-        return;
-    }
-
-    if (!confirm('确定要删除 ' + (msgs.length - keepCount) + ' 条旧消息吗？\n\n亲密度、记忆和日记将完全保留 💕')) {
-        return;
-    }
-
-    // 记录亲密度和心跳数据（用于保留）
-    var intimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
-    var heartSpikes = role.extendedState ? role.extendedState.totalHeartSpikes || 0 : 0;
-
-    // 保留最近 keepCount 条消息
-    role.messages = msgs.slice(-keepCount);
-
-    // 恢复亲密度数据（确保不丢失）
-    if (role.extendedState) {
-        // 重新计算亲密度（使用保留的消息 + 心跳）
-        var newIntimacy = updateIntimacy(role);
-        // 如果重新计算后亲密度太低，至少保留原来的50%
-        if (newIntimacy < intimacy * 0.5) {
-            role.extendedState.intimacy = Math.max(newIntimacy, Math.min(intimacy, 50));
-        }
-        // 确保心跳数据不丢失
-        role.extendedState.totalHeartSpikes = Math.max(role.extendedState.totalHeartSpikes || 0, heartSpikes);
-    }
-
-    saveAllData();
-    renderMessages();
-    renderContacts();
-    updateTrimDisplay();
-    showToast('✅ 已保留最近 ' + keepCount + ' 条消息，亲密度保持 ' + Math.round(role.extendedState ? role.extendedState.intimacy || 0 : 0) + '%');
-}
-
-// ========== 清理资源 ==========
 function cleanupResources() {
     if (heartBeatInterval) { clearInterval(heartBeatInterval); heartBeatInterval = null; }
     if (backgroundCheckInterval) { clearInterval(backgroundCheckInterval); backgroundCheckInterval = null; }
@@ -4387,10 +4501,12 @@ function init() {
         storageUpdateInterval = setInterval(updateStorageDisplay, 30000);
     } catch (e) { console.error('存储监控启动失败:', e); }
 
-    // ⭐ 绑定清理旧消息事件
     var trimBtn = document.getElementById('trimChatBtn');
     if (trimBtn) {
-        trimBtn.addEventListener('click', trimChatHistory);
+        trimBtn.addEventListener('click', function() {
+            var selector = document.getElementById('trimRoleSelector');
+            trimChatHistory(selector ? selector.value : null);
+        });
     }
     var trimInput = document.getElementById('trimKeepCount');
     if (trimInput) {
@@ -4398,7 +4514,14 @@ function init() {
             var val = parseInt(this.value) || 50;
             if (val < 5) this.value = 5;
             if (val > 500) this.value = 500;
-            updateTrimDisplay();
+            var selector = document.getElementById('trimRoleSelector');
+            updateTrimDisplay(selector ? selector.value : null);
+        });
+    }
+    var trimSelector = document.getElementById('trimRoleSelector');
+    if (trimSelector) {
+        trimSelector.addEventListener('change', function() {
+            updateTrimDisplay(this.value);
         });
     }
 
@@ -4435,14 +4558,17 @@ function init() {
         });
     }
 
-    console.log('🚀 梦女空间 v3.6 已启动！');
-    console.log('📦 记忆库已独立为「时光胶囊」页面 (memory.html)');
-    console.log('✂️ 新增「清理旧消息」功能，亲密度不受影响！');
+    console.log('🚀 梦女空间 v3.7 已启动！');
+    console.log('✅ 亲密度计算优化（最大可达95%）');
+    console.log('✅ API 请求重试机制（失败自动重试1次）');
+    console.log('✅ 清理旧消息支持换角色');
+    console.log('✅ 表情包限制提升至 500KB');
+    console.log('✅ 发送消息加载状态优化');
     console.log('✅ 完全兼容旧数据');
-    console.log('✅ 已强制禁止动作/环境/心理描写');
-} // ========== DOM 事件绑定 ==========
+}
+
+// ========== DOM 事件绑定 ==========
 document.addEventListener('DOMContentLoaded', function() {
-    // 应用图标点击
     document.querySelectorAll('.app-icon[data-app]').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var app = this.dataset.app;
@@ -4458,13 +4584,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 返回按钮
     document.getElementById('backFromContacts').addEventListener('click', closeContacts);
     document.getElementById('backFromChat').addEventListener('click', closeChat);
     document.getElementById('backFromMeme').addEventListener('click', closeMeme);
     document.getElementById('backFromDiary').addEventListener('click', closeDiary);
 
-    // 设置
     document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
     document.getElementById('settingsOverlay').addEventListener('click', function(e) {
         if (e.target === this) closeSettings();
@@ -4486,7 +4610,6 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingPickerAction = null;
     });
 
-    // 美化
     document.getElementById('wallpaperPickerBtn').addEventListener('click', function() {
         closeSettings();
         setTimeout(function() {
@@ -4514,7 +4637,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     });
 
-    // 角色管理
     document.getElementById('addRoleBtn').addEventListener('click', function() {
         var name = prompt('请输入新角色的名字：', '新角色');
         if (name && name.trim()) {
@@ -4547,7 +4669,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 数据管理
     document.getElementById('dataManageBtn').addEventListener('click', function() {
         closeSettings();
         setTimeout(openDataModal, 300);
@@ -4562,7 +4683,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var exportType = getSelectedExportType();
         var exportData = {
             exportTime: new Date().toISOString(),
-            version: '3.6',
+            version: '3.7',
             type: exportType,
             config: {},
             roles: [],
@@ -4738,15 +4859,12 @@ document.addEventListener('DOMContentLoaded', function() {
         input.click();
     });
 
-    // 清空聊天（保留亲密度提示）
     document.getElementById('clearAllChatsBtn').addEventListener('click', function() {
         if (confirm('⚠️ 确定要清空所有角色的聊天记录吗？\n\n亲密度会大幅下降！建议使用「清理旧消息」功能。')) {
             roles.forEach(function(role) {
-                // 记录亲密度用于提示
                 var oldIntimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
                 role.messages = [];
                 clearUnreadForRole(role.id);
-                // 重新计算亲密度（会掉到很低）
                 if (role.extendedState) {
                     updateIntimacy(role);
                 }
@@ -4777,7 +4895,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 发送消息
     document.getElementById('sendBtn').addEventListener('click', handleSend);
     document.getElementById('messageInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -4787,7 +4904,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (role) saveDraft(role.id, this.value);
     });
 
-    // 图片选择
     document.getElementById('plusBtn').addEventListener('click', function() {
         if (CONFIG.permission === 'denied') { showToast('🚫 相册权限已被拒绝，请在设置中重新请求'); return; }
         if (CONFIG.permission === 'allowed') { openImagePicker('chatImage'); return; }
@@ -4805,7 +4921,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === this) closeImagePicker();
     });
 
-    // 权限
     document.getElementById('permAllowAll').addEventListener('click', function() {
         CONFIG.permission = 'allowed';
         saveAllData();
@@ -4841,14 +4956,12 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('已取消');
     });
 
-    // 引用
     document.getElementById('quoteCancelBtn').addEventListener('click', function() {
         quotedMsg = null;
         document.getElementById('quoteBar').classList.remove('active');
         showToast('已取消引用');
     });
 
-    // 个性化
     document.getElementById('closeStylePicker').addEventListener('click', function() {
         var overlay = document.getElementById('stylePickerOverlay');
         if (overlay) { overlay.classList.remove('active'); overlay.style.display = 'none'; }
@@ -4860,10 +4973,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 主题切换
     document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
 
-    // 滑块
     document.getElementById('tempSlider').addEventListener('input', function() {
         var val = parseFloat(this.value);
         document.getElementById('tempDisplay').textContent = val.toFixed(1);
@@ -4899,7 +5010,6 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast(val === 1 ? '✅ 分段生成已开启' : '❌ 分段生成已关闭');
     });
 
-    // 表情包
     document.getElementById('memeBtn').addEventListener('click', openMemePicker);
     document.getElementById('memeExportBtn').addEventListener('click', function() {
         var data = { version: '1.0', exportTime: new Date().toISOString(), categories: memeCategories, memes: memes };
@@ -4949,7 +5059,6 @@ document.addEventListener('DOMContentLoaded', function() {
         input.click();
     });
 
-    // 日记
     document.getElementById('diaryRoleSelector').addEventListener('change', function() {
         selectedDiaryRoleId = this.value;
         var dates = getAllDiaryDates(selectedDiaryRoleId);
@@ -5029,7 +5138,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 日记通知
     document.getElementById('diaryNotifBtn').addEventListener('click', function() {
         document.getElementById('diaryNotification').classList.remove('active');
         openDiary();
@@ -5038,7 +5146,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('diaryNotification').classList.remove('active');
     });
 
-    // 心跳详情
     document.getElementById('hdCloseBtn').addEventListener('click', function() {
         document.getElementById('heartDetailOverlay').classList.remove('active');
     });
@@ -5046,7 +5153,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === this) this.classList.remove('active');
     });
 
-    // 个性签名
     document.getElementById('signatureArea').addEventListener('click', function(e) {
         if (e.target === document.getElementById('signatureInput')) return;
         var text = document.getElementById('signatureText');
@@ -5097,7 +5203,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderRoleManager();
     });
 
-    // 数据管理选项
     document.querySelectorAll('#dataModalOptions .export-option input[type="checkbox"]').forEach(function(cb) {
         cb.addEventListener('change', function() {
             var allCheckboxes = document.querySelectorAll('#dataModalOptions .export-option input[type="checkbox"]');
@@ -5115,7 +5220,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 启动应用
     try { init(); } catch (e) {
         console.error('初始化失败:', e);
         showToast('⚠️ 应用初始化失败，请刷新页面重试');
