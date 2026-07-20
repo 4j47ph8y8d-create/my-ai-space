@@ -475,7 +475,44 @@
     <div class="screen-diary" id="diaryScreen"><div class="diary-header"><button class="back-btn" id="backFromDiary"><i class="fas fa-chevron-left"></i></button><div class="title"><i class="fas fa-book-open"></i> 他的日记</div><div class="diary-actions"><select class="role-selector" id="diaryRoleSelector"></select><button class="write-btn" id="writeDiaryBtn"><i class="fas fa-feather-alt"></i> 写今日</button></div></div><div class="calendar-toggle-outside" id="calendarToggle"><span class="toggle-label"><i class="fas fa-calendar-alt"></i> 日历</span><span class="toggle-icon" id="toggleIcon"><i class="fas fa-chevron-up"></i></span></div><div class="diary-calendar-nav" id="diaryCalendarNav"><div class="month-nav"><button class="month-btn" id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button><span class="month-label" id="monthLabel">2026年6月</span><button class="month-btn" id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button></div><div class="weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="days-grid" id="daysGrid"></div></div><div class="diary-body" id="diaryBody"></div><div class="diary-page-nav" id="diaryPageNav"><button class="page-btn" id="prevDayBtn"><i class="fas fa-chevron-left"></i> 上一篇</button><span class="page-indicator" id="pageIndicator">今天</span><button class="page-btn" id="nextDayBtn">下一篇 <i class="fas fa-chevron-right"></i></button></div></div>
     <div class="meme-picker-overlay" id="memePickerOverlay"><div class="meme-picker-panel" id="memePickerPanel"><div class="meme-picker-header"><span class="meme-picker-title" id="memePickerTitle">选择表情包</span><button class="meme-picker-close" id="memePickerClose">&times;</button></div><div class="meme-picker-body" id="memePickerBody"></div></div></div>
     <div class="image-picker-overlay" id="imagePickerOverlay"><div class="image-picker-menu"><div class="menu-title" id="pickerTitle">选择图片来源</div><div class="picker-options"><button id="pickerCamera"><span class="icon-bg"><i class="fas fa-camera"></i></span><span>拍照</span></button><button id="pickerGallery"><span class="icon-bg"><i class="fas fa-images"></i></span><span>相册</span></button></div><button class="cancel-btn" id="pickerCancel">取消</button></div></div>
-    <div class="settings-overlay" id="settingsOverlay"><div class="settings-drawer"><button class="close-drawer" id="closeSettingsBtn">×</button><h2><i class="fas fa-sliders-h"></i> 设置</h2><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-thermometer-half" style="color:#07c160;"></i> 温度调节</span><span class="temp-value" id="tempDisplay">0.9</span></div><input type="range" id="tempSlider" min="0.0" max="1.5" step="0.1" value="0.9" /><div class="temp-hints"><span>稳定</span><span>平衡</span><span>创意</span></div></div><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-font" style="color:#07c160;"></i> 字号大小</span><span class="temp-value" id="fontSizeDisplay">中</span></div><input type="range" id="fontSizeSlider" min="0" max="3" step="1" value="1" /><div class="temp-hints"><span>小</span><span>中</span><span>大</span><span>特大</span></div></div><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-bold" style="color:#07c160;"></i> 字体粗细</span><span class="temp-value" id="fontWeightDisplay">常规</span></div><input type="range" id="fontWeightSlider" min="0" max="3" step="1" value="1" /><div class="temp-hints"><span>细</span><span>常规</span><span>中</span><span>粗</span></div></div><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-cut" style="color:#07c160;"></i> 分段生成</span><span class="temp-value" id="splitToggleDisplay">开启</span></div><input type="range" id="splitToggleSlider" min="0" max="1" step="1" value="1" /><div class="temp-hints"><span>关闭</span><span>开启</span></div></div><div style="margin-bottom:12px;"><div class="role-manager-header"><h3><i class="fas fa-users" style="color:#07c160;"></i> 角色管理</h3><button class="add-role-btn" id="addRoleBtn"><i class="fas fa-plus"></i> 新建</button></div><div id="roleManagerContainer"></div></div><hr class="module-divider" /><div class="beauty-section"><div class="beauty-title"><i class="fas fa-paint-brush"></i> 美化</div><div class="beauty-item" id="wallpaperPickerBtn"><div class="left"><i class="fas fa-desktop"></i><span>桌面壁纸</span></div><div class="right"><span id="wallpaperStatus">默认</span><div class="preview-box" id="wallpaperPreview"><img id="wallpaperPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div><div class="beauty-item" id="chatBgPickerBtn"><div class="left"><i class="fas fa-comment-alt"></i><span>聊天背景（全局默认）</span></div><div class="right"><span id="chatBgStatus">默认</span><div class="preview-box" id="chatBgPreview"><img id="chatBgPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div><div class="beauty-item" id="userAvatarPickerBtn"><div class="left"><i class="fas fa-user"></i><span>我的头像</span></div><div class="right"><span id="userAvatarStatus">默认</span><div class="preview-box" id="userAvatarPreview"><img id="userAvatarPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div></div><hr class="module-divider" /><div class="setting-group"><label>🔑 API Key <small style="font-weight:400;color:var(--text-secondary);">(platform.deepseek.com)</small></label><input type="text" id="apiKeyInput" placeholder="sk-..." /></div><div class="setting-group"><label>🧠 模型</label><select id="modelSelect"><option value="deepseek-chat">DeepSeek Chat</option><option value="deepseek-coder">DeepSeek Coder</option></select></div><div class="temp-slider-container" style="border-left:3px solid #a29bfe;"><div class="temp-header"><span class="temp-label" style="font-size:13px;"><i class="fas fa-database" style="color:#6c5ce7;"></i> 存储用量</span><span class="temp-value" id="storageStatus" style="font-size:13px;">计算中...</span></div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin:3px 0 2px;"><span id="storageMemeCount">表情包：0 张</span><span id="storageSize">已用：0 KB</span><span id="storageRemain">剩余：0 KB</span></div><div style="width:100%;height:5px;background:var(--border-color);border-radius:4px;overflow:hidden;margin-top:3px;"><div id="storageProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#a29bfe,#6c5ce7);border-radius:4px;transition:width 0.5s ease;"></div></div><div style="font-size:9px;color:var(--text-secondary);margin-top:2px;opacity:0.6;">📦 IndexedDB 存储上限约 50MB</div></div><div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:13px;color:var(--text-primary);"><i class="fas fa-image" style="color:#07c160;"></i> 相册权限</span><span id="permissionStatus" style="font-size:11px;color:var(--text-secondary);">已允许</span></div><button id="resetPermissionBtn" style="width:100%;margin-top:6px;padding:6px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:#e74c3c;font-size:12px;cursor:pointer;transition:0.15s;"><i class="fas fa-undo-alt"></i> 重新请求相册权限</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">点击后重新弹出权限申请，不会影响聊天记录和角色数据</div></div><div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><span style="font-size:13px;color:var(--text-primary);"><i class="fas fa-database" style="color:#6c5ce7;"></i> 数据管理</span><span style="font-size:10px;color:var(--text-secondary);">导入/导出</span></div><button id="dataManageBtn" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:12px;cursor:pointer;transition:0.15s;display:flex;align-items:center;justify-content:center;gap:6px;"><i class="fas fa-arrow-right"></i> 打开数据管理</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">备份或恢复所有数据，支持分类导出</div></div><div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><button id="clearAllChatsBtn" style="width:100%;padding:8px;border:1px solid #e74c3c;border-radius:8px;background:var(--bg-card);color:#e74c3c;font-size:12px;cursor:pointer;transition:0.15s;display:flex;align-items:center;justify-content:center;gap:6px;"><i class="fas fa-trash-alt"></i> 清空所有角色的聊天记录</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">此操作将删除所有角色的聊天记录，不可恢复</div></div><button class="save-btn" id="saveSettingsBtn"><i class="fas fa-save"></i> 保存设置</button><div style="margin-top:8px;font-size:10px;color:var(--text-secondary);text-align:center;line-height:1.5;"><i class="fas fa-database"></i> 所有数据仅保存在本地浏览器</div></div></div>
+    <div class="settings-overlay" id="settingsOverlay"><div class="settings-drawer"><button class="close-drawer" id="closeSettingsBtn">×</button><h2><i class="fas fa-sliders-h"></i> 设置</h2><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-thermometer-half" style="color:#07c160;"></i> 温度调节</span><span class="temp-value" id="tempDisplay">0.9</span></div><input type="range" id="tempSlider" min="0.0" max="1.5" step="0.1" value="0.9" /><div class="temp-hints"><span>稳定</span><span>平衡</span><span>创意</span></div></div><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-font" style="color:#07c160;"></i> 字号大小</span><span class="temp-value" id="fontSizeDisplay">中</span></div><input type="range" id="fontSizeSlider" min="0" max="3" step="1" value="1" /><div class="temp-hints"><span>小</span><span>中</span><span>大</span><span>特大</span></div></div><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-bold" style="color:#07c160;"></i> 字体粗细</span><span class="temp-value" id="fontWeightDisplay">常规</span></div><input type="range" id="fontWeightSlider" min="0" max="3" step="1" value="1" /><div class="temp-hints"><span>细</span><span>常规</span><span>中</span><span>粗</span></div></div><div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-cut" style="color:#07c160;"></i> 分段生成</span><span class="temp-value" id="splitToggleDisplay">开启</span></div><input type="range" id="splitToggleSlider" min="0" max="1" step="1" value="1" /><div class="temp-hints"><span>关闭</span><span>开启</span></div></div><div style="margin-bottom:12px;"><div class="role-manager-header"><h3><i class="fas fa-users" style="color:#07c160;"></i> 角色管理</h3><button class="add-role-btn" id="addRoleBtn"><i class="fas fa-plus"></i> 新建</button></div><div id="roleManagerContainer"></div></div><hr class="module-divider" /><div class="beauty-section"><div class="beauty-title"><i class="fas fa-paint-brush"></i> 美化</div><div class="beauty-item" id="wallpaperPickerBtn"><div class="left"><i class="fas fa-desktop"></i><span>桌面壁纸</span></div><div class="right"><span id="wallpaperStatus">默认</span><div class="preview-box" id="wallpaperPreview"><img id="wallpaperPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div><div class="beauty-item" id="chatBgPickerBtn"><div class="left"><i class="fas fa-comment-alt"></i><span>聊天背景（全局默认）</span></div><div class="right"><span id="chatBgStatus">默认</span><div class="preview-box" id="chatBgPreview"><img id="chatBgPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div><div class="beauty-item" id="userAvatarPickerBtn"><div class="left"><i class="fas fa-user"></i><span>我的头像</span></div><div class="right"><span id="userAvatarStatus">默认</span><div class="preview-box" id="userAvatarPreview"><img id="userAvatarPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div></div><hr class="module-divider" /><div class="setting-group"><label>🔑 API Key <small style="font-weight:400;color:var(--text-secondary);">(platform.deepseek.com)</small></label><input type="text" id="apiKeyInput" placeholder="sk-..." /></div><div class="setting-group"><label>🧠 模型</label><select id="modelSelect"><option value="deepseek-chat">DeepSeek Chat</option><option value="deepseek-coder">DeepSeek Coder</option></select></div>
+        <!-- ===== ⭐ 新增：清理旧消息功能 ===== -->
+        <hr class="module-divider" />
+        <div class="temp-slider-container" style="border-left:3px solid #34d399;">
+            <div class="temp-header">
+                <span class="temp-label" style="font-size:13px;">
+                    <i class="fas fa-cut" style="color:#34d399;"></i> 清理旧消息
+                </span>
+                <span class="temp-value" id="trimStatus" style="font-size:12px;color:#34d399;">保留最新</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin:4px 0 2px;">
+                <span style="font-size:11px;color:var(--text-secondary);">保留条数</span>
+                <input type="number" id="trimKeepCount" value="50" min="10" max="200" style="width:70px;padding:4px 8px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:13px;outline:none;text-align:center;" />
+                <span style="font-size:11px;color:var(--text-secondary);">条</span>
+                <button id="trimChatBtn" style="padding:4px 16px;border:none;border-radius:8px;background:linear-gradient(135deg,#34d399,#059669);color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:0.15s;font-family:inherit;white-space:nowrap;margin-left:auto;">
+                    <i class="fas fa-scissors"></i> 清理
+                </button>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:2px;opacity:0.6;">
+                <span>📌 亲密度和记忆不受影响</span>
+                <span>只删除旧对话</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:1px;opacity:0.4;">
+                <span id="trimCurrentCount">当前消息数：0</span>
+                <span id="trimTargetInfo">清理后保留 50 条</span>
+            </div>
+        </div>
+        <hr class="module-divider" />
+        <div class="temp-slider-container" style="border-left:3px solid #a29bfe;">
+            <div class="temp-header"><span class="temp-label" style="font-size:13px;"><i class="fas fa-database" style="color:#6c5ce7;"></i> 存储用量</span><span class="temp-value" id="storageStatus" style="font-size:13px;">计算中...</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin:3px 0 2px;"><span id="storageMemeCount">表情包：0 张</span><span id="storageSize">已用：0 KB</span><span id="storageRemain">剩余：0 KB</span></div>
+            <div style="width:100%;height:5px;background:var(--border-color);border-radius:4px;overflow:hidden;margin-top:3px;"><div id="storageProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#a29bfe,#6c5ce7);border-radius:4px;transition:width 0.5s ease;"></div></div>
+            <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;opacity:0.6;">📦 IndexedDB 存储上限约 50MB</div>
+        </div>
+        <div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:13px;color:var(--text-primary);"><i class="fas fa-image" style="color:#07c160;"></i> 相册权限</span><span id="permissionStatus" style="font-size:11px;color:var(--text-secondary);">已允许</span></div><button id="resetPermissionBtn" style="width:100%;margin-top:6px;padding:6px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:#e74c3c;font-size:12px;cursor:pointer;transition:0.15s;"><i class="fas fa-undo-alt"></i> 重新请求相册权限</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">点击后重新弹出权限申请，不会影响聊天记录和角色数据</div></div>
+        <div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><span style="font-size:13px;color:var(--text-primary);"><i class="fas fa-database" style="color:#6c5ce7;"></i> 数据管理</span><span style="font-size:10px;color:var(--text-secondary);">导入/导出</span></div><button id="dataManageBtn" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:12px;cursor:pointer;transition:0.15s;display:flex;align-items:center;justify-content:center;gap:6px;"><i class="fas fa-arrow-right"></i> 打开数据管理</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">备份或恢复所有数据，支持分类导出</div></div>
+        <div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><button id="clearAllChatsBtn" style="width:100%;padding:8px;border:1px solid #e74c3c;border-radius:8px;background:var(--bg-card);color:#e74c3c;font-size:12px;cursor:pointer;transition:0.15s;display:flex;align-items:center;justify-content:center;gap:6px;"><i class="fas fa-trash-alt"></i> 清空所有角色的聊天记录</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">此操作将删除所有角色的聊天记录，不可恢复</div></div>
+        <button class="save-btn" id="saveSettingsBtn"><i class="fas fa-save"></i> 保存设置</button><div style="margin-top:8px;font-size:10px;color:var(--text-secondary);text-align:center;line-height:1.5;"><i class="fas fa-database"></i> 所有数据仅保存在本地浏览器</div></div></div>
     <div class="permission-overlay" id="permissionOverlay"><div class="permission-dialog"><div class="icon">📸</div><h3>访问相册</h3><p>为了更换头像、壁纸和发送图片，需要访问你的相册。<br />拒绝后仍可正常聊天，仅无法使用图片相关功能。</p><div class="btn-group"><button class="btn-allow-all" id="permAllowAll">✅ 允许访问</button><button class="btn-deny" id="permDeny">🚫 不允许</button><button class="btn-cancel-perm" id="permCancel">取消</button></div></div></div>
     <div class="style-picker-overlay" id="stylePickerOverlay"><div class="style-picker-panel"><div class="panel-header"><h3>✨ 个性化</h3><button class="close-btn" id="closeStylePicker">&times;</button></div><div class="style-category-title">📱 桌面图标</div><div class="style-option-grid" id="styleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🫧 对话框气泡</div><div class="style-option-grid" id="bubbleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🕒 时间显示</div><div class="style-option-grid" id="timeModeGrid"></div><div class="style-category-title" style="margin-top:14px;">💕 心跳悬浮窗</div><div class="style-option-grid" id="floatingSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🎨 心跳颜色</div><div class="style-option-grid" id="heartColorGrid"></div><div class="style-category-title" style="margin-top:14px;">🤖 AI 表情包</div><div class="style-option-grid" id="aiMemeSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🌓 深色/浅色模式</div><div class="style-option-grid" id="themeModeGrid"></div></div></div>
     <div class="data-modal-overlay" id="dataModalOverlay"><div class="data-modal"><button class="modal-close" id="dataModalClose">&times;</button><div class="modal-title">💾 数据管理</div><div class="modal-subtitle">选择要导出或导入的数据类型</div><div id="dataModalOptions"><div class="export-option" data-value="all"><input type="checkbox" checked /><span class="opt-label">全部数据 <span class="opt-badge">推荐</span></span><span class="opt-desc">角色 + 聊天 + 记忆 + 日记 + 设置</span></div><div class="export-option" data-value="settings"><input type="checkbox" /><span class="opt-label">仅美化设置</span><span class="opt-desc">壁纸、头像、风格</span></div><div class="export-option" data-value="roles"><input type="checkbox" /><span class="opt-label">仅角色设定</span><span class="opt-desc">不含聊天记录、记忆和日记</span></div><div class="export-option" data-value="chats"><input type="checkbox" /><span class="opt-label">仅聊天记录 + 记忆</span><span class="opt-desc">不含角色设定和日记</span></div><div class="export-option" data-value="diaries"><input type="checkbox" /><span class="opt-label">仅日记数据</span><span class="opt-desc">所有角色的日记</span></div><div class="export-option" data-value="selected"><input type="checkbox" /><span class="opt-label">按角色选择导出</span><span class="opt-desc">选中的角色完整数据（含日记）</span></div><div class="role-select-list" id="roleSelectList" style="display:none;"></div></div><div class="modal-actions"><button class="btn-import" id="dataImportBtn"><i class="fas fa-upload"></i> 导入</button><button class="btn-export" id="dataExportBtn"><i class="fas fa-download"></i> 导出</button><button class="btn-cancel" id="dataModalCancel">取消</button></div><div style="font-size:10px;color:var(--text-secondary);text-align:center;margin-top:8px;"><i class="fas fa-shield-alt"></i> 数据仅保存在本地，不上传任何服务器</div></div></div>
@@ -485,8 +522,8 @@
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div> <script>
 // ============================================================
-//  🚀 梦女空间 v3.5 - 精简版（记忆库已独立为时光胶囊）
-//  修复：强制禁止动作/环境/心理描写 ✅
+//  🚀 梦女空间 v3.6 - 新增「清理旧消息」功能
+//  修复：亲密度在清理消息后不受影响 ✅
 //  完全兼容旧数据，所有功能不变 ✅
 // ============================================================
 
@@ -2040,13 +2077,9 @@ function callDeepSeek(userMessage, role) {
         if (!reply) throw new Error('未获取到回复');
 
         // ===== ⭐ 后处理：进一步清理可能出现的描写 =====
-        // 去掉以"我"开头的叙述句（如"我坐在..."，"我拿起..."）
         reply = reply.replace(/^我[^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
-        // 去掉以"他/她"开头的叙述句
         reply = reply.replace(/^[他她][^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
-        // 去掉可能残留的"忍不住"、"心想"等词开头的句子
         reply = reply.replace(/^[忍不住心想觉得感到][^，。！？]*[，。！？]?\s*/gm, '');
-        // 清理多余的空行
         reply = reply.replace(/\n{3,}/g, '\n\n').trim();
 
         return reply;
@@ -4138,6 +4171,10 @@ function openSettings() {
         document.getElementById('userAvatarPreviewImg').style.display = 'none';
         document.getElementById('userAvatarStatus').textContent = '默认';
     }
+
+    // ⭐ 更新清理旧消息的显示
+    updateTrimDisplay();
+
     updateStorageDisplay();
     document.getElementById('settingsOverlay').classList.add('active');
 }
@@ -4162,6 +4199,69 @@ function registerServiceWorker() {
             console.log('📱 Service Worker 注册失败:', err);
         });
     }
+}
+
+// ========== ⭐ 新增：清理旧消息功能 ==========
+function updateTrimDisplay() {
+    var role = getCurrentRole();
+    if (!role) return;
+    var countEl = document.getElementById('trimCurrentCount');
+    var targetEl = document.getElementById('trimTargetInfo');
+    var keepCount = parseInt(document.getElementById('trimKeepCount').value) || 50;
+    if (countEl) countEl.textContent = '当前消息数：' + (role.messages ? role.messages.length : 0);
+    if (targetEl) targetEl.textContent = '清理后保留 ' + Math.min(keepCount, role.messages ? role.messages.length : 0) + ' 条';
+}
+
+function trimChatHistory() {
+    var role = getCurrentRole();
+    if (!role) {
+        showToast('⚠️ 请先选择一个角色');
+        return;
+    }
+    var keepCount = parseInt(document.getElementById('trimKeepCount').value) || 50;
+    if (keepCount < 5) {
+        showToast('⚠️ 最少保留 5 条消息');
+        return;
+    }
+    if (keepCount > 500) {
+        showToast('⚠️ 最多保留 500 条消息');
+        return;
+    }
+
+    var msgs = role.messages || [];
+    if (msgs.length <= keepCount) {
+        showToast('📌 当前消息 ' + msgs.length + ' 条，无需清理');
+        return;
+    }
+
+    if (!confirm('确定要删除 ' + (msgs.length - keepCount) + ' 条旧消息吗？\n\n亲密度、记忆和日记将完全保留 💕')) {
+        return;
+    }
+
+    // 记录亲密度和心跳数据（用于保留）
+    var intimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
+    var heartSpikes = role.extendedState ? role.extendedState.totalHeartSpikes || 0 : 0;
+
+    // 保留最近 keepCount 条消息
+    role.messages = msgs.slice(-keepCount);
+
+    // 恢复亲密度数据（确保不丢失）
+    if (role.extendedState) {
+        // 重新计算亲密度（使用保留的消息 + 心跳）
+        var newIntimacy = updateIntimacy(role);
+        // 如果重新计算后亲密度太低，至少保留原来的50%
+        if (newIntimacy < intimacy * 0.5) {
+            role.extendedState.intimacy = Math.max(newIntimacy, Math.min(intimacy, 50));
+        }
+        // 确保心跳数据不丢失
+        role.extendedState.totalHeartSpikes = Math.max(role.extendedState.totalHeartSpikes || 0, heartSpikes);
+    }
+
+    saveAllData();
+    renderMessages();
+    renderContacts();
+    updateTrimDisplay();
+    showToast('✅ 已保留最近 ' + keepCount + ' 条消息，亲密度保持 ' + Math.round(role.extendedState ? role.extendedState.intimacy || 0 : 0) + '%');
 }
 
 // ========== 清理资源 ==========
@@ -4287,6 +4387,21 @@ function init() {
         storageUpdateInterval = setInterval(updateStorageDisplay, 30000);
     } catch (e) { console.error('存储监控启动失败:', e); }
 
+    // ⭐ 绑定清理旧消息事件
+    var trimBtn = document.getElementById('trimChatBtn');
+    if (trimBtn) {
+        trimBtn.addEventListener('click', trimChatHistory);
+    }
+    var trimInput = document.getElementById('trimKeepCount');
+    if (trimInput) {
+        trimInput.addEventListener('change', function() {
+            var val = parseInt(this.value) || 50;
+            if (val < 5) this.value = 5;
+            if (val > 500) this.value = 500;
+            updateTrimDisplay();
+        });
+    }
+
     try { registerServiceWorker(); } catch (e) { console.log('PWA 注册跳过'); }
     try { startBackgroundCheck(); } catch (e) { console.error('后台检测启动失败:', e); }
     try { startDiaryAutoCheck(); } catch (e) { console.error('日记自动检测启动失败:', e); }
@@ -4320,8 +4435,9 @@ function init() {
         });
     }
 
-    console.log('🚀 梦女空间 v3.5 精简版已启动！');
+    console.log('🚀 梦女空间 v3.6 已启动！');
     console.log('📦 记忆库已独立为「时光胶囊」页面 (memory.html)');
+    console.log('✂️ 新增「清理旧消息」功能，亲密度不受影响！');
     console.log('✅ 完全兼容旧数据');
     console.log('✅ 已强制禁止动作/环境/心理描写');
 } // ========== DOM 事件绑定 ==========
@@ -4446,7 +4562,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var exportType = getSelectedExportType();
         var exportData = {
             exportTime: new Date().toISOString(),
-            version: '3.5',
+            version: '3.6',
             type: exportType,
             config: {},
             roles: [],
@@ -4622,27 +4738,38 @@ document.addEventListener('DOMContentLoaded', function() {
         input.click();
     });
 
-    // 清空聊天
+    // 清空聊天（保留亲密度提示）
     document.getElementById('clearAllChatsBtn').addEventListener('click', function() {
-        if (confirm('⚠️ 确定要清空所有角色的聊天记录吗？此操作不可恢复！')) {
+        if (confirm('⚠️ 确定要清空所有角色的聊天记录吗？\n\n亲密度会大幅下降！建议使用「清理旧消息」功能。')) {
             roles.forEach(function(role) {
+                // 记录亲密度用于提示
+                var oldIntimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
                 role.messages = [];
                 clearUnreadForRole(role.id);
+                // 重新计算亲密度（会掉到很低）
+                if (role.extendedState) {
+                    updateIntimacy(role);
+                }
+                console.log('🗑️ 清空 ' + role.name + ' 的聊天记录，亲密度从 ' + oldIntimacy + '% 下降');
             });
             saveAllData();
             renderMessages();
             renderContacts();
             renderRoleManager();
-            showToast('🗑️ 已清空所有角色的聊天记录');
+            showToast('🗑️ 已清空所有聊天记录，亲密度已重置');
         }
     });
 
     document.getElementById('clearChatBtn').addEventListener('click', function() {
         var role = getCurrentRole();
         if (!role) return;
-        if (confirm('确定要清空「' + role.name + '」的所有聊天记录吗？')) {
+        var oldIntimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
+        if (confirm('确定要清空「' + role.name + '」的所有聊天记录吗？\n\n亲密度将从 ' + oldIntimacy + '% 大幅下降！')) {
             role.messages = [];
             clearUnreadForRole(role.id);
+            if (role.extendedState) {
+                updateIntimacy(role);
+            }
             saveAllData();
             renderMessages();
             renderContacts();
