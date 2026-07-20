@@ -501,20 +501,19 @@
 
     <div class="custom-toast" id="toast" style="display:none;"></div>
 
-</div>
-
-<script>
+</div> <script>
 // ============================================================
-//  📦 时光胶囊 v1.3 - 自动清理版
-//  记忆自动管理：近期(30天)→归档(90天)→删除
-//  完全兼容主应用数据 ✅
+//  📦 时光胶囊 v1.4 - 修复版
+//  修复：相识天数不增加 / 清理逻辑漏洞 / Toast重叠
+//  新增：生活日志自动清理 / 记忆去重提醒
 // ============================================================
 
 // ========== 清理规则 ==========
 var CLEANUP_RULES = {
-    RECENT_TO_ARCHIVE_DAYS: 30,   // 近期记忆 → 归档记忆（30天）
-    ARCHIVE_TO_DELETE_DAYS: 90,   // 归档记忆 → 删除（90天）
-    CHECK_INTERVAL: 24 * 60 * 60 * 1000  // 每天检查一次
+    RECENT_TO_ARCHIVE_DAYS: 30,
+    ARCHIVE_TO_DELETE_DAYS: 90,
+    CHECK_INTERVAL: 24 * 60 * 60 * 1000,
+    LOG_RETENTION_DAYS: 60  // 生活日志保留60天
 };
 
 // ========== 全局状态 ==========
@@ -579,6 +578,8 @@ function getStageIndex(intimacy) {
 function showToast(msg) {
     var el = document.getElementById('toast');
     if (!el) return;
+    // 清除之前的定时器
+    clearTimeout(toastTimer);
     el.textContent = msg;
     el.style.display = 'block';
     el.style.opacity = '0';
@@ -588,7 +589,6 @@ function showToast(msg) {
         el.style.opacity = '1';
         el.style.transform = 'translateX(-50%) translateY(0)';
     });
-    clearTimeout(toastTimer);
     toastTimer = setTimeout(function() {
         el.style.opacity = '0';
         el.style.transform = 'translateX(-50%) translateY(10px)';
@@ -630,7 +630,7 @@ function getMemoryText(mem) {
     return text;
 }
 
-// ========== 自动清理记忆 ==========
+// ========== 自动清理记忆（修复版） ==========
 function cleanupMemories() {
     var now = Date.now();
     var recentToArchiveDays = CLEANUP_RULES.RECENT_TO_ARCHIVE_DAYS || 30;
@@ -641,26 +641,28 @@ function cleanupMemories() {
     roles.forEach(function(role) {
         if (!Array.isArray(role.memory)) return;
         var newMemory = [];
-        var archivedCount = 0;
-        var deletedCount = 0;
 
         role.memory.forEach(function(mem) {
-            var timestamp = mem.timestamp || Date.now();
-            var age = (now - timestamp) / (24 * 60 * 60 * 1000);
             var level = mem.level || 'core';
 
+            // ⭐ 核心记忆永不删除
             if (level === 'core') {
-                // 核心记忆永不删除
                 newMemory.push(mem);
                 return;
             }
 
+            // ⭐ 没有 timestamp 的记忆，保留不动（兼容旧数据）
+            if (!mem.timestamp) {
+                newMemory.push(mem);
+                return;
+            }
+
+            var age = (now - mem.timestamp) / (24 * 60 * 60 * 1000);
+
             if (level === 'recent') {
                 if (age > recentToArchiveDays) {
-                    // 超过30天 → 降级为归档记忆
                     mem.level = 'archived';
                     newMemory.push(mem);
-                    archivedCount++;
                     totalArchived++;
                 } else {
                     newMemory.push(mem);
@@ -670,8 +672,6 @@ function cleanupMemories() {
 
             if (level === 'archived') {
                 if (age > archiveToDeleteDays) {
-                    // 超过90天 → 删除
-                    deletedCount++;
                     totalCleaned++;
                 } else {
                     newMemory.push(mem);
@@ -679,7 +679,6 @@ function cleanupMemories() {
                 return;
             }
 
-            // 未知类型，保留
             newMemory.push(mem);
         });
 
@@ -694,12 +693,53 @@ function cleanupMemories() {
             showToast('🧹 记忆已自动整理：' + msg);
         }
         saveData();
-        // 如果当前在记忆库Tab，刷新视图
         if (currentTab === 'memory') {
             var role = getCurrentRole();
             if (role) renderMemory(role);
         }
         console.log('🧹 记忆清理完成: 归档 ' + totalArchived + ' 条，删除 ' + totalCleaned + ' 条');
+    }
+}
+
+// ========== 自动清理生活日志 ==========
+function cleanupLifeLogs() {
+    var now = Date.now();
+    var retentionDays = CLEANUP_RULES.LOG_RETENTION_DAYS || 60;
+    var totalDeleted = 0;
+
+    roles.forEach(function(role) {
+        if (!role.extendedState || !Array.isArray(role.extendedState.lifeLogs)) return;
+        var newLogs = [];
+
+        role.extendedState.lifeLogs.forEach(function(log) {
+            if (!log.date) {
+                newLogs.push(log);
+                return;
+            }
+            var logDate = new Date(log.date);
+            if (isNaN(logDate.getTime())) {
+                newLogs.push(log);
+                return;
+            }
+            var age = (now - logDate.getTime()) / (24 * 60 * 60 * 1000);
+            if (age <= retentionDays) {
+                newLogs.push(log);
+            } else {
+                totalDeleted++;
+            }
+        });
+
+        role.extendedState.lifeLogs = newLogs;
+    });
+
+    if (totalDeleted > 0) {
+        showToast('🗑️ 已清理 ' + totalDeleted + ' 条过期生活日志');
+        saveData();
+        if (currentTab === 'logs') {
+            var role = getCurrentRole();
+            if (role) renderLogs(role);
+        }
+        console.log('🧹 生活日志清理完成: 删除 ' + totalDeleted + ' 条');
     }
 }
 
@@ -744,7 +784,19 @@ function loadData() {
             }
             if (!Array.isArray(role.memory)) { role.memory = []; }
             if (!Array.isArray(role.messages)) { role.messages = []; }
-            if (!role.createdAt) { role.createdAt = new Date().toISOString(); }
+            // ⭐ 修复：确保 createdAt 存在
+            if (!role.createdAt) {
+                if (role.messages && role.messages.length > 0) {
+                    role.createdAt = role.messages[0].time;
+                } else {
+                    role.createdAt = new Date().toISOString();
+                }
+            }
+            // 验证 createdAt 是否有效
+            var testDate = new Date(role.createdAt);
+            if (isNaN(testDate.getTime())) {
+                role.createdAt = new Date().toISOString();
+            }
         });
 
         var params = new URLSearchParams(window.location.search);
@@ -760,8 +812,9 @@ function loadData() {
             applyTheme(CONFIG.theme);
         }
 
-        // 加载数据后执行自动清理
+        // 执行清理
         cleanupMemories();
+        cleanupLifeLogs();
 
         return true;
     } catch (e) {
@@ -831,12 +884,31 @@ function renderRoleSelector() {
     }
 }
 
-// ========== 关系卡片 ==========
+// ========== 关系卡片（修复版：确保 createdAt 有效） ==========
 function renderRelationCard(role) {
     if (!role) return;
+
+    // ⭐ 修复：确保 createdAt 存在且有效
+    var createdAt = role.createdAt;
+    if (!createdAt) {
+        if (role.messages && role.messages.length > 0) {
+            createdAt = role.messages[0].time;
+        } else {
+            createdAt = new Date().toISOString();
+        }
+        role.createdAt = createdAt;
+        saveData();
+    }
+
+    var testDate = new Date(createdAt);
+    if (isNaN(testDate.getTime())) {
+        createdAt = new Date().toISOString();
+        role.createdAt = createdAt;
+        saveData();
+    }
+
     var intimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
     var messages = role.messages || [];
-    var createdAt = role.createdAt || new Date().toISOString();
     var days = getDaysBetween(createdAt, new Date());
     var stage = getIntimacyLevel(intimacy);
     var stageIdx = getStageIndex(intimacy);
@@ -1030,7 +1102,7 @@ function renderLogs(role) {
     });
 }
 
-// ========== 记忆库（折叠 + 搜索 + 批量管理 + 清理标签） ==========
+// ========== 记忆库 ==========
 function renderMemory(role) {
     var panel = document.getElementById('panelMemory');
     if (!panel) return;
@@ -1042,13 +1114,13 @@ function renderMemory(role) {
     var allMemories = role.memory || [];
     var html = '';
 
-    // ===== 搜索框 =====
+    // 搜索框
     html += '<div class="memory-search-bar">';
     html += '<input type="text" id="memorySearchInput" placeholder="🔍 搜索记忆..." value="' + escapeHtml(memorySearchKeyword) + '" />';
     html += '<button class="search-clear" id="memorySearchClear" ' + (memorySearchKeyword ? 'style="display:block;"' : '') + '><i class="fas fa-times-circle"></i></button>';
     html += '</div>';
 
-    // ===== 批量操作栏 =====
+    // 批量操作栏
     var hasSelected = selectedMemories.length > 0;
     html += '<div class="memory-batch-actions' + (hasSelected ? ' show' : '') + '" id="batchActions">';
     html += '<span class="batch-info">已选 <span id="selectedCount">' + selectedMemories.length + '</span> 条</span>';
@@ -1058,7 +1130,7 @@ function renderMemory(role) {
     html += '<button class="btn-cancel" id="batchCancelBtn">取消</button>';
     html += '</div></div>';
 
-    // ===== 分类记忆 =====
+    // 分类记忆
     var filtered = allMemories;
     if (memorySearchKeyword.trim()) {
         var keyword = memorySearchKeyword.trim().toLowerCase();
@@ -1079,16 +1151,11 @@ function renderMemory(role) {
         }
     }
 
-    // ---- 核心记忆 ----
     html += renderCategory('核心记忆', 'core', core, '📌', '#a78bfa', true);
-
-    // ---- 近期记忆 ----
     html += renderCategory('近期记忆', 'recent', recent, '🕐', '#fbbf24', false, '30天后自动归档');
-
-    // ---- 归档记忆 ----
     html += renderCategory('归档记忆', 'archived', archived, '📦', '#94a3b8', false, '90天后自动删除');
 
-    // ===== 添加记忆 =====
+    // 添加记忆
     html += '<div class="memory-add-section">';
     html += '<input type="text" id="memoryAddInput" placeholder="添加新记忆..." maxlength="100" />';
     html += '<button class="add-mem-btn" id="memoryAddBtn"><i class="fas fa-plus"></i> 添加</button>';
@@ -1096,7 +1163,7 @@ function renderMemory(role) {
 
     panel.innerHTML = html;
 
-    // ===== 绑定搜索事件 =====
+    // 绑定搜索事件
     var searchInput = document.getElementById('memorySearchInput');
     var searchClear = document.getElementById('memorySearchClear');
     if (searchInput) {
@@ -1117,7 +1184,7 @@ function renderMemory(role) {
         });
     }
 
-    // ===== 绑定分类折叠 =====
+    // 绑定分类折叠
     document.querySelectorAll('.cat-header').forEach(function(header) {
         header.addEventListener('click', function(e) {
             if (e.target.closest('.cat-checkbox')) return;
@@ -1132,7 +1199,7 @@ function renderMemory(role) {
         });
     });
 
-    // ===== 绑定分类全选 =====
+    // 绑定分类全选
     document.querySelectorAll('.cat-checkbox').forEach(function(cb) {
         cb.addEventListener('change', function() {
             var catId = this.dataset.catId;
@@ -1145,7 +1212,7 @@ function renderMemory(role) {
         });
     });
 
-    // ===== 绑定单项选择 =====
+    // 绑定单项选择
     document.querySelectorAll('.item-checkbox').forEach(function(cb) {
         cb.addEventListener('change', function() {
             var text = this.dataset.text;
@@ -1170,7 +1237,7 @@ function renderMemory(role) {
         });
     });
 
-    // ===== 绑定批量操作 =====
+    // 绑定批量操作
     var batchUpgradeBtn = document.getElementById('batchUpgradeBtn');
     var batchDeleteBtn = document.getElementById('batchDeleteBtn');
     var batchCancelBtn = document.getElementById('batchCancelBtn');
@@ -1227,7 +1294,7 @@ function renderMemory(role) {
         });
     }
 
-    // ===== 绑定升级单个 =====
+    // 绑定升级单个
     document.querySelectorAll('.btn-upgrade-item').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -1247,7 +1314,7 @@ function renderMemory(role) {
         });
     });
 
-    // ===== 绑定删除单个 =====
+    // 绑定删除单个
     document.querySelectorAll('.btn-del-item').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -1269,7 +1336,7 @@ function renderMemory(role) {
         });
     });
 
-    // ===== 绑定添加 =====
+    // 绑定添加（增加去重提醒）
     var addInput = document.getElementById('memoryAddInput');
     var addBtn = document.getElementById('memoryAddBtn');
 
@@ -1280,6 +1347,19 @@ function renderMemory(role) {
             showToast('⚠️ 请输入记忆内容');
             return;
         }
+
+        // ⭐ 去重检查
+        if (role.memory) {
+            var duplicate = role.memory.some(function(m) {
+                return getMemoryText(m) === text;
+            });
+            if (duplicate) {
+                showToast('⚠️ 已存在相同记忆，无需重复添加');
+                if (addInput) addInput.value = '';
+                return;
+            }
+        }
+
         isAddingMemory = true;
         if (addBtn) addBtn.disabled = true;
         if (!Array.isArray(role.memory)) role.memory = [];
@@ -1499,22 +1579,25 @@ function hideLoader() {
 
 // ========== 启动定时清理 ==========
 function startCleanupTimer() {
-    // 每天检查一次
     setInterval(function() {
-        console.log('🧹 执行定时记忆清理...');
+        console.log('🧹 执行定时清理...');
         cleanupMemories();
-        // 如果当前在记忆库Tab，刷新视图
+        cleanupLifeLogs();
         if (currentTab === 'memory') {
             var role = getCurrentRole();
             if (role) renderMemory(role);
         }
+        if (currentTab === 'logs') {
+            var role2 = getCurrentRole();
+            if (role2) renderLogs(role2);
+        }
     }, CLEANUP_RULES.CHECK_INTERVAL);
-    console.log('🧹 记忆自动清理已启动（每天检查一次）');
+    console.log('🧹 定时清理已启动（记忆30天→归档/90天删除，日志60天删除）');
 }
 
 // ========== 初始化 ==========
 function init() {
-    console.log('📦 时光胶囊 v1.3 初始化中...');
+    console.log('📦 时光胶囊 v1.4 初始化中...');
 
     var dataLoaded = loadData();
 
@@ -1528,14 +1611,13 @@ function init() {
         document.getElementById('refreshBtn').addEventListener('click', refreshData);
         document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
 
-        // 启动定时清理
         startCleanupTimer();
 
-        console.log('📦 时光胶囊 v1.3 已加载');
+        console.log('📦 时光胶囊 v1.4 已加载');
         console.log('📊 共 ' + roles.length + ' 个角色');
         var currentRole = getCurrentRole();
         console.log('💕 当前角色: ' + (currentRole ? currentRole.name : '无'));
-        console.log('🧹 清理规则: 近期记忆30天→归档, 归档记忆90天→删除');
+        console.log('🧹 清理规则: 近期30天→归档, 归档90天删除, 日志60天删除');
     } else {
         var ps = document.getElementById('panelSummary');
         if (ps) {
