@@ -451,7 +451,6 @@
         .trim-select-row { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; }
         .trim-select-row label { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
         .trim-control-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 2px; }
-        /* 🔧 FIX: 语音播放器样式 - 紧凑无文字 */
         .voice-player {
             display: inline-flex;
             align-items: center;
@@ -592,9 +591,7 @@
         @media (max-width: 460px) { .phone-frame { border-radius: 0; height: 100vh; max-height: 100vh; } body { padding: 0; } }
         @media (min-width: 431px) { .phone-frame { border-radius: 32px; height: 780px; max-height: 90vh; box-shadow: 0 20px 60px rgba(0,0,0,0.6); } body { padding: 12px; } }
     </style>
-</head>
-
-<body>
+</head> <body>
 <div class="phone-frame" id="app">
     <div class="screen-launcher" id="launcherScreen">
         <button class="theme-toggle-btn" id="themeToggleBtn" title="切换深色/浅色模式"><i class="fas fa-moon" id="themeIcon"></i></button>
@@ -625,7 +622,7 @@
     <div class="screen-diary" id="diaryScreen"><div class="diary-header"><button class="back-btn" id="backFromDiary"><i class="fas fa-chevron-left"></i></button><div class="title"><i class="fas fa-book-open"></i> 他的日记</div><div class="diary-actions"><select class="role-selector" id="diaryRoleSelector"></select><button class="write-btn" id="writeDiaryBtn"><i class="fas fa-feather-alt"></i> 写今日</button></div></div><div class="calendar-toggle-outside" id="calendarToggle"><span class="toggle-label"><i class="fas fa-calendar-alt"></i> 日历</span><span class="toggle-icon" id="toggleIcon"><i class="fas fa-chevron-up"></i></span></div><div class="diary-calendar-nav" id="diaryCalendarNav"><div class="month-nav"><button class="month-btn" id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button><span class="month-label" id="monthLabel">2026年6月</span><button class="month-btn" id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button></div><div class="weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="days-grid" id="daysGrid"></div></div><div class="diary-body" id="diaryBody"></div><div class="diary-page-nav" id="diaryPageNav"><button class="page-btn" id="prevDayBtn"><i class="fas fa-chevron-left"></i> 上一篇</button><span class="page-indicator" id="pageIndicator">今天</span><button class="page-btn" id="nextDayBtn">下一篇 <i class="fas fa-chevron-right"></i></button></div></div>
     <div class="meme-picker-overlay" id="memePickerOverlay"><div class="meme-picker-panel" id="memePickerPanel"><div class="meme-picker-header"><span class="meme-picker-title" id="memePickerTitle">选择表情包</span><button class="meme-picker-close" id="memePickerClose">&times;</button></div><div class="meme-picker-body" id="memePickerBody"></div></div></div>
     <div class="image-picker-overlay" id="imagePickerOverlay"><div class="image-picker-menu"><div class="menu-title" id="pickerTitle">选择图片来源</div><div class="picker-options"><button id="pickerCamera"><span class="icon-bg"><i class="fas fa-camera"></i></span><span>拍照</span></button><button id="pickerGallery"><span class="icon-bg"><i class="fas fa-images"></i></span><span>相册</span></button></div><button class="cancel-btn" id="pickerCancel">取消</button></div></div>
-    <div class="settings-overlay" id="settingsOverlay"><div class="settings-drawer"><button class="close-drawer" id="closeSettingsBtn">×</button><h2><i class="fas fa-sliders-h"></i> 设置</h2> <!-- AI 接入 -->
+    <div class="settings-overlay" id="settingsOverlay"><div class="settings-drawer"><button class="close-drawer" id="closeSettingsBtn">×</button><h2><i class="fas fa-sliders-h"></i> 设置</h2>
         <div class="setting-group" style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:12px;">
             <label style="font-weight:600;">🤖 AI 接入</label>
         </div>
@@ -668,7 +665,6 @@
             </div>
         </div>
 
-        <!-- 语音设置 -->
         <div class="setting-group" style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:12px;">
             <label style="font-weight:600;">🔊 语音设置</label>
         </div>
@@ -707,7 +703,6 @@
             </label>
         </div>
 
-        <!-- 当前角色专属声音 -->
         <div class="setting-group" style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:12px;">
             <label style="font-weight:600;">🎤 当前角色专属声音</label>
         </div>
@@ -753,7 +748,8 @@
         <div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><span style="font-size:13px;color:var(--text-primary);"><i class="fas fa-database" style="color:#6c5ce7;"></i> 数据管理</span><span style="font-size:10px;color:var(--text-secondary);">导入/导出</span></div><button id="dataManageBtn" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:12px;cursor:pointer;transition:0.15s;display:flex;align-items:center;justify-content:center;gap:6px;"><i class="fas fa-arrow-right"></i> 打开数据管理</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">备份或恢复所有数据，支持分类导出</div></div>
         <div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><button id="clearAllChatsBtn" style="width:100%;padding:8px;border:1px solid #e74c3c;border-radius:8px;background:var(--bg-card);color:#e74c3c;font-size:12px;cursor:pointer;transition:0.15s;display:flex;align-items:center;justify-content:center;gap:6px;"><i class="fas fa-trash-alt"></i> 清空所有角色的聊天记录</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">此操作将删除所有角色的聊天记录，不可恢复</div></div>
         <button class="save-btn" id="saveSettingsBtn"><i class="fas fa-save"></i> 保存设置</button><div style="margin-top:8px;font-size:10px;color:var(--text-secondary);text-align:center;line-height:1.5;"><i class="fas fa-database"></i> 所有数据仅保存在本地浏览器</div></div></div>
-    <div class="permission-overlay" id="permissionOverlay"><div class="permission-dialog"><div class="icon">📸</div><h3>访问相册</h3><p>为了更换头像、壁纸和发送图片，需要访问你的相册。<br />拒绝后仍可正常聊天，仅无法使用图片相关功能。</p><div class="btn-group"><button class="btn-allow-all" id="permAllowAll">✅ 允许访问</button><button class="btn-deny" id="permDeny">🚫 不允许</button><button class="btn-cancel-perm" id="permCancel">取消</button></div></div></div> <div class="style-picker-overlay" id="stylePickerOverlay"><div class="style-picker-panel"><div class="panel-header"><h3>✨ 个性化</h3><button class="close-btn" id="closeStylePicker">&times;</button></div><div class="style-category-title">📱 桌面图标</div><div class="style-option-grid" id="styleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🫧 对话框气泡</div><div class="style-option-grid" id="bubbleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🕒 时间显示</div><div class="style-option-grid" id="timeModeGrid"></div><div class="style-category-title" style="margin-top:14px;">💕 心跳悬浮窗</div><div class="style-option-grid" id="floatingSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🎨 心跳颜色</div><div class="style-option-grid" id="heartColorGrid"></div><div class="style-category-title" style="margin-top:14px;">🤖 AI 表情包</div><div class="style-option-grid" id="aiMemeSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🌓 深色/浅色模式</div><div class="style-option-grid" id="themeModeGrid"></div></div></div>
+    <div class="permission-overlay" id="permissionOverlay"><div class="permission-dialog"><div class="icon">📸</div><h3>访问相册</h3><p>为了更换头像、壁纸和发送图片，需要访问你的相册。<br />拒绝后仍可正常聊天，仅无法使用图片相关功能。</p><div class="btn-group"><button class="btn-allow-all" id="permAllowAll">✅ 允许访问</button><button class="btn-deny" id="permDeny">🚫 不允许</button><button class="btn-cancel-perm" id="permCancel">取消</button></div></div></div>
+    <div class="style-picker-overlay" id="stylePickerOverlay"><div class="style-picker-panel"><div class="panel-header"><h3>✨ 个性化</h3><button class="close-btn" id="closeStylePicker">&times;</button></div><div class="style-category-title">📱 桌面图标</div><div class="style-option-grid" id="styleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🫧 对话框气泡</div><div class="style-option-grid" id="bubbleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🕒 时间显示</div><div class="style-option-grid" id="timeModeGrid"></div><div class="style-category-title" style="margin-top:14px;">💕 心跳悬浮窗</div><div class="style-option-grid" id="floatingSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🎨 心跳颜色</div><div class="style-option-grid" id="heartColorGrid"></div><div class="style-category-title" style="margin-top:14px;">🤖 AI 表情包</div><div class="style-option-grid" id="aiMemeSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🌓 深色/浅色模式</div><div class="style-option-grid" id="themeModeGrid"></div></div></div>
     <div class="data-modal-overlay" id="dataModalOverlay"><div class="data-modal"><button class="modal-close" id="dataModalClose">&times;</button><div class="modal-title">💾 数据管理</div><div class="modal-subtitle">选择要导出或导入的数据类型</div><div id="dataModalOptions"><div class="export-option" data-value="all"><input type="checkbox" checked /><span class="opt-label">全部数据 <span class="opt-badge">推荐</span></span><span class="opt-desc">角色 + 聊天 + 记忆 + 日记 + 设置</span></div><div class="export-option" data-value="settings"><input type="checkbox" /><span class="opt-label">仅美化设置</span><span class="opt-desc">壁纸、头像、风格</span></div><div class="export-option" data-value="roles"><input type="checkbox" /><span class="opt-label">仅角色设定</span><span class="opt-desc">不含聊天记录、记忆和日记</span></div><div class="export-option" data-value="chats"><input type="checkbox" /><span class="opt-label">仅聊天记录 + 记忆</span><span class="opt-desc">不含角色设定和日记</span></div><div class="export-option" data-value="diaries"><input type="checkbox" /><span class="opt-label">仅日记数据</span><span class="opt-desc">所有角色的日记</span></div><div class="export-option" data-value="selected"><input type="checkbox" /><span class="opt-label">按角色选择导出</span><span class="opt-desc">选中的角色完整数据（含日记）</span></div><div class="role-select-list" id="roleSelectList" style="display:none;"></div></div><div class="modal-actions"><button class="btn-import" id="dataImportBtn"><i class="fas fa-upload"></i> 导入</button><button class="btn-export" id="dataExportBtn"><i class="fas fa-download"></i> 导出</button><button class="btn-cancel" id="dataModalCancel">取消</button></div><div style="font-size:10px;color:var(--text-secondary);text-align:center;margin-top:8px;"><i class="fas fa-shield-alt"></i> 数据仅保存在本地，不上传任何服务器</div></div></div>
     <div class="diary-notification" id="diaryNotification"><div class="notif-icon">📖</div><h3>他的日记已送达</h3><p id="diaryNotifText">✨ 今晚的故事，他已经写好了...</p><button class="notif-btn" id="diaryNotifBtn">📖 去阅读</button><br /><button class="notif-close" id="diaryNotifClose">稍后再说</button></div>
     <div class="floating-heart" id="floatingHeart"><span class="fh-value" id="fhValue">65</span><span class="fh-label">BPM</span></div>
@@ -767,6 +763,8 @@
 //  修复：数据导出/导入完整实现
 //  修复：语音试听音频叠加
 //  修复：generateContextSummary 加保护
+//  ✨ 新增：时光胶囊记忆联动 - AI 读取 role.memory
+//  ✨ 新增：对话摘要自动存入近期记忆
 // ============================================================
 
 var CONSTANTS = {
@@ -842,7 +840,7 @@ var sleepTimers = {}, longpressMenuOpen = false, isSending = false, lastMessageC
 var _saveTimer = null, _idCounter = 0, _lastVisibilityCheck = 0;
 var _regenerating = {};
 var audioPlayers = {};
-var _testAudio = null; // 🔧 FIX: 全局试听音频引用，防止叠加
+var _testAudio = null;
 
 function generateId() { _idCounter++; return 'id_' + Date.now() + '_' + _idCounter + '_' + Math.random().toString(36).substr(2, 6); }
 function getCurrentRole() { return roles.find(function(r) { return r.id === currentRoleId; }) || roles[0] || null; }
@@ -1216,7 +1214,6 @@ function getTimeDiff(time1, time2) {
     return Math.abs(d2.getTime() - d1.getTime());
 }
 
-// 🔧 FIX: formatTime 修复 NaN:NaN
 function formatTime(timeStr, mode) {
     if (mode === 'hidden') return '';
     var now = new Date();
@@ -1254,10 +1251,7 @@ function formatTime(timeStr, mode) {
     } catch (_) {
         return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     }
-}
-
-// 🔧 FIX: generateContextSummary 加保护
-function generateContextSummary(role) {
+} function generateContextSummary(role) {
     if (!role || !Array.isArray(role.messages) || role.messages.length < 3) return;
     var apiKey = CONFIG.accessMode === 'direct' ? CONFIG.apiKey : CONFIG.relayApiKey;
     var endpoint = CONFIG.accessMode === 'direct' ? 'https://api.deepseek.com/v1' : CONFIG.relayEndpoint;
@@ -1277,6 +1271,8 @@ function generateContextSummary(role) {
         else summary += '一些日常的话题。';
         if (!role.extendedState) initRoleExtendedState(role);
         role.extendedState.contextSummary = summary;
+        // ⭐ 新增：存入近期记忆
+        saveSummaryToMemory(role, summary);
         debouncedSaveAllData();
         return;
     }
@@ -1310,6 +1306,8 @@ function generateContextSummary(role) {
         if (summary && summary.trim()) {
             if (!role.extendedState) initRoleExtendedState(role);
             role.extendedState.contextSummary = summary.trim();
+            // ⭐ 新增：存入近期记忆
+            saveSummaryToMemory(role, summary.trim());
             debouncedSaveAllData();
         }
     }).catch(function(e) {
@@ -1329,9 +1327,51 @@ function generateContextSummary(role) {
         else summary2 += '一些日常话题。';
         if (!role.extendedState) initRoleExtendedState(role);
         role.extendedState.contextSummary = summary2;
+        // ⭐ 新增：存入近期记忆
+        saveSummaryToMemory(role, summary2);
         debouncedSaveAllData();
     });
-} function fetchWithRetry(url, options, maxRetries) {
+}
+
+// ⭐⭐⭐ 新增函数：把对话摘要存入近期记忆
+function saveSummaryToMemory(role, summary) {
+    if (!role || !summary || !summary.trim()) return;
+    if (!Array.isArray(role.memory)) role.memory = [];
+    
+    // 去重：检查是否已有相同的摘要
+    var exists = role.memory.some(function(m) {
+        return m.text && m.text === '📝 ' + summary.trim();
+    });
+    if (exists) return;
+    
+    // 存入近期记忆
+    role.memory.push({
+        text: '📝 ' + summary.trim(),
+        level: 'recent',
+        timestamp: Date.now(),
+        source: 'context_summary'
+    });
+    
+    // 控制近期记忆数量（最多 20 条）
+    var recentMemories = role.memory.filter(function(m) { return m.level === 'recent'; });
+    if (recentMemories.length > 20) {
+        // 按时间排序，保留最新的 20 条
+        recentMemories.sort(function(a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
+        var toKeep = recentMemories.slice(0, 20);
+        var keepTexts = toKeep.map(function(m) { return m.text; });
+        role.memory = role.memory.map(function(m) {
+            if (m.level === 'recent' && keepTexts.indexOf(m.text) === -1) {
+                m.level = 'archived';
+            }
+            return m;
+        });
+    }
+    
+    debouncedSaveAllData();
+    console.log('🧠 对话摘要已存入近期记忆:', summary);
+}
+
+function fetchWithRetry(url, options, maxRetries) {
     maxRetries = maxRetries || 1;
     var retryCount = 0;
     function doFetch() {
@@ -1480,7 +1520,6 @@ function createMessageRow(msg, role) {
         actionsHtml = '<div class="msg-actions"><button class="action-btn delete-btn" data-msgid="' + msg.id + '" title="删除"><i class="fas fa-trash-alt"></i></button></div>';
     }
 
-    // 🔧 FIX: 气泡底部指示器 - 只显示小图标
     var footerHtml = '';
     if (msg.role === 'assistant' && msg.type !== 'gift') {
         if (msg.hasAudio && msg.audioUrl) {
@@ -1499,7 +1538,6 @@ function createMessageRow(msg, role) {
     return row;
 }
 
-// 🔧 FIX: 触发语音 - 使用无文字样式
 function triggerVoiceForMessage(msgId) {
     var role = getCurrentRole();
     if (!role) { showToast('⚠️ 未找到当前角色'); return; }
@@ -1790,8 +1828,37 @@ function handleSend() {
     });
 }
 
+// ⭐ ===== 核心修复：buildSystemPrompt 加入时光胶囊记忆联动 =====
 function buildSystemPrompt(role) {
     var parts = [];
+
+    // ⭐⭐⭐ 新增：从 role.memory 读取时光胶囊记忆
+    if (role.memory && Array.isArray(role.memory) && role.memory.length > 0) {
+        // 只取核心记忆（core）和近期记忆（recent），归档记忆不进入 prompt
+        var activeMemories = role.memory.filter(function(m) {
+            var level = m.level || 'core';
+            return level === 'core' || level === 'recent';
+        });
+
+        if (activeMemories.length > 0) {
+            var memoryTexts = activeMemories.map(function(m) {
+                var text = m.text || m;
+                if (typeof text === 'object') text = text.text || '';
+                return '- ' + String(text);
+            });
+
+            var memoryPrompt = '【🧠 时光胶囊 - 重要记忆】\n';
+            memoryPrompt += '以下是你（' + role.name + '）储存在「时光胶囊」中的记忆，' + role.name + '你完全记得这些内容：\n';
+            memoryPrompt += memoryTexts.join('\n');
+            memoryPrompt += '\n\n⚠️ 硬性要求：\n';
+            memoryPrompt += '1. 在对话中自然地体现你还记得这些记忆，不要让用户觉得你忘记了\n';
+            memoryPrompt += '2. 当用户提到相关话题时，主动关联这些记忆\n';
+            memoryPrompt += '3. 不要生硬地背诵记忆清单，而是像真人一样自然地提及\n';
+            memoryPrompt += '4. 如果用户分享的新内容与已有记忆相关，要串联起来回应\n';
+            parts.push(memoryPrompt);
+        }
+    }
+
     if (CONFIG.aiMemeEnabled !== false && memes.length > 0) {
         var memePrompt = '【表情包库】\n你可以在对话中发送以下表情包（用 [表情包：名称] 表示）：\n';
         var catsWithMemes = memeCategories.filter(function(cat) {
@@ -1808,11 +1875,13 @@ function buildSystemPrompt(role) {
         memePrompt += '\n【使用规则】\n1. 当你觉得某个表情包很贴合当前对话时，在回复末尾加上 [表情包：名称]\n2. 表情包是对文字的补充，不要为了发表情包而发表情包\n3. 只有真正贴合语境时才使用，每轮最多发一个表情包\n';
         parts.push(memePrompt);
     }
+
     parts.push('【送礼能力】\n你可以在商城中挑选礼物送给用户。当你想送礼物时，在回复末尾加上 [送礼：商品名称] 格式。例如：[送礼：纯白衬衫]\n注意：1. 只有当你真的觉得想表达心意时才送礼 2. 礼物要符合当前对话氛围 3. 不要为了送礼而送礼');
     if (role.persona && role.persona.trim()) parts.push('【人设】' + role.persona.trim());
     if (role.background && role.background.trim()) parts.push('【背景】' + role.background.trim());
     if (role.style && role.style.trim()) parts.push('【说话风格】' + role.style.trim());
     if (role.extra && role.extra.trim()) parts.push('【补充项】' + role.extra.trim());
+
     var hardRules = '\n\n【🚨 硬性约束 - 必须严格遵守】\n';
     hardRules += '你的回复中「绝对禁止」出现以下内容：\n';
     hardRules += '1. ❌ 任何动作描写（如：我坐下、我拿起、我抬头、我微笑、我转身、我伸手）\n';
@@ -1826,6 +1895,7 @@ function buildSystemPrompt(role) {
     hardRules += '\n✅ 示例错误回复："我坐在沙发上，拿起手机，看到你的消息，忍不住笑了。你今天怎么这么晚才回我呀？"（包含动作、环境、心理描写，❌ 禁止！）\n';
     hardRules += '\n⚠️ 如果违反以上规则，你的回复将被视为无效！';
     parts.push(hardRules);
+
     var coreInstruction = '\n\n【核心指令】\n';
     coreInstruction += '⚠️ 首先明确身份：你是「' + role.name + '」，我是「用户」。\n';
     coreInstruction += '⚠️ 说话时「我」= ' + role.name + '，「你」= 用户。\n';
@@ -1837,8 +1907,10 @@ function buildSystemPrompt(role) {
     coreInstruction += '5. 保持角色一致性，不要出戏。\n';
     coreInstruction += '6. 当你觉得想表达心意时，可以用 [送礼：商品名称] 来送礼物给用户。\n';
     coreInstruction += '7. ⚠️ 再次强调：只输出对话内容，绝对禁止任何动作/环境/表情/心理描写！\n';
-    coreInstruction += '8. ⚠️ 再次强调：「我」= ' + role.name + '，「你」= 用户，不要搞混！';
+    coreInstruction += '8. ⚠️ 再次强调：「我」= ' + role.name + '，「你」= 用户，不要搞混！\n';
+    coreInstruction += '9. ⚠️ 最重要的：你记得「时光胶囊」里的所有记忆，要自然地体现出来！';
     parts.push(coreInstruction);
+
     return parts.join('\n');
 }
 
@@ -1970,9 +2042,7 @@ function callRelayAPI(userMessage, role) {
         clearTimeout(timeoutId);
         throw e;
     });
-}
-
-function getMallProductsFromStorage() {
+} function getMallProductsFromStorage() {
     try {
         var raw = localStorage.getItem('mall_products_cache');
         if (raw) {
@@ -4848,7 +4918,6 @@ function openStylePicker() {
     }
 }
 
-// 🔧 FIX: 创建语音播放器 - 无文字版本
 function createVoicePlayer(msgId, audioUrl, duration) {
     var container = document.querySelector('.message-row[data-msgid="' + msgId + '"] .bubble-container');
     if (!container) return;
@@ -5138,7 +5207,6 @@ function deleteMessageAndMemory(roleId, messageId) {
     renderRoleManager();
 }
 
-// 🔧 FIX: 试听 - 停止旧音频防止叠加
 document.getElementById('testVoiceBtn').addEventListener('click', async function() {
     var roleId = document.getElementById('voiceRoleSelector').value;
     var role = roles.find(function(r) { return r.id === roleId; });
@@ -5169,7 +5237,6 @@ document.getElementById('testVoiceBtn').addEventListener('click', async function
     }
 });
 
-// 🔧 FIX: 数据导出 - 完整实现
 document.getElementById('dataExportBtn').addEventListener('click', function() {
     var exportType = getSelectedExportType();
     var exportData = {
@@ -5250,7 +5317,6 @@ document.getElementById('dataExportBtn').addEventListener('click', function() {
     closeDataModal();
 });
 
-// 🔧 FIX: 数据导入 - 完整实现
 document.getElementById('dataImportBtn').addEventListener('click', function() {
     var input = document.createElement('input');
     input.type = 'file';
@@ -5692,8 +5758,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('fetchModelsBtn').addEventListener('click', fetchModelsFromRelay);
     document.getElementById('fetchTtsModelsBtn').addEventListener('click', fetchTtsModels);
 
-    // testVoiceBtn 已在上面修复
-
     document.getElementById('resetPermissionBtn').addEventListener('click', function() {
         CONFIG.permission = null;
         saveAllData();
@@ -5770,8 +5834,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dataModalOverlay').addEventListener('click', function(e) {
         if (e.target === this) closeDataModal();
     });
-
-    // dataExportBtn 和 dataImportBtn 已在上面修复
 
     document.getElementById('clearAllChatsBtn').addEventListener('click', function() {
         if (confirm('⚠️ 确定要清空所有角色的聊天记录吗？\n\n亲密度会大幅下降！建议使用「清理旧消息」功能。')) {
