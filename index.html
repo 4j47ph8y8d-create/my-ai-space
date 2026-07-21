@@ -1830,28 +1830,98 @@ function handleSend() {
 
 // ⭐ ===== 核心修复：buildSystemPrompt 加入时光胶囊记忆联动 =====
 
+function generateNaturalMemoryText(role) {
+    var memories = Array.isArray(role.memory) ? role.memory : [];
+    if (memories.length === 0) return '';
+    var coreMemories = memories.filter(function(m) { return m.level === 'core' || !m.level; });
+    var recentMemories = memories.filter(function(m) { return m.level === 'recent'; });
+    if (coreMemories.length > 10) coreMemories = coreMemories.slice(0, 10);
+    if (recentMemories.length > 15) recentMemories = recentMemories.slice(0, 15);
+    var intimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
+    var prefix, connector;
+    if (intimacy < 20) { prefix = '关于你，我记得：'; connector = '。'; }
+    else if (intimacy < 40) { prefix = '我记得你的事：'; connector = '～'; }
+    else if (intimacy < 60) { prefix = '我记得好多关于你的事呢💕'; connector = '呢～'; }
+    else if (intimacy < 80) { prefix = '关于你的每件事我都记得 💕'; connector = '哦～'; }
+    else { prefix = '你的一切我都记在心里 💕'; connector = '呀～'; }
+    var lines = [];
+    coreMemories.forEach(function(mem) {
+        var text = mem.text || '';
+        if (!text) return;
+        if (text.indexOf('用户') === 0) {
+            text = text.replace(/用户名字：/, '你的名字是');
+            text = text.replace(/用户喜欢：/, '你喜欢');
+            text = text.replace(/用户不喜欢：/, '你不喜欢');
+            text = text.replace(/用户所在地：/, '你住在');
+            text = text.replace(/用户生日：/, '你的生日是');
+            text = text.replace(/用户宠物：/, '你养了');
+            text = text.replace(/用户工作：/, '你做');
+            text = text.replace(/用户近况：/, '你最近');
+        }
+        var sentence = text;
+        if (sentence.charAt(sentence.length - 1) !== '。' && sentence.charAt(sentence.length - 1) !== '～' && sentence.charAt(sentence.length - 1) !== '呀') {
+            sentence += connector;
+        }
+        lines.push(sentence);
+    });
+    var contextMem = role.extendedState ? role.extendedState.contextMemory || {} : {};
+    if (contextMem.lastTopic && contextMem.lastTopic !== '日常' && contextMem.lastTopic !== '') {
+        var topicText = '上次你提到了' + contextMem.lastTopic;
+        if (contextMem.lastUserEmotion) { topicText += '，感觉你有点' + contextMem.lastUserEmotion; }
+        topicText += connector;
+        var duplicate = false;
+        for (var i = 0; i < lines.length; i++) {
+            if (lines[i].indexOf(contextMem.lastTopic) !== -1) { duplicate = true; break; }
+        }
+        if (!duplicate) lines.push(topicText);
+    }
+    if (lines.length === 0) return '';
+    return prefix + '\n' + lines.join('\n');
+}
+
+function consolidateMemory(role) {
+    if (!Array.isArray(role.memory)) role.memory = [];
+    var now = Date.now();
+    var newMemory = [];
+    var seen = {};
+    role.memory.forEach(function(mem) {
+        var text = mem.text || '';
+        if (!text) return;
+        var normalized = text.replace(/[\s,，。！？]+/g, '').substring(0, 20);
+        if (seen[normalized]) return;
+        seen[normalized] = true;
+        if (!mem.level) {
+            var coreKeywords = ['名字', '生日', '喜欢', '讨厌', '害怕', '家住', '职业', '工作', '学校', '宠物', '过敏', '不爱吃', '不爱'];
+            var isCore = false;
+            for (var k = 0; k < coreKeywords.length; k++) {
+                if (text.indexOf(coreKeywords[k]) !== -1) { isCore = true; break; }
+            }
+            mem.level = isCore ? 'core' : 'recent';
+        }
+        if (mem.timestamp) {
+            var age = now - mem.timestamp;
+            if (age > 90 * 24 * 60 * 60 * 1000) { return; }
+            if (age > 30 * 24 * 60 * 60 * 1000 && mem.level === 'recent') {
+                mem.level = 'archived';
+            }
+        }
+        newMemory.push(mem);
+    });
+    role.memory = newMemory;
+    debouncedSaveAllData();
+}
+
 function buildSystemPrompt(role) {
     var parts = [];
 
-    // ⭐ 从 role.memory 读取时光胶囊记忆（保留这个功能）
+    // ⭐ 从 role.memory 读取时光胶囊记忆 - 使用自然化处理
     if (role.memory && Array.isArray(role.memory) && role.memory.length > 0) {
-        var activeMemories = role.memory.filter(function(m) {
-            var level = m.level || 'core';
-            return level === 'core' || level === 'recent';
-        });
-        if (activeMemories.length > 0) {
-            var memoryTexts = activeMemories.map(function(m) {
-                var text = m.text || m;
-                if (typeof text === 'object') text = text.text || '';
-                return '- ' + String(text);
-            });
-            if (memoryTexts.length > 0) {
-                var memoryPrompt = '【🧠 时光胶囊 - 重要记忆】\n';
-                memoryPrompt += '以下是你（' + role.name + '）储存在「时光胶囊」中的记忆，你完全记得这些内容：\n';
-                memoryPrompt += memoryTexts.join('\n');
-                memoryPrompt += '\n\n⚠️ 要求：在对话中自然地体现这些记忆，不要生硬地列出来，也不要重复提同一条。';
-                parts.push(memoryPrompt);
-            }
+        var naturalMemory = generateNaturalMemoryText(role);
+        if (naturalMemory) {
+            var memoryPrompt = '【🧠 时光胶囊 - 重要记忆】\n';
+            memoryPrompt += naturalMemory;
+            memoryPrompt += '\n\n⚠️ 要求：在对话中自然地体现这些记忆，不要生硬地列出来，也不要重复提同一条。';
+            parts.push(memoryPrompt);
         }
     }
 
@@ -2623,11 +2693,22 @@ function checkAllRolesForActiveMessages() {
     return promiseChain;
 }
 
-function startBackgroundCheck() {
+function startBackgroundCheck() {try { startMemoryConsolidation(); } catch (e) { console.error('记忆整合启动失败:', e); }
     setTimeout(function() { checkAllRolesForActiveMessages(); }, 5000);
     if (backgroundCheckInterval) clearInterval(backgroundCheckInterval);
     backgroundCheckInterval = setInterval(checkAllRolesForActiveMessages, CONSTANTS.AI_CHECK_INTERVAL);
     console.log('🔄 30分钟主动陪伴系统已启动');
+}
+
+function startMemoryConsolidation() {
+    setInterval(function() {
+        console.log('🧹 执行记忆清理...');
+        roles.forEach(function(role) {
+            consolidateMemory(role);
+        });
+        saveAllData();
+    }, 6 * 60 * 60 * 1000);
+    console.log('🧹 记忆清理系统已启动（每6小时检查）');
 }
 
 document.addEventListener('visibilitychange', function() {
