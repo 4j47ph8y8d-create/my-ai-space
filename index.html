@@ -1829,36 +1829,33 @@ function handleSend() {
 }
 
 // ⭐ ===== 核心修复：buildSystemPrompt 加入时光胶囊记忆联动 =====
+
 function buildSystemPrompt(role) {
     var parts = [];
 
-    // ⭐⭐⭐ 新增：从 role.memory 读取时光胶囊记忆
+    // ⭐ 从 role.memory 读取时光胶囊记忆（保留这个功能）
     if (role.memory && Array.isArray(role.memory) && role.memory.length > 0) {
-        // 只取核心记忆（core）和近期记忆（recent），归档记忆不进入 prompt
         var activeMemories = role.memory.filter(function(m) {
             var level = m.level || 'core';
             return level === 'core' || level === 'recent';
         });
-
         if (activeMemories.length > 0) {
             var memoryTexts = activeMemories.map(function(m) {
                 var text = m.text || m;
                 if (typeof text === 'object') text = text.text || '';
                 return '- ' + String(text);
             });
-
-            var memoryPrompt = '【🧠 时光胶囊 - 重要记忆】\n';
-            memoryPrompt += '以下是你（' + role.name + '）储存在「时光胶囊」中的记忆，' + role.name + '你完全记得这些内容：\n';
-            memoryPrompt += memoryTexts.join('\n');
-            memoryPrompt += '\n\n⚠️ 硬性要求：\n';
-            memoryPrompt += '1. 在对话中自然地体现你还记得这些记忆，不要让用户觉得你忘记了\n';
-            memoryPrompt += '2. 当用户提到相关话题时，主动关联这些记忆\n';
-            memoryPrompt += '3. 不要生硬地背诵记忆清单，而是像真人一样自然地提及\n';
-            memoryPrompt += '4. 如果用户分享的新内容与已有记忆相关，要串联起来回应\n';
-            parts.push(memoryPrompt);
+            if (memoryTexts.length > 0) {
+                var memoryPrompt = '【🧠 时光胶囊 - 重要记忆】\n';
+                memoryPrompt += '以下是你（' + role.name + '）储存在「时光胶囊」中的记忆，你完全记得这些内容：\n';
+                memoryPrompt += memoryTexts.join('\n');
+                memoryPrompt += '\n\n⚠️ 要求：在对话中自然地体现这些记忆，不要生硬地列出来，也不要重复提同一条。';
+                parts.push(memoryPrompt);
+            }
         }
     }
 
+    // 表情包
     if (CONFIG.aiMemeEnabled !== false && memes.length > 0) {
         var memePrompt = '【表情包库】\n你可以在对话中发送以下表情包（用 [表情包：名称] 表示）：\n';
         var catsWithMemes = memeCategories.filter(function(cat) {
@@ -1876,39 +1873,23 @@ function buildSystemPrompt(role) {
         parts.push(memePrompt);
     }
 
+    // 送礼
     parts.push('【送礼能力】\n你可以在商城中挑选礼物送给用户。当你想送礼物时，在回复末尾加上 [送礼：商品名称] 格式。例如：[送礼：纯白衬衫]\n注意：1. 只有当你真的觉得想表达心意时才送礼 2. 礼物要符合当前对话氛围 3. 不要为了送礼而送礼');
+
+    // 角色设定
     if (role.persona && role.persona.trim()) parts.push('【人设】' + role.persona.trim());
     if (role.background && role.background.trim()) parts.push('【背景】' + role.background.trim());
     if (role.style && role.style.trim()) parts.push('【说话风格】' + role.style.trim());
     if (role.extra && role.extra.trim()) parts.push('【补充项】' + role.extra.trim());
 
-    var hardRules = '\n\n【🚨 硬性约束 - 必须严格遵守】\n';
-    hardRules += '你的回复中「绝对禁止」出现以下内容：\n';
-    hardRules += '1. ❌ 任何动作描写（如：我坐下、我拿起、我抬头、我微笑、我转身、我伸手）\n';
-    hardRules += '2. ❌ 任何环境描写（如：灯光、窗外、声音、味道、天气）\n';
-    hardRules += '3. ❌ 任何表情描写（如：脸红、低头、挑眉、眨眼、抿嘴）\n';
-    hardRules += '4. ❌ 任何心理描写（如：心想、忍不住、觉得、感到、暗自）\n';
-    hardRules += '5. ❌ 任何叙述性文字（如：我坐在吧台前、我拿着手机、他经过）\n';
-    hardRules += '\n✅ 你「只能」输出对话内容，像真人微信聊天一样。\n';
-    hardRules += '✅ 每句话独立成行，不加任何叙述前缀。\n';
-    hardRules += '✅ 示例正确回复："你今天怎么这么晚才回我呀？\\n我好想你哦 💕"';
-    hardRules += '\n✅ 示例错误回复："我坐在沙发上，拿起手机，看到你的消息，忍不住笑了。你今天怎么这么晚才回我呀？"（包含动作、环境、心理描写，❌ 禁止！）\n';
-    hardRules += '\n⚠️ 如果违反以上规则，你的回复将被视为无效！';
-    parts.push(hardRules);
-
+    // ⭐ 核心指令（精简到 6 条）
     var coreInstruction = '\n\n【核心指令】\n';
-    coreInstruction += '⚠️ 首先明确身份：你是「' + role.name + '」，我是「用户」。\n';
-    coreInstruction += '⚠️ 说话时「我」= ' + role.name + '，「你」= 用户。\n';
-    coreInstruction += '⚠️ 所有动作的主人公是你自己（' + role.name + '），不是用户。\n\n';
     coreInstruction += '1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n';
     coreInstruction += '2. 严格遵守【人设】中的身份和性格，不要偏离。\n';
     coreInstruction += '3. 回复时必须符合【说话风格】的语气和习惯。\n';
-    coreInstruction += '4. 对话中自然地融入【背景】、【补充项】中的信息。\n';
+    coreInstruction += '4. 对话中自然地融入【背景】、【补充项】和记忆中的信息。\n';
     coreInstruction += '5. 保持角色一致性，不要出戏。\n';
     coreInstruction += '6. 当你觉得想表达心意时，可以用 [送礼：商品名称] 来送礼物给用户。\n';
-    coreInstruction += '7. ⚠️ 再次强调：只输出对话内容，绝对禁止任何动作/环境/表情/心理描写！\n';
-    coreInstruction += '8. ⚠️ 再次强调：「我」= ' + role.name + '，「你」= 用户，不要搞混！\n';
-    coreInstruction += '9. ⚠️ 最重要的：你记得「时光胶囊」里的所有记忆，要自然地体现出来！';
     parts.push(coreInstruction);
 
     return parts.join('\n');
