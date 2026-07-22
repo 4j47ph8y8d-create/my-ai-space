@@ -664,7 +664,7 @@
                 </div>
                 <input type="text" id="relayModelCustom" placeholder="手动输入模型名（拉取失败时使用）" style="margin-top:4px;font-size:12px;color:var(--text-secondary);" />
             </div>
-        </div> <!-- 🌐 联网搜索模式配置 -->
+        </div>
         <div id="websearchConfig" style="display:none;">
             <div class="setting-group">
                 <label>🌐 API Endpoint</label>
@@ -690,9 +690,7 @@
                     ✅ 开启联网搜索（让 AI 能查实时信息）
                 </label>
             </div>
-        </div>
-
-        <div class="setting-group" style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:12px;">
+        </div> <div class="setting-group" style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:12px;">
             <label style="font-weight:600;">🔊 语音设置</label>
         </div>
         <div class="setting-group">
@@ -793,6 +791,7 @@
 //  ✨ 新增：时光胶囊记忆联动 - AI 读取 role.memory
 //  ✨ 新增：对话摘要自动存入近期记忆
 //  ⭐ 核心修复：立即保存机制，解决刷新丢消息问题
+//  ⭐ 核心修复：联网搜索模式 API Key 检查
 // ============================================================ 
 
 var CONSTANTS = {
@@ -838,7 +837,6 @@ var CONFIG = {
     relayEndpoint: '',
     relayApiKey: '',
     relayModel: '',
-// 🌐 联网搜索模式配置
     websearchEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     websearchApiKey: '',
     websearchModel: 'qwen-plus',
@@ -921,7 +919,7 @@ function getRolesList() { return roles || []; }
 function escapeHtml(text) { if (text === null || text === undefined) return ''; text = String(text); var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 function getLevel(value) { for (var i = 0; i < CONSTANTS.LEVEL_MAP.length; i++) { if (value <= CONSTANTS.LEVEL_MAP[i].max) return CONSTANTS.LEVEL_MAP[i].label; } return '灵魂共振'; }
 function getIntimacyLevel(intimacy) { if (intimacy < 20) return '初识'; if (intimacy < 40) return '熟悉'; if (intimacy < 60) return '亲密'; if (intimacy < 80) return '依赖'; return '灵魂伴侣'; }
-function getHeartData(role) { if (!role) return { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; if (!role.heartData) { role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; debouncedSaveAllData(); } return role.heartData; } // ⭐ 新增：立即同步保存函数（不含防抖，用于消息等关键数据）
+function getHeartData(role) { if (!role) return { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; if (!role.heartData) { role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; debouncedSaveAllData(); } return role.heartData; }
 function immediateSaveAllData() {
     try {
         var configToSave = JSON.parse(JSON.stringify(CONFIG));
@@ -940,7 +938,6 @@ function immediateSaveAllData() {
     }
 }
 
-// ⭐ 修改防抖保存，改为调用 immediateSaveAllData
 function debouncedSaveAllData() {
     if (_saveTimer) clearTimeout(_saveTimer);
     _saveTimer = setTimeout(function() { immediateSaveAllData(); }, 300);
@@ -1009,9 +1006,7 @@ function deepCloneRole(role) {
         };
     }
     return clone;
-}
-
-function loadAllData() {
+} function loadAllData() {
     var savedData = null;
     try {
         var raw = localStorage.getItem('ds_multirole_v2');
@@ -1056,6 +1051,10 @@ function loadAllData() {
         if (!CONFIG.relayEndpoint) CONFIG.relayEndpoint = '';
         if (!CONFIG.relayApiKey) CONFIG.relayApiKey = '';
         if (!CONFIG.relayModel) CONFIG.relayModel = '';
+        if (!CONFIG.websearchEndpoint) CONFIG.websearchEndpoint = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+        if (!CONFIG.websearchApiKey) CONFIG.websearchApiKey = '';
+        if (!CONFIG.websearchModel) CONFIG.websearchModel = 'qwen-plus';
+        if (CONFIG.websearchEnable === undefined) CONFIG.websearchEnable = true;
 
         roles = savedData.roles;
         roles.forEach(function(role) {
@@ -1088,6 +1087,8 @@ function loadAllData() {
         CONFIG = {
             accessMode: 'direct', apiKey: '', model: 'deepseek-chat',
             relayEndpoint: '', relayApiKey: '', relayModel: '',
+            websearchEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            websearchApiKey: '', websearchModel: 'qwen-plus', websearchEnable: true,
             voice: { mode: 'bailian', endpoint: 'https://dashscope.aliyuncs.com', apiKey: '', model: 'cosyvoice-v3.5-plus', autoSpeak: true, rate: 1.0, pitch: 1.0 },
             wallpaper: '', chatBg: '', userAvatar: '',
             iconStyle: 'glass', bubbleStyle: 'default', timeMode: 'HH:MM', permission: null,
@@ -1798,25 +1799,44 @@ function regenerateMessage(roleId, messageId) {
         addMessageToRole(role.id, 'assistant', '💔 ' + e.message);
         renderMessages();
     });
-}
-
-// ⭐ 修改后的 handleSend - 发送完成后强制保存
-function handleSend() {
+} function handleSend() {
     if (isSending) { showToast('⏳ 正在发送中，请稍后'); return; }
     var input = document.getElementById('messageInput');
     var text = input.value.trim();
     if (!text) return;
-    var apiKey = CONFIG.accessMode === 'direct' ? CONFIG.apiKey : CONFIG.relayApiKey;
-    if (!apiKey) {
-        showToast('🔑 请先在设置中配置 API Key');
-        openSettings();
-        return;
+    
+    var mode = CONFIG.accessMode || 'direct';
+    
+    if (mode === 'direct') {
+        if (!CONFIG.apiKey) {
+            showToast('🔑 请先在设置中配置 DeepSeek API Key');
+            openSettings();
+            return;
+        }
+    } else if (mode === 'relay') {
+        if (!CONFIG.relayApiKey && !CONFIG.apiKey) {
+            showToast('🔑 请先在设置中配置中转站 API Key');
+            openSettings();
+            return;
+        }
+        if (!CONFIG.relayEndpoint) {
+            showToast('🔑 中转模式请填写 API Endpoint');
+            openSettings();
+            return;
+        }
+    } else if (mode === 'websearch') {
+        if (!CONFIG.websearchApiKey) {
+            showToast('🔑 请先在设置中配置联网搜索 API Key');
+            openSettings();
+            return;
+        }
+        if (!CONFIG.websearchEndpoint) {
+            showToast('🔑 请先在设置中配置联网搜索 Endpoint');
+            openSettings();
+            return;
+        }
     }
-    if (CONFIG.accessMode === 'relay' && !CONFIG.relayEndpoint) {
-        showToast('🔑 中转模式请填写 API Endpoint');
-        openSettings();
-        return;
-    }
+    
     var finalMessage = text;
     if (quotedMsg) {
         var quotedContent = quotedMsg.content.replace(/\n/g, '\n> ');
@@ -1849,7 +1869,6 @@ function handleSend() {
                     readMessages = {};
                     setTimeout(function() { markVisibleMessagesAsRead(); }, 300);
                 }
-                // ⭐ 强制保存确保所有分段都已写入
                 immediateSaveAllData();
                 showToast('✅ 发送成功');
                 return;
@@ -1885,7 +1904,6 @@ function handleSend() {
     });
 }
 
-// ⭐ 修改后的 addMessageToRole - 使用 immediateSaveAllData
 function addMessageToRole(roleId, role, content, type, giftData) {
     type = type || 'text';
     var r = roles.find(function(ro) { return ro.id === roleId; });
@@ -1923,7 +1941,6 @@ function addMessageToRole(roleId, role, content, type, giftData) {
     if (role === 'user' || role === 'assistant') {
         detectHeartKeywords(r.id, content, role);
     }
-    // ⭐ 使用立即保存，防止刷新丢消息
     immediateSaveAllData();
     updateHeartDisplay();
     return msgId;
@@ -2294,6 +2311,72 @@ function callRelayAPI(userMessage, role) {
         reply = reply.replace(/^我[^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
         reply = reply.replace(/^[他她][^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
         reply = reply.replace(/^[忍不住心想觉得感到][^，。！？]*[，。！？]?\s*/gm, '');
+        reply = reply.replace(/\n{3,}/g, '\n\n').trim();
+        return reply;
+    }).catch(function(e) {
+        clearTimeout(timeoutId);
+        throw e;
+    });
+}
+
+function callWebSearchAPI(userMessage, role) {
+    var endpoint = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+    var apiKey = CONFIG.websearchApiKey;
+    var model = CONFIG.websearchModel || 'qwen-plus';
+    var enableSearch = CONFIG.websearchEnable !== false;
+    
+    if (!apiKey) throw new Error('请先在设置中配置联网搜索 API Key');
+    if (!endpoint) throw new Error('请先在设置中配置联网搜索 Endpoint');
+    
+    var systemPrompt = buildSystemPrompt(role);
+    var history = (role.messages || []).slice(-10).filter(function(m) {
+        return m.type === 'text' || m.type === 'gift';
+    }).map(function(m) {
+        var content = m.type === 'gift' ? '（送礼消息：' + (m.giftData ? m.giftData.productName : '礼物') + '）' : m.content;
+        return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
+    });
+    
+    var temperature = parseFloat(CONFIG.temperature) || 0.9;
+    
+    var requestBody = {
+        model: model,
+        messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userMessage }],
+        temperature: temperature,
+        max_tokens: 600
+    };
+    
+    if (enableSearch) {
+        requestBody.tools = [{
+            type: 'web_search',
+            web_search: {
+                enable: true
+            }
+        }];
+    }
+    
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
+    
+    return fetchWithRetry(endpoint + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+    }, 1).then(function(resp) {
+        clearTimeout(timeoutId);
+        if (!resp.ok) {
+            return resp.text().then(function(err) {
+                var msg = '联网搜索 API 错误 (' + resp.status + ')';
+                try { var j = JSON.parse(err); msg = j.error && j.error.message ? j.error.message : msg; } catch (_) {}
+                throw new Error(msg);
+            });
+        }
+        return resp.json();
+    }).then(function(data) {
+        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (!reply) throw new Error('未获取到回复');
+        reply = reply.replace(/【\d+†[^】]*】/g, '').trim();
+        reply = reply.replace(/\[citation:\d+\]/g, '').trim();
         reply = reply.replace(/\n{3,}/g, '\n\n').trim();
         return reply;
     }).catch(function(e) {
@@ -4212,7 +4295,7 @@ function openSettings() {
     document.getElementById('relayEndpoint').value = CONFIG.relayEndpoint || '';
     document.getElementById('relayApiKey').value = CONFIG.relayApiKey || '';
     document.getElementById('relayModelCustom').value = CONFIG.relayModel || '';
-    toggleAccessMode(CONFIG.accessMode || 'direct'); // 🌐 加载联网搜索模式的配置到界面
+    toggleAccessMode(CONFIG.accessMode || 'direct');
     document.getElementById('websearchEndpoint').value = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
     document.getElementById('websearchApiKey').value = CONFIG.websearchApiKey || '';
     document.getElementById('websearchModel').value = CONFIG.websearchModel || 'qwen-plus';
@@ -4282,12 +4365,10 @@ function toggleAccessMode(mode) {
     var relayConfig = document.getElementById('relayConfig');
     var websearchConfig = document.getElementById('websearchConfig');
     
-    // 先全部隐藏
     directConfig.style.display = 'none';
     relayConfig.style.display = 'none';
     websearchConfig.style.display = 'none';
     
-    // 根据选择显示对应的
     if (mode === 'direct') {
         directConfig.style.display = 'block';
     } else if (mode === 'relay') {
@@ -5446,9 +5527,7 @@ function deleteMessageAndMemory(roleId, messageId) {
     renderMessages();
     renderContacts();
     renderRoleManager();
-}
-
-document.getElementById('testVoiceBtn').addEventListener('click', async function() {
+} document.getElementById('testVoiceBtn').addEventListener('click', async function() {
     var roleId = document.getElementById('voiceRoleSelector').value;
     var role = roles.find(function(r) { return r.id === roleId; });
     if (!role) { showToast('⚠️ 请选择角色'); return; }
@@ -5980,7 +6059,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
    document.getElementById('saveSettingsBtn').addEventListener('click', function() {
-        // 读取通用设置
         CONFIG.accessMode = document.getElementById('accessMode').value;
         CONFIG.apiKey = document.getElementById('directApiKey').value.trim();
         CONFIG.model = document.getElementById('directModel').value;
@@ -5990,7 +6068,6 @@ document.addEventListener('DOMContentLoaded', function() {
         var selectModel = document.getElementById('relayModelSelect').value;
         CONFIG.relayModel = customModel || selectModel || CONFIG.relayModel || '';
         
-        // 🌐 读取联网搜索模式的配置
         CONFIG.websearchEndpoint = document.getElementById('websearchEndpoint').value.trim();
         CONFIG.websearchApiKey = document.getElementById('websearchApiKey').value.trim();
         CONFIG.websearchModel = document.getElementById('websearchModel').value;
@@ -6448,76 +6525,6 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('⚠️ 应用初始化失败，请刷新页面重试');
     }
 }); 
-// 🌐 新增：联网搜索模式（支持千问/豆包）
-function callWebSearchAPI(userMessage, role) {
-    var endpoint = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-    var apiKey = CONFIG.websearchApiKey;
-    var model = CONFIG.websearchModel || 'qwen-plus';
-    var enableSearch = CONFIG.websearchEnable !== false;
-    
-    if (!apiKey) throw new Error('请先在设置中配置联网搜索 API Key');
-    if (!endpoint) throw new Error('请先在设置中配置联网搜索 Endpoint');
-    
-    var systemPrompt = buildSystemPrompt(role);
-    var history = (role.messages || []).slice(-10).filter(function(m) {
-        return m.type === 'text' || m.type === 'gift';
-    }).map(function(m) {
-        var content = m.type === 'gift' ? '（送礼消息：' + (m.giftData ? m.giftData.productName : '礼物') + '）' : m.content;
-        return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
-    });
-    
-    var temperature = parseFloat(CONFIG.temperature) || 0.9;
-    
-    var requestBody = {
-        model: model,
-        messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userMessage }],
-        temperature: temperature,
-        max_tokens: 600
-    };
-    
-    // ⭐ 如果开启了联网搜索，加上 tools 参数
-    if (enableSearch) {
-        requestBody.tools = [{
-            type: 'web_search',
-            web_search: {
-                enable: true
-            }
-        }];
-    }
-    
-    var controller = new AbortController();
-    var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
-    
-    return fetchWithRetry(endpoint + '/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
-    }, 1).then(function(resp) {
-        clearTimeout(timeoutId);
-        if (!resp.ok) {
-            return resp.text().then(function(err) {
-                var msg = '联网搜索 API 错误 (' + resp.status + ')';
-                try { var j = JSON.parse(err); msg = j.error && j.error.message ? j.error.message : msg; } catch (_) {}
-                throw new Error(msg);
-            });
-        }
-        return resp.json();
-    }).then(function(data) {
-        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (!reply) throw new Error('未获取到回复');
-        
-        // 清洗可能出现的搜索结果引用标记
-        reply = reply.replace(/【\d+†[^】]*】/g, '').trim();
-        reply = reply.replace(/\[citation:\d+\]/g, '').trim();
-        reply = reply.replace(/\n{3,}/g, '\n\n').trim();
-        
-        return reply;
-    }).catch(function(e) {
-        clearTimeout(timeoutId);
-        throw e;
-    });
-}
 </script>
 </body>
 </html>
