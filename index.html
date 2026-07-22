@@ -591,8 +591,8 @@
         @media (max-width: 460px) { .phone-frame { border-radius: 0; height: 100vh; max-height: 100vh; } body { padding: 0; } }
         @media (min-width: 431px) { .phone-frame { border-radius: 32px; height: 780px; max-height: 90vh; box-shadow: 0 20px 60px rgba(0,0,0,0.6); } body { padding: 12px; } }
     </style>
-</head>
-<body> <div class="phone-frame" id="app">
+</head> <body>
+<div class="phone-frame" id="app">
     <div class="screen-launcher" id="launcherScreen">
         <button class="theme-toggle-btn" id="themeToggleBtn" title="切换深色/浅色模式"><i class="fas fa-moon" id="themeIcon"></i></button>
         <div class="status-bar"><span class="time" id="statusTime">21:00</span><span class="icons"><i class="fas fa-signal"></i> <i class="fas fa-wifi"></i> <i class="fas fa-battery-three-quarters"></i></span></div>
@@ -664,7 +664,7 @@
                 </div>
                 <input type="text" id="relayModelCustom" placeholder="手动输入模型名（拉取失败时使用）" style="margin-top:4px;font-size:12px;color:var(--text-secondary);" />
             </div>
-        </div>
+        </div> <!-- 🌐 联网搜索模式配置 -->
         <div id="websearchConfig" style="display:none;">
             <div class="setting-group">
                 <label>🌐 API Endpoint</label>
@@ -784,13 +784,16 @@
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div> <script>
 // ============================================================
-//  🚀 梦女空间 v4.1 - 多模型 + 百炼语音版（修复版）
-//  修复：联网搜索 API Key 持久化
-//  修复：百炼 TTS URL 格式
-//  修复：心跳恢复定时器冲突
-//  修复：数据导入导出完整性
-//  新增：数据兼容性保障
-// ============================================================
+//  🚀 梦女空间 v4.0 - 多模型 + 百炼语音版
+//  修复：语音播放器样式紧凑好看
+//  修复：时间戳 NaN:NaN
+//  修复：数据导出/导入完整实现
+//  修复：语音试听音频叠加
+//  修复：generateContextSummary 加保护
+//  ✨ 新增：时光胶囊记忆联动 - AI 读取 role.memory
+//  ✨ 新增：对话摘要自动存入近期记忆
+//  ⭐ 核心修复：立即保存机制，解决刷新丢消息问题
+// ============================================================ 
 
 var CONSTANTS = {
     AI_CHECK_INTERVAL: 30 * 60 * 1000,
@@ -835,6 +838,7 @@ var CONFIG = {
     relayEndpoint: '',
     relayApiKey: '',
     relayModel: '',
+// 🌐 联网搜索模式配置
     websearchEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     websearchApiKey: '',
     websearchModel: 'qwen-plus',
@@ -913,10 +917,11 @@ function createDefaultRole(name) {
 function getRolesList() { return roles || []; }
 function escapeHtml(text) { if (text === null || text === undefined) return ''; text = String(text); var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
+function getRolesList() { return roles || []; }
+function escapeHtml(text) { if (text === null || text === undefined) return ''; text = String(text); var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 function getLevel(value) { for (var i = 0; i < CONSTANTS.LEVEL_MAP.length; i++) { if (value <= CONSTANTS.LEVEL_MAP[i].max) return CONSTANTS.LEVEL_MAP[i].label; } return '灵魂共振'; }
 function getIntimacyLevel(intimacy) { if (intimacy < 20) return '初识'; if (intimacy < 40) return '熟悉'; if (intimacy < 60) return '亲密'; if (intimacy < 80) return '依赖'; return '灵魂伴侣'; }
-function getHeartData(role) { if (!role) return { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; if (!role.heartData) { role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; debouncedSaveAllData(); } return role.heartData; }
-
+function getHeartData(role) { if (!role) return { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; if (!role.heartData) { role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; debouncedSaveAllData(); } return role.heartData; } // ⭐ 新增：立即同步保存函数（不含防抖，用于消息等关键数据）
 function immediateSaveAllData() {
     try {
         var configToSave = JSON.parse(JSON.stringify(CONFIG));
@@ -935,6 +940,7 @@ function immediateSaveAllData() {
     }
 }
 
+// ⭐ 修改防抖保存，改为调用 immediateSaveAllData
 function debouncedSaveAllData() {
     if (_saveTimer) clearTimeout(_saveTimer);
     _saveTimer = setTimeout(function() { immediateSaveAllData(); }, 300);
@@ -946,7 +952,18 @@ function saveAllData() {
         if (configToSave.heart) delete configToSave.heart.recoveryTimer;
         var wallpaperFlag = configToSave.wallpaper ? 'saved' : '';
         configToSave.wallpaper = wallpaperFlag;
-        var data = { config: configToSave, roles: roles.map(function(r) { return deepCloneRole(r); }), currentRoleId: currentRoleId };
+        
+        // ⭐ 确保联网配置被保存
+        configToSave.websearchApiKey = CONFIG.websearchApiKey;
+        configToSave.websearchEndpoint = CONFIG.websearchEndpoint;
+        configToSave.websearchModel = CONFIG.websearchModel;
+        configToSave.websearchEnable = CONFIG.websearchEnable;
+        
+        var data = {
+            config: configToSave,
+            roles: roles.map(function(r) { return deepCloneRole(r); }),
+            currentRoleId: currentRoleId
+        };
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
     } catch (e) {
         console.error('保存数据失败:', e);
@@ -1050,10 +1067,6 @@ function loadAllData() {
         if (!CONFIG.relayEndpoint) CONFIG.relayEndpoint = '';
         if (!CONFIG.relayApiKey) CONFIG.relayApiKey = '';
         if (!CONFIG.relayModel) CONFIG.relayModel = '';
-        if (!CONFIG.websearchEndpoint) CONFIG.websearchEndpoint = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-        if (!CONFIG.websearchApiKey) CONFIG.websearchApiKey = '';
-        if (!CONFIG.websearchModel) CONFIG.websearchModel = 'qwen-plus';
-        if (CONFIG.websearchEnable === undefined) CONFIG.websearchEnable = true;
 
         roles = savedData.roles;
         roles.forEach(function(role) {
@@ -1086,10 +1099,6 @@ function loadAllData() {
         CONFIG = {
             accessMode: 'direct', apiKey: '', model: 'deepseek-chat',
             relayEndpoint: '', relayApiKey: '', relayModel: '',
-            websearchEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-            websearchApiKey: '',
-            websearchModel: 'qwen-plus',
-            websearchEnable: true,
             voice: { mode: 'bailian', endpoint: 'https://dashscope.aliyuncs.com', apiKey: '', model: 'cosyvoice-v3.5-plus', autoSpeak: true, rate: 1.0, pitch: 1.0 },
             wallpaper: '', chatBg: '', userAvatar: '',
             iconStyle: 'glass', bubbleStyle: 'default', timeMode: 'HH:MM', permission: null,
@@ -1323,7 +1332,9 @@ function updateIntimacy(role) {
     if (role.extendedState.intimacy < 0) role.extendedState.intimacy = 0;
     if (role.extendedState.intimacy > CONSTANTS.MAX_INTIMACY) role.extendedState.intimacy = CONSTANTS.MAX_INTIMACY;
     return role.extendedState.intimacy;
-} function generateContextSummary(role) {
+}
+
+function generateContextSummary(role) {
     if (!role || !Array.isArray(role.messages) || role.messages.length < 3) return;
     var apiKey = CONFIG.accessMode === 'direct' ? CONFIG.apiKey : CONFIG.relayApiKey;
     var endpoint = CONFIG.accessMode === 'direct' ? 'https://api.deepseek.com/v1' : CONFIG.relayEndpoint;
@@ -1424,9 +1435,8 @@ function saveSummaryToMemory(role, summary) {
         });
     }
     debouncedSaveAllData();
-}
-
-function fetchWithRetry(url, options, maxRetries) {
+    console.log('🧠 对话摘要已存入近期记忆（按需调用）:', summary);
+} function fetchWithRetry(url, options, maxRetries) {
     maxRetries = maxRetries || 1;
     var retryCount = 0;
     function doFetch() {
@@ -1801,6 +1811,7 @@ function regenerateMessage(roleId, messageId) {
     });
 }
 
+// ⭐ 修改后的 handleSend - 发送完成后强制保存
 function handleSend() {
     if (isSending) { showToast('⏳ 正在发送中，请稍后'); return; }
     var input = document.getElementById('messageInput');
@@ -1849,6 +1860,7 @@ function handleSend() {
                     readMessages = {};
                     setTimeout(function() { markVisibleMessagesAsRead(); }, 300);
                 }
+                // ⭐ 强制保存确保所有分段都已写入
                 immediateSaveAllData();
                 showToast('✅ 发送成功');
                 return;
@@ -1884,7 +1896,8 @@ function handleSend() {
     });
 }
 
-function addMessageToRole(roleId, sender, content, type, giftData) {
+// ⭐ 修改后的 addMessageToRole - 使用 immediateSaveAllData
+function addMessageToRole(roleId, role, content, type, giftData) {
     type = type || 'text';
     var r = roles.find(function(ro) { return ro.id === roleId; });
     if (!r) return;
@@ -1893,7 +1906,7 @@ function addMessageToRole(roleId, sender, content, type, giftData) {
     var timeStr = new Date().toISOString();
     var msg = {
         id: msgId,
-        role: sender,
+        role: role,
         content: content,
         type: type,
         time: timeStr,
@@ -1903,14 +1916,14 @@ function addMessageToRole(roleId, sender, content, type, giftData) {
     };
     if (giftData) msg.giftData = giftData;
     r.messages.push(msg);
-    if (sender === 'user') {
+    if (role === 'user') {
         detectSleepMode(roleId, content);
         updateContextMemory(r, content, null);
         updateIntimacy(r);
         CONFIG.lastChatVisit[roleId] = Date.now();
         r.extendedState.lastUserMessageTime = Date.now();
     }
-    if (sender === 'assistant') {
+    if (role === 'assistant') {
         r.extendedState.lastAiMessageTime = Date.now();
         if (!CONFIG.unreadCount) CONFIG.unreadCount = {};
         CONFIG.unreadCount[roleId] = (CONFIG.unreadCount[roleId] || 0) + 1;
@@ -1918,9 +1931,10 @@ function addMessageToRole(roleId, sender, content, type, giftData) {
             generateContextSummary(r);
         }
     }
-    if (sender === 'user' || sender === 'assistant') {
-        detectHeartKeywords(r.id, content, sender);
+    if (role === 'user' || role === 'assistant') {
+        detectHeartKeywords(r.id, content, role);
     }
+    // ⭐ 使用立即保存，防止刷新丢消息
     immediateSaveAllData();
     updateHeartDisplay();
     return msgId;
@@ -2299,72 +2313,6 @@ function callRelayAPI(userMessage, role) {
     });
 }
 
-function callWebSearchAPI(userMessage, role) {
-    var endpoint = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-    var apiKey = CONFIG.websearchApiKey;
-    var model = CONFIG.websearchModel || 'qwen-plus';
-    var enableSearch = CONFIG.websearchEnable !== false;
-    
-    if (!apiKey) throw new Error('请先在设置中配置联网搜索 API Key');
-    if (!endpoint) throw new Error('请先在设置中配置联网搜索 Endpoint');
-    
-    var systemPrompt = buildSystemPrompt(role);
-    var history = (role.messages || []).slice(-10).filter(function(m) {
-        return m.type === 'text' || m.type === 'gift';
-    }).map(function(m) {
-        var content = m.type === 'gift' ? '（送礼消息：' + (m.giftData ? m.giftData.productName : '礼物') + '）' : m.content;
-        return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
-    });
-    
-    var temperature = parseFloat(CONFIG.temperature) || 0.9;
-    
-    var requestBody = {
-        model: model,
-        messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userMessage }],
-        temperature: temperature,
-        max_tokens: 600
-    };
-    
-    if (enableSearch) {
-        requestBody.tools = [{
-            type: 'web_search',
-            web_search: {
-                enable: true
-            }
-        }];
-    }
-    
-    var controller = new AbortController();
-    var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
-    
-    return fetchWithRetry(endpoint + '/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
-    }, 1).then(function(resp) {
-        clearTimeout(timeoutId);
-        if (!resp.ok) {
-            return resp.text().then(function(err) {
-                var msg = '联网搜索 API 错误 (' + resp.status + ')';
-                try { var j = JSON.parse(err); msg = j.error && j.error.message ? j.error.message : msg; } catch (_) {}
-                throw new Error(msg);
-            });
-        }
-        return resp.json();
-    }).then(function(data) {
-        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (!reply) throw new Error('未获取到回复');
-        reply = reply.replace(/【\d+†[^】]*】/g, '').trim();
-        reply = reply.replace(/\[citation:\d+\]/g, '').trim();
-        reply = reply.replace(/\n{3,}/g, '\n\n').trim();
-        return reply;
-    }).catch(function(e) {
-        clearTimeout(timeoutId);
-        throw e;
-    });
-}
-
 function getMallProductsFromStorage() {
     try {
         var raw = localStorage.getItem('mall_products_cache');
@@ -2466,7 +2414,9 @@ function detectAndProcessGift(roleId, reply) {
         }
     }
     return reply;
-} function updateHeartDisplay() {
+}
+
+function updateHeartDisplay() {
     var heartValue = CONFIG.heart.value || 65;
     var heartLevel = CONFIG.heart.level || getLevel(heartValue);
     var signature = CONFIG.heart.signature || '今天也很想你 💕';
@@ -3255,7 +3205,7 @@ function loadWallpaperFromIndexedDB() {
             };
             request.onerror = function() { db.close(); reject(request.error); };
         });
-    });
+    }).catch(function(e) { return null; });
 }
 
 function deleteWallpaperFromIndexedDB() {
@@ -4273,7 +4223,7 @@ function openSettings() {
     document.getElementById('relayEndpoint').value = CONFIG.relayEndpoint || '';
     document.getElementById('relayApiKey').value = CONFIG.relayApiKey || '';
     document.getElementById('relayModelCustom').value = CONFIG.relayModel || '';
-    toggleAccessMode(CONFIG.accessMode || 'direct');
+    toggleAccessMode(CONFIG.accessMode || 'direct'); // 🌐 加载联网搜索模式的配置到界面
     document.getElementById('websearchEndpoint').value = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
     document.getElementById('websearchApiKey').value = CONFIG.websearchApiKey || '';
     document.getElementById('websearchModel').value = CONFIG.websearchModel || 'qwen-plus';
@@ -4343,10 +4293,12 @@ function toggleAccessMode(mode) {
     var relayConfig = document.getElementById('relayConfig');
     var websearchConfig = document.getElementById('websearchConfig');
     
+    // 先全部隐藏
     directConfig.style.display = 'none';
     relayConfig.style.display = 'none';
     websearchConfig.style.display = 'none';
     
+    // 根据选择显示对应的
     if (mode === 'direct') {
         directConfig.style.display = 'block';
     } else if (mode === 'relay') {
@@ -5507,6 +5459,245 @@ function deleteMessageAndMemory(roleId, messageId) {
     renderRoleManager();
 }
 
+document.getElementById('testVoiceBtn').addEventListener('click', async function() {
+    var roleId = document.getElementById('voiceRoleSelector').value;
+    var role = roles.find(function(r) { return r.id === roleId; });
+    if (!role) { showToast('⚠️ 请选择角色'); return; }
+    var voiceId = document.getElementById('voiceIdInput').value.trim();
+    if (!voiceId) { showToast('⚠️ 请先填写 Voice ID'); return; }
+    role.voiceId = voiceId;
+    saveAllData();
+
+    if (CONFIG.voice.mode === 'none') {
+        showToast('🔇 语音已关闭，请在设置中开启');
+        return;
+    }
+
+    showToast('🔊 正在生成试听语音...');
+    try {
+        var audioUrl = await callBailianTTS('我已经准备好了，随时可以开始。', role);
+        if (_testAudio) {
+            _testAudio.pause();
+            _testAudio.src = '';
+            _testAudio.load();
+        }
+        _testAudio = new Audio(audioUrl);
+        _testAudio.play();
+        showToast('✅ 试听中...');
+    } catch (e) {
+        showToast('❌ 试听失败: ' + e.message);
+    }
+});
+
+document.getElementById('dataExportBtn').addEventListener('click', function() {
+    var exportType = getSelectedExportType();
+    var exportData = {
+        exportTime: new Date().toISOString(),
+        version: '4.0',
+        type: exportType
+    };
+
+    switch(exportType) {
+        case 'all':
+            exportData.config = JSON.parse(JSON.stringify(CONFIG));
+            exportData.roles = roles.map(function(r) { return deepCloneRole(r); });
+            exportData.diaries = CONFIG.diaries || [];
+            break;
+        case 'settings':
+            exportData.config = {
+                wallpaper: CONFIG.wallpaper,
+                chatBg: CONFIG.chatBg,
+                userAvatar: CONFIG.userAvatar,
+                iconStyle: CONFIG.iconStyle,
+                bubbleStyle: CONFIG.bubbleStyle,
+                timeMode: CONFIG.timeMode,
+                theme: CONFIG.theme,
+                fontSize: CONFIG.fontSize,
+                fontWeight: CONFIG.fontWeight,
+                heart: {
+                    color: CONFIG.heart.color,
+                    floatingEnabled: CONFIG.heart.floatingEnabled,
+                    signature: CONFIG.heart.signature
+                }
+            };
+            break;
+        case 'roles':
+            exportData.roles = roles.map(function(r) {
+                var clone = deepCloneRole(r);
+                clone.messages = [];
+                clone.memory = [];
+                return clone;
+            });
+            break;
+        case 'chats':
+            exportData.roles = roles.map(function(r) {
+                var clone = {
+                    id: r.id,
+                    name: r.name,
+                    messages: r.messages ? r.messages.slice() : [],
+                    memory: r.memory ? r.memory.slice() : []
+                };
+                return clone;
+            });
+            break;
+        case 'diaries':
+            exportData.diaries = CONFIG.diaries || [];
+            break;
+        case 'selected':
+            var selectedIds = getSelectedRoleIds();
+            exportData.roles = roles.filter(function(r) { return selectedIds.indexOf(r.id) !== -1; }).map(function(r) { return deepCloneRole(r); });
+            exportData.diaries = (CONFIG.diaries || []).filter(function(d) { return selectedIds.indexOf(d.roleId) !== -1; });
+            break;
+        default:
+            exportData.roles = roles.map(function(r) { return deepCloneRole(r); });
+            exportData.diaries = CONFIG.diaries || [];
+            break;
+    }
+
+    var json = JSON.stringify(exportData, null, 2);
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    var filename = '梦女空间数据_' + exportType + '_' + new Date().toISOString().slice(0,10) + '.json';
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('✅ 数据已导出: ' + filename);
+    closeDataModal();
+});
+
+document.getElementById('dataImportBtn').addEventListener('click', function() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                var imported = JSON.parse(ev.target.result);
+                if (!imported.roles && !imported.diaries && !imported.config) {
+                    showToast('❌ 无效的数据文件，请检查');
+                    return;
+                }
+
+                var confirmMsg = '即将导入数据：\n';
+                if (imported.roles) confirmMsg += '📋 ' + imported.roles.length + ' 个角色\n';
+                if (imported.diaries) confirmMsg += '📖 ' + imported.diaries.length + ' 篇日记\n';
+                if (imported.config) confirmMsg += '⚙️ 包含配置信息\n';
+                confirmMsg += '\n当前数据将被覆盖，是否继续？';
+
+                if (!confirm(confirmMsg)) return;
+
+                var importType = imported.type || 'all';
+
+                if (importType === 'settings' || imported.config) {
+                    if (imported.config) {
+                        if (imported.config.wallpaper !== undefined) CONFIG.wallpaper = imported.config.wallpaper;
+                        if (imported.config.chatBg !== undefined) CONFIG.chatBg = imported.config.chatBg;
+                        if (imported.config.userAvatar !== undefined) CONFIG.userAvatar = imported.config.userAvatar;
+                        if (imported.config.iconStyle) CONFIG.iconStyle = imported.config.iconStyle;
+                        if (imported.config.bubbleStyle) CONFIG.bubbleStyle = imported.config.bubbleStyle;
+                        if (imported.config.timeMode) CONFIG.timeMode = imported.config.timeMode;
+                        if (imported.config.theme) CONFIG.theme = imported.config.theme;
+                        if (imported.config.fontSize) CONFIG.fontSize = imported.config.fontSize;
+                        if (imported.config.fontWeight) CONFIG.fontWeight = imported.config.fontWeight;
+                        if (imported.config.heart) {
+                            if (imported.config.heart.color) CONFIG.heart.color = imported.config.heart.color;
+                            if (imported.config.heart.floatingEnabled !== undefined) CONFIG.heart.floatingEnabled = imported.config.heart.floatingEnabled;
+                            if (imported.config.heart.signature) CONFIG.heart.signature = imported.config.heart.signature;
+                        }
+                        if (CONFIG.chatBg) applyChatBg(CONFIG.chatBg);
+                        if (CONFIG.userAvatar) applyUserAvatar(CONFIG.userAvatar);
+                        applyIconStyle(CONFIG.iconStyle || 'glass');
+                        applyBubbleStyle(CONFIG.bubbleStyle || 'default');
+                        applyTheme(CONFIG.theme || 'dark');
+                        updateHeartDisplay();
+                        showToast('✅ 美化设置已导入');
+                    }
+                    if (imported.roles && Array.isArray(imported.roles) && imported.roles.length > 0) {
+                        roles = imported.roles;
+                        currentRoleId = roles[0] ? roles[0].id : null;
+                        roles.forEach(function(r) {
+                            if (!r.id) r.id = generateId();
+                            if (!r.messages) r.messages = [];
+                            if (!r.memory) r.memory = [];
+                            if (!r.heartData) r.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' };
+                            initRoleExtendedState(r);
+                        });
+                        CONFIG.lastChatVisit = {};
+                        CONFIG.lastAiMessageTime = {};
+                        CONFIG.sleepMode = {};
+                        roles.forEach(function(r) {
+                            CONFIG.lastChatVisit[r.id] = 0;
+                            CONFIG.lastAiMessageTime[r.id] = 0;
+                            CONFIG.sleepMode[r.id] = false;
+                        });
+                        showToast('✅ 已导入 ' + roles.length + ' 个角色');
+                    }
+                } else {
+                    if (imported.config) {
+                        var oldApiKey = CONFIG.apiKey;
+                        var oldRelayApiKey = CONFIG.relayApiKey;
+                        var oldTtsApiKey = CONFIG.voice.apiKey;
+                        CONFIG = imported.config;
+                        CONFIG.apiKey = oldApiKey || CONFIG.apiKey;
+                        CONFIG.relayApiKey = oldRelayApiKey || CONFIG.relayApiKey;
+                        if (CONFIG.voice) CONFIG.voice.apiKey = oldTtsApiKey || CONFIG.voice.apiKey;
+                    }
+                    if (imported.roles && Array.isArray(imported.roles)) {
+                        roles = imported.roles;
+                        roles.forEach(function(r) {
+                            if (!r.id) r.id = generateId();
+                            if (!r.messages) r.messages = [];
+                            if (!r.memory) r.memory = [];
+                            if (!r.heartData) r.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' };
+                            initRoleExtendedState(r);
+                        });
+                        currentRoleId = roles[0] ? roles[0].id : null;
+                        CONFIG.lastChatVisit = {};
+                        CONFIG.lastAiMessageTime = {};
+                        CONFIG.sleepMode = {};
+                        roles.forEach(function(r) {
+                            CONFIG.lastChatVisit[r.id] = 0;
+                            CONFIG.lastAiMessageTime[r.id] = 0;
+                            CONFIG.sleepMode[r.id] = false;
+                        });
+                    }
+                    if (imported.diaries && Array.isArray(imported.diaries)) {
+                        CONFIG.diaries = imported.diaries;
+                    }
+                    showToast('✅ 完整数据已导入');
+                }
+
+                saveAllData();
+                renderContacts();
+                renderRoleManager();
+                renderDiaryAll();
+                updateChatTitle();
+                updateHeartDisplay();
+                if (CONFIG.chatBg) applyChatBg(CONFIG.chatBg);
+                if (CONFIG.userAvatar) applyUserAvatar(CONFIG.userAvatar);
+                applyIconStyle(CONFIG.iconStyle || 'glass');
+                applyBubbleStyle(CONFIG.bubbleStyle || 'default');
+                applyTheme(CONFIG.theme || 'dark');
+                closeDataModal();
+                closeSettings();
+
+            } catch (err) {
+                console.error('导入失败:', err);
+                showToast('❌ 导入失败，文件格式错误: ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+});
+
 function isContactPinned(roleId) { if (!CONFIG.pinnedContacts) return false; return CONFIG.pinnedContacts.indexOf(roleId) !== -1; }
 
 function togglePinContact(roleId) {
@@ -5552,7 +5743,7 @@ async function callBailianTTS(text, role) {
     var cleanText = text.replace(/\[表情包：[^\]]+\]/g, '').trim();
     if (!cleanText) throw new Error('文本为空（可能只有表情包）');
     if (cleanText.length > 500) cleanText = cleanText.substring(0, 500) + '……';
-    var url = endpoint.replace(/\/+$/, '') + '/api/v1/services/audio/tts/speech_synthesizer';
+    var url = endpoint.replace(/\/+$/, '') + '/api/v1/services/audio/tts/SpeechSynthesizer';
     var response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -5562,7 +5753,7 @@ async function callBailianTTS(text, role) {
         body: JSON.stringify({
             model: model,
             input: { text: cleanText },
-            voice: { voice_id: voiceId },
+            voice: voiceId,
             parameters: {
                 rate: CONFIG.voice.rate || 1.0,
                 pitch: CONFIG.voice.pitch || 1.0,
@@ -5766,8 +5957,8 @@ function init() {
             }
         });
     }
-    console.log('🚀 梦女空间 v4.1 - 多模型 + 百炼语音版（修复版）已启动！');
-    console.log('✅ 支持直连 DeepSeek + 中转模式 + 联网搜索');
+    console.log('🚀 梦女空间 v4.0 - 多模型 + 百炼语音版 已启动！');
+    console.log('✅ 支持直连 DeepSeek + 中转模式（书垒等 OpenAI 兼容）');
     console.log('✅ 支持百炼 CosyVoice TTS');
     console.log('✅ 每个角色独立 Voice ID');
     console.log('✅ 语音按需触发（用户说「发语音」或点击「朗读」）');
@@ -5799,40 +5990,70 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === this) closeSettings();
     });
 
-   document.getElementById('saveSettingsBtn').addEventListener('click', function() {
-        CONFIG.accessMode = document.getElementById('accessMode').value;
-        CONFIG.apiKey = document.getElementById('directApiKey').value.trim();
-        CONFIG.model = document.getElementById('directModel').value;
-        CONFIG.relayEndpoint = document.getElementById('relayEndpoint').value.trim();
-        CONFIG.relayApiKey = document.getElementById('relayApiKey').value.trim();
-        var customModel = document.getElementById('relayModelCustom').value.trim();
-        var selectModel = document.getElementById('relayModelSelect').value;
-        CONFIG.relayModel = customModel || selectModel || CONFIG.relayModel || '';
-        
-        CONFIG.websearchEndpoint = document.getElementById('websearchEndpoint').value.trim();
-        CONFIG.websearchApiKey = document.getElementById('websearchApiKey').value.trim();
-        CONFIG.websearchModel = document.getElementById('websearchModel').value;
-        CONFIG.websearchEnable = document.getElementById('websearchEnable').checked;
-
-        CONFIG.voice.mode = document.getElementById('ttsMode').value;
-        CONFIG.voice.endpoint = document.getElementById('ttsEndpoint').value.trim();
-        CONFIG.voice.apiKey = document.getElementById('ttsApiKey').value.trim();
-        var customTtsModel = document.getElementById('ttsModelCustom').value.trim();
-        var selectTtsModel = document.getElementById('ttsModelSelect').value;
-        CONFIG.voice.model = customTtsModel || selectTtsModel || CONFIG.voice.model || 'cosyvoice-v3.5-plus';
-        CONFIG.voice.autoSpeak = document.getElementById('autoSpeak').checked;
-
-        var voiceRoleId = document.getElementById('voiceRoleSelector').value;
-        var voiceId = document.getElementById('voiceIdInput').value.trim();
+  document.getElementById('saveSettingsBtn').addEventListener('click', function() {
+    // ===== 读取所有设置 =====
+    var mode = document.getElementById('accessMode').value;
+    var directKey = document.getElementById('directApiKey').value.trim();
+    var directModel = document.getElementById('directModel').value;
+    var relayEndpoint = document.getElementById('relayEndpoint').value.trim();
+    var relayKey = document.getElementById('relayApiKey').value.trim();
+    var relayModelCustom = document.getElementById('relayModelCustom').value.trim();
+    var relayModelSelect = document.getElementById('relayModelSelect').value;
+    
+    // 🌐 联网搜索
+    var webEndpoint = document.getElementById('websearchEndpoint').value.trim();
+    var webKey = document.getElementById('websearchApiKey').value.trim();
+    var webModel = document.getElementById('websearchModel').value;
+    var webEnable = document.getElementById('websearchEnable').checked;
+    
+    // 语音设置
+    var ttsMode = document.getElementById('ttsMode').value;
+    var ttsEndpoint = document.getElementById('ttsEndpoint').value.trim();
+    var ttsKey = document.getElementById('ttsApiKey').value.trim();
+    var ttsModelCustom = document.getElementById('ttsModelCustom').value.trim();
+    var ttsModelSelect = document.getElementById('ttsModelSelect').value;
+    var autoSpeak = document.getElementById('autoSpeak').checked;
+    
+    var voiceRoleId = document.getElementById('voiceRoleSelector').value;
+    var voiceId = document.getElementById('voiceIdInput').value.trim();
+    
+    // ===== 赋值给 CONFIG =====
+    CONFIG.accessMode = mode;
+    CONFIG.apiKey = directKey;
+    CONFIG.model = directModel;
+    CONFIG.relayEndpoint = relayEndpoint;
+    CONFIG.relayApiKey = relayKey;
+    CONFIG.relayModel = relayModelCustom || relayModelSelect || CONFIG.relayModel || '';
+    
+    CONFIG.websearchEndpoint = webEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+    CONFIG.websearchApiKey = webKey;
+    CONFIG.websearchModel = webModel || 'qwen-plus';
+    CONFIG.websearchEnable = webEnable !== false;
+    
+    CONFIG.voice.mode = ttsMode;
+    CONFIG.voice.endpoint = ttsEndpoint || 'https://dashscope.aliyuncs.com';
+    CONFIG.voice.apiKey = ttsKey;
+    CONFIG.voice.model = ttsModelCustom || ttsModelSelect || CONFIG.voice.model || 'cosyvoice-v3.5-plus';
+    CONFIG.voice.autoSpeak = autoSpeak;
+    
+    if (voiceRoleId) {
         var voiceRole = roles.find(function(r) { return r.id === voiceRoleId; });
         if (voiceRole) {
             voiceRole.voiceId = voiceId;
         }
-
-        saveAllData();
-        closeSettings();
-        showToast('✅ 设置已保存');
-    });
+    }
+    
+    // ===== 备份到 localStorage =====
+    try {
+        localStorage.setItem('websearch_api_key_backup', webKey);
+        localStorage.setItem('websearch_endpoint_backup', webEndpoint);
+        localStorage.setItem('websearch_model_backup', webModel);
+    } catch (e) {}
+    
+    saveAllData();
+    closeSettings();
+    showToast('✅ 设置已保存' + (mode === 'websearch' ? '（🌐 联网模式已启用）' : ''));
+});
 
     document.getElementById('accessMode').addEventListener('change', function() {
         toggleAccessMode(this.value);
@@ -6265,7 +6486,163 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('初始化失败:', e);
         showToast('⚠️ 应用初始化失败，请刷新页面重试');
     }
-});
+}); 
+// 🌐 新增：联网搜索模式（支持千问/豆包）
+
+function callWebSearchAPI(userMessage, role) {
+    // ===== 从多个来源获取配置 =====
+    var endpoint = CONFIG.websearchEndpoint;
+    var apiKey = CONFIG.websearchApiKey;
+    var model = CONFIG.websearchModel || 'qwen-plus';
+    var enableSearch = CONFIG.websearchEnable !== false;
+    
+    // 从备份读取
+    if (!apiKey) {
+        try {
+            var backup = localStorage.getItem('websearch_api_key_backup');
+            if (backup && backup.trim()) {
+                apiKey = backup.trim();
+                CONFIG.websearchApiKey = apiKey;
+            }
+        } catch (e) {}
+    }
+    
+    if (!apiKey) {
+        try {
+            var saved = localStorage.getItem('ds_multirole_v2');
+            if (saved) {
+                var parsed = JSON.parse(saved);
+                if (parsed.config && parsed.config.websearchApiKey) {
+                    apiKey = parsed.config.websearchApiKey;
+                    CONFIG.websearchApiKey = apiKey;
+                }
+            }
+        } catch (e) {}
+    }
+    
+    if (!endpoint) {
+        try {
+            var endpointBackup = localStorage.getItem('websearch_endpoint_backup');
+            if (endpointBackup && endpointBackup.trim()) {
+                endpoint = endpointBackup.trim();
+                CONFIG.websearchEndpoint = endpoint;
+            }
+        } catch (e) {}
+    }
+    
+    if (!model || model === 'qwen-plus') {
+        try {
+            var modelBackup = localStorage.getItem('websearch_model_backup');
+            if (modelBackup && modelBackup.trim()) {
+                model = modelBackup.trim();
+                CONFIG.websearchModel = model;
+            }
+        } catch (e) {}
+    }
+    
+    if (!apiKey) {
+        throw new Error('❌ 请先在设置中配置联网搜索 API Key');
+    }
+    
+    if (!endpoint) {
+        throw new Error('❌ 请先在设置中配置联网搜索 Endpoint');
+    }
+    
+    var systemPrompt = buildSystemPrompt(role);
+    
+    var history = (role.messages || []).slice(-10).filter(function(m) {
+        return m.type === 'text' || m.type === 'gift';
+    }).map(function(m) {
+        var content = m.type === 'gift' ? '（送礼消息：' + (m.giftData ? m.giftData.productName : '礼物') + '）' : m.content;
+        return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
+    });
+    
+    var temperature = parseFloat(CONFIG.temperature) || 0.9;
+    
+    var requestBody = {
+        model: model,
+        messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userMessage }],
+        temperature: temperature,
+        max_tokens: 600
+    };
+    
+    if (enableSearch) {
+        requestBody.tools = [{
+            type: 'web_search',
+            web_search: { enable: true }
+        }];
+    }
+    
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
+    
+    return fetchWithRetry(endpoint + '/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+    }, 1).then(function(resp) {
+        clearTimeout(timeoutId);
+        if (!resp.ok) {
+            return resp.text().then(function(err) {
+                var msg = '联网搜索 API 错误 (' + resp.status + ')';
+                try {
+                    var j = JSON.parse(err);
+                    msg = j.error && j.error.message ? j.error.message : msg;
+                } catch (_) {}
+                throw new Error(msg);
+            });
+        }
+        return resp.json();
+    }).then(function(data) {
+        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (!reply) throw new Error('未获取到回复');
+        reply = reply.replace(/【\d+†[^】]*】/g, '').trim();
+        reply = reply.replace(/\[citation:\d+\]/g, '').trim();
+        reply = reply.replace(/\n{3,}/g, '\n\n').trim();
+        return reply;
+    }).catch(function(e) {
+        clearTimeout(timeoutId);
+        throw e;
+    });
+}
+    
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
+    
+    return fetchWithRetry(endpoint + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+    }, 1).then(function(resp) {
+        clearTimeout(timeoutId);
+        if (!resp.ok) {
+            return resp.text().then(function(err) {
+                var msg = '联网搜索 API 错误 (' + resp.status + ')';
+                try { var j = JSON.parse(err); msg = j.error && j.error.message ? j.error.message : msg; } catch (_) {}
+                throw new Error(msg);
+            });
+        }
+        return resp.json();
+    }).then(function(data) {
+        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (!reply) throw new Error('未获取到回复');
+        
+        // 清洗可能出现的搜索结果引用标记
+        reply = reply.replace(/【\d+†[^】]*】/g, '').trim();
+        reply = reply.replace(/\[citation:\d+\]/g, '').trim();
+        reply = reply.replace(/\n{3,}/g, '\n\n').trim();
+        
+        return reply;
+    }).catch(function(e) {
+        clearTimeout(timeoutId);
+        throw e;
+    });
+}
 </script>
 </body>
 </html>
