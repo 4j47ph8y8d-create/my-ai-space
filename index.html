@@ -6447,7 +6447,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('初始化失败:', e);
         showToast('⚠️ 应用初始化失败，请刷新页面重试');
     }
-}); // 🌐 新增：联网搜索模式（支持千问/豆包）
+}); 
+// 🌐 新增：联网搜索模式（支持千问/豆包）
 function callWebSearchAPI(userMessage, role) {
     var endpoint = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
     var apiKey = CONFIG.websearchApiKey;
