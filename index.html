@@ -844,6 +844,46 @@ var _testAudio = null;
 
 function generateId() { _idCounter++; return 'id_' + Date.now() + '_' + _idCounter + '_' + Math.random().toString(36).substr(2, 6); }
 function getCurrentRole() { return roles.find(function(r) { return r.id === currentRoleId; }) || roles[0] || null; }
+
+function createDefaultRole(name) {
+    var roleId = generateId();
+    var now = new Date().toISOString();
+    return {
+        id: roleId,
+        name: name || '新角色',
+        avatar: '',
+        chatBg: '',
+        voiceId: '',
+        persona: '一个温柔体贴的人',
+        background: '生活在充满爱的世界里',
+        style: '温柔细腻，用短句回复，像真人聊天一样自然',
+        extra: '',
+        messages: [{
+            id: generateId(),
+            role: 'assistant',
+            content: '你好呀~ 我是 ' + (name || '新角色') + '，很高兴认识你 💕',
+            time: now,
+            type: 'text',
+            hasAudio: false,
+            audioUrl: null,
+            audioDuration: 0
+        }],
+        memory: [],
+        heartData: {
+            value: 65,
+            restingValue: 65,
+            peakValue: 65,
+            signature: '今天也很想你 💕',
+            recentTrigger: '初次相遇'
+        },
+        createdAt: now,
+        extendedState: null
+    };
+}
+
+function getRolesList() { return roles || []; }
+function escapeHtml(text) { if (text === null || text === undefined) return ''; text = String(text); var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+
 function getRolesList() { return roles || []; }
 function escapeHtml(text) { if (text === null || text === undefined) return ''; text = String(text); var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 function getLevel(value) { for (var i = 0; i < CONSTANTS.LEVEL_MAP.length; i++) { if (value <= CONSTANTS.LEVEL_MAP[i].max) return CONSTANTS.LEVEL_MAP[i].label; } return '灵魂共振'; }
