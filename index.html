@@ -5979,42 +5979,57 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === this) closeSettings();
     });
 
-   document.getElementById('saveSettingsBtn').addEventListener('click', function() {
-        // 读取通用设置
-        CONFIG.accessMode = document.getElementById('accessMode').value;
-        CONFIG.apiKey = document.getElementById('directApiKey').value.trim();
-        CONFIG.model = document.getElementById('directModel').value;
-        CONFIG.relayEndpoint = document.getElementById('relayEndpoint').value.trim();
-        CONFIG.relayApiKey = document.getElementById('relayApiKey').value.trim();
-        var customModel = document.getElementById('relayModelCustom').value.trim();
-        var selectModel = document.getElementById('relayModelSelect').value;
-        CONFIG.relayModel = customModel || selectModel || CONFIG.relayModel || '';
-        
-        // 🌐 读取联网搜索模式的配置
-        CONFIG.websearchEndpoint = document.getElementById('websearchEndpoint').value.trim();
-        CONFIG.websearchApiKey = document.getElementById('websearchApiKey').value.trim();
-        CONFIG.websearchModel = document.getElementById('websearchModel').value;
-        CONFIG.websearchEnable = document.getElementById('websearchEnable').checked;
-
-        CONFIG.voice.mode = document.getElementById('ttsMode').value;
-        CONFIG.voice.endpoint = document.getElementById('ttsEndpoint').value.trim();
-        CONFIG.voice.apiKey = document.getElementById('ttsApiKey').value.trim();
-        var customTtsModel = document.getElementById('ttsModelCustom').value.trim();
-        var selectTtsModel = document.getElementById('ttsModelSelect').value;
-        CONFIG.voice.model = customTtsModel || selectTtsModel || CONFIG.voice.model || 'cosyvoice-v3.5-plus';
-        CONFIG.voice.autoSpeak = document.getElementById('autoSpeak').checked;
-
-        var voiceRoleId = document.getElementById('voiceRoleSelector').value;
-        var voiceId = document.getElementById('voiceIdInput').value.trim();
-        var voiceRole = roles.find(function(r) { return r.id === voiceRoleId; });
-        if (voiceRole) {
-            voiceRole.voiceId = voiceId;
-        }
-
-        saveAllData();
-        closeSettings();
-        showToast('✅ 设置已保存');
-    });
+  document.getElementById('saveSettingsBtn').addEventListener('click', function() {
+    // ===== 1. 读取接入模式 =====
+    CONFIG.accessMode = document.getElementById('accessMode').value;
+    
+    // ===== 2. 直连模式 =====
+    CONFIG.apiKey = document.getElementById('directApiKey').value.trim();
+    CONFIG.model = document.getElementById('directModel').value;
+    
+    // ===== 3. 中转模式 =====
+    CONFIG.relayEndpoint = document.getElementById('relayEndpoint').value.trim();
+    CONFIG.relayApiKey = document.getElementById('relayApiKey').value.trim();
+    var customModel = document.getElementById('relayModelCustom').value.trim();
+    var selectModel = document.getElementById('relayModelSelect').value;
+    CONFIG.relayModel = customModel || selectModel || CONFIG.relayModel || '';
+    
+    // ===== 4. 🌐 联网搜索模式（重点修复） =====
+    var websearchEndpoint = document.getElementById('websearchEndpoint').value.trim();
+    var websearchApiKey = document.getElementById('websearchApiKey').value.trim();
+    var websearchModel = document.getElementById('websearchModel').value;
+    var websearchEnable = document.getElementById('websearchEnable').checked;
+    
+    // ⭐ 关键修复：显式赋值给 CONFIG
+    CONFIG.websearchEndpoint = websearchEndpoint;
+    CONFIG.websearchApiKey = websearchApiKey;
+    CONFIG.websearchModel = websearchModel;
+    CONFIG.websearchEnable = websearchEnable;
+    
+    // ===== 5. 语音设置 =====
+    CONFIG.voice.mode = document.getElementById('ttsMode').value;
+    CONFIG.voice.endpoint = document.getElementById('ttsEndpoint').value.trim();
+    CONFIG.voice.apiKey = document.getElementById('ttsApiKey').value.trim();
+    var customTtsModel = document.getElementById('ttsModelCustom').value.trim();
+    var selectTtsModel = document.getElementById('ttsModelSelect').value;
+    CONFIG.voice.model = customTtsModel || selectTtsModel || CONFIG.voice.model || 'cosyvoice-v3.5-plus';
+    CONFIG.voice.autoSpeak = document.getElementById('autoSpeak').checked;
+    
+    // ===== 6. 角色 Voice ID =====
+    var voiceRoleId = document.getElementById('voiceRoleSelector').value;
+    var voiceId = document.getElementById('voiceIdInput').value.trim();
+    var voiceRole = roles.find(function(r) { return r.id === voiceRoleId; });
+    if (voiceRole) {
+        voiceRole.voiceId = voiceId;
+    }
+    
+    // ===== 7. 💾 强制保存 =====
+    saveAllData();
+    closeSettings();
+    
+    // ===== 8. 显示保存成功的提示 =====
+    showToast('✅ 设置已保存' + (CONFIG.accessMode === 'websearch' ? '（联网模式已启用）' : ''));
+});
 
     document.getElementById('accessMode').addEventListener('change', function() {
         toggleAccessMode(this.value);
@@ -6449,16 +6464,47 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }); 
 // 🌐 新增：联网搜索模式（支持千问/豆包）
+
 function callWebSearchAPI(userMessage, role) {
+    // ===== 1. 从 CONFIG 读取配置 =====
     var endpoint = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
     var apiKey = CONFIG.websearchApiKey;
     var model = CONFIG.websearchModel || 'qwen-plus';
     var enableSearch = CONFIG.websearchEnable !== false;
     
-    if (!apiKey) throw new Error('请先在设置中配置联网搜索 API Key');
-    if (!endpoint) throw new Error('请先在设置中配置联网搜索 Endpoint');
+    // ===== 2. ⭐ 兜底检查：如果 CONFIG 里没有，从 localStorage 再读一次 =====
+    if (!apiKey) {
+        try {
+            var saved = localStorage.getItem('ds_multirole_v2');
+            if (saved) {
+                var parsed = JSON.parse(saved);
+                // 从 localStorage 里取出保存的 websearchApiKey
+                if (parsed.config && parsed.config.websearchApiKey) {
+                    apiKey = parsed.config.websearchApiKey;
+                    // ⭐ 重新赋值给 CONFIG，保证后续使用
+                    CONFIG.websearchApiKey = apiKey;
+                    console.log('✅ 从 localStorage 恢复了联网 Key');
+                }
+            }
+        } catch (e) {
+            console.warn('⚠️ 读取 localStorage 失败:', e);
+        }
+    }
     
+    // ===== 3. 如果还是没有 Key，报错提示 =====
+    if (!apiKey) {
+        throw new Error('❌ 请先在设置中配置联网搜索 API Key（点击桌面「设置」→ 联网搜索模式）');
+    }
+    
+    // ===== 4. 如果 Endpoint 为空，报错提示 =====
+    if (!endpoint) {
+        throw new Error('❌ 请先在设置中配置联网搜索 Endpoint');
+    }
+    
+    // ===== 5. 构建系统提示 =====
     var systemPrompt = buildSystemPrompt(role);
+    
+    // ===== 6. 构建对话历史 =====
     var history = (role.messages || []).slice(-10).filter(function(m) {
         return m.type === 'text' || m.type === 'gift';
     }).map(function(m) {
@@ -6466,8 +6512,10 @@ function callWebSearchAPI(userMessage, role) {
         return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
     });
     
+    // ===== 7. 温度参数 =====
     var temperature = parseFloat(CONFIG.temperature) || 0.9;
     
+    // ===== 8. 构建请求体 =====
     var requestBody = {
         model: model,
         messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userMessage }],
@@ -6475,7 +6523,7 @@ function callWebSearchAPI(userMessage, role) {
         max_tokens: 600
     };
     
-    // ⭐ 如果开启了联网搜索，加上 tools 参数
+    // ===== 9. ⭐ 如果开启了联网搜索，加上 tools 参数 =====
     if (enableSearch) {
         requestBody.tools = [{
             type: 'web_search',
@@ -6485,12 +6533,16 @@ function callWebSearchAPI(userMessage, role) {
         }];
     }
     
+    // ===== 10. 发起请求 =====
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
     
     return fetchWithRetry(endpoint + '/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        },
         body: JSON.stringify(requestBody),
         signal: controller.signal
     }, 1).then(function(resp) {
@@ -6498,7 +6550,10 @@ function callWebSearchAPI(userMessage, role) {
         if (!resp.ok) {
             return resp.text().then(function(err) {
                 var msg = '联网搜索 API 错误 (' + resp.status + ')';
-                try { var j = JSON.parse(err); msg = j.error && j.error.message ? j.error.message : msg; } catch (_) {}
+                try {
+                    var j = JSON.parse(err);
+                    msg = j.error && j.error.message ? j.error.message : msg;
+                } catch (_) {}
                 throw new Error(msg);
             });
         }
@@ -6518,6 +6573,7 @@ function callWebSearchAPI(userMessage, role) {
         throw e;
     });
 }
+
 </script>
 </body>
 </html>
