@@ -628,10 +628,11 @@
         </div>
         <div class="setting-group">
             <label>接入模式</label>
-            <select id="accessMode">
-                <option value="direct">直连模式（DeepSeek 官方）</option>
-                <option value="relay">中转模式（OpenAI 兼容）</option>
-            </select>
+          <select id="accessMode">
+    <option value="direct">直连模式（DeepSeek 官方）</option>
+    <option value="relay">中转模式（OpenAI 兼容）</option>
+    <option value="websearch">🌐 联网搜索模式（千问/豆包）</option>
+</select>
         </div>
         <div id="directConfig">
             <div class="setting-group">
@@ -662,6 +663,32 @@
                     <button id="fetchModelsBtn" style="padding:4px 12px;border:1px solid #07c160;border-radius:8px;background:transparent;color:#07c160;cursor:pointer;white-space:nowrap;font-size:12px;"><i class="fas fa-sync-alt"></i> 拉取</button>
                 </div>
                 <input type="text" id="relayModelCustom" placeholder="手动输入模型名（拉取失败时使用）" style="margin-top:4px;font-size:12px;color:var(--text-secondary);" />
+            </div>
+        </div> <!-- 🌐 联网搜索模式配置 -->
+        <div id="websearchConfig" style="display:none;">
+            <div class="setting-group">
+                <label>🌐 API Endpoint</label>
+                <input type="text" id="websearchEndpoint" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" />
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">推荐使用阿里云百炼的网关地址</div>
+            </div>
+            <div class="setting-group">
+                <label>API Key</label>
+                <input type="password" id="websearchApiKey" placeholder="sk-..." />
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">请在阿里云百炼控制台获取</div>
+            </div>
+            <div class="setting-group">
+                <label>模型选择</label>
+                <select id="websearchModel">
+                    <option value="qwen-plus">Qwen Plus（推荐，平衡）</option>
+                    <option value="qwen-max">Qwen Max（最强，稍慢）</option>
+                    <option value="qwen-turbo">Qwen Turbo（快速响应）</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" id="websearchEnable" checked />
+                    ✅ 开启联网搜索（让 AI 能查实时信息）
+                </label>
             </div>
         </div>
 
@@ -811,6 +838,11 @@ var CONFIG = {
     relayEndpoint: '',
     relayApiKey: '',
     relayModel: '',
+// 🌐 联网搜索模式配置
+    websearchEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    websearchApiKey: '',
+    websearchModel: 'qwen-plus',
+    websearchEnable: true,
     voice: {
         mode: 'bailian',
         endpoint: 'https://dashscope.aliyuncs.com',
@@ -2134,8 +2166,10 @@ function callAI(userMessage, role) {
     var mode = CONFIG.accessMode || 'direct';
     if (mode === 'direct') {
         return callDeepSeekDirect(userMessage, role);
-    } else {
+    } else if (mode === 'relay') {
         return callRelayAPI(userMessage, role);
+    } else if (mode === 'websearch') {
+        return callWebSearchAPI(userMessage, role);
     }
 }
 
@@ -4178,7 +4212,11 @@ function openSettings() {
     document.getElementById('relayEndpoint').value = CONFIG.relayEndpoint || '';
     document.getElementById('relayApiKey').value = CONFIG.relayApiKey || '';
     document.getElementById('relayModelCustom').value = CONFIG.relayModel || '';
-    toggleAccessMode(CONFIG.accessMode || 'direct');
+    toggleAccessMode(CONFIG.accessMode || 'direct'); // 🌐 加载联网搜索模式的配置到界面
+    document.getElementById('websearchEndpoint').value = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+    document.getElementById('websearchApiKey').value = CONFIG.websearchApiKey || '';
+    document.getElementById('websearchModel').value = CONFIG.websearchModel || 'qwen-plus';
+    document.getElementById('websearchEnable').checked = CONFIG.websearchEnable !== false;
 
     document.getElementById('ttsMode').value = CONFIG.voice.mode || 'bailian';
     document.getElementById('ttsEndpoint').value = CONFIG.voice.endpoint || 'https://dashscope.aliyuncs.com';
@@ -4242,12 +4280,20 @@ function closeSettings() {
 function toggleAccessMode(mode) {
     var directConfig = document.getElementById('directConfig');
     var relayConfig = document.getElementById('relayConfig');
+    var websearchConfig = document.getElementById('websearchConfig');
+    
+    // 先全部隐藏
+    directConfig.style.display = 'none';
+    relayConfig.style.display = 'none';
+    websearchConfig.style.display = 'none';
+    
+    // 根据选择显示对应的
     if (mode === 'direct') {
         directConfig.style.display = 'block';
-        relayConfig.style.display = 'none';
-    } else {
-        directConfig.style.display = 'none';
+    } else if (mode === 'relay') {
         relayConfig.style.display = 'block';
+    } else if (mode === 'websearch') {
+        websearchConfig.style.display = 'block';
     }
 }
 
@@ -5933,7 +5979,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === this) closeSettings();
     });
 
-    document.getElementById('saveSettingsBtn').addEventListener('click', function() {
+   document.getElementById('saveSettingsBtn').addEventListener('click', function() {
+        // 读取通用设置
         CONFIG.accessMode = document.getElementById('accessMode').value;
         CONFIG.apiKey = document.getElementById('directApiKey').value.trim();
         CONFIG.model = document.getElementById('directModel').value;
@@ -5942,6 +5989,12 @@ document.addEventListener('DOMContentLoaded', function() {
         var customModel = document.getElementById('relayModelCustom').value.trim();
         var selectModel = document.getElementById('relayModelSelect').value;
         CONFIG.relayModel = customModel || selectModel || CONFIG.relayModel || '';
+        
+        // 🌐 读取联网搜索模式的配置
+        CONFIG.websearchEndpoint = document.getElementById('websearchEndpoint').value.trim();
+        CONFIG.websearchApiKey = document.getElementById('websearchApiKey').value.trim();
+        CONFIG.websearchModel = document.getElementById('websearchModel').value;
+        CONFIG.websearchEnable = document.getElementById('websearchEnable').checked;
 
         CONFIG.voice.mode = document.getElementById('ttsMode').value;
         CONFIG.voice.endpoint = document.getElementById('ttsEndpoint').value.trim();
@@ -6394,7 +6447,76 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('初始化失败:', e);
         showToast('⚠️ 应用初始化失败，请刷新页面重试');
     }
-});
+}); // 🌐 新增：联网搜索模式（支持千问/豆包）
+function callWebSearchAPI(userMessage, role) {
+    var endpoint = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+    var apiKey = CONFIG.websearchApiKey;
+    var model = CONFIG.websearchModel || 'qwen-plus';
+    var enableSearch = CONFIG.websearchEnable !== false;
+    
+    if (!apiKey) throw new Error('请先在设置中配置联网搜索 API Key');
+    if (!endpoint) throw new Error('请先在设置中配置联网搜索 Endpoint');
+    
+    var systemPrompt = buildSystemPrompt(role);
+    var history = (role.messages || []).slice(-10).filter(function(m) {
+        return m.type === 'text' || m.type === 'gift';
+    }).map(function(m) {
+        var content = m.type === 'gift' ? '（送礼消息：' + (m.giftData ? m.giftData.productName : '礼物') + '）' : m.content;
+        return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
+    });
+    
+    var temperature = parseFloat(CONFIG.temperature) || 0.9;
+    
+    var requestBody = {
+        model: model,
+        messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userMessage }],
+        temperature: temperature,
+        max_tokens: 600
+    };
+    
+    // ⭐ 如果开启了联网搜索，加上 tools 参数
+    if (enableSearch) {
+        requestBody.tools = [{
+            type: 'web_search',
+            web_search: {
+                enable: true
+            }
+        }];
+    }
+    
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
+    
+    return fetchWithRetry(endpoint + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+    }, 1).then(function(resp) {
+        clearTimeout(timeoutId);
+        if (!resp.ok) {
+            return resp.text().then(function(err) {
+                var msg = '联网搜索 API 错误 (' + resp.status + ')';
+                try { var j = JSON.parse(err); msg = j.error && j.error.message ? j.error.message : msg; } catch (_) {}
+                throw new Error(msg);
+            });
+        }
+        return resp.json();
+    }).then(function(data) {
+        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (!reply) throw new Error('未获取到回复');
+        
+        // 清洗可能出现的搜索结果引用标记
+        reply = reply.replace(/【\d+†[^】]*】/g, '').trim();
+        reply = reply.replace(/\[citation:\d+\]/g, '').trim();
+        reply = reply.replace(/\n{3,}/g, '\n\n').trim();
+        
+        return reply;
+    }).catch(function(e) {
+        clearTimeout(timeoutId);
+        throw e;
+    });
+}
 </script>
 </body>
 </html>
