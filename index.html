@@ -952,18 +952,7 @@ function saveAllData() {
         if (configToSave.heart) delete configToSave.heart.recoveryTimer;
         var wallpaperFlag = configToSave.wallpaper ? 'saved' : '';
         configToSave.wallpaper = wallpaperFlag;
-        
-        // ⭐ 确保联网配置被保存
-        configToSave.websearchApiKey = CONFIG.websearchApiKey;
-        configToSave.websearchEndpoint = CONFIG.websearchEndpoint;
-        configToSave.websearchModel = CONFIG.websearchModel;
-        configToSave.websearchEnable = CONFIG.websearchEnable;
-        
-        var data = {
-            config: configToSave,
-            roles: roles.map(function(r) { return deepCloneRole(r); }),
-            currentRoleId: currentRoleId
-        };
+        var data = { config: configToSave, roles: roles.map(function(r) { return deepCloneRole(r); }), currentRoleId: currentRoleId };
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
     } catch (e) {
         console.error('保存数据失败:', e);
@@ -5990,70 +5979,42 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === this) closeSettings();
     });
 
-  document.getElementById('saveSettingsBtn').addEventListener('click', function() {
-    // ===== 读取所有设置 =====
-    var mode = document.getElementById('accessMode').value;
-    var directKey = document.getElementById('directApiKey').value.trim();
-    var directModel = document.getElementById('directModel').value;
-    var relayEndpoint = document.getElementById('relayEndpoint').value.trim();
-    var relayKey = document.getElementById('relayApiKey').value.trim();
-    var relayModelCustom = document.getElementById('relayModelCustom').value.trim();
-    var relayModelSelect = document.getElementById('relayModelSelect').value;
-    
-    // 🌐 联网搜索
-    var webEndpoint = document.getElementById('websearchEndpoint').value.trim();
-    var webKey = document.getElementById('websearchApiKey').value.trim();
-    var webModel = document.getElementById('websearchModel').value;
-    var webEnable = document.getElementById('websearchEnable').checked;
-    
-    // 语音设置
-    var ttsMode = document.getElementById('ttsMode').value;
-    var ttsEndpoint = document.getElementById('ttsEndpoint').value.trim();
-    var ttsKey = document.getElementById('ttsApiKey').value.trim();
-    var ttsModelCustom = document.getElementById('ttsModelCustom').value.trim();
-    var ttsModelSelect = document.getElementById('ttsModelSelect').value;
-    var autoSpeak = document.getElementById('autoSpeak').checked;
-    
-    var voiceRoleId = document.getElementById('voiceRoleSelector').value;
-    var voiceId = document.getElementById('voiceIdInput').value.trim();
-    
-    // ===== 赋值给 CONFIG =====
-    CONFIG.accessMode = mode;
-    CONFIG.apiKey = directKey;
-    CONFIG.model = directModel;
-    CONFIG.relayEndpoint = relayEndpoint;
-    CONFIG.relayApiKey = relayKey;
-    CONFIG.relayModel = relayModelCustom || relayModelSelect || CONFIG.relayModel || '';
-    
-    CONFIG.websearchEndpoint = webEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-    CONFIG.websearchApiKey = webKey;
-    CONFIG.websearchModel = webModel || 'qwen-plus';
-    CONFIG.websearchEnable = webEnable !== false;
-    
-    CONFIG.voice.mode = ttsMode;
-    CONFIG.voice.endpoint = ttsEndpoint || 'https://dashscope.aliyuncs.com';
-    CONFIG.voice.apiKey = ttsKey;
-    CONFIG.voice.model = ttsModelCustom || ttsModelSelect || CONFIG.voice.model || 'cosyvoice-v3.5-plus';
-    CONFIG.voice.autoSpeak = autoSpeak;
-    
-    if (voiceRoleId) {
+   document.getElementById('saveSettingsBtn').addEventListener('click', function() {
+        // 读取通用设置
+        CONFIG.accessMode = document.getElementById('accessMode').value;
+        CONFIG.apiKey = document.getElementById('directApiKey').value.trim();
+        CONFIG.model = document.getElementById('directModel').value;
+        CONFIG.relayEndpoint = document.getElementById('relayEndpoint').value.trim();
+        CONFIG.relayApiKey = document.getElementById('relayApiKey').value.trim();
+        var customModel = document.getElementById('relayModelCustom').value.trim();
+        var selectModel = document.getElementById('relayModelSelect').value;
+        CONFIG.relayModel = customModel || selectModel || CONFIG.relayModel || '';
+        
+        // 🌐 读取联网搜索模式的配置
+        CONFIG.websearchEndpoint = document.getElementById('websearchEndpoint').value.trim();
+        CONFIG.websearchApiKey = document.getElementById('websearchApiKey').value.trim();
+        CONFIG.websearchModel = document.getElementById('websearchModel').value;
+        CONFIG.websearchEnable = document.getElementById('websearchEnable').checked;
+
+        CONFIG.voice.mode = document.getElementById('ttsMode').value;
+        CONFIG.voice.endpoint = document.getElementById('ttsEndpoint').value.trim();
+        CONFIG.voice.apiKey = document.getElementById('ttsApiKey').value.trim();
+        var customTtsModel = document.getElementById('ttsModelCustom').value.trim();
+        var selectTtsModel = document.getElementById('ttsModelSelect').value;
+        CONFIG.voice.model = customTtsModel || selectTtsModel || CONFIG.voice.model || 'cosyvoice-v3.5-plus';
+        CONFIG.voice.autoSpeak = document.getElementById('autoSpeak').checked;
+
+        var voiceRoleId = document.getElementById('voiceRoleSelector').value;
+        var voiceId = document.getElementById('voiceIdInput').value.trim();
         var voiceRole = roles.find(function(r) { return r.id === voiceRoleId; });
         if (voiceRole) {
             voiceRole.voiceId = voiceId;
         }
-    }
-    
-    // ===== 备份到 localStorage =====
-    try {
-        localStorage.setItem('websearch_api_key_backup', webKey);
-        localStorage.setItem('websearch_endpoint_backup', webEndpoint);
-        localStorage.setItem('websearch_model_backup', webModel);
-    } catch (e) {}
-    
-    saveAllData();
-    closeSettings();
-    showToast('✅ 设置已保存' + (mode === 'websearch' ? '（🌐 联网模式已启用）' : ''));
-});
+
+        saveAllData();
+        closeSettings();
+        showToast('✅ 设置已保存');
+    });
 
     document.getElementById('accessMode').addEventListener('change', function() {
         toggleAccessMode(this.value);
@@ -6488,68 +6449,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }); 
 // 🌐 新增：联网搜索模式（支持千问/豆包）
-
 function callWebSearchAPI(userMessage, role) {
-    // ===== 从多个来源获取配置 =====
-    var endpoint = CONFIG.websearchEndpoint;
+    var endpoint = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
     var apiKey = CONFIG.websearchApiKey;
     var model = CONFIG.websearchModel || 'qwen-plus';
     var enableSearch = CONFIG.websearchEnable !== false;
     
-    // 从备份读取
-    if (!apiKey) {
-        try {
-            var backup = localStorage.getItem('websearch_api_key_backup');
-            if (backup && backup.trim()) {
-                apiKey = backup.trim();
-                CONFIG.websearchApiKey = apiKey;
-            }
-        } catch (e) {}
-    }
-    
-    if (!apiKey) {
-        try {
-            var saved = localStorage.getItem('ds_multirole_v2');
-            if (saved) {
-                var parsed = JSON.parse(saved);
-                if (parsed.config && parsed.config.websearchApiKey) {
-                    apiKey = parsed.config.websearchApiKey;
-                    CONFIG.websearchApiKey = apiKey;
-                }
-            }
-        } catch (e) {}
-    }
-    
-    if (!endpoint) {
-        try {
-            var endpointBackup = localStorage.getItem('websearch_endpoint_backup');
-            if (endpointBackup && endpointBackup.trim()) {
-                endpoint = endpointBackup.trim();
-                CONFIG.websearchEndpoint = endpoint;
-            }
-        } catch (e) {}
-    }
-    
-    if (!model || model === 'qwen-plus') {
-        try {
-            var modelBackup = localStorage.getItem('websearch_model_backup');
-            if (modelBackup && modelBackup.trim()) {
-                model = modelBackup.trim();
-                CONFIG.websearchModel = model;
-            }
-        } catch (e) {}
-    }
-    
-    if (!apiKey) {
-        throw new Error('❌ 请先在设置中配置联网搜索 API Key');
-    }
-    
-    if (!endpoint) {
-        throw new Error('❌ 请先在设置中配置联网搜索 Endpoint');
-    }
+    if (!apiKey) throw new Error('请先在设置中配置联网搜索 API Key');
+    if (!endpoint) throw new Error('请先在设置中配置联网搜索 Endpoint');
     
     var systemPrompt = buildSystemPrompt(role);
-    
     var history = (role.messages || []).slice(-10).filter(function(m) {
         return m.type === 'text' || m.type === 'gift';
     }).map(function(m) {
@@ -6566,49 +6475,15 @@ function callWebSearchAPI(userMessage, role) {
         max_tokens: 600
     };
     
+    // ⭐ 如果开启了联网搜索，加上 tools 参数
     if (enableSearch) {
         requestBody.tools = [{
             type: 'web_search',
-            web_search: { enable: true }
+            web_search: {
+                enable: true
+            }
         }];
     }
-    
-    var controller = new AbortController();
-    var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
-    
-    return fetchWithRetry(endpoint + '/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + apiKey
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
-    }, 1).then(function(resp) {
-        clearTimeout(timeoutId);
-        if (!resp.ok) {
-            return resp.text().then(function(err) {
-                var msg = '联网搜索 API 错误 (' + resp.status + ')';
-                try {
-                    var j = JSON.parse(err);
-                    msg = j.error && j.error.message ? j.error.message : msg;
-                } catch (_) {}
-                throw new Error(msg);
-            });
-        }
-        return resp.json();
-    }).then(function(data) {
-        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (!reply) throw new Error('未获取到回复');
-        reply = reply.replace(/【\d+†[^】]*】/g, '').trim();
-        reply = reply.replace(/\[citation:\d+\]/g, '').trim();
-        reply = reply.replace(/\n{3,}/g, '\n\n').trim();
-        return reply;
-    }).catch(function(e) {
-        clearTimeout(timeoutId);
-        throw e;
-    });
-}
     
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
