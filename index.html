@@ -5543,19 +5543,82 @@ function deleteMessageAndMemory(roleId, messageId) {
 
     showToast('🔊 正在生成试听语音...');
     try {
+        // callBailianTTS 现在返回 OSS 直链
         var audioUrl = await callBailianTTS('我已经准备好了，随时可以开始。', role);
+        
+        console.log('🎵 音频直链:', audioUrl);
+        
+        // 停止之前的试听
         if (_testAudio) {
             _testAudio.pause();
             _testAudio.src = '';
             _testAudio.load();
         }
+        
+        // 🔥 用直链创建 Audio 对象
         _testAudio = new Audio(audioUrl);
-        _testAudio.play();
-        showToast('✅ 试听中...');
+        
+        // 加载完成后自动播放
+        _testAudio.onloadeddata = function() {
+            _testAudio.play()
+                .then(() => {
+                    showToast('✅ 正在播放...');
+                })
+                .catch((err) => {
+                    console.error('播放被阻止:', err);
+                    // 如果自动播放被阻止，提示用户手动点击播放
+                    showToast('⚠️ 请点击页面任意位置后重试播放');
+                    // 但 audio 元素还是可以手动点击播放按钮的
+                    // 我们创建一个可视化的播放控件
+                    createInlinePlayer(audioUrl);
+                });
+        };
+        
+        _testAudio.onerror = function(e) {
+            console.error('音频加载错误:', e);
+            showToast('❌ 播放失败，尝试用系统播放器打开');
+            // 兜底方案：用系统播放器打开
+            window.open(audioUrl, '_blank');
+        };
+        
+        // 超时处理：5秒后如果还没开始播放，可能是跨域问题
+        setTimeout(function() {
+            if (_testAudio && _testAudio.paused && !_testAudio.ended) {
+                showToast('⏳ 加载较慢，请稍候... 或点击链接直接播放');
+                // 在页面上显示可点击的链接
+                createInlinePlayer(audioUrl);
+            }
+        }, 5000);
+        
     } catch (e) {
         showToast('❌ 试听失败: ' + e.message);
     }
 });
+
+// 辅助函数：在页面上创建播放链接
+function createInlinePlayer(audioUrl) {
+    var drawer = document.querySelector('.settings-drawer');
+    var oldPlayer = drawer.querySelector('.inline-audio-player');
+    if (oldPlayer) oldPlayer.remove();
+    
+    var wrapper = document.createElement('div');
+    wrapper.className = 'inline-audio-player';
+    wrapper.style.cssText = 'margin-top:10px;padding:10px;background:rgba(7,193,96,0.1);border-radius:8px;text-align:center;';
+    
+    var link = document.createElement('a');
+    link.href = audioUrl;
+    link.target = '_blank';
+    link.textContent = '🔊 点击这里用系统播放器播放';
+    link.style.cssText = 'color:#07c160;font-weight:bold;text-decoration:underline;font-size:14px;';
+    wrapper.appendChild(link);
+    
+    var hint = document.createElement('div');
+    hint.textContent = '如果页面播放失败，点击上面链接用手机自带播放器打开';
+    hint.style.cssText = 'font-size:11px;color:#999;margin-top:4px;';
+    wrapper.appendChild(hint);
+    
+    drawer.appendChild(wrapper);
+}
 
 document.getElementById('dataExportBtn').addEventListener('click', function() {
     var exportType = getSelectedExportType();
@@ -5801,42 +5864,60 @@ function isVoiceTrigger(text) {
 }
 
 async function callBailianTTS(text, role) {
-    var endpoint = getVoiceEndpoint();
+    var endpoint = CONFIG.voice.endpoint || 'https://dashscope.aliyuncs.com';
     var apiKey = getVoiceApiKey();
-    var model = getVoiceModel();
     var voiceId = role.voiceId || '';
-    if (!apiKey) throw new Error('未配置语音 API Key，请在设置中填写');
-    if (!voiceId) throw new Error('当前角色未配置 Voice ID，请在设置中填写');
-    if (!text || text.trim().length === 0) throw new Error('没有可朗读的文本');
+    
+    if (!apiKey) throw new Error('未配置语音 API Key');
+    if (!voiceId) throw new Error('当前角色未配置 Voice ID');
+    if (!endpoint) throw new Error('未配置语音 Endpoint');
+    
     var cleanText = text.replace(/\[表情包：[^\]]+\]/g, '').trim();
-    if (!cleanText) throw new Error('文本为空（可能只有表情包）');
-    if (cleanText.length > 500) cleanText = cleanText.substring(0, 500) + '……';
+    if (!cleanText) throw new Error('没有可朗读的文本');
+    if (cleanText.length > 500) cleanText = cleanText.substring(0, 500);
+    
     var url = endpoint.replace(/\/+$/, '') + '/api/v1/services/audio/tts/SpeechSynthesizer';
+    
+    var requestBody = {
+        model: CONFIG.voice.model || 'cosyvoice-v3.5-plus',
+        input: {
+            text: cleanText,
+            voice: voiceId,
+            format: 'mp3',
+            sample_rate: 22050,
+            volume: 50,
+            rate: CONFIG.voice.rate || 1.0,
+            pitch: CONFIG.voice.pitch || 1.0
+        }
+    };
+    
+    console.log('🔊 请求URL:', url);
+    console.log('🔊 请求体:', JSON.stringify(requestBody, null, 2));
+    
     var response = await fetch(url, {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + apiKey,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            model: model,
-            input: { text: cleanText },
-            voice: voiceId,
-            parameters: {
-                rate: CONFIG.voice.rate || 1.0,
-                pitch: CONFIG.voice.pitch || 1.0,
-                volume: 50
-            }
-        })
+        body: JSON.stringify(requestBody)
     });
+    
     if (!response.ok) {
         var errText = await response.text();
-        var errMsg = '百炼 TTS 错误 (' + response.status + ')';
-        try { var j = JSON.parse(errText); errMsg = j.message || errMsg; } catch (_) {}
-        throw new Error(errMsg);
+        console.error('❌ 响应错误:', errText);
+        throw new Error('TTS 错误 (' + response.status + '): ' + errText);
     }
-    var audioBlob = await response.blob();
-    return URL.createObjectURL(audioBlob);
+    
+    var result = await response.json();
+    console.log('✅ 语音合成成功:', result);
+    
+    if (result.output && result.output.audio && result.output.audio.url) {
+        // 🔥 直接返回 OSS 直链，不转 Blob
+        return result.output.audio.url;
+    } else {
+        throw new Error('未获取到音频 URL');
+    }
 }
 
 function speakWithBrowser(text, callback) {
