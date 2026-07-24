@@ -1750,13 +1750,6 @@ function createMessageRow(msg, role) {
     }
 
     var footerHtml = '';
-    if (msg.role === 'assistant' && msg.type !== 'gift' && !isVoiceBubble) {
-        if (msg.hasAudio && msg.audioUrl) {
-            footerHtml = '<div class="bubble-footer"><span class="voice-indicator"><i class="fas fa-volume-up"></i></span></div>';
-        } else {
-            footerHtml = '<div class="bubble-footer"><span class="voice-indicator" style="cursor:pointer;" onclick="triggerVoiceForMessage(\'' + msg.id + '\')"><i class="fas fa-play"></i></span></div>';
-        }
-    }
 
     row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div><div class="bubble-container">' +
         (timeStr ? '<div class="msg-time">' + timeStr + '</div>' : '') +
