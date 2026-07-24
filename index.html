@@ -6569,6 +6569,16 @@ function cleanTextForTTS(text) {
         var fallback = text.replace(/[（(][^）)]*[）)]/g, '').trim();
         return fallback || '你好';
     }
+
+// ===== 🆕 在标点处插入停顿 =====
+    // 句号、问号、感叹号 → 长停顿
+    cleaned = cleaned.replace(/[。！？]/g, function(match) {
+        return match + ' ';  // 加空格，TTS 会停顿
+    });
+    // 逗号、顿号、分号 → 短停顿
+    cleaned = cleaned.replace(/[，、；：]/g, function(match) {
+        return match + ' ';
+    });
     return cleaned;
 }
  async function callBailianTTS(text, role) {
