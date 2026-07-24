@@ -2194,27 +2194,24 @@ function handleSend() {
     addMessageToRole(role.id, 'user', finalMessage);
     renderMessages();
     showTyping();
+    
+    // 如果请求语音，临时关闭分段生成
+    var originalSplit = CONFIG.splitEnabled;
+    if (shouldGenerateVoice) {
+        CONFIG.splitEnabled = false;
+    }
+    
     callAI(finalMessage, role, shouldGenerateVoice).then(function(reply) {
         hideTyping();
         reply = detectAndProcessGift(role.id, reply);
         var segments = CONFIG.splitEnabled !== false ? splitReplyIntoMessages(reply) : [reply];
         var idx = 0;
-        function sendNext() {
-            if (idx >= segments.length) {
-                if (document.getElementById('contactsScreen').classList.contains('open')) renderContacts();
-                var currentRole = getCurrentRole();
-                if (currentRole && document.getElementById('chatScreen').classList.contains('open')) {
-                    clearUnreadForRole(currentRole.id);
-                    readMessages = {};
-                    setTimeout(function() { markVisibleMessagesAsRead(); }, 300);
-                }
-                immediateSaveAllData();
-                showToast('✅ 发送成功');
-                return;
-            }
-            var msgId = addMessageToRole(role.id, 'assistant', segments[idx], 'text', null, shouldGenerateVoice);
+        
+        // 如果只有一段，直接发送并生成语音
+        if (segments.length === 1) {
+            var msgId = addMessageToRole(role.id, 'assistant', segments[0], 'text', null, shouldGenerateVoice);
             renderMessages();
-            if (shouldGenerateVoice && msgId && idx === 0) {
+            if (shouldGenerateVoice && msgId) {
                 var msg = role.messages.find(function(m) { return m.id === msgId; });
                 if (msg) {
                     setTimeout(function() {
@@ -2228,18 +2225,58 @@ function handleSend() {
                     }, 800);
                 }
             }
+            // 恢复分段设置
+            CONFIG.splitEnabled = originalSplit;
+            if (document.getElementById('contactsScreen').classList.contains('open')) renderContacts();
+            var currentRole = getCurrentRole();
+            if (currentRole && document.getElementById('chatScreen').classList.contains('open')) {
+                clearUnreadForRole(currentRole.id);
+                readMessages = {};
+                setTimeout(function() { markVisibleMessagesAsRead(); }, 300);
+            }
+            immediateSaveAllData();
+            showToast('✅ 发送成功');
+            input.disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            input.focus();
+            isSending = false;
+            return;
+        }
+        
+        // 多段时（仅文字模式），正常分段
+        function sendNext() {
+            if (idx >= segments.length) {
+                CONFIG.splitEnabled = originalSplit;
+                if (document.getElementById('contactsScreen').classList.contains('open')) renderContacts();
+                var currentRole = getCurrentRole();
+                if (currentRole && document.getElementById('chatScreen').classList.contains('open')) {
+                    clearUnreadForRole(currentRole.id);
+                    readMessages = {};
+                    setTimeout(function() { markVisibleMessagesAsRead(); }, 300);
+                }
+                immediateSaveAllData();
+                showToast('✅ 发送成功');
+                input.disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+                input.focus();
+                isSending = false;
+                return;
+            }
+            var msgId = addMessageToRole(role.id, 'assistant', segments[idx], 'text', null, false);
+            renderMessages();
             document.getElementById('messageContainer').scrollTop = document.getElementById('messageContainer').scrollHeight;
             idx++;
             setTimeout(sendNext, 600);
         }
         sendNext();
     }).catch(function(e) {
+        // 恢复分段设置
+        CONFIG.splitEnabled = originalSplit;
         hideTyping();
         console.error('❌ 发送消息失败:', e);
         addMessageToRole(role.id, 'assistant', '💔 ' + e.message);
         renderMessages();
         showToast('❌ 发送失败: ' + e.message);
-    }).finally(function() {
         input.disabled = false;
         document.getElementById('sendBtn').disabled = false;
         input.focus();
