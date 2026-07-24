@@ -588,12 +588,143 @@
         [data-theme="light"] .voice-player .time-display {
             color: rgba(0, 0, 0, 0.2);
         }
+        /* ===== 新增：语音条样式（微信风格） ===== */
+        .voice-bubble {
+            background: var(--bg-bubble-other);
+            border-radius: 10px;
+            padding: 8px 12px 6px 12px;
+            min-width: 160px;
+            max-width: 260px;
+            box-shadow: 0 1px 4px var(--shadow-color);
+        }
+        .message-row.self .voice-bubble {
+            background: var(--bg-bubble-self);
+        }
+        .voice-bubble .voice-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .voice-bubble .voice-play-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(7, 193, 96, 0.15);
+            color: #07c160;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+            transition: 0.15s;
+        }
+        .voice-bubble .voice-play-btn:active {
+            transform: scale(0.9);
+        }
+        .voice-bubble .voice-play-btn.playing {
+            background: rgba(255, 107, 107, 0.15);
+            color: #ff6b6b;
+        }
+        .voice-bubble .voice-progress-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        .voice-bubble .voice-progress-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            min-width: 40px;
+        }
+        .voice-bubble .voice-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #07c160;
+            border-radius: 4px;
+            transition: width 0.1s linear;
+        }
+        .voice-bubble .voice-progress-dot {
+            position: absolute;
+            top: 50%;
+            left: 0%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #07c160;
+            pointer-events: none;
+            transition: left 0.1s linear;
+        }
+        .voice-bubble .voice-time {
+            font-size: 10px;
+            color: rgba(0, 0, 0, 0.35);
+            font-variant-numeric: tabular-nums;
+            flex-shrink: 0;
+            min-width: 32px;
+            text-align: right;
+            letter-spacing: 0.3px;
+        }
+        .voice-bubble .voice-status {
+            font-size: 9px;
+            color: rgba(0, 0, 0, 0.25);
+            margin-top: 2px;
+            text-align: right;
+            padding-right: 2px;
+            letter-spacing: 0.3px;
+        }
+        .message-row.self .voice-bubble .voice-status {
+            color: rgba(0, 0, 0, 0.25);
+        }
+        .voice-bubble .voice-text-follow {
+            font-size: calc(var(--font-size-base) - 1px);
+            color: var(--text-secondary);
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            opacity: 0.7;
+            line-height: 1.5;
+        }
+        .message-row.self .voice-bubble .voice-text-follow {
+            border-top-color: rgba(0, 0, 0, 0.06);
+        }
+        .voice-bubble .voice-loading {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(0,0,0,0.3);
+            font-size: 11px;
+        }
+        .voice-bubble .voice-loading .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(0,0,0,0.06);
+            border-top-color: #07c160;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        [data-theme="light"] .voice-bubble .voice-progress-bar {
+            background: rgba(0, 0, 0, 0.06);
+        }
+        [data-theme="light"] .voice-bubble .voice-time {
+            color: rgba(0, 0, 0, 0.3);
+        }
+        [data-theme="light"] .voice-bubble .voice-status {
+            color: rgba(0, 0, 0, 0.2);
+        }
         @media (max-width: 460px) { .phone-frame { border-radius: 0; height: 100vh; max-height: 100vh; } body { padding: 0; } }
         @media (min-width: 431px) { .phone-frame { border-radius: 32px; height: 780px; max-height: 90vh; box-shadow: 0 20px 60px rgba(0,0,0,0.6); } body { padding: 12px; } }
     </style>
-</head> <body>
-<div class="phone-frame" id="app">
-    <div class="screen-launcher" id="launcherScreen">
+</head>
+<body>
+<div class="phone-frame" id="app"> <div class="screen-launcher" id="launcherScreen">
         <button class="theme-toggle-btn" id="themeToggleBtn" title="切换深色/浅色模式"><i class="fas fa-moon" id="themeIcon"></i></button>
         <div class="status-bar"><span class="time" id="statusTime">21:00</span><span class="icons"><i class="fas fa-signal"></i> <i class="fas fa-wifi"></i> <i class="fas fa-battery-three-quarters"></i></span></div>
         <div class="desktop-title">✦ 我的 AI 空间 ✦</div>
@@ -780,9 +911,10 @@
     <div class="floating-heart" id="floatingHeart"><span class="fh-value" id="fhValue">65</span><span class="fh-label">BPM</span></div>
     <div class="heart-detail-overlay" id="heartDetailOverlay"><div class="heart-detail-panel"><button class="close-btn" id="hdCloseBtn">&times;</button><div class="hd-avatar" id="hdAvatar"></div><div class="hd-name" id="hdName">未绑定角色</div><div class="hd-value" id="hdValue">65<span class="hd-percent">%</span><span class="hd-bpm">♥ BPM</span></div><div class="hd-level" id="hdLevel">平静</div><div class="hd-signature" id="hdSignature">今天也很想你 💕</div><div class="hd-recent" id="hdRecent">最近心跳加速：<span class="highlight">等待你的第一句情话</span></div></div></div>
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
-</div> <script>
-// ============================================================
+</div>
+<script> // ============================================================
 //  🚀 梦女空间 v4.0 - 多模型 + 百炼语音版
+//  新增：语音条功能（微信风格），用户说"发语音"等触发词时生成语音条
 //  修复：语音播放器样式紧凑好看
 //  修复：时间戳 NaN:NaN
 //  修复：数据导出/导入完整实现
@@ -826,7 +958,9 @@ var CONSTANTS = {
     VOICE_KEYWORDS: [
         '发条语音', '发语音', '语音一下', '用语音说',
         '说给我听', '朗读', '读给我听', '语音回复',
-        '说句话', '给我发语音', '语音条', '发个语音'
+        '说句话', '给我发语音', '语音条', '发个语音',
+        '语音告诉我', '我想听你的声音', '给我说句语音',
+        '想听你声音', '发句语音', '语音说'
     ]
 };
 
@@ -872,6 +1006,7 @@ var _saveTimer = null, _idCounter = 0, _lastVisibilityCheck = 0;
 var _regenerating = {};
 var audioPlayers = {};
 var _testAudio = null;
+var _voiceGenerating = {};
 
 function generateId() { _idCounter++; return 'id_' + Date.now() + '_' + _idCounter + '_' + Math.random().toString(36).substr(2, 6); }
 function getCurrentRole() { return roles.find(function(r) { return r.id === currentRoleId; }) || roles[0] || null; }
@@ -897,7 +1032,8 @@ function createDefaultRole(name) {
             type: 'text',
             hasAudio: false,
             audioUrl: null,
-            audioDuration: 0
+            audioDuration: 0,
+            voiceRequested: false
         }],
         memory: [],
         heartData: {
@@ -977,7 +1113,8 @@ function deepCloneRole(role) {
                 giftData: m.giftData || undefined,
                 hasAudio: m.hasAudio || false,
                 audioUrl: m.audioUrl || null,
-                audioDuration: m.audioDuration || 0
+                audioDuration: m.audioDuration || 0,
+                voiceRequested: m.voiceRequested || false
             };
         });
     }
@@ -1075,6 +1212,7 @@ function deepCloneRole(role) {
                 if (msg.hasAudio === undefined) msg.hasAudio = false;
                 if (msg.audioUrl === undefined) msg.audioUrl = null;
                 if (msg.audioDuration === undefined) msg.audioDuration = 0;
+                if (msg.voiceRequested === undefined) msg.voiceRequested = false;
                 return msg;
             });
             initRoleExtendedState(role);
@@ -1107,7 +1245,7 @@ function deepCloneRole(role) {
             background: '从小在江南小镇长大，家里开旧书店',
             style: '只说对话内容，不要任何动作、表情、环境描写。用短句，像真人微信聊天一样自然分段回复。',
             extra: '有一只叫「糯米」的白猫',
-            messages: [{ id: generateId(), role: 'assistant', content: '你好呀~ 我是温柔学长，很高兴认识你 💕', time: new Date().toISOString(), type: 'text', hasAudio: false, audioUrl: null, audioDuration: 0 }],
+            messages: [{ id: generateId(), role: 'assistant', content: '你好呀~ 我是温柔学长，很高兴认识你 💕', time: new Date().toISOString(), type: 'text', hasAudio: false, audioUrl: null, audioDuration: 0, voiceRequested: false }],
             memory: [{ text: '用户喜欢被叫"小乖"' }, { text: '用户对猫毛过敏' }],
             heartData: { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' },
             createdAt: new Date().toISOString()
@@ -1131,6 +1269,9 @@ function deepCloneRole(role) {
         if (!Array.isArray(role.messages)) role.messages = [];
         if (!Array.isArray(role.memory)) role.memory = [];
         if (role.voiceId === undefined) role.voiceId = '';
+        role.messages.forEach(function(msg) {
+            if (msg.voiceRequested === undefined) msg.voiceRequested = false;
+        });
     });
 }
 
@@ -1180,6 +1321,7 @@ function migrateOldData() {
             if (msg.hasAudio === undefined) { msg.hasAudio = false; migrated = true; }
             if (msg.audioUrl === undefined) { msg.audioUrl = null; migrated = true; }
             if (msg.audioDuration === undefined) { msg.audioDuration = 0; migrated = true; }
+            if (msg.voiceRequested === undefined) { msg.voiceRequested = false; migrated = true; }
         }
     });
     if (migrated) { saveAllData(); console.log('🔄 已迁移旧数据'); }
@@ -1322,9 +1464,7 @@ function updateIntimacy(role) {
     if (role.extendedState.intimacy < 0) role.extendedState.intimacy = 0;
     if (role.extendedState.intimacy > CONSTANTS.MAX_INTIMACY) role.extendedState.intimacy = CONSTANTS.MAX_INTIMACY;
     return role.extendedState.intimacy;
-}
-
-function generateContextSummary(role) {
+} function generateContextSummary(role) {
     if (!role || !Array.isArray(role.messages) || role.messages.length < 3) return;
     var apiKey = CONFIG.accessMode === 'direct' ? CONFIG.apiKey : CONFIG.relayApiKey;
     var endpoint = CONFIG.accessMode === 'direct' ? 'https://api.deepseek.com/v1' : CONFIG.relayEndpoint;
@@ -1457,6 +1597,15 @@ function saveSummaryToMemory(role, summary) {
     return doFetch();
 }
 
+function isVoiceTrigger(text) {
+    if (!text) return false;
+    var lower = text.toLowerCase();
+    for (var i = 0; i < CONSTANTS.VOICE_KEYWORDS.length; i++) {
+        if (lower.indexOf(CONSTANTS.VOICE_KEYWORDS[i]) !== -1) return true;
+    }
+    return false;
+}
+
 function renderMessages() {
     var role = getCurrentRole();
     if (!role) return;
@@ -1528,7 +1677,7 @@ function renderMessages() {
 
     if (CONFIG.voice.autoSpeak !== false && msgs.length > 0) {
         var last = msgs[msgs.length - 1];
-        if (last.role === 'assistant' && last.type !== 'gift' && last.hasAudio && last.audioUrl) {
+        if (last.role === 'assistant' && last.type !== 'gift' && last.hasAudio && last.audioUrl && last.voiceRequested) {
             setTimeout(function() {
                 createVoicePlayer(last.id, last.audioUrl, last.audioDuration);
             }, 500);
@@ -1542,6 +1691,7 @@ function createMessageRow(msg, role) {
     if (msg.id) row.dataset.msgId = msg.id;
 
     var contentHtml = msg.content;
+    var isVoiceBubble = msg.role === 'assistant' && msg.voiceRequested === true && msg.type !== 'gift';
 
     if (msg.type === 'gift') {
         var giftData = msg.giftData || {};
@@ -1553,6 +1703,30 @@ function createMessageRow(msg, role) {
         contentHtml = '<div class="gift-card" data-product-name="' + productName + '" data-from-name="' + fromName + '" data-note="' + note + '"><div class="gift-row"><div class="gift-icon-box">🎁</div><div class="gift-info"><div class="gift-name">' + productName + '</div><div class="gift-from">来自：' + fromName + '</div>' + (price > 0 ? '<div class="gift-price">¥' + price + '</div>' : '') + '</div></div>' + (note ? '<div class="gift-note-text">💬 ' + note + '</div>' : '') + '<div class="gift-status">' + statusText + '</div></div>';
     } else if (msg.type === 'image') {
         contentHtml = '<img src="' + msg.content + '" alt="图片" />';
+    } else if (isVoiceBubble) {
+        var hasAudio = msg.hasAudio && msg.audioUrl;
+        var duration = msg.audioDuration || 0;
+        var durationStr = formatTimeDisplay(duration);
+        var statusText = '已保存·已读';
+        var voiceHtml = '<div class="voice-bubble" data-msgid="' + msg.id + '">';
+        if (hasAudio) {
+            voiceHtml += '<div class="voice-row">' +
+                '<button class="voice-play-btn" data-msgid="' + msg.id + '" data-action="playvoice"><i class="fas fa-play"></i></button>' +
+                '<div class="voice-progress-wrap">' +
+                '<div class="voice-progress-bar" data-msgid="' + msg.id + '">' +
+                '<div class="voice-progress-fill" style="width:0%;"></div>' +
+                '<div class="voice-progress-dot" style="left:0%;"></div>' +
+                '</div>' +
+                '<span class="voice-time">' + durationStr + '</span>' +
+                '</div>' +
+                '</div>' +
+                '<div class="voice-status">' + statusText + '</div>';
+        } else {
+            voiceHtml += '<div class="voice-loading"><span class="spinner"></span> 语音生成中...</div>';
+        }
+        voiceHtml += '<div class="voice-text-follow">' + escapeHtml(msg.content) + '</div>';
+        voiceHtml += '</div>';
+        contentHtml = voiceHtml;
     } else {
         var memeMatch = contentHtml.match(/\[表情包：([^\]]+)\]/);
         if (memeMatch) {
@@ -1569,14 +1743,14 @@ function createMessageRow(msg, role) {
     var timeStr = formatTime(msg.time, CONFIG.timeMode || 'HH:MM');
 
     var actionsHtml = '';
-    if (msg.role === 'assistant' && msg.type !== 'gift') {
+    if (msg.role === 'assistant' && msg.type !== 'gift' && !isVoiceBubble) {
         actionsHtml = '<div class="msg-actions"><button class="action-btn regenerate-btn" data-msgid="' + msg.id + '" title="重新生成"><i class="fas fa-sync-alt"></i></button><button class="action-btn delete-btn" data-msgid="' + msg.id + '" title="删除"><i class="fas fa-trash-alt"></i></button></div>';
     } else if (msg.role === 'user' && msg.type !== 'gift') {
         actionsHtml = '<div class="msg-actions"><button class="action-btn delete-btn" data-msgid="' + msg.id + '" title="删除"><i class="fas fa-trash-alt"></i></button></div>';
     }
 
     var footerHtml = '';
-    if (msg.role === 'assistant' && msg.type !== 'gift') {
+    if (msg.role === 'assistant' && msg.type !== 'gift' && !isVoiceBubble) {
         if (msg.hasAudio && msg.audioUrl) {
             footerHtml = '<div class="bubble-footer"><span class="voice-indicator"><i class="fas fa-volume-up"></i></span></div>';
         } else {
@@ -1586,11 +1760,18 @@ function createMessageRow(msg, role) {
 
     row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div><div class="bubble-container">' +
         (timeStr ? '<div class="msg-time">' + timeStr + '</div>' : '') +
-        '<div class="bubble-row"><div class="bubble">' + contentHtml + '</div>' + actionsHtml + '</div>' +
+        '<div class="bubble-row"><div class="bubble" style="padding:' + (isVoiceBubble ? '0' : '') + ';background:' + (isVoiceBubble ? 'transparent' : '') + ';box-shadow:' + (isVoiceBubble ? 'none' : '') + ';">' + contentHtml + '</div>' + actionsHtml + '</div>' +
         footerHtml +
         '</div>';
 
     return row;
+}
+
+function formatTimeDisplay(seconds) {
+    if (isNaN(seconds) || seconds < 0) seconds = 0;
+    var m = Math.floor(seconds / 60);
+    var s = Math.floor(seconds % 60);
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
 
 function triggerVoiceForMessage(msgId) {
@@ -1728,28 +1909,157 @@ function setupMessageEventDelegation() {
     var container = document.getElementById('messageContainer');
     container.addEventListener('click', function(e) {
         var target = e.target.closest('button');
-        if (!target) {
-            var giftCard = e.target.closest('.gift-card');
-            if (giftCard) {
-                var productName = giftCard.dataset.productName || '礼物';
-                var fromName = giftCard.dataset.fromName || 'TA';
-                var note = giftCard.dataset.note || '';
-                showToast('🎁 ' + fromName + ' 送的「' + productName + '」' + (note ? '（' + note + '）' : ''));
+        if (target && target.dataset && target.dataset.action === 'playvoice') {
+            var msgId = target.dataset.msgid;
+            if (msgId) {
+                var role = getCurrentRole();
+                if (!role) return;
+                var msg = role.messages.find(function(m) { return m.id === msgId; });
+                if (msg && msg.hasAudio && msg.audioUrl) {
+                    toggleVoicePlay(msgId, msg.audioUrl, msg.audioDuration);
+                }
             }
             return;
         }
-        if (target.classList.contains('regenerate-btn')) {
-            var msgId = target.dataset.msgid;
-            var role = getCurrentRole();
-            if (role) regenerateMessage(role.id, msgId);
-        } else if (target.classList.contains('delete-btn')) {
-            var msgId2 = target.dataset.msgid;
-            var role2 = getCurrentRole();
-            if (role2 && confirm('确定要删除这条消息吗？关联的记忆也会被删除。')) {
-                deleteMessageAndMemory(role2.id, msgId2);
+        if (target) {
+            if (target.classList.contains('regenerate-btn')) {
+                var msgId = target.dataset.msgid;
+                var role = getCurrentRole();
+                if (role) regenerateMessage(role.id, msgId);
+                return;
+            } else if (target.classList.contains('delete-btn')) {
+                var msgId2 = target.dataset.msgid;
+                var role2 = getCurrentRole();
+                if (role2 && confirm('确定要删除这条消息吗？关联的记忆也会被删除。')) {
+                    deleteMessageAndMemory(role2.id, msgId2);
+                }
+                return;
             }
         }
+        var giftCard = e.target.closest('.gift-card');
+        if (giftCard) {
+            var productName = giftCard.dataset.productName || '礼物';
+            var fromName = giftCard.dataset.fromName || 'TA';
+            var note = giftCard.dataset.note || '';
+            showToast('🎁 ' + fromName + ' 送的「' + productName + '」' + (note ? '（' + note + '）' : ''));
+            return;
+        }
+        var progressBar = e.target.closest('.voice-progress-bar');
+        if (progressBar) {
+            var msgId3 = progressBar.dataset.msgid;
+            if (msgId3) {
+                var role3 = getCurrentRole();
+                if (!role3) return;
+                var msg3 = role3.messages.find(function(m) { return m.id === msgId3; });
+                if (msg3 && msg3.hasAudio && msg3.audioUrl) {
+                    var rect = progressBar.getBoundingClientRect();
+                    var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    seekVoice(msgId3, pct, msg3.audioDuration);
+                }
+            }
+            return;
+        }
     });
+}
+
+var _voicePlayers = {};
+
+function toggleVoicePlay(msgId, audioUrl, duration) {
+    if (_voicePlayers[msgId] && _voicePlayers[msgId].audio && !_voicePlayers[msgId].audio.paused) {
+        _voicePlayers[msgId].audio.pause();
+        _voicePlayers[msgId].playing = false;
+        updateVoiceButtonState(msgId, false);
+        return;
+    }
+    if (_voicePlayers[msgId] && _voicePlayers[msgId].audio) {
+        _voicePlayers[msgId].audio.play().catch(function(e) { console.error('播放失败:', e); });
+        _voicePlayers[msgId].playing = true;
+        updateVoiceButtonState(msgId, true);
+        startVoiceProgress(msgId, duration);
+        return;
+    }
+    var audio = new Audio(audioUrl);
+    audio.onended = function() {
+        _voicePlayers[msgId].playing = false;
+        updateVoiceButtonState(msgId, false);
+        updateVoiceProgress(msgId, 100);
+    };
+    audio.onerror = function() {
+        showToast('⚠️ 语音播放失败');
+        _voicePlayers[msgId].playing = false;
+        updateVoiceButtonState(msgId, false);
+    };
+    audio.play().catch(function(e) {
+        console.error('播放失败:', e);
+        showToast('⚠️ 播放失败，请重试');
+        return;
+    });
+    _voicePlayers[msgId] = { audio: audio, playing: true, duration: duration || 10 };
+    updateVoiceButtonState(msgId, true);
+    startVoiceProgress(msgId, duration || 10);
+}
+
+function seekVoice(msgId, pct, duration) {
+    if (_voicePlayers[msgId] && _voicePlayers[msgId].audio) {
+        var time = pct * (duration || 10);
+        _voicePlayers[msgId].audio.currentTime = time;
+        updateVoiceProgress(msgId, pct * 100);
+    }
+}
+
+function startVoiceProgress(msgId, duration) {
+    if (_voicePlayers[msgId]) {
+        _voicePlayers[msgId].duration = duration || 10;
+        _voicePlayers[msgId].interval = setInterval(function() {
+            var player = _voicePlayers[msgId];
+            if (!player || !player.audio) {
+                clearInterval(player.interval);
+                return;
+            }
+            if (player.audio.paused) {
+                clearInterval(player.interval);
+                player.playing = false;
+                updateVoiceButtonState(msgId, false);
+                return;
+            }
+            var pct = (player.audio.currentTime / (player.duration || 10)) * 100;
+            if (pct >= 100) {
+                pct = 100;
+                clearInterval(player.interval);
+                player.playing = false;
+                updateVoiceButtonState(msgId, false);
+            }
+            updateVoiceProgress(msgId, pct);
+        }, 100);
+    }
+}
+
+function updateVoiceProgress(msgId, pct) {
+    var row = document.querySelector('.message-row[data-msgid="' + msgId + '"]');
+    if (!row) return;
+    var fill = row.querySelector('.voice-progress-fill');
+    var dot = row.querySelector('.voice-progress-dot');
+    var timeEl = row.querySelector('.voice-time');
+    if (fill) fill.style.width = Math.min(100, pct) + '%';
+    if (dot) dot.style.left = Math.min(100, pct) + '%';
+    if (timeEl && _voicePlayers[msgId]) {
+        var current = (pct / 100) * (_voicePlayers[msgId].duration || 10);
+        timeEl.textContent = formatTimeDisplay(current);
+    }
+}
+
+function updateVoiceButtonState(msgId, isPlaying) {
+    var row = document.querySelector('.message-row[data-msgid="' + msgId + '"]');
+    if (!row) return;
+    var btn = row.querySelector('.voice-play-btn');
+    if (!btn) return;
+    if (isPlaying) {
+        btn.innerHTML = '<i class="fas fa-pause"></i>';
+        btn.classList.add('playing');
+    } else {
+        btn.innerHTML = '<i class="fas fa-play"></i>';
+        btn.classList.remove('playing');
+    }
 }
 
 function regenerateMessage(roleId, messageId) {
@@ -1773,11 +2083,12 @@ function regenerateMessage(roleId, messageId) {
             return mem.sourceMessageId !== messageId;
         });
     }
+    var wasVoice = role.messages[msgIndex].voiceRequested || false;
     role.messages.splice(msgIndex, 1);
     saveAllData();
     renderMessages();
     showTyping();
-    callAI(userMessage, role).then(function(reply) {
+    callAI(userMessage, role, wasVoice).then(function(reply) {
         _regenerating[messageId] = false;
         hideTyping();
         reply = detectAndProcessGift(role.id, reply);
@@ -1785,9 +2096,19 @@ function regenerateMessage(roleId, messageId) {
         var idx = 0;
         function sendNext() {
             if (idx >= segments.length) { renderContacts(); return; }
-            var newMsgId = addMessageToRole(role.id, 'assistant', segments[idx]);
+            var newMsgId = addMessageToRole(role.id, 'assistant', segments[idx], 'text', null, wasVoice);
             renderMessages();
             document.getElementById('messageContainer').scrollTop = document.getElementById('messageContainer').scrollHeight;
+            if (wasVoice && idx === 0 && newMsgId) {
+                var msg = role.messages.find(function(m) { return m.id === newMsgId; });
+                if (msg) {
+                    setTimeout(function() {
+                        generateVoiceForMessage(newMsgId, role).catch(function(e) {
+                            console.error('语音生成失败:', e);
+                        });
+                    }, 800);
+                }
+            }
             idx++;
             setTimeout(sendNext, 600);
         }
@@ -1799,7 +2120,9 @@ function regenerateMessage(roleId, messageId) {
         addMessageToRole(role.id, 'assistant', '💔 ' + e.message);
         renderMessages();
     });
-} function handleSend() {
+}
+
+function handleSend() {
     if (isSending) { showToast('⏳ 正在发送中，请稍后'); return; }
     var input = document.getElementById('messageInput');
     var text = input.value.trim();
@@ -1846,16 +2169,32 @@ function regenerateMessage(roleId, messageId) {
     }
     var role = getCurrentRole();
     if (!role) { showToast('⚠️ 未找到当前角色'); return; }
+    
+    var shouldGenerateVoice = isVoiceTrigger(text);
+    if (shouldGenerateVoice && CONFIG.voice.mode === 'none') {
+        showToast('🔇 语音已关闭，将在设置中开启后生效');
+        shouldGenerateVoice = false;
+    }
+    if (shouldGenerateVoice && CONFIG.voice.mode === 'bailian') {
+        var apiKey = getVoiceApiKey();
+        if (!apiKey) {
+            showToast('⚠️ 请先在设置中配置语音 API Key');
+            shouldGenerateVoice = false;
+        } else if (!role.voiceId) {
+            showToast('⚠️ 当前角色未配置 Voice ID，请在设置中填写');
+            shouldGenerateVoice = false;
+        }
+    }
+    
     isSending = true;
     input.value = '';
     input.disabled = true;
     document.getElementById('sendBtn').disabled = true;
     showToast('💬 正在发送...');
-    var needVoice = isVoiceTrigger(text) && CONFIG.voice.mode !== 'none';
     addMessageToRole(role.id, 'user', finalMessage);
     renderMessages();
     showTyping();
-    callAI(finalMessage, role).then(function(reply) {
+    callAI(finalMessage, role, shouldGenerateVoice).then(function(reply) {
         hideTyping();
         reply = detectAndProcessGift(role.id, reply);
         var segments = CONFIG.splitEnabled !== false ? splitReplyIntoMessages(reply) : [reply];
@@ -1873,14 +2212,18 @@ function regenerateMessage(roleId, messageId) {
                 showToast('✅ 发送成功');
                 return;
             }
-            var msgId = addMessageToRole(role.id, 'assistant', segments[idx]);
+            var msgId = addMessageToRole(role.id, 'assistant', segments[idx], 'text', null, shouldGenerateVoice);
             renderMessages();
-            if (needVoice && msgId && idx === 0) {
+            if (shouldGenerateVoice && msgId && idx === 0) {
                 var msg = role.messages.find(function(m) { return m.id === msgId; });
                 if (msg) {
                     setTimeout(function() {
                         generateVoiceForMessage(msgId, role).catch(function(e) {
                             console.error('语音生成失败:', e);
+                            msg.hasAudio = false;
+                            msg.audioUrl = null;
+                            msg.voiceRequested = true;
+                            renderMessages();
                         });
                     }, 800);
                 }
@@ -1904,7 +2247,7 @@ function regenerateMessage(roleId, messageId) {
     });
 }
 
-function addMessageToRole(roleId, role, content, type, giftData) {
+function addMessageToRole(roleId, role, content, type, giftData, voiceRequested) {
     type = type || 'text';
     var r = roles.find(function(ro) { return ro.id === roleId; });
     if (!r) return;
@@ -1919,7 +2262,8 @@ function addMessageToRole(roleId, role, content, type, giftData) {
         time: timeStr,
         hasAudio: false,
         audioUrl: null,
-        audioDuration: 0
+        audioDuration: 0,
+        voiceRequested: voiceRequested || false
     };
     if (giftData) msg.giftData = giftData;
     r.messages.push(msg);
@@ -1944,9 +2288,7 @@ function addMessageToRole(roleId, role, content, type, giftData) {
     immediateSaveAllData();
     updateHeartDisplay();
     return msgId;
-}
-
-function generateNaturalMemoryText(role) {
+} function generateNaturalMemoryText(role) {
     var memories = Array.isArray(role.memory) ? role.memory : [];
     if (memories.length === 0) return '';
     var coreMemories = memories.filter(function(m) { return m.level === 'core' || !m.level; });
@@ -2179,18 +2521,18 @@ function splitReplyIntoMessages(text) {
     return segments;
 }
 
-function callAI(userMessage, role) {
+function callAI(userMessage, role, voiceRequested) {
     var mode = CONFIG.accessMode || 'direct';
     if (mode === 'direct') {
-        return callDeepSeekDirect(userMessage, role);
+        return callDeepSeekDirect(userMessage, role, voiceRequested);
     } else if (mode === 'relay') {
-        return callRelayAPI(userMessage, role);
+        return callRelayAPI(userMessage, role, voiceRequested);
     } else if (mode === 'websearch') {
-        return callWebSearchAPI(userMessage, role);
+        return callWebSearchAPI(userMessage, role, voiceRequested);
     }
 }
 
-function callDeepSeekDirect(userMessage, role) {
+function callDeepSeekDirect(userMessage, role, voiceRequested) {
     var apiKey = CONFIG.apiKey;
     if (!apiKey) throw new Error('请先设置 DeepSeek API Key（设置 → AI接入 → 直连模式）');
     var recallKeywords = ['还记得', '记得吗', '之前', '上次', '你说过', '我们聊过', '你记不记得', '你忘了吗'];
@@ -2253,7 +2595,7 @@ function callDeepSeekDirect(userMessage, role) {
     });
 }
 
-function callRelayAPI(userMessage, role) {
+function callRelayAPI(userMessage, role, voiceRequested) {
     var endpoint = CONFIG.relayEndpoint || 'https://shufulei.net/v1';
     var apiKey = CONFIG.relayApiKey || CONFIG.apiKey;
     var model = CONFIG.relayModel || 'gpt-3.5-turbo';
@@ -2319,7 +2661,7 @@ function callRelayAPI(userMessage, role) {
     });
 }
 
-function callWebSearchAPI(userMessage, role) {
+function callWebSearchAPI(userMessage, role, voiceRequested) {
     var endpoint = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
     var apiKey = CONFIG.websearchApiKey;
     var model = CONFIG.websearchModel || 'qwen-plus';
@@ -2427,7 +2769,8 @@ function sendGiftToRole(roleId, productName, fromName, note, price) {
         time: timeStr,
         hasAudio: false,
         audioUrl: null,
-        audioDuration: 0
+        audioDuration: 0,
+        voiceRequested: false
     });
     if (!CONFIG.unreadCount) CONFIG.unreadCount = {};
     CONFIG.unreadCount[roleId] = (CONFIG.unreadCount[roleId] || 0) + 1;
@@ -5388,12 +5731,6 @@ function createVoicePlayer(msgId, audioUrl, duration) {
     return player;
 }
 
-function formatTimeDisplay(seconds) {
-    var m = Math.floor(seconds / 60);
-    var s = Math.floor(seconds % 60);
-    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-}
-
 function updateFooterStatus(msgId, isPlaying) {
     var row = document.querySelector('.message-row[data-msgid="' + msgId + '"]');
     if (!row) return;
@@ -5527,7 +5864,9 @@ function deleteMessageAndMemory(roleId, messageId) {
     renderMessages();
     renderContacts();
     renderRoleManager();
-} document.getElementById('testVoiceBtn').addEventListener('click', async function() {
+}
+
+document.getElementById('testVoiceBtn').addEventListener('click', async function() {
     var roleId = document.getElementById('voiceRoleSelector').value;
     var role = roles.find(function(r) { return r.id === roleId; });
     if (!role) { showToast('⚠️ 请选择角色'); return; }
@@ -5543,22 +5882,18 @@ function deleteMessageAndMemory(roleId, messageId) {
 
     showToast('🔊 正在生成试听语音...');
     try {
-        // callBailianTTS 现在返回 OSS 直链
         var audioUrl = await callBailianTTS('我已经准备好了，随时可以开始。', role);
         
         console.log('🎵 音频直链:', audioUrl);
         
-        // 停止之前的试听
         if (_testAudio) {
             _testAudio.pause();
             _testAudio.src = '';
             _testAudio.load();
         }
         
-        // 🔥 用直链创建 Audio 对象
         _testAudio = new Audio(audioUrl);
         
-        // 加载完成后自动播放
         _testAudio.onloadeddata = function() {
             _testAudio.play()
                 .then(() => {
@@ -5566,10 +5901,7 @@ function deleteMessageAndMemory(roleId, messageId) {
                 })
                 .catch((err) => {
                     console.error('播放被阻止:', err);
-                    // 如果自动播放被阻止，提示用户手动点击播放
                     showToast('⚠️ 请点击页面任意位置后重试播放');
-                    // 但 audio 元素还是可以手动点击播放按钮的
-                    // 我们创建一个可视化的播放控件
                     createInlinePlayer(audioUrl);
                 });
         };
@@ -5577,15 +5909,12 @@ function deleteMessageAndMemory(roleId, messageId) {
         _testAudio.onerror = function(e) {
             console.error('音频加载错误:', e);
             showToast('❌ 播放失败，尝试用系统播放器打开');
-            // 兜底方案：用系统播放器打开
             window.open(audioUrl, '_blank');
         };
         
-        // 超时处理：5秒后如果还没开始播放，可能是跨域问题
         setTimeout(function() {
             if (_testAudio && _testAudio.paused && !_testAudio.ended) {
                 showToast('⏳ 加载较慢，请稍候... 或点击链接直接播放');
-                // 在页面上显示可点击的链接
                 createInlinePlayer(audioUrl);
             }
         }, 5000);
@@ -5595,7 +5924,6 @@ function deleteMessageAndMemory(roleId, messageId) {
     }
 });
 
-// 辅助函数：在页面上创建播放链接
 function createInlinePlayer(audioUrl) {
     var drawer = document.querySelector('.settings-drawer');
     var oldPlayer = drawer.querySelector('.inline-audio-player');
@@ -5855,69 +6183,169 @@ function getLastMessage(roleId) {
 
 function getInitials(name) { if (!name) return '?'; return name.charAt(0).toUpperCase(); }
 
-function isVoiceTrigger(text) {
-    if (!text) return false;
-    var lower = text.toLowerCase();
-    return CONSTANTS.VOICE_KEYWORDS.some(function(kw) {
-        return lower.includes(kw);
-    });
-}
-
-async function callBailianTTS(text, role) {
-    var endpoint = CONFIG.voice.endpoint || 'https://dashscope.aliyuncs.com';
-    var apiKey = getVoiceApiKey();
-    var voiceId = role.voiceId || '';
+function cleanTextForTTS(text) {
+    if (!text) return '';
     
-    if (!apiKey) throw new Error('未配置语音 API Key');
-    if (!voiceId) throw new Error('当前角色未配置 Voice ID');
-    if (!endpoint) throw new Error('未配置语音 Endpoint');
+    var cleaned = text;
     
-    var cleanText = text.replace(/\[表情包：[^\]]+\]/g, '').trim();
-    if (!cleanText) throw new Error('没有可朗读的文本');
-    if (cleanText.length > 500) cleanText = cleanText.substring(0, 500);
-    
-    var url = endpoint.replace(/\/+$/, '') + '/api/v1/services/audio/tts/SpeechSynthesizer';
-    
-    var requestBody = {
-        model: CONFIG.voice.model || 'cosyvoice-v3.5-plus',
-        input: {
-            text: cleanText,
-            voice: voiceId,
-            format: 'mp3',
-            sample_rate: 22050,
-            volume: 50,
-            rate: CONFIG.voice.rate || 1.0,
-            pitch: CONFIG.voice.pitch || 1.0
+    // ===== 第一轮：删除所有括号及括号内内容 =====
+    // 删除中文括号 （...） 和英文括号 (...)
+    var result = '';
+    var depth = 0;
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '(' || ch === '（') {
+            depth++;
+            continue;
         }
-    };
+        if (ch === ')' || ch === '）') {
+            if (depth > 0) depth--;
+            continue;
+        }
+        if (depth === 0) {
+            result += ch;
+        }
+    }
+    cleaned = result;
     
-    console.log('🔊 请求URL:', url);
-    console.log('🔊 请求体:', JSON.stringify(requestBody, null, 2));
+    // ===== 第二轮：删除 【...】 =====
+    result = '';
+    depth = 0;
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '【') { depth++; continue; }
+        if (ch === '】') { if (depth > 0) depth--; continue; }
+        if (depth === 0) result += ch;
+    }
+    cleaned = result;
     
-    var response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + apiKey,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
+    // ===== 第三轮：删除 *...* =====
+    result = '';
+    var inStar = false;
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '*') { inStar = !inStar; continue; }
+        if (!inStar) result += ch;
+    }
+    cleaned = result;
+    
+    // ===== 第四轮：删除 _..._ =====
+    result = '';
+    var inUnderscore = false;
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '_') { inUnderscore = !inUnderscore; continue; }
+        if (!inUnderscore) result += ch;
+    }
+    cleaned = result;
+    
+    // ===== 第五轮：删除 ——...—— =====
+    result = '';
+    var inDash = false;
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '—') {
+            // 检查是否是 ——
+            if (i + 1 < cleaned.length && cleaned[i + 1] === '—') {
+                inDash = !inDash;
+                i++; // 跳过第二个 —
+                continue;
+            }
+        }
+        if (!inDash) result += ch;
+    }
+    cleaned = result;
+    
+    // ===== 第六轮：删除常见的动作短语（独立出现时） =====
+    var actionPhrases = [
+        '顿了顿', '沉默了片刻', '沉默了一会', '顿了一下', 
+        '怔了一下', '愣了一下', '想了想', '思考了片刻', '回过神',
+        '低头', '抬头', '转身', '侧头', '偏头', '点头', '摇头',
+        '轻笑', '低笑', '轻叹', '叹气', '抿唇', '勾唇', 
+        '皱眉', '挑眉', '闭眼', '睁眼', '抬眸', '垂眸',
+        '回神', '愣住', '怔住', '顿住', '沉默', '停顿',
+        '忽然', '突然', '缓缓', '轻轻', '微微', '悄悄'
+    ];
+    for (var p = 0; p < actionPhrases.length; p++) {
+        var phrase = actionPhrases[p];
+        // 删除句首的动作词 + 标点
+        if (cleaned.indexOf(phrase) === 0) {
+            var after = cleaned.substring(phrase.length);
+            if (after.length > 0 && (after[0] === '，' || after[0] === '。' || after[0] === '、')) {
+                cleaned = after.substring(1);
+            }
+        }
+        // 删除前面有标点的动作词
+        cleaned = cleaned.replace(new RegExp('[，。]\\s*' + phrase + '[，。]?', 'g'), '');
+        // 删除句首的 他/她/我 + 动作词
+        cleaned = cleaned.replace(new RegExp('^(?:他|她|我)' + phrase, 'g'), '');
+    }
+    
+    // ===== 第七轮：删除「...」内非对话内容 =====
+    result = '';
+    var inQuote = false;
+    var quoteBuffer = '';
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '「') {
+            inQuote = true;
+            quoteBuffer = '';
+            continue;
+        }
+        if (ch === '」') {
+            inQuote = false;
+            // 如果括号内内容很短且不含人称代词，认为是动作描写，丢弃
+            if (quoteBuffer.length < 6 && !(/[我你他她它]/.test(quoteBuffer))) {
+                // 丢弃
+            } else {
+                result += '「' + quoteBuffer + '」';
+            }
+            continue;
+        }
+        if (inQuote) {
+            quoteBuffer += ch;
+        } else {
+            result += ch;
+        }
+    }
+    cleaned = result;
+    
+    // ===== 第八轮：删除内心独白标记 =====
+    cleaned = cleaned.replace(/（心[理想]：）/g, '');
+    cleaned = cleaned.replace(/（OS[：: ]*）/g, '');
+    cleaned = cleaned.replace(/（内心[：: ]*）/g, '');
+    
+    // ===== 第九轮：压缩重复标点和空格 =====
+    cleaned = cleaned.replace(/[，。！？]{2,}/g, function(match) {
+        return match.charAt(0);
     });
+    cleaned = cleaned.replace(/\s+/g, ' ');
     
-    if (!response.ok) {
-        var errText = await response.text();
-        console.error('❌ 响应错误:', errText);
-        throw new Error('TTS 错误 (' + response.status + '): ' + errText);
+    // ===== 第十轮：删除句首口语填充词 =====
+    var fillers = ['那个', '其实', '就是', '然后'];
+    for (var f = 0; f < fillers.length; f++) {
+        var filler = fillers[f];
+        if (cleaned.indexOf(filler) === 0) {
+            var after = cleaned.substring(filler.length);
+            if (after.length > 0 && (after[0] === '，' || after[0] === '。' || after[0] === '、')) {
+                cleaned = after.substring(1);
+            }
+        }
     }
     
-    var result = await response.json();
-    console.log('✅ 语音合成成功:', result);
+    // ===== 第十一轮：压缩重复语气词 =====
+    cleaned = cleaned.replace(/([呃嗯啊哦])\1+/g, '$1');
+    cleaned = cleaned.replace(/\s+([吧呢啊哦嗯])/g, '$1');
     
-    if (result.output && result.output.audio && result.output.audio.url) {
-        // 🔥 直接返回 OSS 直链，不转 Blob
-        return result.output.audio.url;
-    } else {
-        throw new Error('未获取到音频 URL');
+    // ===== 最终清理 =====
+    cleaned = cleaned.trim();
+    
+    // 如果清洗后为空，返回安全兜底
+    if (!cleaned || cleaned.length === 0) {
+        return '你好，我是 ' + (role ? role.name : 'AI') + '。';
     }
+    
+    return cleaned;
 }
 
 function speakWithBrowser(text, callback) {
@@ -6110,7 +6538,7 @@ function init() {
     console.log('✅ 支持直连 DeepSeek + 中转模式（书垒等 OpenAI 兼容）');
     console.log('✅ 支持百炼 CosyVoice TTS');
     console.log('✅ 每个角色独立 Voice ID');
-    console.log('✅ 语音按需触发（用户说「发语音」或点击「朗读」）');
+    console.log('✅ 语音按需触发（用户说「发语音」等触发词时生成语音条）');
 }
 
 // ========== DOM 事件绑定 ==========
@@ -6605,7 +7033,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('初始化失败:', e);
         showToast('⚠️ 应用初始化失败，请刷新页面重试');
     }
-}); 
+});
 </script>
 </body>
 </html>
