@@ -2195,7 +2195,6 @@ function handleSend() {
     renderMessages();
     showTyping();
     
-    // 如果请求语音，临时关闭分段生成
     var originalSplit = CONFIG.splitEnabled;
     if (shouldGenerateVoice) {
         CONFIG.splitEnabled = false;
@@ -2203,15 +2202,49 @@ function handleSend() {
     
     callAI(finalMessage, role, shouldGenerateVoice).then(function(reply) {
         hideTyping();
+        
+        var hasVoiceMark = reply.indexOf('[语音]') !== -1;
+        var finalShouldGenerateVoice = shouldGenerateVoice || hasVoiceMark;
+        
+        if (hasVoiceMark) {
+            reply = reply.replace(/\[语音\]/g, '').trim();
+            CONFIG.splitEnabled = false;
+        }
+        
         reply = detectAndProcessGift(role.id, reply);
+        
+        // ===== 清洗虚拟语音标记 =====
+        function extractVoiceFromVirtualMark(text) {
+            if (!text) return null;
+            var match1 = text.match(/\[语音消息[^\]]*\]\s*["「『]([^"」』]+)["」』]/);
+            if (match1) return match1[1].trim();
+            var match2 = text.match(/\[语音\]\s*["「『]([^"」』]+)["」』]/);
+            if (match2) return match2[1].trim();
+            var match3 = text.match(/[🎤🎧]\s*["「『]([^"」』]+)["」』]/);
+            if (match3) return match3[1].trim();
+            var match4 = text.match(/[（(]语音[）)]\s*([^，。！？\n]{2,})/);
+            if (match4) return match4[1].trim();
+            var match5 = text.match(/发了[一一条]条语音[：:]\s*([^，。！？\n]{2,})/);
+            if (match5) return match5[1].trim();
+            var match6 = text.match(/语音内容[：:]\s*["「『]?([^"」』\n]{2,})["」』]?/);
+            if (match6) return match6[1].trim();
+            return null;
+        }
+        
+        var voiceContent = extractVoiceFromVirtualMark(reply);
+        if (voiceContent) {
+            reply = voiceContent;
+            finalShouldGenerateVoice = true;
+            CONFIG.splitEnabled = false;
+        }
+        
         var segments = CONFIG.splitEnabled !== false ? splitReplyIntoMessages(reply) : [reply];
         var idx = 0;
         
-        // 如果只有一段，直接发送并生成语音
         if (segments.length === 1) {
-            var msgId = addMessageToRole(role.id, 'assistant', segments[0], 'text', null, shouldGenerateVoice);
+            var msgId = addMessageToRole(role.id, 'assistant', segments[0], 'text', null, finalShouldGenerateVoice);
             renderMessages();
-            if (shouldGenerateVoice && msgId) {
+            if (finalShouldGenerateVoice && msgId) {
                 var msg = role.messages.find(function(m) { return m.id === msgId; });
                 if (msg) {
                     setTimeout(function() {
@@ -2225,7 +2258,6 @@ function handleSend() {
                     }, 800);
                 }
             }
-            // 恢复分段设置
             CONFIG.splitEnabled = originalSplit;
             if (document.getElementById('contactsScreen').classList.contains('open')) renderContacts();
             var currentRole = getCurrentRole();
@@ -2243,7 +2275,6 @@ function handleSend() {
             return;
         }
         
-        // 多段时（仅文字模式），正常分段
         function sendNext() {
             if (idx >= segments.length) {
                 CONFIG.splitEnabled = originalSplit;
@@ -2270,7 +2301,6 @@ function handleSend() {
         }
         sendNext();
     }).catch(function(e) {
-        // 恢复分段设置
         CONFIG.splitEnabled = originalSplit;
         hideTyping();
         console.error('❌ 发送消息失败:', e);
@@ -2440,6 +2470,34 @@ function buildSystemPrompt(role) {
     if (role.background && role.background.trim()) parts.push('【背景】' + role.background.trim());
     if (role.style && role.style.trim()) parts.push('【说话风格】' + role.style.trim());
     if (role.extra && role.extra.trim()) parts.push('【补充项】' + role.extra.trim());
+    
+    // ===== 🎤 语音回复规则 =====
+    var voiceRule = '\n\n【🎤 语音回复规则】\n';
+    voiceRule += '你可以主动给用户发语音，但要遵循以下触发条件和频率限制：\n\n';
+    voiceRule += '【触发条件】（满足任意一条即可触发）\n';
+    voiceRule += '1. 用户表达强烈情绪：我爱你、好想你、好开心、好难过、好感动、好幸福、好喜欢\n';
+    voiceRule += '2. 用户主动关心你：你在干嘛、想我没、今天怎么样、忙不忙、在不在\n';
+    voiceRule += '3. 用户分享生活：说了超过30字的生活日常、工作、出行、美食、趣事\n';
+    voiceRule += '4. 睡前时段：晚上22:00-23:30之间，用户还在和你聊天\n';
+    voiceRule += '5. 用户主动要求：发语音、语音告诉我、说给我听、我想听你声音、发条语音\n\n';
+    voiceRule += '【频率限制】（非常重要！必须遵守！）\n';
+    voiceRule += '1. 同一天内，同一个触发场景只发1次语音（比如"关心类"一天只发1次）\n';
+    voiceRule += '2. 两次主动语音之间至少间隔 4 小时\n';
+    voiceRule += '3. 每天最多发 3 条主动语音（不含用户主动要求你发的）\n';
+    voiceRule += '4. 如果你今天已经发过 3 条主动语音，即使用户表达了情绪，也发文字\n';
+    voiceRule += '5. 如果不确定该不该发，优先发文字，不要强行发语音\n\n';
+    voiceRule += '【语音回复风格】\n';
+    voiceRule += '当你决定发语音时：\n';
+    voiceRule += '1. 句子要短，每句3-8个字，像真的在说话，有自然的停顿感\n';
+    voiceRule += '2. 内容比文字版精简30%，不要堆砌信息，只说重点\n';
+    voiceRule += '3. 不要说"我给你发条语音"这种提示语，直接说内容本身\n';
+    voiceRule += '4. 语音回复末尾加上 [语音] 标记（系统会自动识别并生成语音条）\n';
+    voiceRule += '5. 如果决定发语音，整个回复只发一段，不要分段\n\n';
+    voiceRule += '【示例对比】\n';
+    voiceRule += '文字版："我今天路过一家咖啡店，看到橱窗里摆着你上次说想吃的提拉米苏，突然就想到你了。"\n';
+    voiceRule += '语音版："今天路过一家咖啡店，看到你上次说的提拉米苏了。突然就想到你了。[语音]"';
+    parts.push(voiceRule);
+    
     var coreInstruction = '\n\n【核心指令】\n';
     coreInstruction += '1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n';
     coreInstruction += '2. 严格遵守【人设】中的身份和性格，不要偏离。\n';
@@ -6383,7 +6441,144 @@ function cleanTextForTTS(text) {
     }
     
     return cleaned;
-} async function callBailianTTS(text, role) {
+} function cleanTextForTTS(text) {
+    if (!text) return '';
+    
+    var cleaned = text;
+    
+    // 删除所有括号及括号内内容
+    var result = '';
+    var depth = 0;
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '(' || ch === '（') { depth++; continue; }
+        if (ch === ')' || ch === '）') { if (depth > 0) depth--; continue; }
+        if (depth === 0) result += ch;
+    }
+    cleaned = result;
+    
+    // 删除 【...】
+    result = '';
+    depth = 0;
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '【') { depth++; continue; }
+        if (ch === '】') { if (depth > 0) depth--; continue; }
+        if (depth === 0) result += ch;
+    }
+    cleaned = result;
+    
+    // 删除 *...*
+    result = '';
+    var inStar = false;
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '*') { inStar = !inStar; continue; }
+        if (!inStar) result += ch;
+    }
+    cleaned = result;
+    
+    // 删除 _..._
+    result = '';
+    var inUnderscore = false;
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '_') { inUnderscore = !inUnderscore; continue; }
+        if (!inUnderscore) result += ch;
+    }
+    cleaned = result;
+    
+    // 删除 ——...——
+    result = '';
+    var inDash = false;
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '—') {
+            if (i + 1 < cleaned.length && cleaned[i + 1] === '—') {
+                inDash = !inDash;
+                i++;
+                continue;
+            }
+        }
+        if (!inDash) result += ch;
+    }
+    cleaned = result;
+    
+    // 删除常见动作短语
+    var actionPhrases = [
+        '顿了顿', '沉默了片刻', '沉默了一会', '顿了一下', 
+        '怔了一下', '愣了一下', '想了想', '思考了片刻', '回过神',
+        '低头', '抬头', '转身', '侧头', '偏头', '点头', '摇头',
+        '轻笑', '低笑', '轻叹', '叹气', '抿唇', '勾唇', 
+        '皱眉', '挑眉', '闭眼', '睁眼', '抬眸', '垂眸',
+        '回神', '愣住', '怔住', '顿住', '沉默', '停顿',
+        '忽然', '突然', '缓缓', '轻轻', '微微', '悄悄'
+    ];
+    for (var p = 0; p < actionPhrases.length; p++) {
+        var phrase = actionPhrases[p];
+        if (cleaned.indexOf(phrase) === 0) {
+            var after = cleaned.substring(phrase.length);
+            if (after.length > 0 && (after[0] === '，' || after[0] === '。' || after[0] === '、')) {
+                cleaned = after.substring(1);
+            }
+        }
+        cleaned = cleaned.replace(new RegExp('[，。]\\s*' + phrase + '[，。]?', 'g'), '');
+        cleaned = cleaned.replace(new RegExp('^(?:他|她|我)' + phrase, 'g'), '');
+    }
+    
+    // 删除「...」内非对话内容
+    result = '';
+    var inQuote = false;
+    var quoteBuffer = '';
+    for (var i = 0; i < cleaned.length; i++) {
+        var ch = cleaned[i];
+        if (ch === '「') { inQuote = true; quoteBuffer = ''; continue; }
+        if (ch === '」') {
+            inQuote = false;
+            if (quoteBuffer.length < 6 && !(/[我你他她它]/.test(quoteBuffer))) {
+                // 丢弃
+            } else {
+                result += '「' + quoteBuffer + '」';
+            }
+            continue;
+        }
+        if (inQuote) { quoteBuffer += ch; }
+        else { result += ch; }
+    }
+    cleaned = result;
+    
+    // 删除内心独白标记
+    cleaned = cleaned.replace(/（心[理想]：）/g, '');
+    cleaned = cleaned.replace(/（OS[：: ]*）/g, '');
+    cleaned = cleaned.replace(/（内心[：: ]*）/g, '');
+    
+    // 压缩重复标点和空格
+    cleaned = cleaned.replace(/[，。！？]{2,}/g, function(match) { return match.charAt(0); });
+    cleaned = cleaned.replace(/\s+/g, ' ');
+    
+    // 删除句首口语填充词
+    var fillers = ['那个', '其实', '就是', '然后'];
+    for (var f = 0; f < fillers.length; f++) {
+        var filler = fillers[f];
+        if (cleaned.indexOf(filler) === 0) {
+            var after = cleaned.substring(filler.length);
+            if (after.length > 0 && (after[0] === '，' || after[0] === '。' || after[0] === '、')) {
+                cleaned = after.substring(1);
+            }
+        }
+    }
+    
+    cleaned = cleaned.replace(/([呃嗯啊哦])\1+/g, '$1');
+    cleaned = cleaned.replace(/\s+([吧呢啊哦嗯])/g, '$1');
+    cleaned = cleaned.trim();
+    
+    if (!cleaned || cleaned.length === 0) {
+        var fallback = text.replace(/[（(][^）)]*[）)]/g, '').trim();
+        return fallback || '你好';
+    }
+    return cleaned;
+}
+ async function callBailianTTS(text, role) {
     var endpoint = CONFIG.voice.endpoint || 'https://dashscope.aliyuncs.com';
     var apiKey = getVoiceApiKey();
     var voiceId = role.voiceId || '';
@@ -6392,7 +6587,6 @@ function cleanTextForTTS(text) {
     if (!voiceId) throw new Error('当前角色未配置 Voice ID');
     if (!endpoint) throw new Error('未配置语音 Endpoint');
     
-    // 清洗文本：去掉动作、表情、环境描写
     var cleanText = cleanTextForTTS(text);
     
     if (!cleanText || cleanText.trim().length === 0) {
