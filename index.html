@@ -6346,6 +6346,70 @@ function cleanTextForTTS(text) {
     }
     
     return cleaned;
+} async function callBailianTTS(text, role) {
+    var endpoint = CONFIG.voice.endpoint || 'https://dashscope.aliyuncs.com';
+    var apiKey = getVoiceApiKey();
+    var voiceId = role.voiceId || '';
+    
+    if (!apiKey) throw new Error('未配置语音 API Key');
+    if (!voiceId) throw new Error('当前角色未配置 Voice ID');
+    if (!endpoint) throw new Error('未配置语音 Endpoint');
+    
+    // 清洗文本：去掉动作、表情、环境描写
+    var cleanText = cleanTextForTTS(text);
+    
+    if (!cleanText || cleanText.trim().length === 0) {
+        cleanText = '你好，我是 ' + (role.name || 'AI') + '。';
+    }
+    
+    if (cleanText.length > 500) {
+        cleanText = cleanText.substring(0, 500);
+        var lastPunct = cleanText.lastIndexOf('。');
+        if (lastPunct > 50) {
+            cleanText = cleanText.substring(0, lastPunct + 1);
+        }
+    }
+    
+    console.log('🔊 清洗后的语音文本:', cleanText);
+    
+    var url = endpoint.replace(/\/+$/, '') + '/api/v1/services/audio/tts/SpeechSynthesizer';
+    
+    var requestBody = {
+        model: CONFIG.voice.model || 'cosyvoice-v3.5-plus',
+        input: {
+            text: cleanText,
+            voice: voiceId,
+            format: 'mp3',
+            sample_rate: 22050,
+            volume: 50,
+            rate: CONFIG.voice.rate || 1.0,
+            pitch: CONFIG.voice.pitch || 1.0
+        }
+    };
+    
+    var response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + apiKey,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    });
+    
+    if (!response.ok) {
+        var errText = await response.text();
+        console.error('❌ 响应错误:', errText);
+        throw new Error('TTS 错误 (' + response.status + '): ' + errText);
+    }
+    
+    var result = await response.json();
+    console.log('✅ 语音合成成功:', result);
+    
+    if (result.output && result.output.audio && result.output.audio.url) {
+        return result.output.audio.url;
+    } else {
+        throw new Error('未获取到音频 URL');
+    }
 }
 
 function speakWithBrowser(text, callback) {
