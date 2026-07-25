@@ -773,9 +773,10 @@
             <div class="setting-group">
                 <label>模型</label>
                 <select id="directModel">
-                    <option value="deepseek-chat">DeepSeek Chat</option>
-                    <option value="deepseek-coder">DeepSeek Coder</option>
-                </select>
+    <option value="deepseek-v4-pro">DeepSeek V4 Pro（推荐）</option>
+    <option value="deepseek-v4-flash">DeepSeek V4 Flash（快速）</option>
+    <option value="deepseek-reasoner">DeepSeek R1 推理</option>
+</select>
             </div>
         </div>
         <div id="relayConfig" style="display:none;">
@@ -967,7 +968,7 @@ var CONSTANTS = {
 var CONFIG = {
     accessMode: 'direct',
     apiKey: '',
-    model: 'deepseek-chat',
+    model: 'deepseek-v4-pro',
     relayEndpoint: '',
     relayApiKey: '',
     relayModel: '',
@@ -1223,7 +1224,7 @@ function deepCloneRole(role) {
         migrateOldData();
     } else {
         CONFIG = {
-            accessMode: 'direct', apiKey: '', model: 'deepseek-chat',
+            accessMode: 'direct', apiKey: '', model: 'deepseek-v4-pro',
             relayEndpoint: '', relayApiKey: '', relayModel: '',
             websearchEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             websearchApiKey: '', websearchModel: 'qwen-plus', websearchEnable: true,
@@ -1503,7 +1504,7 @@ function updateIntimacy(role) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
         body: JSON.stringify({
-            model: model || 'deepseek-chat',
+            model: model || 'deepseek-v4-pro',
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: '对话内容：\n' + conversationText }],
             temperature: 0.5,
             max_tokens: 100
@@ -2653,7 +2654,7 @@ function callDeepSeekDirect(userMessage, role, voiceRequested) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
         body: JSON.stringify({
-            model: CONFIG.model || 'deepseek-chat',
+            model: CONFIG.model || 'deepseek-v4-pro',
             messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userMessage }],
             temperature: temperature,
             max_tokens: 600
@@ -3278,7 +3279,7 @@ function generateActiveMessage(role) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
         body: JSON.stringify({
-            model: model || 'deepseek-chat',
+            model: model || 'deepseek-v4-pro t',
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
             temperature: 0.85,
             max_tokens: 200
@@ -4268,7 +4269,7 @@ function generateDiary(roleId, showToastMsg) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
         body: JSON.stringify({
-            model: model || 'deepseek-chat',
+            model: model || 'deepseek-v4-pro',
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
             temperature: 0.9,
             max_tokens: 500
@@ -4722,7 +4723,7 @@ function openPhone() { window.open('phone.html', '_blank'); }
 function openSettings() {
     document.getElementById('accessMode').value = CONFIG.accessMode || 'direct';
     document.getElementById('directApiKey').value = CONFIG.apiKey || '';
-    document.getElementById('directModel').value = CONFIG.model || 'deepseek-chat';
+    document.getElementById('directModel').value = CONFIG.model || 'deepseek-v4-pro';
     document.getElementById('relayEndpoint').value = CONFIG.relayEndpoint || '';
     document.getElementById('relayApiKey').value = CONFIG.relayApiKey || '';
     document.getElementById('relayModelCustom').value = CONFIG.relayModel || '';
