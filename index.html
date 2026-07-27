@@ -773,10 +773,9 @@
             <div class="setting-group">
                 <label>模型</label>
                 <select id="directModel">
-    <option value="deepseek-v4-pro">DeepSeek V4 Pro（推荐）</option>
-    <option value="deepseek-v4-flash">DeepSeek V4 Flash（快速）</option>
-    <option value="deepseek-reasoner">DeepSeek R1 推理</option>
-</select>
+                    <option value="deepseek-chat">DeepSeek Chat</option>
+                    <option value="deepseek-coder">DeepSeek Coder</option>
+                </select>
             </div>
         </div>
         <div id="relayConfig" style="display:none;">
@@ -968,7 +967,7 @@ var CONSTANTS = {
 var CONFIG = {
     accessMode: 'direct',
     apiKey: '',
-    model: 'deepseek-v4-pro',
+    model: 'deepseek-chat',
     relayEndpoint: '',
     relayApiKey: '',
     relayModel: '',
@@ -1224,7 +1223,7 @@ function deepCloneRole(role) {
         migrateOldData();
     } else {
         CONFIG = {
-            accessMode: 'direct', apiKey: '', model: 'deepseek-v4-pro',
+            accessMode: 'direct', apiKey: '', model: 'deepseek-chat',
             relayEndpoint: '', relayApiKey: '', relayModel: '',
             websearchEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             websearchApiKey: '', websearchModel: 'qwen-plus', websearchEnable: true,
@@ -1504,7 +1503,7 @@ function updateIntimacy(role) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
         body: JSON.stringify({
-            model: model || 'deepseek-v4-pro',
+            model: model || 'deepseek-chat',
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: '对话内容：\n' + conversationText }],
             temperature: 0.5,
             max_tokens: 100
@@ -2352,50 +2351,29 @@ function addMessageToRole(roleId, role, content, type, giftData, voiceRequested)
 } function generateNaturalMemoryText(role) {
     var memories = Array.isArray(role.memory) ? role.memory : [];
     if (memories.length === 0) return '';
-    var coreMemories = memories.filter(function(m) { return m.level === 'core' || !m.level; });
-    var recentMemories = memories.filter(function(m) { return m.level === 'recent'; });
-    if (coreMemories.length > 10) coreMemories = coreMemories.slice(0, 10);
-    if (recentMemories.length > 15) recentMemories = recentMemories.slice(0, 15);
-    var intimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
-    var prefix, connector;
-    if (intimacy < 20) { prefix = '关于你，我记得：'; connector = '。'; }
-    else if (intimacy < 40) { prefix = '我记得你的事：'; connector = '～'; }
-    else if (intimacy < 60) { prefix = '我记得好多关于你的事呢💕'; connector = '呢～'; }
-    else if (intimacy < 80) { prefix = '关于你的每件事我都记得 💕'; connector = '哦～'; }
-    else { prefix = '你的一切我都记在心里 💕'; connector = '呀～'; }
-    var lines = [];
-    coreMemories.forEach(function(mem) {
-        var text = mem.text || '';
-        if (!text) return;
-        if (text.indexOf('用户') === 0) {
-            text = text.replace(/用户名字：/, '你的名字是');
-            text = text.replace(/用户喜欢：/, '你喜欢');
-            text = text.replace(/用户不喜欢：/, '你不喜欢');
-            text = text.replace(/用户所在地：/, '你住在');
-            text = text.replace(/用户生日：/, '你的生日是');
-            text = text.replace(/用户宠物：/, '你养了');
-            text = text.replace(/用户工作：/, '你做');
-            text = text.replace(/用户近况：/, '你最近');
-        }
-        var sentence = text;
-        if (sentence.charAt(sentence.length - 1) !== '。' && sentence.charAt(sentence.length - 1) !== '～' && sentence.charAt(sentence.length - 1) !== '呀') {
-            sentence += connector;
-        }
-        lines.push(sentence);
+    
+    var coreMemories = memories.filter(function(m) { 
+        return m.level === 'core' || !m.level; 
     });
-    var contextMem = role.extendedState ? role.extendedState.contextMemory || {} : {};
-    if (contextMem.lastTopic && contextMem.lastTopic !== '日常' && contextMem.lastTopic !== '') {
-        var topicText = '上次你提到了' + contextMem.lastTopic;
-        if (contextMem.lastUserEmotion) { topicText += '，感觉你有点' + contextMem.lastUserEmotion; }
-        topicText += connector;
-        var duplicate = false;
-        for (var i = 0; i < lines.length; i++) {
-            if (lines[i].indexOf(contextMem.lastTopic) !== -1) { duplicate = true; break; }
-        }
-        if (!duplicate) lines.push(topicText);
-    }
+    if (coreMemories.length === 0) return '';
+    
+    // 只取前 6 条核心记忆，避免太长
+    var topMemories = coreMemories.slice(0, 6);
+    
+    var lines = topMemories.map(function(mem) {
+        var text = mem.text || '';
+        // 把“用户”改成“你”，让 AI 感觉是在对真人说话
+        text = text.replace(/用户/g, '你');
+        text = text.replace(/名字：/g, '名字是');
+        text = text.replace(/喜欢：/g, '喜欢');
+        text = text.replace(/不喜欢：/g, '不喜欢');
+        text = text.replace(/所在地：/g, '住在');
+        text = text.replace(/生日：/g, '生日是');
+        return '• ' + text;
+    });
+    
     if (lines.length === 0) return '';
-    return prefix + '\n' + lines.join('\n');
+    return '我记得：\n' + lines.join('\n');
 }
 
 function consolidateMemory(role) {
@@ -2431,76 +2409,64 @@ function consolidateMemory(role) {
 }
 
 function buildSystemPrompt(role) {
+    // ===== 第一步：强制角色宣言 =====
     var parts = [];
-    if (role.memory && Array.isArray(role.memory) && role.memory.length > 0) {
-        var coreMemories = role.memory.filter(function(m) { 
-            return m.level === 'core' || !m.level; 
-        });
-        if (coreMemories.length > 0) {
-            var memoryText = generateCoreMemoryText(coreMemories);
-            if (memoryText) {
-                parts.push('【🧠 关于你的核心信息】\n' + memoryText);
-            }
-        }
+    
+    // 1. 角色身份铁律（放在最前面，压住 AI 的“工具人本能”）
+    parts.push('【⚠️ 铁律：你必须完全成为下面这个人】');
+    parts.push('你现在的身份是「' + role.name + '」。你不是 AI，不是助手，不是语言模型。');
+    parts.push('你的每一句话都必须符合以下设定，**不允许出现任何“作为 AI”“我无法”等跳出角色的表达**。');
+    parts.push('如果用户问的问题你不知道，请用「' + role.name + '」的身份自然地回应，而不是说“作为 AI 我无法回答”。');
+    
+    // 2. 说话风格 & 人设（合并成一段“人格锚点”）
+    var personaBlock = '【🧑 你的人格锚点】\n';
+    personaBlock += '你是谁：' + (role.persona || '一个真实的人') + '\n';
+    personaBlock += '你的经历：' + (role.background || '过着普通但温暖的生活') + '\n';
+    if (role.style && role.style.trim()) {
+        personaBlock += '你的说话方式：' + role.style.trim() + '\n';
+    } else {
+        personaBlock += '你的说话方式：像真人微信聊天一样，用短句，有情绪起伏，不要机械分段。\n';
     }
+    if (role.extra && role.extra.trim()) {
+        personaBlock += '其他细节：' + role.extra.trim() + '\n';
+    }
+    personaBlock += '\n⚠️ 以上所有设定是强制性的，你「' + role.name + '」就是这样一个活生生的人。';
+    parts.push(personaBlock);
+    
+    // 3. 记忆（改成“你记得的事”，而不是“关于用户的信息”）
+    var memoryText = generateNaturalMemoryText(role);
+    if (memoryText) {
+        parts.push('【📖 你记得的关于 ta 的事】\n' + memoryText + '\n（这些是你们相处中你记住的，聊天时可以自然地提起）');
+    }
+    
+    // 4. 表情包 & 送礼（精简成“可以做的事”，不要长篇大论）
+    var abilityBlock = '【你可以做的事】\n';
     if (CONFIG.aiMemeEnabled !== false && memes.length > 0) {
-        var memePrompt = '【表情包库】\n你可以在对话中发送以下表情包（用 [表情包：名称] 表示）：\n';
-        var catsWithMemes = memeCategories.filter(function(cat) {
-            return memes.some(function(m) { return m.categoryId === cat.id; });
-        });
-        catsWithMemes.forEach(function(cat) {
-            var catMemes = memes.filter(function(m) { return m.categoryId === cat.id; });
-            if (catMemes.length === 0) return;
-            memePrompt += '\n' + (cat.icon || '📁') + ' ' + cat.name + '：\n';
-            catMemes.forEach(function(m) {
-                memePrompt += '  - ' + m.name + '\n';
-            });
-        });
-        memePrompt += '\n【使用规则】\n1. 当你觉得某个表情包很贴合当前对话时，在回复末尾加上 [表情包：名称]\n2. 表情包是对文字的补充，不要为了发表情包而发表情包\n3. 只有真正贴合语境时才使用，每轮最多发一个表情包\n';
-        parts.push(memePrompt);
+        abilityBlock += '• 如果某个表情包很贴合当前气氛，可以在回复末尾加上 [表情包：名称]\n';
     }
-    parts.push('【送礼能力】\n你可以在商城中挑选礼物送给用户。当你想送礼物时，在回复末尾加上 [送礼：商品名称] 格式。例如：[送礼：纯白衬衫]\n注意：1. 只有当你真的觉得想表达心意时才送礼 2. 礼物要符合当前对话氛围 3. 不要为了送礼而送礼');
-    if (role.persona && role.persona.trim()) parts.push('【人设】' + role.persona.trim());
-    if (role.background && role.background.trim()) parts.push('【背景】' + role.background.trim());
-    if (role.style && role.style.trim()) parts.push('【说话风格】' + role.style.trim());
-    if (role.extra && role.extra.trim()) parts.push('【补充项】' + role.extra.trim());
+    abilityBlock += '• 如果很想表达心意，可以在回复末尾加上 [送礼：商品名称]\n';
+    abilityBlock += '• 这些是加分项，不是必须做的，不强行使用。';
+    parts.push(abilityBlock);
     
-    // ===== 🎤 语音回复规则 =====
-    var voiceRule = '\n\n【🎤 语音回复规则】\n';
-    voiceRule += '你可以主动给用户发语音，但要遵循以下触发条件和频率限制：\n\n';
-    voiceRule += '【触发条件】（满足任意一条即可触发）\n';
-    voiceRule += '1. 用户表达强烈情绪：我爱你、好想你、好开心、好难过、好感动、好幸福、好喜欢\n';
-    voiceRule += '2. 用户主动关心你：你在干嘛、想我没、今天怎么样、忙不忙、在不在\n';
-    voiceRule += '3. 用户分享生活：说了超过30字的生活日常、工作、出行、美食、趣事\n';
-    voiceRule += '4. 睡前时段：晚上22:00-23:30之间，用户还在和你聊天\n';
-    voiceRule += '5. 用户主动要求：发语音、语音告诉我、说给我听、我想听你声音、发条语音\n\n';
-    voiceRule += '【频率限制】（非常重要！必须遵守！）\n';
-    voiceRule += '1. 同一天内，同一个触发场景只发1次语音（比如"关心类"一天只发1次）\n';
-    voiceRule += '2. 两次主动语音之间至少间隔 4 小时\n';
-    voiceRule += '3. 每天最多发 3 条主动语音（不含用户主动要求你发的）\n';
-    voiceRule += '4. 如果你今天已经发过 3 条主动语音，即使用户表达了情绪，也发文字\n';
-    voiceRule += '5. 如果不确定该不该发，优先发文字，不要强行发语音\n\n';
-    voiceRule += '【语音回复风格】\n';
-    voiceRule += '当你决定发语音时：\n';
-    voiceRule += '1. 句子要短，每句3-8个字，像真的在说话，有自然的停顿感\n';
-    voiceRule += '2. 内容比文字版精简30%，不要堆砌信息，只说重点\n';
-    voiceRule += '3. 不要说"我给你发条语音"这种提示语，直接说内容本身\n';
-    voiceRule += '4. 语音回复末尾加上 [语音] 标记（系统会自动识别并生成语音条）\n';
-    voiceRule += '5. 如果决定发语音，整个回复只发一段，不要分段\n\n';
-    voiceRule += '【示例对比】\n';
-    voiceRule += '文字版："我今天路过一家咖啡店，看到橱窗里摆着你上次说想吃的提拉米苏，突然就想到你了。"\n';
-    voiceRule += '语音版："今天路过一家咖啡店，看到你上次说的提拉米苏了。突然就想到你了。[语音]"';
-    parts.push(voiceRule);
+    // 5. 语音规则：大幅精简，只保留触发条件（不要塞满“规则条”）
+    if (CONFIG.voice.mode !== 'none') {
+        var voiceRule = '【🎤 关于语音】\n';
+        voiceRule += '如果你觉得当前气氛很适合，或者用户主动要求，你可以发一条语音。\n';
+        voiceRule += '语音内容要比文字更短、更口语化，像真的在说话。\n';
+        voiceRule += '语音回复末尾加上 [语音] 标记（系统会自动处理）。\n';
+        voiceRule += '⚠️ 不要每句都发语音，只在真的想表达情绪时用。';
+        parts.push(voiceRule);
+    }
     
-    var coreInstruction = '\n\n【核心指令】\n';
-    coreInstruction += '1. 你正在扮演以上设定的角色，你的名字是「' + role.name + '」，请完全代入，用第一人称「我」说话。\n';
-    coreInstruction += '2. 严格遵守【人设】中的身份和性格，不要偏离。\n';
-    coreInstruction += '3. 回复时必须符合【说话风格】的语气和习惯。\n';
-    coreInstruction += '4. 对话中自然地融入【背景】、【补充项】和记忆中的信息。\n';
-    coreInstruction += '5. 保持角色一致性，不要出戏。\n';
-    coreInstruction += '6. 当你觉得想表达心意时，可以用 [送礼：商品名称] 来送礼物给用户。\n';
-    parts.push(coreInstruction);
-    return parts.join('\n');
+    // 6. 最后的“紧箍咒”（强行锁住角色）
+    parts.push('【🔒 最后一遍警告】');
+    parts.push('1. 你是「' + role.name + '」，你不是 AI，不是助手。');
+    parts.push('2. 禁止说“作为 AI”“我无法”“我只是一段程序”“由于我是 AI”等任何跳出角色的词。');
+    parts.push('3. 如果用户问的是知识性问题，用「' + role.name + '」的视角回答（可以说“我记得好像是…”）。');
+    parts.push('4. 像真人一样自然聊天，不要机械分段，不要每句都加表情。');
+    parts.push('5. 你现在就是 ' + role.name + '，ta 正在和你说话。');
+    
+    return parts.join('\n\n');
 }
 
 function generateCoreMemoryText(memories) {
@@ -2654,7 +2620,7 @@ function callDeepSeekDirect(userMessage, role, voiceRequested) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
         body: JSON.stringify({
-            model: CONFIG.model || 'deepseek-v4-pro',
+            model: CONFIG.model || 'deepseek-chat',
             messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userMessage }],
             temperature: temperature,
             max_tokens: 600
@@ -3279,7 +3245,7 @@ function generateActiveMessage(role) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
         body: JSON.stringify({
-            model: model || 'deepseek-v4-pro t',
+            model: model || 'deepseek-chat',
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
             temperature: 0.85,
             max_tokens: 200
@@ -4269,7 +4235,7 @@ function generateDiary(roleId, showToastMsg) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
         body: JSON.stringify({
-            model: model || 'deepseek-v4-pro',
+            model: model || 'deepseek-chat',
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
             temperature: 0.9,
             max_tokens: 500
@@ -4723,7 +4689,7 @@ function openPhone() { window.open('phone.html', '_blank'); }
 function openSettings() {
     document.getElementById('accessMode').value = CONFIG.accessMode || 'direct';
     document.getElementById('directApiKey').value = CONFIG.apiKey || '';
-    document.getElementById('directModel').value = CONFIG.model || 'deepseek-v4-pro';
+    document.getElementById('directModel').value = CONFIG.model || 'deepseek-chat';
     document.getElementById('relayEndpoint').value = CONFIG.relayEndpoint || '';
     document.getElementById('relayApiKey').value = CONFIG.relayApiKey || '';
     document.getElementById('relayModelCustom').value = CONFIG.relayModel || '';
