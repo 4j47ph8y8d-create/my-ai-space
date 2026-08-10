@@ -1057,12 +1057,12 @@ function escapeHtml(text) { if (text === null || text === undefined) return ''; 
 function getLevel(value) { for (var i = 0; i < CONSTANTS.LEVEL_MAP.length; i++) { if (value <= CONSTANTS.LEVEL_MAP[i].max) return CONSTANTS.LEVEL_MAP[i].label; } return '灵魂共振'; }
 function getIntimacyLevel(intimacy) { if (intimacy < 20) return '初识'; if (intimacy < 40) return '熟悉'; if (intimacy < 60) return '亲密'; if (intimacy < 80) return '依赖'; return '灵魂伴侣'; }
 function getHeartData(role) { if (!role) return { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; if (!role.heartData) { role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; debouncedSaveAllData(); } return role.heartData; }
+
 function immediateSaveAllData() {
     try {
         var configToSave = JSON.parse(JSON.stringify(CONFIG));
         if (configToSave.heart) delete configToSave.heart.recoveryTimer;
-        var wallpaperFlag = configToSave.wallpaper ? 'saved' : '';
-        configToSave.wallpaper = wallpaperFlag;
+        // 删除多余的空字符串，保留真实数据
         var data = { 
             config: configToSave, 
             roles: roles.map(function(r) { return deepCloneRole(r); }), 
@@ -1541,6 +1541,8 @@ function updateIntimacy(role) {
         role.extendedState.contextSummary = summary2;
         saveSummaryToMemory(role, summary2);
         debouncedSaveAllData();
+    }).finally(function() {
+        clearTimeout(timeoutId);
     });
 }
 
@@ -1570,32 +1572,33 @@ function saveSummaryToMemory(role, summary) {
 } function fetchWithRetry(url, options, maxRetries) {
     maxRetries = maxRetries || 1;
     var retryCount = 0;
-    function doFetch() {
+    function doFetch(remainingRetries) {
+        if (remainingRetries === undefined) remainingRetries = maxRetries;
         return fetch(url, options).then(function(resp) {
-            if (!resp.ok && retryCount < maxRetries) {
+            if (!resp.ok && retryCount < maxRetries && remainingRetries > 0) {
                 retryCount++;
                 console.log('🔄 API 请求失败，第 ' + retryCount + ' 次重试...');
                 return new Promise(function(resolve) {
                     setTimeout(function() {
-                        doFetch().then(resolve);
+                        doFetch(remainingRetries - 1).then(resolve);
                     }, 1000 * retryCount);
                 });
             }
             return resp;
         }).catch(function(err) {
-            if (retryCount < maxRetries) {
+            if (retryCount < maxRetries && remainingRetries > 0) {
                 retryCount++;
                 console.log('🔄 API 请求异常，第 ' + retryCount + ' 次重试...');
                 return new Promise(function(resolve) {
                     setTimeout(function() {
-                        doFetch().then(resolve);
+                        doFetch(remainingRetries - 1).then(resolve);
                     }, 1000 * retryCount);
                 });
             }
             throw err;
         });
     }
-    return doFetch();
+    return doFetch(maxRetries);
 }
 
 function isVoiceTrigger(text) {
@@ -2125,23 +2128,37 @@ function handleSend() {
     var mode = CONFIG.accessMode || 'direct';
     
     if (mode === 'direct') {
-        if (!CONFIG.apiKey) {
-            showToast('🔑 请先在设置中配置 DeepSeek API Key');
-            openSettings();
-            return;
-        }
-    } else if (mode === 'relay') {
-        if (!CONFIG.relayApiKey && !CONFIG.apiKey) {
-            showToast('🔑 请先在设置中配置中转站 API Key');
-            openSettings();
-            return;
-        }
-        if (!CONFIG.relayEndpoint) {
-            showToast('🔑 中转模式请填写 API Endpoint');
-            openSettings();
-            return;
-        }
-    } else if (mode === 'websearch') {
+    if (!CONFIG.apiKey) {
+        showToast('🔑 请先在设置中配置 DeepSeek API Key');
+        openSettings();
+        return;
+    }
+    if (!CONFIG.model || CONFIG.model === '') {
+        showToast('⚠️ 请选择有效的模型');
+        openSettings();
+        return;
+    }
+} else if (mode === 'relay') {
+    if (!CONFIG.relayApiKey && !CONFIG.apiKey) {
+        showToast('🔑 请先在设置中配置中转站 API Key');
+        openSettings();
+        return;
+    }
+    if (!CONFIG.relayEndpoint) {
+        showToast('🔑 中转模式请填写 API Endpoint');
+        openSettings();
+        return;
+    }
+    // 检查模型是否有效
+    var relayModel = document.getElementById('relayModelCustom').value.trim() || 
+                     document.getElementById('relayModelSelect').value;
+    if (!relayModel) {
+        showToast('⚠️ 请选择或输入模型名');
+        openSettings();
+        return;
+    }
+    CONFIG.relayModel = relayModel; // 保存用于后续调用
+} else if (mode === 'websearch') {
         if (!CONFIG.websearchApiKey) {
             showToast('🔑 请先在设置中配置联网搜索 API Key');
             openSettings();
@@ -2589,6 +2606,7 @@ function callAI(userMessage, role, voiceRequested) {
 }
 
 function callDeepSeekDirect(userMessage, role, voiceRequested) {
+    var shouldGenerateVoice = voiceRequested || false;
     var apiKey = CONFIG.apiKey;
     if (!apiKey) throw new Error('请先设置 DeepSeek API Key（设置 → AI接入 → 直连模式）');
     var recallKeywords = ['还记得', '记得吗', '之前', '上次', '你说过', '我们聊过', '你记不记得', '你忘了吗'];
@@ -2652,6 +2670,7 @@ function callDeepSeekDirect(userMessage, role, voiceRequested) {
 }
 
 function callRelayAPI(userMessage, role, voiceRequested) {
+    var shouldGenerateVoice = voiceRequested || false;
     var endpoint = CONFIG.relayEndpoint || 'https://shufulei.net/v1';
     var apiKey = CONFIG.relayApiKey || CONFIG.apiKey;
     var model = CONFIG.relayModel || 'gpt-3.5-turbo';
@@ -2718,6 +2737,7 @@ function callRelayAPI(userMessage, role, voiceRequested) {
 }
 
 function callWebSearchAPI(userMessage, role, voiceRequested) {
+    var shouldGenerateVoice = voiceRequested || false;
     var endpoint = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
     var apiKey = CONFIG.websearchApiKey;
     var model = CONFIG.websearchModel || 'qwen-plus';
@@ -3443,13 +3463,13 @@ function setupLongPress() {
         menu.classList.add('active');
         var quoteItem = menu.querySelector('[data-action="quote"]');
         quoteItem.onclick = function() {
-            quotedMsg = { role: msg.role, content: msg.content, name: senderName };
-            document.getElementById('quoteText').textContent = '引用 ' + senderName + '：' + preview;
-            document.getElementById('quoteBar').classList.add('active');
-            document.getElementById('messageInput').focus();
-            hideLongpressMenu();
-            showToast('💬 已引用，输入回复内容');
-        };
+    quotedMsg = { id: msg.id, role: msg.role, content: msg.content, name: senderName };
+    document.getElementById('quoteText').textContent = '引用 ' + senderName + '：' + preview;
+    document.getElementById('quoteBar').classList.add('active');
+    document.getElementById('messageInput').focus();
+    hideLongpressMenu();
+    showToast('💬 已引用，输入回复内容');
+};
         var deleteItem = menu.querySelector('[data-action="delete"]');
         deleteItem.onclick = function() {
             if (confirm('确定要删除这条消息吗？关联的记忆也会被删除。')) {
@@ -6239,7 +6259,8 @@ function getLastMessage(roleId) {
 
 function getInitials(name) { if (!name) return '?'; return name.charAt(0).toUpperCase(); }
 
-function cleanTextForTTS(text) {
+function cleanTextForTTS(text, role) {
+
     if (!text) return '';
     
     var cleaned = text;
@@ -6398,155 +6419,10 @@ function cleanTextForTTS(text) {
     
     // 如果清洗后为空，返回安全兜底
     if (!cleaned || cleaned.length === 0) {
-        return '你好，我是 ' + (role ? role.name : 'AI') + '。';
-    }
+    var fallback = text.replace(/[（(][^）)]*[）)]/g, '').trim();
+    return fallback || '你好，我是 ' + (role ? role.name : 'AI') + '。';
+}
     
-    return cleaned;
-} function cleanTextForTTS(text) {
-    if (!text) return '';
-    
-    var cleaned = text;
-    
-    // 删除所有括号及括号内内容
-    var result = '';
-    var depth = 0;
-    for (var i = 0; i < cleaned.length; i++) {
-        var ch = cleaned[i];
-        if (ch === '(' || ch === '（') { depth++; continue; }
-        if (ch === ')' || ch === '）') { if (depth > 0) depth--; continue; }
-        if (depth === 0) result += ch;
-    }
-    cleaned = result;
-    
-    // 删除 【...】
-    result = '';
-    depth = 0;
-    for (var i = 0; i < cleaned.length; i++) {
-        var ch = cleaned[i];
-        if (ch === '【') { depth++; continue; }
-        if (ch === '】') { if (depth > 0) depth--; continue; }
-        if (depth === 0) result += ch;
-    }
-    cleaned = result;
-    
-    // 删除 *...*
-    result = '';
-    var inStar = false;
-    for (var i = 0; i < cleaned.length; i++) {
-        var ch = cleaned[i];
-        if (ch === '*') { inStar = !inStar; continue; }
-        if (!inStar) result += ch;
-    }
-    cleaned = result;
-    
-    // 删除 _..._
-    result = '';
-    var inUnderscore = false;
-    for (var i = 0; i < cleaned.length; i++) {
-        var ch = cleaned[i];
-        if (ch === '_') { inUnderscore = !inUnderscore; continue; }
-        if (!inUnderscore) result += ch;
-    }
-    cleaned = result;
-    
-    // 删除 ——...——
-    result = '';
-    var inDash = false;
-    for (var i = 0; i < cleaned.length; i++) {
-        var ch = cleaned[i];
-        if (ch === '—') {
-            if (i + 1 < cleaned.length && cleaned[i + 1] === '—') {
-                inDash = !inDash;
-                i++;
-                continue;
-            }
-        }
-        if (!inDash) result += ch;
-    }
-    cleaned = result;
-    
-    // 删除常见动作短语
-    var actionPhrases = [
-        '顿了顿', '沉默了片刻', '沉默了一会', '顿了一下', 
-        '怔了一下', '愣了一下', '想了想', '思考了片刻', '回过神',
-        '低头', '抬头', '转身', '侧头', '偏头', '点头', '摇头',
-        '轻笑', '低笑', '轻叹', '叹气', '抿唇', '勾唇', 
-        '皱眉', '挑眉', '闭眼', '睁眼', '抬眸', '垂眸',
-        '回神', '愣住', '怔住', '顿住', '沉默', '停顿',
-        '忽然', '突然', '缓缓', '轻轻', '微微', '悄悄'
-    ];
-    for (var p = 0; p < actionPhrases.length; p++) {
-        var phrase = actionPhrases[p];
-        if (cleaned.indexOf(phrase) === 0) {
-            var after = cleaned.substring(phrase.length);
-            if (after.length > 0 && (after[0] === '，' || after[0] === '。' || after[0] === '、')) {
-                cleaned = after.substring(1);
-            }
-        }
-        cleaned = cleaned.replace(new RegExp('[，。]\\s*' + phrase + '[，。]?', 'g'), '');
-        cleaned = cleaned.replace(new RegExp('^(?:他|她|我)' + phrase, 'g'), '');
-    }
-    
-    // 删除「...」内非对话内容
-    result = '';
-    var inQuote = false;
-    var quoteBuffer = '';
-    for (var i = 0; i < cleaned.length; i++) {
-        var ch = cleaned[i];
-        if (ch === '「') { inQuote = true; quoteBuffer = ''; continue; }
-        if (ch === '」') {
-            inQuote = false;
-            if (quoteBuffer.length < 6 && !(/[我你他她它]/.test(quoteBuffer))) {
-                // 丢弃
-            } else {
-                result += '「' + quoteBuffer + '」';
-            }
-            continue;
-        }
-        if (inQuote) { quoteBuffer += ch; }
-        else { result += ch; }
-    }
-    cleaned = result;
-    
-    // 删除内心独白标记
-    cleaned = cleaned.replace(/（心[理想]：）/g, '');
-    cleaned = cleaned.replace(/（OS[：: ]*）/g, '');
-    cleaned = cleaned.replace(/（内心[：: ]*）/g, '');
-    
-    // 压缩重复标点和空格
-    cleaned = cleaned.replace(/[，。！？]{2,}/g, function(match) { return match.charAt(0); });
-    cleaned = cleaned.replace(/\s+/g, ' ');
-    
-    // 删除句首口语填充词
-    var fillers = ['那个', '其实', '就是', '然后'];
-    for (var f = 0; f < fillers.length; f++) {
-        var filler = fillers[f];
-        if (cleaned.indexOf(filler) === 0) {
-            var after = cleaned.substring(filler.length);
-            if (after.length > 0 && (after[0] === '，' || after[0] === '。' || after[0] === '、')) {
-                cleaned = after.substring(1);
-            }
-        }
-    }
-    
-    cleaned = cleaned.replace(/([呃嗯啊哦])\1+/g, '$1');
-    cleaned = cleaned.replace(/\s+([吧呢啊哦嗯])/g, '$1');
-    cleaned = cleaned.trim();
-    
-    if (!cleaned || cleaned.length === 0) {
-        var fallback = text.replace(/[（(][^）)]*[）)]/g, '').trim();
-        return fallback || '你好';
-    }
-
-// ===== 🆕 在标点处插入停顿 =====
-    // 句号、问号、感叹号 → 长停顿
-    cleaned = cleaned.replace(/[。！？]/g, function(match) {
-        return match + ' ';  // 加空格，TTS 会停顿
-    });
-    // 逗号、顿号、分号 → 短停顿
-    cleaned = cleaned.replace(/[，、；：]/g, function(match) {
-        return match + ' ';
-    });
     return cleaned;
 }
  async function callBailianTTS(text, role) {
@@ -6558,7 +6434,7 @@ function cleanTextForTTS(text) {
     if (!voiceId) throw new Error('当前角色未配置 Voice ID');
     if (!endpoint) throw new Error('未配置语音 Endpoint');
     
-    var cleanText = cleanTextForTTS(text);
+    var cleanText = cleanTextForTTS(text, role);
     
     if (!cleanText || cleanText.trim().length === 0) {
         cleanText = '你好，我是 ' + (role.name || 'AI') + '。';
@@ -6639,7 +6515,9 @@ function speakWithBrowser(text, callback) {
 function getVoiceApiKey() {
     if (CONFIG.voice.apiKey && CONFIG.voice.apiKey.trim()) return CONFIG.voice.apiKey.trim();
     if (CONFIG.accessMode === 'direct') return CONFIG.apiKey;
-    return CONFIG.relayApiKey;
+    if (CONFIG.accessMode === 'relay') return CONFIG.relayApiKey;
+    if (CONFIG.accessMode === 'websearch') return CONFIG.websearchApiKey;
+    return '';
 }
 
 function getVoiceEndpoint() {
