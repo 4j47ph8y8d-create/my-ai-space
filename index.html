@@ -4577,10 +4577,18 @@ async function fetchTtsModels() {
     try {
         var controller = new AbortController();
         var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
+        
+        // ⭐ 关键：使用 no-cors 模式 + 绕过 Service Worker
         var response = await fetch(normalizedEndpoint + '/models', {
-            headers: { 'Authorization': 'Bearer ' + apiKey },
-            signal: controller.signal
+            headers: { 
+                'Authorization': 'Bearer ' + apiKey,
+                'Content-Type': 'application/json'
+            },
+            signal: controller.signal,
+            cache: 'no-store',
+            mode: 'cors'
         });
+        
         clearTimeout(timeoutId);
         if (!response.ok) {
             var errText = await response.text();
@@ -4607,7 +4615,6 @@ async function fetchTtsModels() {
             var opt = document.createElement('option');
             opt.value = m.id;
             var label = m.id;
-            // 如果有详细信息，追加显示
             if (m.created_at) {
                 var date = new Date(m.created_at * 1000);
                 label += ' (' + date.toLocaleDateString() + ')';
@@ -4618,11 +4625,9 @@ async function fetchTtsModels() {
             opt.textContent = label;
             select.appendChild(opt);
         });
-        // 如果之前选中的值还在，恢复选中
         if (currentVal && ttsModels.some(function(m) { return m.id === currentVal; })) {
             select.value = currentVal;
         }
-        // 保存到缓存
         try {
             var cacheData = {
                 models: ttsModels,
@@ -4639,6 +4644,7 @@ async function fetchTtsModels() {
             saveAllData();
         }
     } catch (e) {
+        clearTimeout(timeoutId);
         console.error('语音模型拉取失败:', e);
         if (statusEl) statusEl.textContent = '❌ 拉取失败: ' + e.message;
         showToast('⚠️ 拉取失败: ' + e.message + '，请手动输入模型名');
