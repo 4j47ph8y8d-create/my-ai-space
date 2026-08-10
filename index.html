@@ -845,13 +845,15 @@
                 <div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">留空则自动复用上方接入模式的 API Key</div>
             </div>
             <div class="setting-group">
-                <label>语音模型（独立 TTS）</label>
-                <div style="display:flex;gap:6px;">
-                    <select id="ttsModelSelect" style="flex:1;"><option value="cosyvoice-v3.5-plus">cosyvoice-v3.5-plus</option></select>
-                    <button id="fetchTtsModelsBtn" style="padding:4px 12px;border:1px solid #07c160;border-radius:8px;background:transparent;color:#07c160;cursor:pointer;white-space:nowrap;font-size:12px;"><i class="fas fa-sync-alt"></i> 拉取</button>
-                </div>
-                <input type="text" id="ttsModelCustom" placeholder="手动输入模型名（拉取失败时使用）" style="margin-top:4px;font-size:12px;color:var(--text-secondary);" />
-            </div>
+    <label>🎤 语音模型（独立 TTS）</label>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <select id="ttsModelSelect" style="flex:1;min-width:120px;"><option value="cosyvoice-v3.5-plus">cosyvoice-v3.5-plus</option></select>
+        <button id="fetchTtsModelsBtn" style="padding:4px 12px;border:1px solid #07c160;border-radius:8px;background:transparent;color:#07c160;cursor:pointer;white-space:nowrap;font-size:12px;"><i class="fas fa-sync-alt"></i> 拉取</button>
+        <button id="refreshTtsCacheBtn" style="padding:4px 12px;border:1px solid #f39c12;border-radius:8px;background:transparent;color:#f39c12;cursor:pointer;white-space:nowrap;font-size:12px;"><i class="fas fa-database"></i> 刷新缓存</button>
+    </div>
+    <input type="text" id="ttsModelCustom" placeholder="手动输入模型名（拉取失败时使用）" style="margin-top:4px;font-size:12px;color:var(--text-secondary);width:100%;" />
+    <div id="ttsModelStatus" style="font-size:10px;color:var(--text-secondary);margin-top:2px;">💡 点击「拉取」从百炼获取最新模型列表</div>
+</div>
         </div>
         <div class="setting-group">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
@@ -4569,6 +4571,8 @@ async function fetchTtsModels() {
         return;
     }
     var normalizedEndpoint = endpoint.replace(/\/+$/, '');
+    var statusEl = document.getElementById('ttsModelStatus');
+    if (statusEl) statusEl.textContent = '🔄 正在拉取模型列表...';
     showToast('🔄 正在拉取语音模型列表...');
     try {
         var controller = new AbortController();
@@ -4585,22 +4589,49 @@ async function fetchTtsModels() {
         var data = await response.json();
         var models = data.data || [];
         if (models.length === 0) {
-            showToast('⚠️ 未获取到语音模型，请手动输入');
+            showToast('⚠️ 未获取到模型，请手动输入');
+            if (statusEl) statusEl.textContent = '⚠️ 未获取到模型，请手动输入';
             return;
         }
+        // 过滤出 TTS 相关模型
         var ttsModels = models.filter(function(m) {
-            var id = m.id || '';
-            return id.includes('tts') || id.includes('speech') || id.includes('audio') || id.includes('cosyvoice');
+            var id = (m.id || '').toLowerCase();
+            return id.includes('tts') || id.includes('speech') || id.includes('audio') || 
+                   id.includes('cosyvoice') || id.includes('voice') || id.includes('qwen-audio');
         });
         if (ttsModels.length === 0) ttsModels = models.slice(0, 10);
         var select = document.getElementById('ttsModelSelect');
+        var currentVal = select.value;
         select.innerHTML = '';
         ttsModels.forEach(function(m) {
             var opt = document.createElement('option');
             opt.value = m.id;
-            opt.textContent = m.id + (m.owned_by ? ' (' + m.owned_by + ')' : '');
+            var label = m.id;
+            // 如果有详细信息，追加显示
+            if (m.created_at) {
+                var date = new Date(m.created_at * 1000);
+                label += ' (' + date.toLocaleDateString() + ')';
+            }
+            if (m.owned_by && m.owned_by !== 'system') {
+                label += ' [' + m.owned_by + ']';
+            }
+            opt.textContent = label;
             select.appendChild(opt);
         });
+        // 如果之前选中的值还在，恢复选中
+        if (currentVal && ttsModels.some(function(m) { return m.id === currentVal; })) {
+            select.value = currentVal;
+        }
+        // 保存到缓存
+        try {
+            var cacheData = {
+                models: ttsModels,
+                updatedAt: Date.now(),
+                endpoint: normalizedEndpoint
+            };
+            localStorage.setItem('tts_models_cache', JSON.stringify(cacheData));
+        } catch (e) { /* 缓存失败不影响使用 */ }
+        if (statusEl) statusEl.textContent = '✅ 已拉取 ' + ttsModels.length + ' 个语音模型（已缓存）';
         showToast('✅ 已拉取 ' + ttsModels.length + ' 个语音模型');
         if (ttsModels.length > 0) {
             CONFIG.voice.model = ttsModels[0].id;
@@ -4609,7 +4640,42 @@ async function fetchTtsModels() {
         }
     } catch (e) {
         console.error('语音模型拉取失败:', e);
+        if (statusEl) statusEl.textContent = '❌ 拉取失败: ' + e.message;
         showToast('⚠️ 拉取失败: ' + e.message + '，请手动输入模型名');
+        // 尝试从缓存读取
+        try {
+            var cached = localStorage.getItem('tts_models_cache');
+            if (cached) {
+                var cacheData = JSON.parse(cached);
+                if (cacheData.models && cacheData.models.length > 0) {
+                    var select2 = document.getElementById('ttsModelSelect');
+                    select2.innerHTML = '';
+                    cacheData.models.forEach(function(m) {
+                        var opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.textContent = m.id;
+                        select2.appendChild(opt);
+                    });
+                    if (statusEl) statusEl.textContent = '📦 使用缓存数据（' + cacheData.models.length + ' 个模型）';
+                    showToast('📦 使用缓存数据');
+                    return;
+                }
+            }
+        } catch (e2) { /* 缓存读取失败 */ }
+    }
+}
+
+// 新增：刷新缓存功能
+function refreshTtsCache() {
+    try {
+        localStorage.removeItem('tts_models_cache');
+        showToast('🗑️ 缓存已清除，点击「拉取」重新获取');
+        var statusEl = document.getElementById('ttsModelStatus');
+        if (statusEl) statusEl.textContent = '🗑️ 缓存已清除';
+        // 重新拉取
+        setTimeout(fetchTtsModels, 500);
+    } catch (e) {
+        showToast('⚠️ 清除缓存失败: ' + e.message);
     }
 }
 
@@ -6619,7 +6685,32 @@ function init() {
         document.getElementById('memeScreen').classList.remove('open');
         document.getElementById('diaryScreen').classList.remove('open');
     } catch (e) { console.error('页面切换失败:', e); }
-    try { updatePermissionStatusUI(); } catch (e) { console.error('权限状态更新失败:', e); }
+    try { updatePermissionStatusUI(); } catch (e) { console.error('权限状态更新失败:', e); } 
+// ===== 加载 TTS 模型缓存（页面打开时自动恢复） =====
+    try {
+        var cached = localStorage.getItem('tts_models_cache');
+        if (cached) {
+            var cacheData = JSON.parse(cached);
+            if (cacheData.models && cacheData.models.length > 0) {
+                var select = document.getElementById('ttsModelSelect');
+                if (select) {
+                    var currentVal = select.value;
+                    select.innerHTML = '';
+                    cacheData.models.forEach(function(m) {
+                        var opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.textContent = m.id;
+                        select.appendChild(opt);
+                    });
+                    if (currentVal && cacheData.models.some(function(m) { return m.id === currentVal; })) {
+                        select.value = currentVal;
+                    }
+                    var statusEl = document.getElementById('ttsModelStatus');
+                    if (statusEl) statusEl.textContent = '📦 已加载缓存（' + cacheData.models.length + ' 个模型）';
+                }
+            }
+        }
+    } catch (e) { /* 缓存加载失败，不影响使用 */ }
     var apiKey = CONFIG.accessMode === 'direct' ? CONFIG.apiKey : CONFIG.relayApiKey;
     if (!apiKey) setTimeout(function() { showToast('🔑 点击桌面「设置」→ 配置 API Key'); }, 800);
     try {
@@ -6756,6 +6847,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('fetchModelsBtn').addEventListener('click', fetchModelsFromRelay);
     document.getElementById('fetchTtsModelsBtn').addEventListener('click', fetchTtsModels);
+document.getElementById('refreshTtsCacheBtn').addEventListener('click', refreshTtsCache);
 
     document.getElementById('resetPermissionBtn').addEventListener('click', function() {
         CONFIG.permission = null;
