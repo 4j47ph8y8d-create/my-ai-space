@@ -780,6 +780,7 @@
    ============================================================ */
 
 /* ----- 收藏屋主容器 ----- */
+
 .screen-favorite {
     width: 100%;
     height: 100%;
@@ -789,7 +790,7 @@
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 25;
+    z-index: 25;  /* ⭐ 确保 z-index 比所有页面都高 */
     transform: translateX(100%);
     transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -6453,12 +6454,13 @@ async function generateVoiceForMessage(msgId, role) {
     if (!role) return;
     var msg = role.messages.find(function(m) { return m.id === msgId; });
     if (!msg) return;
-    if (msg.hasAudio && msg.audioUrl) {
+    if (msg.hasAudio && msg.audioUrl && msg.audioBase64) {
         createVoicePlayer(msgId, msg.audioUrl, msg.audioDuration);
         return;
     }
     if (!msg.content || msg.content.trim().length === 0) return;
     if (CONFIG.voice.mode === 'none') return;
+    
     try {
         var audioUrl;
         if (CONFIG.voice.mode === 'bailian') {
@@ -6469,8 +6471,29 @@ async function generateVoiceForMessage(msgId, role) {
         } else {
             return;
         }
+        
         msg.hasAudio = true;
         msg.audioUrl = audioUrl;
+        
+        // ⭐ 新增：把音频转成 Base64 存到消息里
+        if (audioUrl) {
+            try {
+                var response = await fetch(audioUrl);
+                var blob = await response.blob();
+                var base64 = await new Promise(function(resolve, reject) {
+                    var reader = new FileReader();
+                    reader.onload = function() { resolve(reader.result); };
+                    reader.onerror = function() { reject(new Error('读取失败')); };
+                    reader.readAsDataURL(blob);
+                });
+                msg.audioBase64 = base64;
+                console.log('✅ 音频 Base64 已缓存到消息中');
+            } catch (e) {
+                console.warn('⚠️ 无法缓存音频 Base64:', e);
+                msg.audioBase64 = null;
+            }
+        }
+        
         var audio = new Audio(audioUrl);
         audio.addEventListener('loadedmetadata', function() {
             msg.audioDuration = audio.duration || 10;
@@ -8387,19 +8410,47 @@ function showFavToast(msg) {
 // ============================================================
 
 function openFavorite() {
-    document.getElementById('launcherScreen').classList.add('hidden');
-    document.getElementById('chatScreen').classList.remove('open');
-    document.getElementById('contactsScreen').classList.remove('open');
-    document.getElementById('memeScreen').classList.remove('open');
-    document.getElementById('diaryScreen').classList.remove('open');
-    document.getElementById('favoriteScreen').classList.add('open');
+    // ⭐ 强制隐藏所有页面
+    var launcher = document.getElementById('launcherScreen');
+    var chat = document.getElementById('chatScreen');
+    var contacts = document.getElementById('contactsScreen');
+    var meme = document.getElementById('memeScreen');
+    var diary = document.getElementById('diaryScreen');
+    var favorite = document.getElementById('favoriteScreen');
+    
+    // 隐藏桌面（直接设置 display）
+    launcher.style.display = 'none';
+    
+    // 关闭所有其他页面
+    chat.classList.remove('open');
+    contacts.classList.remove('open');
+    meme.classList.remove('open');
+    diary.classList.remove('open');
+    
+    // 显示收藏屋
+    favorite.classList.add('open');
+    favorite.style.display = 'flex';
+    
     renderFavorites();
     if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300);
 }
 
 function closeFavorite() {
-    document.getElementById('favoriteScreen').classList.remove('open');
-    document.getElementById('launcherScreen').classList.remove('hidden');
+    var launcher = document.getElementById('launcherScreen');
+    var favorite = document.getElementById('favoriteScreen');
+    
+    // 关闭收藏屋
+    favorite.classList.remove('open');
+    favorite.style.display = 'none';
+    
+    // 恢复桌面显示
+    launcher.style.display = 'flex';
+    
+    // 确保其他页面关闭
+    document.getElementById('chatScreen').classList.remove('open');
+    document.getElementById('contactsScreen').classList.remove('open');
+    document.getElementById('memeScreen').classList.remove('open');
+    document.getElementById('diaryScreen').classList.remove('open');
 }
 
 // ============================================================
@@ -8412,77 +8463,126 @@ function closeFavorite() {
 
 function fetchAudioAsBase64(url) {
     return new Promise(function(resolve, reject) {
-        // 如果 URL 是 blob: 开头，用 fetch 获取
+        console.log('🔄 开始获取音频:', url);
+        
+        // 如果是 blob: 开头，用 fetch 获取
         if (url.startsWith('blob:')) {
             fetch(url)
                 .then(function(response) {
-                    if (!response.ok) throw new Error('获取音频失败');
+                    if (!response.ok) throw new Error('获取音频失败: ' + response.status);
                     return response.blob();
                 })
                 .then(function(blob) {
                     var reader = new FileReader();
                     reader.onload = function() {
-                        resolve(reader.result); // Base64 数据
-                    };
-                    reader.onerror = function() {
-                        reject(new Error('读取音频失败'));
-                    };
-                    reader.readAsDataURL(blob);
-                })
-                .catch(function(e) {
-                    reject(e);
-                });
-        } else {
-            // 如果是普通 URL，用 fetch 获取
-            fetch(url)
-                .then(function(response) {
-                    if (!response.ok) throw new Error('获取音频失败');
-                    return response.blob();
-                })
-                .then(function(blob) {
-                    var reader = new FileReader();
-                    reader.onload = function() {
+                        console.log('✅ Blob 转 Base64 成功, 长度:', reader.result.length);
                         resolve(reader.result);
                     };
                     reader.onerror = function() {
-                        reject(new Error('读取音频失败'));
+                        reject(new Error('读取 Blob 失败'));
                     };
                     reader.readAsDataURL(blob);
                 })
                 .catch(function(e) {
+                    console.error('❌ 获取 Blob 失败:', e);
                     reject(e);
                 });
+            return;
         }
+        
+        // 如果是百炼返回的临时 URL，用 fetch 获取
+        fetch(url, {
+            mode: 'cors',
+            headers: {
+                'Accept': 'audio/*'
+            }
+        })
+            .then(function(response) {
+                if (!response.ok) throw new Error('获取音频失败: ' + response.status);
+                return response.blob();
+            })
+            .then(function(blob) {
+                var reader = new FileReader();
+                reader.onload = function() {
+                    console.log('✅ URL 转 Base64 成功, 长度:', reader.result.length);
+                    resolve(reader.result);
+                };
+                reader.onerror = function() {
+                    reject(new Error('读取音频失败'));
+                };
+                reader.readAsDataURL(blob);
+            })
+            .catch(function(e) {
+                console.error('❌ 获取 URL 音频失败:', e);
+                // 用 XHR 兜底
+                tryFetchWithXHR(url, resolve, reject);
+            });
     });
-} function collectMessage(roleId, messageId) {
+}
+
+// 用 XMLHttpRequest 兜底获取音频
+function tryFetchWithXHR(url, resolve, reject) {
+    console.log('🔄 尝试用 XHR 获取音频...');
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'blob';
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            var blob = xhr.response;
+            var reader = new FileReader();
+            reader.onload = function() {
+                console.log('✅ XHR 转 Base64 成功, 长度:', reader.result.length);
+                resolve(reader.result);
+            };
+            reader.onerror = function() {
+                reject(new Error('读取音频失败'));
+            };
+            reader.readAsDataURL(blob);
+        } else {
+            reject(new Error('XHR 获取失败: ' + xhr.status));
+        }
+    };
+    xhr.onerror = function() {
+        reject(new Error('XHR 网络错误'));
+    };
+    xhr.send();
+} // ============================================================
+//  ⭐ 收藏消息（长按菜单调用）
+// ============================================================
+
+function collectMessage(roleId, messageId) {
     var role = roles.find(function(r) { return r.id === roleId; });
     if (!role) { showToast('⚠️ 未找到角色'); return; }
     var msg = role.messages.find(function(m) { return m.id === messageId; });
     if (!msg) { showToast('⚠️ 未找到消息'); return; }
 
-    // 检查是否已收藏
     isFavoriteCollected(messageId).then(function(exists) {
         if (exists) {
             showToast('💡 已收藏过了');
             return;
         }
 
-        // 如果是语音消息，需要把音频转成 Base64
-var audioPromise = Promise.resolve(null);
-if (msg.audioUrl) {  // ⭐ 只要有 audioUrl 就转，不管 type 是什么
-    console.log('🎵 检测到 audioUrl，开始转 Base64...');
-    audioPromise = fetchAudioAsBase64(msg.audioUrl);
-}
+        // ⭐ 直接从消息里拿 audioBase64
+        var audioPromise = Promise.resolve(null);
+        if (msg.audioBase64) {
+            console.log('🎵 直接使用消息中的 audioBase64');
+            audioPromise = Promise.resolve(msg.audioBase64);
+        } else if (msg.audioUrl) {
+            console.log('🎵 消息中没有 Base64，尝试从 URL 获取...');
+            audioPromise = fetchAudioAsBase64(msg.audioUrl);
+        }
 
         audioPromise.then(function(audioData) {
+            var isVoice = !!(audioData && audioData.length > 0);
+            
             var favorite = {
                 id: 'fav_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
                 roleId: roleId,
                 roleName: role.name,
                 sender: msg.role,
                 content: msg.content,
-                type: msg.type || 'text',
-                audioBase64: audioData,          // 存 Base64 数据
+                type: isVoice ? 'voice' : (msg.type || 'text'),
+                audioBase64: audioData,
                 audioDuration: msg.audioDuration || 0,
                 collectedAt: new Date().toISOString(),
                 sourceMsgId: messageId,
@@ -8496,14 +8596,16 @@ if (msg.audioUrl) {  // ⭐ 只要有 audioUrl 就转，不管 type 是什么
                 renderFavorites();
             }
         }).catch(function(e) {
-            console.error('收藏失败:', e);
+            console.error('❌ 收藏失败:', e);
             showToast('⚠️ 收藏失败');
         });
     }).catch(function(e) {
-        console.error('检查收藏失败:', e);
+        console.error('❌ 检查收藏失败:', e);
         showToast('⚠️ 操作失败');
     });
-} </script>
+}
+
+</script>
 <!-- ===== 收藏屋 ===== -->
     <div class="screen-favorite" id="favoriteScreen">
         <!-- 顶部导航 -->
