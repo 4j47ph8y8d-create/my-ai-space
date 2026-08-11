@@ -8011,23 +8011,26 @@ function renderFavorites() {
 
             var contentHtml = '';
             if (item.type === 'voice') {
-                var durationStr = formatTimeDisplay(item.audioDuration || 0);
-                contentHtml = `
-                    <div class="favorite-voice-player">
-                        <button class="voice-play-btn" data-id="${item.id}" onclick="toggleFavVoice('${item.id}')">
-                            <i class="fas fa-play"></i>
-                        </button>
-                        <div class="voice-progress-wrap">
-                            <div class="voice-progress-bar" onclick="seekFavVoice(event, '${item.id}')">
-                                <div class="voice-progress-fill" id="fav_progress_${item.id}" style="width:0%;"></div>
-                                <div class="voice-progress-dot" id="fav_dot_${item.id}" style="left:0%;"></div>
-                            </div>
-                            <span class="voice-time" id="fav_time_${item.id}">${durationStr}</span>
-                        </div>
-                    </div>
-                    <div class="voice-text-follow">${escapeHtml(item.content)}</div>
-                `;
-            } else if (item.type === 'image') {
+    var durationStr = formatTimeDisplay(item.audioDuration || 0);
+    // 检查是否有音频数据（Base64）
+    var hasAudio = item.audioBase64 && item.audioBase64.length > 0;
+    var audioSrc = hasAudio ? item.audioBase64 : '';
+    contentHtml = `
+        <div class="favorite-voice-player" data-audio="${audioSrc}">
+            <button class="voice-play-btn" data-id="${item.id}" onclick="toggleFavVoice('${item.id}')">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="voice-progress-wrap">
+                <div class="voice-progress-bar" onclick="seekFavVoice(event, '${item.id}')">
+                    <div class="voice-progress-fill" id="fav_progress_${item.id}" style="width:0%;"></div>
+                    <div class="voice-progress-dot" id="fav_dot_${item.id}" style="left:0%;"></div>
+                </div>
+                <span class="voice-time" id="fav_time_${item.id}">${durationStr}</span>
+            </div>
+        </div>
+        <div class="voice-text-follow">${escapeHtml(item.content)}</div>
+    `;
+} else if (item.type === 'image') {
                 contentHtml = `<img src="${item.content}" alt="图片" class="card-image" />`;
             } else {
                 var displayContent = item.content.length > 80 ?
@@ -8070,10 +8073,23 @@ function renderFavorites() {
 //  🎵 收藏屋语音控制
 // ============================================================
 
+// 全局变量：收藏屋的音频播放器
+var favAudioElement = null;
+
 function toggleFavVoice(id) {
     var btn = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + id + '"]');
     if (!btn) return;
 
+    // 获取音频数据
+    var player = btn.closest('.favorite-voice-player');
+    var audioSrc = player ? player.dataset.audio : null;
+
+    if (!audioSrc || audioSrc.length === 0) {
+        showFavToast('⚠️ 没有音频数据');
+        return;
+    }
+
+    // 如果已经在播放这个，暂停
     if (favPlayingId === id) {
         btn.innerHTML = '<i class="fas fa-play"></i>';
         btn.classList.remove('playing');
@@ -8082,10 +8098,14 @@ function toggleFavVoice(id) {
             clearInterval(favAudioIntervals[id]);
             delete favAudioIntervals[id];
         }
+        if (favAudioElement) {
+            favAudioElement.pause();
+        }
         showFavToast('⏸️ 已暂停');
         return;
     }
 
+    // 停止之前的播放
     if (favPlayingId) {
         var oldBtn = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + favPlayingId + '"]');
         if (oldBtn) {
@@ -8096,6 +8116,10 @@ function toggleFavVoice(id) {
             clearInterval(favAudioIntervals[favPlayingId]);
             delete favAudioIntervals[favPlayingId];
         }
+        if (favAudioElement) {
+            favAudioElement.pause();
+        }
+        // 重置进度
         var oldFill = document.getElementById('fav_progress_' + favPlayingId);
         var oldDot = document.getElementById('fav_dot_' + favPlayingId);
         var oldTime = document.getElementById('fav_time_' + favPlayingId);
@@ -8109,6 +8133,7 @@ function toggleFavVoice(id) {
         }
     }
 
+    // 开始播放新的
     btn.innerHTML = '<i class="fas fa-pause"></i>';
     btn.classList.add('playing');
     favPlayingId = id;
@@ -8116,42 +8141,87 @@ function toggleFavVoice(id) {
     getAllFavorites().then(function(favs) {
         var found = favs.find(function(f) { return f.id === id; });
         var total = found ? found.audioDuration || 8 : 8;
+
+        // 创建 Audio 对象播放 Base64
+        if (favAudioElement) {
+            favAudioElement.pause();
+            favAudioElement.src = '';
+        }
+        favAudioElement = new Audio(audioSrc);
+
+        favAudioElement.onloadedmetadata = function() {
+            var actualDuration = favAudioElement.duration || total;
+            if (found) found.audioDuration = actualDuration;
+            var timeEl = document.getElementById('fav_time_' + id);
+            if (timeEl) timeEl.textContent = formatTimeDisplay(actualDuration);
+        };
+
+        favAudioElement.onended = function() {
+            // 播放结束
+            var fill = document.getElementById('fav_progress_' + id);
+            var dot = document.getElementById('fav_dot_' + id);
+            var timeEl = document.getElementById('fav_time_' + id);
+            if (fill) fill.style.width = '100%';
+            if (dot) dot.style.left = '100%';
+            if (timeEl && found) timeEl.textContent = formatTimeDisplay(found.audioDuration || total);
+            favPlayingId = null;
+            var btn2 = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + id + '"]');
+            if (btn2) {
+                btn2.innerHTML = '<i class="fas fa-play"></i>';
+                btn2.classList.remove('playing');
+            }
+            if (favAudioIntervals[id]) {
+                clearInterval(favAudioIntervals[id]);
+                delete favAudioIntervals[id];
+            }
+            showFavToast('✅ 播放完成');
+        };
+
+        favAudioElement.onerror = function(e) {
+            console.error('播放失败:', e);
+            showFavToast('⚠️ 播放失败');
+            var btn2 = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + id + '"]');
+            if (btn2) {
+                btn2.innerHTML = '<i class="fas fa-play"></i>';
+                btn2.classList.remove('playing');
+            }
+            favPlayingId = null;
+            if (favAudioIntervals[id]) {
+                clearInterval(favAudioIntervals[id]);
+                delete favAudioIntervals[id];
+            }
+        };
+
+        favAudioElement.play().catch(function(e) {
+            console.error('播放失败:', e);
+            showFavToast('⚠️ 播放失败，请重试');
+        });
+
+        // 进度更新
         var progress = 0;
         var step = 100 / (total * 10);
-
         if (favAudioIntervals[id]) clearInterval(favAudioIntervals[id]);
 
         favAudioIntervals[id] = setInterval(function() {
-            progress += step;
-            if (progress >= 100) {
-                progress = 100;
-                var fill = document.getElementById('fav_progress_' + id);
-                var dot = document.getElementById('fav_dot_' + id);
-                var timeEl = document.getElementById('fav_time_' + id);
-                if (fill) fill.style.width = '100%';
-                if (dot) dot.style.left = '100%';
-                if (timeEl) timeEl.textContent = formatTimeDisplay(total);
-                clearInterval(favAudioIntervals[id]);
-                delete favAudioIntervals[id];
-                favPlayingId = null;
-                var btn2 = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + id + '"]');
-                if (btn2) {
-                    btn2.innerHTML = '<i class="fas fa-play"></i>';
-                    btn2.classList.remove('playing');
-                }
-                showFavToast('✅ 播放完成');
+            if (!favAudioElement || favAudioElement.paused) {
                 return;
             }
-            var fill2 = document.getElementById('fav_progress_' + id);
-            var dot2 = document.getElementById('fav_dot_' + id);
-            var timeEl2 = document.getElementById('fav_time_' + id);
-            if (fill2) fill2.style.width = progress + '%';
-            if (dot2) dot2.style.left = progress + '%';
-            if (timeEl2) {
-                var current = (progress / 100) * total;
-                timeEl2.textContent = formatTimeDisplay(current);
+            var currentTime = favAudioElement.currentTime || 0;
+            var duration = favAudioElement.duration || total;
+            var pct = (currentTime / duration) * 100;
+            if (pct >= 100) {
+                pct = 100;
+                clearInterval(favAudioIntervals[id]);
+                delete favAudioIntervals[id];
             }
+            var fill = document.getElementById('fav_progress_' + id);
+            var dot = document.getElementById('fav_dot_' + id);
+            var timeEl = document.getElementById('fav_time_' + id);
+            if (fill) fill.style.width = Math.min(100, pct) + '%';
+            if (dot) dot.style.left = Math.min(100, pct) + '%';
+            if (timeEl) timeEl.textContent = formatTimeDisplay(currentTime);
         }, 100);
+
         showFavToast('▶️ 正在播放...');
     });
 }
@@ -8336,7 +8406,55 @@ function closeFavorite() {
 //  ⭐ 收藏消息（长按菜单调用）
 // ============================================================
 
-function collectMessage(roleId, messageId) {
+// ============================================================
+//  🎵 音频转 Base64（用于收藏语音）
+// ============================================================
+
+function fetchAudioAsBase64(url) {
+    return new Promise(function(resolve, reject) {
+        // 如果 URL 是 blob: 开头，用 fetch 获取
+        if (url.startsWith('blob:')) {
+            fetch(url)
+                .then(function(response) {
+                    if (!response.ok) throw new Error('获取音频失败');
+                    return response.blob();
+                })
+                .then(function(blob) {
+                    var reader = new FileReader();
+                    reader.onload = function() {
+                        resolve(reader.result); // Base64 数据
+                    };
+                    reader.onerror = function() {
+                        reject(new Error('读取音频失败'));
+                    };
+                    reader.readAsDataURL(blob);
+                })
+                .catch(function(e) {
+                    reject(e);
+                });
+        } else {
+            // 如果是普通 URL，用 fetch 获取
+            fetch(url)
+                .then(function(response) {
+                    if (!response.ok) throw new Error('获取音频失败');
+                    return response.blob();
+                })
+                .then(function(blob) {
+                    var reader = new FileReader();
+                    reader.onload = function() {
+                        resolve(reader.result);
+                    };
+                    reader.onerror = function() {
+                        reject(new Error('读取音频失败'));
+                    };
+                    reader.readAsDataURL(blob);
+                })
+                .catch(function(e) {
+                    reject(e);
+                });
+        }
+    });
+} function collectMessage(roleId, messageId) {
     var role = roles.find(function(r) { return r.id === roleId; });
     if (!role) { showToast('⚠️ 未找到角色'); return; }
     var msg = role.messages.find(function(m) { return m.id === messageId; });
@@ -8349,23 +8467,30 @@ function collectMessage(roleId, messageId) {
             return;
         }
 
-        var favorite = {
-            id: 'fav_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            roleId: roleId,
-            roleName: role.name,
-            sender: msg.role,
-            content: msg.content,
-            type: msg.type || 'text',
-            audioUrl: msg.audioUrl || null,
-            audioDuration: msg.audioDuration || 0,
-            collectedAt: new Date().toISOString(),
-            sourceMsgId: messageId,
-            roleAvatar: role.avatar || ''
-        };
+        // 如果是语音消息，需要把音频转成 Base64
+        var audioPromise = Promise.resolve(null);
+        if (msg.type === 'voice' && msg.audioUrl) {
+            audioPromise = fetchAudioAsBase64(msg.audioUrl);
+        }
 
-        saveFavorite(favorite).then(function() {
+        audioPromise.then(function(audioData) {
+            var favorite = {
+                id: 'fav_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                roleId: roleId,
+                roleName: role.name,
+                sender: msg.role,
+                content: msg.content,
+                type: msg.type || 'text',
+                audioBase64: audioData,          // 存 Base64 数据
+                audioDuration: msg.audioDuration || 0,
+                collectedAt: new Date().toISOString(),
+                sourceMsgId: messageId,
+                roleAvatar: role.avatar || ''
+            };
+
+            return saveFavorite(favorite);
+        }).then(function() {
             showToast('⭐ 已收藏');
-            // 如果收藏屋开着，刷新列表
             if (document.getElementById('favoriteScreen').classList.contains('open')) {
                 renderFavorites();
             }
