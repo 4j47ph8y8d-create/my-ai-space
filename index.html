@@ -10,7 +10,60 @@
     <title>我的AI空间</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
-    <style>
+    <style> /* ============================================================
+   ⭐ 收藏屋图标 - 固定薄荷绿（一体式小房子）
+   ============================================================ */
+
+/* 所有 SVG 内部元素统一为薄荷绿 */
+.icon-wrap.favorite svg path,
+.icon-wrap.favorite svg rect {
+    fill: #55efc4 !important;
+    stroke: #55efc4 !important;
+}
+
+/* 保持原有的透明度（由 SVG 的 opacity 控制） */
+.icon-wrap.favorite svg path[opacity="0.9"],
+.icon-wrap.favorite svg rect[opacity="0.9"] {
+    fill: #55efc4 !important;
+    stroke: #55efc4 !important;
+    opacity: 0.9 !important;
+}
+
+.icon-wrap.favorite {
+    color: #55efc4 !important;
+}
+
+.icon-wrap.favorite svg path[opacity="0.5"] {
+    fill: #55efc4 !important;
+    stroke: #55efc4 !important;
+    opacity: 0.5 !important;
+}
+
+.icon-wrap.favorite svg path[opacity="0.3"] {
+    fill: #55efc4 !important;
+    stroke: #55efc4 !important;
+    opacity: 0.3 !important;
+}
+
+.icon-wrap.favorite svg rect[opacity="0.4"] {
+    fill: #55efc4 !important;
+    stroke: #55efc4 !important;
+    opacity: 0.4 !important;
+}
+
+.icon-wrap.favorite svg rect[opacity="0.3"] {
+    fill: #55efc4 !important;
+    stroke: #55efc4 !important;
+    opacity: 0.3 !important;
+}
+
+/* 4. 如果主题样式使用了 color 属性，也覆盖掉 */
+.icon-wrap.favorite {
+    color: #55efc4 !important;
+}
+
+/* 5. 图标背景本身不固定，跟随主题，所以这里不设置背景颜色 */
+/* 背景颜色由 applyIconStyle 动态控制 */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
         body { background: #1a1a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 0; margin: 0; }
         .phone-frame { width: 100%; max-width: 430px; height: 100vh; max-height: 100vh; background: #1a1a1a; border-radius: 0; box-shadow: none; overflow: hidden; position: relative; transition: background 0.3s ease, color 0.3s ease; }
@@ -721,6 +774,464 @@
         }
         @media (max-width: 460px) { .phone-frame { border-radius: 0; height: 100vh; max-height: 100vh; } body { padding: 0; } }
         @media (min-width: 431px) { .phone-frame { border-radius: 32px; height: 780px; max-height: 90vh; box-shadow: 0 20px 60px rgba(0,0,0,0.6); } body { padding: 12px; } }
+
+/* ============================================================
+   ⭐ 收藏屋样式
+   ============================================================ */
+
+/* ----- 收藏屋主容器 ----- */
+.screen-favorite {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 25;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.screen-favorite.open {
+    transform: translateX(0);
+}
+
+/* ----- 顶部导航 ----- */
+.favorite-header {
+    background: var(--header-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: calc(12px + var(--safe-top, 0px)) 16px 12px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    min-height: 52px;
+    position: relative;
+    z-index: 1;
+}
+.favorite-header .back-btn {
+    font-size: 20px;
+    color: #576b95;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 4px;
+}
+.favorite-header .header-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.favorite-header .header-title .count-badge {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    padding: 1px 10px;
+    border-radius: 12px;
+}
+.favorite-header .header-actions {
+    display: flex;
+    gap: 6px;
+}
+.favorite-header .header-actions button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px 6px;
+    transition: 0.15s;
+}
+.favorite-header .header-actions button:active {
+    transform: scale(0.9);
+}
+
+/* ----- 收藏屋内容区 ----- */
+.favorite-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 14px 12px;
+    background: transparent;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    z-index: 1;
+}
+
+/* ----- 日期分隔线 ----- */
+.favorite-date-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 0 10px;
+    width: 100%;
+}
+.favorite-date-divider .divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+    max-width: 30px;
+}
+.favorite-date-divider .divider-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    padding: 0 8px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    opacity: 0.6;
+}
+
+/* ----- 收藏卡片 ----- */
+.favorite-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 14px 16px 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 12px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    transition: 0.15s;
+    position: relative;
+    animation: fadeInUp 0.25s ease;
+}
+.favorite-card:active {
+    transform: scale(0.98);
+}
+
+.favorite-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.favorite-card .card-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #07c160;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #fff;
+    font-weight: 500;
+    background-size: cover;
+    background-position: center;
+}
+.favorite-card .card-avatar.user-avatar {
+    background: #576b95;
+}
+.favorite-card .card-sender {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+}
+.favorite-card .card-sender .sender-tag {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-left: 4px;
+    opacity: 0.6;
+}
+.favorite-card .card-delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px;
+    transition: 0.15s;
+    opacity: 0.3;
+}
+.favorite-card .card-delete-btn:active {
+    color: #e74c3c;
+    transform: scale(0.85);
+}
+
+.favorite-card .card-content {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    word-break: break-word;
+    padding-left: 36px;
+}
+.favorite-card .card-content .content-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.favorite-card .card-content .content-text.expanded {
+    -webkit-line-clamp: unset;
+}
+.favorite-card .card-content .expand-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 4px;
+    margin-top: 2px;
+    opacity: 0.5;
+}
+.favorite-card .card-content .expand-btn:active {
+    color: #576b95;
+}
+.favorite-card .card-content .card-image {
+    max-width: 140px;
+    max-height: 140px;
+    border-radius: 8px;
+    margin-top: 4px;
+    display: block;
+}
+
+.favorite-card .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding-left: 36px;
+}
+.favorite-card .card-time {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    opacity: 0.5;
+}
+.favorite-card .card-time i {
+    margin-right: 3px;
+    font-size: 10px;
+}
+
+/* ----- 收藏屋里的语音播放器 ----- */
+.favorite-voice-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px 6px 6px;
+    background: var(--bg-secondary);
+    border-radius: 24px;
+    margin-bottom: 6px;
+    max-width: 220px;
+}
+.favorite-voice-player .voice-play-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(85, 239, 196, 0.15);
+    color: #55efc4;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    transition: 0.15s;
+}
+.favorite-voice-player .voice-play-btn:active {
+    transform: scale(0.85);
+}
+.favorite-voice-player .voice-play-btn.playing {
+    background: rgba(255, 107, 107, 0.15);
+    color: #ff6b6b;
+}
+.favorite-voice-player .voice-progress-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.favorite-voice-player .voice-progress-bar {
+    flex: 1;
+    height: 3px;
+    background: var(--border-color);
+    border-radius: 4px;
+    position: relative;
+    cursor: pointer;
+    min-width: 40px;
+}
+.favorite-voice-player .voice-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #55efc4;
+    border-radius: 4px;
+    transition: width 0.1s linear;
+}
+.favorite-voice-player .voice-progress-dot {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    transform: translate(-50%, -50%);
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #55efc4;
+    pointer-events: none;
+    transition: left 0.1s linear;
+}
+.favorite-voice-player .voice-time {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    min-width: 28px;
+    text-align: right;
+    letter-spacing: 0.3px;
+    opacity: 0.5;
+}
+.favorite-voice-player + .voice-text-follow {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    padding-left: 2px;
+    opacity: 0.8;
+}
+
+/* ----- 空状态 ----- */
+.favorite-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px 40px;
+    text-align: center;
+    min-height: 300px;
+}
+.favorite-empty-state .empty-icon {
+    font-size: 56px;
+    color: #55efc4;
+    opacity: 0.4;
+    margin-bottom: 16px;
+}
+.favorite-empty-state .empty-title {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text-primary);
+    opacity: 0.5;
+    margin-bottom: 6px;
+}
+.favorite-empty-state .empty-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    opacity: 0.4;
+    line-height: 1.6;
+}
+.favorite-empty-state .empty-hint {
+    margin-top: 14px;
+    padding: 8px 16px;
+    background: rgba(85, 239, 196, 0.08);
+    border-radius: 20px;
+    font-size: 12px;
+    color: #55efc4;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ----- 底部统计 ----- */
+.favorite-footer-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 14px 8px;
+    border-top: 1px solid var(--border-color);
+    font-size: 11px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    background: var(--bg-secondary);
+    opacity: 0.6;
+}
+.favorite-footer-stat .stat-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.favorite-footer-stat .stat-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.favorite-footer-stat .clear-all-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 12px;
+    transition: 0.15s;
+    opacity: 0.5;
+}
+.favorite-footer-stat .clear-all-btn:active {
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.06);
+}
+
+/* ----- 收藏屋 Toast ----- */
+.favorite-toast {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    z-index: 200;
+    animation: fadeInUp 0.3s ease;
+    text-align: center;
+    max-width: 80%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.favorite-toast.show {
+    opacity: 1;
+}
+[data-theme="light"] .favorite-toast {
+    background: rgba(40, 40, 40, 0.85);
+}
+
+/* ----- 收藏屋滚动条 ----- */
+.favorite-body::-webkit-scrollbar {
+    width: 3px;
+}
+.favorite-body::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+/* ----- 深色模式适配（覆盖变量） ----- */
+[data-theme="dark"] .favorite-card .card-delete-btn {
+    opacity: 0.15;
+}
+[data-theme="dark"] .favorite-card .card-delete-btn:active {
+    color: #e74c3c;
+}
+[data-theme="dark"] .favorite-voice-player {
+    background: rgba(255, 255, 255, 0.04);
+}
+[data-theme="dark"] .favorite-voice-player .voice-progress-bar {
+    background: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .favorite-voice-player .voice-time {
+    color: rgba(255, 255, 255, 0.2);
+}
+[data-theme="dark"] .favorite-voice-player + .voice-text-follow {
+    color: rgba(255, 255, 255, 0.6);
+}
     </style>
 </head>
 <body>
@@ -734,7 +1245,20 @@
             <div class="signature" id="signatureArea"><span class="signature-text" id="signatureText">今天也很想你 💕</span><input class="signature-input" id="signatureInput" type="text" placeholder="写下你的个签..." maxlength="30" /></div>
             <div class="bind-info" id="bindInfo">💕 当前绑定：<span class="role-name" id="bindRoleName">未绑定</span> <span style="font-size:9px;opacity:0.5;margin-left:4px;">点击更换</span></div>
         </div>
-        <div class="app-grid">
+        <div class="app-grid"> <!-- ⭐ 收藏屋（新图标） -->
+
+<div class="app-icon" data-app="favorite">
+    <div class="icon-wrap favorite">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:26px;height:26px;">
+    <!-- 房子主体（屋顶 + 屋身一体） -->
+    <path d="M12 4L3 12h2v8h5v-5h4v5h5v-8h2L12 4z" 
+          fill="#55efc4" opacity="0.9"
+          stroke="#55efc4" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>
+    </div>
+    <span class="app-name">收藏屋</span>
+</div>
+
             <button class="app-icon" data-app="style"><div class="icon-wrap style"><i class="fas fa-palette"></i></div><span class="app-name">个性化</span></button>
             <button class="app-icon" data-app="meme"><div class="icon-wrap meme"><i class="fas fa-face-smile"></i></div><span class="app-name">表情包</span></button>
             <button class="app-icon" data-app="diary"><div class="icon-wrap diary"><i class="fas fa-book-open"></i></div><span class="app-name">他的日记</span></button>
@@ -913,7 +1437,11 @@
     <div class="diary-notification" id="diaryNotification"><div class="notif-icon">📖</div><h3>他的日记已送达</h3><p id="diaryNotifText">✨ 今晚的故事，他已经写好了...</p><button class="notif-btn" id="diaryNotifBtn">📖 去阅读</button><br /><button class="notif-close" id="diaryNotifClose">稍后再说</button></div>
     <div class="floating-heart" id="floatingHeart"><span class="fh-value" id="fhValue">65</span><span class="fh-label">BPM</span></div>
     <div class="heart-detail-overlay" id="heartDetailOverlay"><div class="heart-detail-panel"><button class="close-btn" id="hdCloseBtn">&times;</button><div class="hd-avatar" id="hdAvatar"></div><div class="hd-name" id="hdName">未绑定角色</div><div class="hd-value" id="hdValue">65<span class="hd-percent">%</span><span class="hd-bpm">♥ BPM</span></div><div class="hd-level" id="hdLevel">平静</div><div class="hd-signature" id="hdSignature">今天也很想你 💕</div><div class="hd-recent" id="hdRecent">最近心跳加速：<span class="highlight">等待你的第一句情话</span></div></div></div>
-    <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
+    <div class="longpress-menu" id="longpressMenu">
+    <button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button>
+    <button class="menu-item" data-action="collect"><i class="fas fa-star" style="color:#fdcb6e;"></i> 收藏</button>
+    <button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button>
+</div>
 </div>
 <script> // ============================================================
 //  🚀 梦女空间 v4.0 - 多模型 + 百炼语音版
@@ -3479,6 +4007,11 @@ function setupLongPress() {
                 hideLongpressMenu();
             }
         };
+ var collectItem = menu.querySelector('[data-action="collect"]');
+collectItem.onclick = function() {
+    collectMessage(role.id, msg.id);
+    hideLongpressMenu();
+};
     }
     container.addEventListener('touchstart', function(e) {
         var row = e.target.closest('.message-row');
@@ -5496,9 +6029,9 @@ function renderStylePicker() {
         var isActive = style.id === CONFIG.iconStyle;
         option.className = 'style-option ' + (isActive ? 'active' : '');
         option.dataset.style = style.id;
-        var demoIcons = ['contacts', 'memory', 'meme', 'style', 'settings'];
-        var iconMap = { 'contacts': 'fa-address-book', 'memory': 'fa-brain', 'meme': 'fa-face-smile', 'style': 'fa-palette', 'settings': 'fa-cog' };
-        var demoColors = ['#74b9ff', '#a29bfe', '#ff6b81', '#fdcb6e', '#b2bec3'];
+        var demoIcons = ['contacts', 'memory', 'meme', 'style', 'settings', 'favorite'];
+        var iconMap = { 'contacts': 'fa-address-book', 'memory': 'fa-brain', 'meme': 'fa-face-smile', 'style': 'fa-palette', 'settings': 'fa-cog', 'favorite': 'fa-house' };
+        var demoColors = ['#74b9ff', '#a29bfe', '#ff6b81', '#fdcb6e', '#b2bec3', '#e17055'];
         var demoHtml = '';
         demoIcons.forEach(function(key, idx) {
             demoHtml += '<div class="demo-icon" style="background:rgba(255,255,255,0.08);border-radius:8px;color:' + demoColors[idx % demoColors.length] + ';"><i class="fas ' + iconMap[key] + '"></i></div>';
@@ -5711,17 +6244,17 @@ function applyIconStyle(styleId) {
     var oldStyle = document.getElementById('dynamicIconStyle');
     if (oldStyle) oldStyle.remove();
     var STYLE_CSS = {
-        'glass': '.icon-wrap { background: rgba(255,255,255,0.08) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border: 1px solid rgba(255,255,255,0.12) !important; box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important; color: rgba(255,255,255,0.85) !important; } .icon-wrap.contacts { color: #74b9ff !important; } .icon-wrap.memory { color: #a29bfe !important; } .icon-wrap.meme { color: #ff6b81 !important; } .icon-wrap.style { color: #fdcb6e !important; } .icon-wrap.settings { color: #b2bec3 !important; } .icon-wrap.diary { color: #d4a574 !important; background: rgba(245,239,230,0.15) !important; }',
-        'gradient': '.icon-wrap { box-shadow: 0 4px 16px rgba(0,0,0,0.25) !important; color: #fff !important; border: none !important; background: transparent !important; } .icon-wrap.contacts { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; } .icon-wrap.memory { background: linear-gradient(135deg, #a29bfe, #6c5ce7) !important; } .icon-wrap.meme { background: linear-gradient(135deg, #ff6b81, #ee5a24) !important; } .icon-wrap.style { background: linear-gradient(135deg, #fdcb6e, #f0932b) !important; } .icon-wrap.settings { background: linear-gradient(135deg, #636e72, #b2bec3) !important; } .icon-wrap.diary { background: linear-gradient(135deg, #f5efe6, #e8d5c4) !important; color: #d4a574 !important; }',
-        'monochrome': '.icon-wrap { background: rgba(255,255,255,0.06) !important; border: 1px solid rgba(255,255,255,0.08) !important; color: rgba(255,255,255,0.7) !important; border-radius: 8px !important; backdrop-filter: none !important; box-shadow: none !important; } .icon-wrap.contacts { color: #fff !important; border-color: rgba(255,255,255,0.2) !important; } .icon-wrap.memory { color: #a29bfe !important; border-color: rgba(162,155,254,0.2) !important; } .icon-wrap.meme { color: #ff6b81 !important; border-color: rgba(255,107,129,0.2) !important; } .icon-wrap.style { color: #fdcb6e !important; border-color: rgba(253,203,110,0.2) !important; } .icon-wrap.settings { color: #888 !important; } .icon-wrap.diary { color: #d4a574 !important; border-color: rgba(212,165,116,0.3) !important; }',
-        'neon': '.icon-wrap { background: rgba(0,0,0,0.5) !important; border: 1.5px solid !important; box-shadow: 0 0 20px rgba(0,0,0,0.3) !important; color: #fff !important; backdrop-filter: none !important; } .icon-wrap.contacts { border-color: #74b9ff !important; box-shadow: 0 0 20px rgba(116,185,255,0.15) !important; } .icon-wrap.memory { border-color: #a29bfe !important; box-shadow: 0 0 20px rgba(162,155,254,0.15) !important; } .icon-wrap.meme { border-color: #ff6b81 !important; box-shadow: 0 0 20px rgba(255,107,129,0.15) !important; } .icon-wrap.style { border-color: #fdcb6e !important; box-shadow: 0 0 20px rgba(253,203,110,0.15) !important; } .icon-wrap.settings { border-color: #fd79a8 !important; box-shadow: 0 0 20px rgba(253,121,168,0.15) !important; } .icon-wrap.diary { border-color: #d4a574 !important; box-shadow: 0 0 20px rgba(212,165,116,0.15) !important; }',
-        'flat': '.icon-wrap { border-radius: 12px !important; color: #fff !important; box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important; border: none !important; backdrop-filter: none !important; background: transparent !important; } .icon-wrap.contacts { background: #0984e3 !important; } .icon-wrap.memory { background: #6c5ce7 !important; } .icon-wrap.meme { background: #ff6b81 !important; } .icon-wrap.style { background: #f0932b !important; } .icon-wrap.settings { background: #636e72 !important; } .icon-wrap.diary { background: #d4a574 !important; }',
-        'ios': '.icon-wrap { background: rgba(255,255,255,0.06) !important; border-radius: 18px !important; border: 1px solid rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.75) !important; box-shadow: 0 2px 12px rgba(0,0,0,0.15) !important; backdrop-filter: blur(4px) !important; -webkit-backdrop-filter: blur(4px) !important; } .icon-wrap.contacts { background: rgba(116,185,255,0.15) !important; color: #74b9ff !important; } .icon-wrap.memory { background: rgba(162,155,254,0.15) !important; color: #a29bfe !important; } .icon-wrap.meme { background: rgba(255,107,129,0.15) !important; color: #ff6b81 !important; } .icon-wrap.style { background: rgba(253,203,110,0.15) !important; color: #fdcb6e !important; } .icon-wrap.settings { background: rgba(178,190,195,0.1) !important; color: #b2bec3 !important; } .icon-wrap.diary { background: rgba(212,165,116,0.15) !important; color: #d4a574 !important; }',
-        'pixel': '.icon-wrap { background: rgba(255,255,255,0.04) !important; border: 2px solid rgba(255,255,255,0.08) !important; border-radius: 4px !important; color: rgba(255,255,255,0.6) !important; font-size: 18px !important; backdrop-filter: none !important; box-shadow: none !important; } .icon-wrap.contacts { border-color: #74b9ff !important; color: #74b9ff !important; } .icon-wrap.memory { border-color: #a29bfe !important; color: #a29bfe !important; } .icon-wrap.meme { border-color: #ff6b81 !important; color: #ff6b81 !important; } .icon-wrap.style { border-color: #fdcb6e !important; color: #fdcb6e !important; } .icon-wrap.settings { border-color: #636e72 !important; color: #636e72 !important; } .icon-wrap.diary { border-color: #d4a574 !important; color: #d4a574 !important; }',
-        'skeuo': '.icon-wrap { background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)) !important; border-radius: 16px !important; box-shadow: 4px 4px 12px rgba(0,0,0,0.3), -2px -2px 8px rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.7) !important; backdrop-filter: none !important; border: none !important; } .icon-wrap.contacts { color: #74b9ff !important; } .icon-wrap.memory { color: #a29bfe !important; } .icon-wrap.meme { color: #ff6b81 !important; } .icon-wrap.style { color: #fdcb6e !important; } .icon-wrap.settings { color: #b2bec3 !important; } .icon-wrap.diary { color: #d4a574 !important; }',
-        'macaron': '.icon-wrap { border-radius: 16px !important; color: #fff !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; border: none !important; backdrop-filter: none !important; background: transparent !important; } .icon-wrap.contacts { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; } .icon-wrap.memory { background: linear-gradient(135deg, #a29bfe, #6c5ce7) !important; } .icon-wrap.meme { background: linear-gradient(135deg, #ff6b81, #ee5a24) !important; } .icon-wrap.style { background: linear-gradient(135deg, #fdcb6e, #f0932b) !important; } .icon-wrap.settings { background: linear-gradient(135deg, #fd79a8, #e84393) !important; } .icon-wrap.diary { background: linear-gradient(135deg, #f5efe6, #e8d5c4) !important; color: #d4a574 !important; }',
-        'dark-premium': '.icon-wrap { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 14px !important; color: rgba(255,255,255,0.6) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important; backdrop-filter: none !important; } .icon-wrap.contacts { background: rgba(116,185,255,0.12) !important; color: #74b9ff !important; border-color: rgba(116,185,255,0.15) !important; } .icon-wrap.memory { background: rgba(162,155,254,0.12) !important; color: #a29bfe !important; border-color: rgba(162,155,254,0.15) !important; } .icon-wrap.meme { background: rgba(255,107,129,0.12) !important; color: #ff6b81 !important; border-color: rgba(255,107,129,0.15) !important; } .icon-wrap.style { background: rgba(253,203,110,0.12) !important; color: #fdcb6e !important; border-color: rgba(253,203,110,0.15) !important; } .icon-wrap.settings { background: rgba(178,190,195,0.08) !important; color: #b2bec3 !important; border-color: rgba(178,190,195,0.08) !important; } .icon-wrap.diary { background: rgba(212,165,116,0.12) !important; color: #d4a574 !important; border-color: rgba(212,165,116,0.15) !important; }'
-    };
+    'glass': '.icon-wrap { background: rgba(255,255,255,0.08) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border: 1px solid rgba(255,255,255,0.12) !important; box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important; color: rgba(255,255,255,0.85) !important; } .icon-wrap.contacts { color: #74b9ff !important; } .icon-wrap.memory { color: #a29bfe !important; } .icon-wrap.meme { color: #ff6b81 !important; } .icon-wrap.style { color: #fdcb6e !important; } .icon-wrap.settings { color: #b2bec3 !important; } .icon-wrap.diary { color: #d4a574 !important; background: rgba(245,239,230,0.15) !important; } .icon-wrap.favorite { color: #55efc4 !important; background: rgba(85,239,196,0.15) !important; }',
+    'gradient': '.icon-wrap { box-shadow: 0 4px 16px rgba(0,0,0,0.25) !important; color: #fff !important; border: none !important; background: transparent !important; } .icon-wrap.contacts { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; } .icon-wrap.memory { background: linear-gradient(135deg, #a29bfe, #6c5ce7) !important; } .icon-wrap.meme { background: linear-gradient(135deg, #ff6b81, #ee5a24) !important; } .icon-wrap.style { background: linear-gradient(135deg, #fdcb6e, #f0932b) !important; } .icon-wrap.settings { background: linear-gradient(135deg, #636e72, #b2bec3) !important; } .icon-wrap.diary { background: linear-gradient(135deg, #f5efe6, #e8d5c4) !important; color: #d4a574 !important; } .icon-wrap.favorite { background: linear-gradient(135deg, #55efc4, #00b894) !important; }',
+    'monochrome': '.icon-wrap { background: rgba(255,255,255,0.06) !important; border: 1px solid rgba(255,255,255,0.08) !important; color: rgba(255,255,255,0.7) !important; border-radius: 8px !important; backdrop-filter: none !important; box-shadow: none !important; } .icon-wrap.contacts { color: #fff !important; border-color: rgba(255,255,255,0.2) !important; } .icon-wrap.memory { color: #a29bfe !important; border-color: rgba(162,155,254,0.2) !important; } .icon-wrap.meme { color: #ff6b81 !important; border-color: rgba(255,107,129,0.2) !important; } .icon-wrap.style { color: #fdcb6e !important; border-color: rgba(253,203,110,0.2) !important; } .icon-wrap.settings { color: #888 !important; } .icon-wrap.diary { color: #d4a574 !important; border-color: rgba(212,165,116,0.3) !important; } .icon-wrap.favorite { color: #55efc4 !important; border-color: rgba(85,239,196,0.3) !important; }',
+    'neon': '.icon-wrap { background: rgba(0,0,0,0.5) !important; border: 1.5px solid !important; box-shadow: 0 0 20px rgba(0,0,0,0.3) !important; color: #fff !important; backdrop-filter: none !important; } .icon-wrap.contacts { border-color: #74b9ff !important; box-shadow: 0 0 20px rgba(116,185,255,0.15) !important; } .icon-wrap.memory { border-color: #a29bfe !important; box-shadow: 0 0 20px rgba(162,155,254,0.15) !important; } .icon-wrap.meme { border-color: #ff6b81 !important; box-shadow: 0 0 20px rgba(255,107,129,0.15) !important; } .icon-wrap.style { border-color: #fdcb6e !important; box-shadow: 0 0 20px rgba(253,203,110,0.15) !important; } .icon-wrap.settings { border-color: #fd79a8 !important; box-shadow: 0 0 20px rgba(253,121,168,0.15) !important; } .icon-wrap.diary { border-color: #d4a574 !important; box-shadow: 0 0 20px rgba(212,165,116,0.15) !important; } .icon-wrap.favorite { border-color: #55efc4 !important; box-shadow: 0 0 20px rgba(85,239,196,0.15) !important; }',
+    'flat': '.icon-wrap { border-radius: 12px !important; color: #fff !important; box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important; border: none !important; backdrop-filter: none !important; background: transparent !important; } .icon-wrap.contacts { background: #0984e3 !important; } .icon-wrap.memory { background: #6c5ce7 !important; } .icon-wrap.meme { background: #ff6b81 !important; } .icon-wrap.style { background: #f0932b !important; } .icon-wrap.settings { background: #636e72 !important; } .icon-wrap.diary { background: #d4a574 !important; } .icon-wrap.favorite { background: #55efc4 !important; }',
+    'ios': '.icon-wrap { background: rgba(255,255,255,0.06) !important; border-radius: 18px !important; border: 1px solid rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.75) !important; box-shadow: 0 2px 12px rgba(0,0,0,0.15) !important; backdrop-filter: blur(4px) !important; -webkit-backdrop-filter: blur(4px) !important; } .icon-wrap.contacts { background: rgba(116,185,255,0.15) !important; color: #74b9ff !important; } .icon-wrap.memory { background: rgba(162,155,254,0.15) !important; color: #a29bfe !important; } .icon-wrap.meme { background: rgba(255,107,129,0.15) !important; color: #ff6b81 !important; } .icon-wrap.style { background: rgba(253,203,110,0.15) !important; color: #fdcb6e !important; } .icon-wrap.settings { background: rgba(178,190,195,0.1) !important; color: #b2bec3 !important; } .icon-wrap.diary { background: rgba(212,165,116,0.15) !important; color: #d4a574 !important; } .icon-wrap.favorite { background: rgba(85,239,196,0.15) !important; color: #55efc4 !important; }',
+    'pixel': '.icon-wrap { background: rgba(255,255,255,0.04) !important; border: 2px solid rgba(255,255,255,0.08) !important; border-radius: 4px !important; color: rgba(255,255,255,0.6) !important; font-size: 18px !important; backdrop-filter: none !important; box-shadow: none !important; } .icon-wrap.contacts { border-color: #74b9ff !important; color: #74b9ff !important; } .icon-wrap.memory { border-color: #a29bfe !important; color: #a29bfe !important; } .icon-wrap.meme { border-color: #ff6b81 !important; color: #ff6b81 !important; } .icon-wrap.style { border-color: #fdcb6e !important; color: #fdcb6e !important; } .icon-wrap.settings { border-color: #636e72 !important; color: #636e72 !important; } .icon-wrap.diary { border-color: #d4a574 !important; color: #d4a574 !important; } .icon-wrap.favorite { border-color: #55efc4 !important; color: #55efc4 !important; }',
+    'skeuo': '.icon-wrap { background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)) !important; border-radius: 16px !important; box-shadow: 4px 4px 12px rgba(0,0,0,0.3), -2px -2px 8px rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.7) !important; backdrop-filter: none !important; border: none !important; } .icon-wrap.contacts { color: #74b9ff !important; } .icon-wrap.memory { color: #a29bfe !important; } .icon-wrap.meme { color: #ff6b81 !important; } .icon-wrap.style { color: #fdcb6e !important; } .icon-wrap.settings { color: #b2bec3 !important; } .icon-wrap.diary { color: #d4a574 !important; } .icon-wrap.favorite { color: #55efc4 !important; }',
+    'macaron': '.icon-wrap { border-radius: 16px !important; color: #fff !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; border: none !important; backdrop-filter: none !important; background: transparent !important; } .icon-wrap.contacts { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; } .icon-wrap.memory { background: linear-gradient(135deg, #a29bfe, #6c5ce7) !important; } .icon-wrap.meme { background: linear-gradient(135deg, #ff6b81, #ee5a24) !important; } .icon-wrap.style { background: linear-gradient(135deg, #fdcb6e, #f0932b) !important; } .icon-wrap.settings { background: linear-gradient(135deg, #fd79a8, #e84393) !important; } .icon-wrap.diary { background: linear-gradient(135deg, #f5efe6, #e8d5c4) !important; color: #d4a574 !important; } .icon-wrap.favorite { background: linear-gradient(135deg, #55efc4, #00b894) !important; }',
+    'dark-premium': '.icon-wrap { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 14px !important; color: rgba(255,255,255,0.6) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important; backdrop-filter: none !important; } .icon-wrap.contacts { background: rgba(116,185,255,0.12) !important; color: #74b9ff !important; border-color: rgba(116,185,255,0.15) !important; } .icon-wrap.memory { background: rgba(162,155,254,0.12) !important; color: #a29bfe !important; border-color: rgba(162,155,254,0.15) !important; } .icon-wrap.meme { background: rgba(255,107,129,0.12) !important; color: #ff6b81 !important; border-color: rgba(255,107,129,0.15) !important; } .icon-wrap.style { background: rgba(253,203,110,0.12) !important; color: #fdcb6e !important; border-color: rgba(253,203,110,0.15) !important; } .icon-wrap.settings { background: rgba(178,190,195,0.08) !important; color: #b2bec3 !important; border-color: rgba(178,190,195,0.08) !important; } .icon-wrap.diary { background: rgba(212,165,116,0.12) !important; color: #d4a574 !important; border-color: rgba(212,165,116,0.15) !important; } .icon-wrap.favorite { background: rgba(85,239,196,0.12) !important; color: #55efc4 !important; border-color: rgba(85,239,196,0.15) !important; }'
+};
     var css = STYLE_CSS[styleId] || STYLE_CSS['glass'];
     var styleTag = document.createElement('style');
     styleTag.id = 'dynamicIconStyle';
@@ -6785,19 +7318,25 @@ function init() {
 // ========== DOM 事件绑定 ==========
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.app-icon[data-app]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var app = this.dataset.app;
-            if (app === 'contacts') openContacts();
-            else if (app === 'memory') openMemoryApp();
-            else if (app === 'meme') openMeme();
-            else if (app === 'style') openStylePicker();
-            else if (app === 'settings') openSettings();
-            else if (app === 'diary') openDiary();
-            else if (app === 'mall') openMall();
-            else if (app === 'phone') openPhone();
-            else showToast('📱 功能开发中~');
-        });
+    btn.addEventListener('click', function() {
+        var app = this.dataset.app;
+        if (app === 'contacts') openContacts();
+        else if (app === 'memory') openMemoryApp();
+        else if (app === 'meme') openMeme();
+        else if (app === 'style') openStylePicker();
+        else if (app === 'settings') openSettings();
+        else if (app === 'diary') openDiary();
+        else if (app === 'mall') openMall();
+        else if (app === 'phone') openPhone();
+        else if (app === 'favorite') {
+    openFavorite(); // ===== 收藏屋事件绑定 =====
+document.getElementById('backFromFavorite').addEventListener('click', closeFavorite);
+document.getElementById('clearAllFavBtn').addEventListener('click', clearAllFavItems);
+document.getElementById('clearAllFavBtn2').addEventListener('click', clearAllFavItems);
+}
+        else showToast('📱 功能开发中~');
     });
+});
 
     document.getElementById('backFromContacts').addEventListener('click', closeContacts);
     document.getElementById('backFromChat').addEventListener('click', closeChat);
@@ -7276,6 +7815,596 @@ document.getElementById('refreshTtsCacheBtn').addEventListener('click', refreshT
         showToast('⚠️ 应用初始化失败，请刷新页面重试');
     }
 });
-</script>
-</body>
+// ============================================================
+//  ⭐ 收藏屋 - 完整逻辑
+//  存储：IndexedDB（FavoriteDB）
+//  特点：完全独立，删除消息/角色不影响收藏
+// ============================================================
+
+// ----- 打开收藏屋数据库 -----
+function openFavoriteDB() {
+    return new Promise(function(resolve, reject) {
+        var request = indexedDB.open('FavoriteDB', 1);
+        request.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('favorites')) {
+                var store = db.createObjectStore('favorites', { keyPath: 'id' });
+                store.createIndex('collectedAt', 'collectedAt');
+                store.createIndex('roleId', 'roleId');
+            }
+        };
+        request.onsuccess = function(e) { resolve(e.target.result); };
+        request.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+// ----- 保存收藏 -----
+function saveFavorite(favorite) {
+    return openFavoriteDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('favorites', 'readwrite');
+            var store = tx.objectStore('favorites');
+            var request = store.put(favorite);
+            request.onsuccess = function() { db.close(); resolve(); };
+            request.onerror = function() { db.close(); reject(request.error); };
+        });
+    });
+}
+
+// ----- 获取所有收藏（按时间倒序） -----
+function getAllFavorites() {
+    return openFavoriteDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('favorites', 'readonly');
+            var store = tx.objectStore('favorites');
+            var index = store.index('collectedAt');
+            var request = index.openCursor(null, 'prev'); // 倒序
+            var results = [];
+            request.onsuccess = function(e) {
+                var cursor = e.target.result;
+                if (cursor) {
+                    results.push(cursor.value);
+                    cursor.continue();
+                } else {
+                    db.close();
+                    resolve(results);
+                }
+            };
+            request.onerror = function(e) {
+                db.close();
+                reject(e.target.error);
+            };
+        });
+    });
+}
+
+// ----- 删除单条收藏 -----
+function deleteFavoriteFromDB(id) {
+    return openFavoriteDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('favorites', 'readwrite');
+            var store = tx.objectStore('favorites');
+            var request = store.delete(id);
+            request.onsuccess = function() { db.close(); resolve(); };
+            request.onerror = function() { db.close(); reject(request.error); };
+        });
+    });
+}
+
+// ----- 清空所有收藏 -----
+function clearAllFavoritesFromDB() {
+    return openFavoriteDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('favorites', 'readwrite');
+            var store = tx.objectStore('favorites');
+            var request = store.clear();
+            request.onsuccess = function() { db.close(); resolve(); };
+            request.onerror = function() { db.close(); reject(request.error); };
+        });
+    });
+}
+
+// ----- 检查是否已收藏 -----
+function isFavoriteCollected(sourceMsgId) {
+    return openFavoriteDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('favorites', 'readonly');
+            var store = tx.objectStore('favorites');
+            var request = store.openCursor();
+            var found = false;
+            request.onsuccess = function(e) {
+                var cursor = e.target.result;
+                if (cursor) {
+                    if (cursor.value.sourceMsgId === sourceMsgId) {
+                        found = true;
+                        db.close();
+                        resolve(true);
+                        return;
+                    }
+                    cursor.continue();
+                } else {
+                    db.close();
+                    resolve(false);
+                }
+            };
+            request.onerror = function(e) {
+                db.close();
+                reject(e.target.error);
+            };
+        });
+    });
+}
+
+// ============================================================
+//  🎨 渲染收藏列表
+// ============================================================
+
+var favAudioPlayers = {};
+var favPlayingId = null;
+var favAudioIntervals = {};
+
+function renderFavorites() {
+    var body = document.getElementById('favoriteBody');
+    var totalEl = document.getElementById('favTotalCount');
+    var badgeEl = document.getElementById('favCountBadge');
+    var storageEl = document.getElementById('favStorageSize');
+
+    if (!body) return;
+
+    getAllFavorites().then(function(favorites) {
+        var count = favorites.length;
+        if (totalEl) totalEl.textContent = count;
+        if (badgeEl) badgeEl.textContent = count;
+
+        // 计算存储用量（估算）
+        var totalSize = 0;
+        favorites.forEach(function(item) {
+            totalSize += JSON.stringify(item).length;
+        });
+        var sizeKB = Math.round(totalSize / 1024);
+        if (storageEl) storageEl.textContent = '已用 ' + sizeKB + ' KB';
+
+        if (count === 0) {
+            body.innerHTML = `
+                <div class="favorite-empty-state">
+                    <div class="empty-icon">✨</div>
+                    <div class="empty-title">还没有收藏</div>
+                    <div class="empty-desc">去收藏一些美好瞬间吧 💕</div>
+                    <div class="empty-hint">
+                        <i class="fas fa-hand-pointer"></i>
+                        长按消息 → 点击「收藏」
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        var html = '';
+        var lastDateKey = '';
+
+        favorites.forEach(function(item) {
+            var date = new Date(item.collectedAt);
+            var dateKey = date.getFullYear() + '-' +
+                String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                String(date.getDate()).padStart(2, '0');
+            var dateDisplay = date.getFullYear() + '年' +
+                (date.getMonth() + 1) + '月' +
+                date.getDate() + '日';
+            var timeStr = String(date.getHours()).padStart(2, '0') + ':' +
+                String(date.getMinutes()).padStart(2, '0');
+
+            if (dateKey !== lastDateKey) {
+                html += `
+                    <div class="favorite-date-divider">
+                        <span class="divider-line"></span>
+                        <span class="divider-text">📅 ${dateDisplay}</span>
+                        <span class="divider-line"></span>
+                    </div>
+                `;
+                lastDateKey = dateKey;
+            }
+
+            var senderName = item.sender === 'user' ? '我' : (item.roleName || '已删除的角色');
+            var avatarClass = item.sender === 'user' ? 'user-avatar' : '';
+            var avatarText = item.sender === 'user' ? '我' : (item.roleName ? item.roleName.charAt(0) : '?');
+            var senderTag = item.sender === 'user' ? '(你)' : '';
+
+            var contentHtml = '';
+            if (item.type === 'voice') {
+                var durationStr = formatTimeDisplay(item.audioDuration || 0);
+                contentHtml = `
+                    <div class="favorite-voice-player">
+                        <button class="voice-play-btn" data-id="${item.id}" onclick="toggleFavVoice('${item.id}')">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <div class="voice-progress-wrap">
+                            <div class="voice-progress-bar" onclick="seekFavVoice(event, '${item.id}')">
+                                <div class="voice-progress-fill" id="fav_progress_${item.id}" style="width:0%;"></div>
+                                <div class="voice-progress-dot" id="fav_dot_${item.id}" style="left:0%;"></div>
+                            </div>
+                            <span class="voice-time" id="fav_time_${item.id}">${durationStr}</span>
+                        </div>
+                    </div>
+                    <div class="voice-text-follow">${escapeHtml(item.content)}</div>
+                `;
+            } else if (item.type === 'image') {
+                contentHtml = `<img src="${item.content}" alt="图片" class="card-image" />`;
+            } else {
+                var displayContent = item.content.length > 80 ?
+                    item.content.substring(0, 80) + '...' :
+                    item.content;
+                var isLong = item.content.length > 80;
+                contentHtml = `
+                    <div class="content-text" id="fav_text_${item.id}">${escapeHtml(displayContent)}</div>
+                    ${isLong ? `<button class="expand-btn" onclick="toggleFavExpand('${item.id}')">展开全部</button>` : ''}
+                `;
+            }
+
+            html += `
+                <div class="favorite-card" data-id="${item.id}">
+                    <div class="card-header">
+                        <div class="card-avatar ${avatarClass}" style="${item.roleAvatar ? 'background-image:url(' + item.roleAvatar + ');background-size:cover;background-position:center;' : ''}">${item.roleAvatar ? '' : avatarText}</div>
+                        <span class="card-sender">${escapeHtml(senderName)} <span class="sender-tag">${senderTag}</span></span>
+                        <button class="card-delete-btn" onclick="deleteFavItem('${item.id}')" title="删除">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    </div>
+                    <div class="card-content">
+                        ${contentHtml}
+                    </div>
+                    <div class="card-footer">
+                        <span class="card-time"><i class="far fa-clock"></i> ${timeStr}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        body.innerHTML = html;
+    }).catch(function(e) {
+        console.error('加载收藏失败:', e);
+        body.innerHTML = `<div class="favorite-empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">加载失败</div><div class="empty-desc">请刷新重试</div></div>`;
+    });
+}
+
+// ============================================================
+//  🎵 收藏屋语音控制
+// ============================================================
+
+function toggleFavVoice(id) {
+    var btn = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + id + '"]');
+    if (!btn) return;
+
+    if (favPlayingId === id) {
+        btn.innerHTML = '<i class="fas fa-play"></i>';
+        btn.classList.remove('playing');
+        favPlayingId = null;
+        if (favAudioIntervals[id]) {
+            clearInterval(favAudioIntervals[id]);
+            delete favAudioIntervals[id];
+        }
+        showFavToast('⏸️ 已暂停');
+        return;
+    }
+
+    if (favPlayingId) {
+        var oldBtn = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + favPlayingId + '"]');
+        if (oldBtn) {
+            oldBtn.innerHTML = '<i class="fas fa-play"></i>';
+            oldBtn.classList.remove('playing');
+        }
+        if (favAudioIntervals[favPlayingId]) {
+            clearInterval(favAudioIntervals[favPlayingId]);
+            delete favAudioIntervals[favPlayingId];
+        }
+        var oldFill = document.getElementById('fav_progress_' + favPlayingId);
+        var oldDot = document.getElementById('fav_dot_' + favPlayingId);
+        var oldTime = document.getElementById('fav_time_' + favPlayingId);
+        if (oldFill) oldFill.style.width = '0%';
+        if (oldDot) oldDot.style.left = '0%';
+        if (oldTime) {
+            getAllFavorites().then(function(favs) {
+                var found = favs.find(function(f) { return f.id === favPlayingId; });
+                if (found) oldTime.textContent = formatTimeDisplay(found.audioDuration || 0);
+            });
+        }
+    }
+
+    btn.innerHTML = '<i class="fas fa-pause"></i>';
+    btn.classList.add('playing');
+    favPlayingId = id;
+
+    getAllFavorites().then(function(favs) {
+        var found = favs.find(function(f) { return f.id === id; });
+        var total = found ? found.audioDuration || 8 : 8;
+        var progress = 0;
+        var step = 100 / (total * 10);
+
+        if (favAudioIntervals[id]) clearInterval(favAudioIntervals[id]);
+
+        favAudioIntervals[id] = setInterval(function() {
+            progress += step;
+            if (progress >= 100) {
+                progress = 100;
+                var fill = document.getElementById('fav_progress_' + id);
+                var dot = document.getElementById('fav_dot_' + id);
+                var timeEl = document.getElementById('fav_time_' + id);
+                if (fill) fill.style.width = '100%';
+                if (dot) dot.style.left = '100%';
+                if (timeEl) timeEl.textContent = formatTimeDisplay(total);
+                clearInterval(favAudioIntervals[id]);
+                delete favAudioIntervals[id];
+                favPlayingId = null;
+                var btn2 = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + id + '"]');
+                if (btn2) {
+                    btn2.innerHTML = '<i class="fas fa-play"></i>';
+                    btn2.classList.remove('playing');
+                }
+                showFavToast('✅ 播放完成');
+                return;
+            }
+            var fill2 = document.getElementById('fav_progress_' + id);
+            var dot2 = document.getElementById('fav_dot_' + id);
+            var timeEl2 = document.getElementById('fav_time_' + id);
+            if (fill2) fill2.style.width = progress + '%';
+            if (dot2) dot2.style.left = progress + '%';
+            if (timeEl2) {
+                var current = (progress / 100) * total;
+                timeEl2.textContent = formatTimeDisplay(current);
+            }
+        }, 100);
+        showFavToast('▶️ 正在播放...');
+    });
+}
+
+function seekFavVoice(e, id) {
+    var bar = e.target.closest('.voice-progress-bar');
+    if (!bar) return;
+    var rect = bar.getBoundingClientRect();
+    var pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+
+    var fill = document.getElementById('fav_progress_' + id);
+    var dot = document.getElementById('fav_dot_' + id);
+    var timeEl = document.getElementById('fav_time_' + id);
+
+    getAllFavorites().then(function(favs) {
+        var found = favs.find(function(f) { return f.id === id; });
+        var total = found ? found.audioDuration || 8 : 8;
+        if (fill) fill.style.width = pct + '%';
+        if (dot) dot.style.left = pct + '%';
+        if (timeEl) {
+            var current = (pct / 100) * total;
+            timeEl.textContent = formatTimeDisplay(current);
+        }
+
+        if (favPlayingId === id) {
+            var progress = pct;
+            var step = 100 / (total * 10);
+            if (favAudioIntervals[id]) {
+                clearInterval(favAudioIntervals[id]);
+                delete favAudioIntervals[id];
+            }
+            favAudioIntervals[id] = setInterval(function() {
+                progress += step;
+                if (progress >= 100) {
+                    progress = 100;
+                    var fill2 = document.getElementById('fav_progress_' + id);
+                    var dot2 = document.getElementById('fav_dot_' + id);
+                    var timeEl2 = document.getElementById('fav_time_' + id);
+                    if (fill2) fill2.style.width = '100%';
+                    if (dot2) dot2.style.left = '100%';
+                    if (timeEl2) timeEl2.textContent = formatTimeDisplay(total);
+                    clearInterval(favAudioIntervals[id]);
+                    delete favAudioIntervals[id];
+                    favPlayingId = null;
+                    var btn2 = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + id + '"]');
+                    if (btn2) {
+                        btn2.innerHTML = '<i class="fas fa-play"></i>';
+                        btn2.classList.remove('playing');
+                    }
+                    showFavToast('✅ 播放完成');
+                    return;
+                }
+                var fill3 = document.getElementById('fav_progress_' + id);
+                var dot3 = document.getElementById('fav_dot_' + id);
+                var timeEl3 = document.getElementById('fav_time_' + id);
+                if (fill3) fill3.style.width = progress + '%';
+                if (dot3) dot3.style.left = progress + '%';
+                if (timeEl3) {
+                    var current2 = (progress / 100) * total;
+                    timeEl3.textContent = formatTimeDisplay(current2);
+                }
+            }, 100);
+        }
+    });
+}
+
+// ============================================================
+//  🗑️ 删除收藏
+// ============================================================
+
+function deleteFavItem(id) {
+    if (!confirm('确定要删除这条收藏吗？')) return;
+    deleteFavoriteFromDB(id).then(function() {
+        if (favPlayingId === id) {
+            favPlayingId = null;
+            if (favAudioIntervals[id]) {
+                clearInterval(favAudioIntervals[id]);
+                delete favAudioIntervals[id];
+            }
+        }
+        renderFavorites();
+        showFavToast('🗑️ 已删除');
+    }).catch(function(e) {
+        console.error('删除失败:', e);
+        showFavToast('⚠️ 删除失败');
+    });
+}
+
+// ============================================================
+//  🧹 清空所有收藏
+// ============================================================
+
+function clearAllFavItems() {
+    getAllFavorites().then(function(favs) {
+        if (favs.length === 0) {
+            showFavToast('📌 已经是空的了');
+            return;
+        }
+        if (!confirm('确定要清空所有收藏吗？（共 ' + favs.length + ' 条）')) return;
+        clearAllFavoritesFromDB().then(function() {
+            if (favPlayingId) {
+                favPlayingId = null;
+                for (var key in favAudioIntervals) {
+                    if (favAudioIntervals[key]) {
+                        clearInterval(favAudioIntervals[key]);
+                        delete favAudioIntervals[key];
+                    }
+                }
+            }
+            renderFavorites();
+            showFavToast('🗑️ 已清空所有收藏');
+        }).catch(function(e) {
+            console.error('清空失败:', e);
+            showFavToast('⚠️ 清空失败');
+        });
+    });
+}
+
+// ============================================================
+//  📖 展开全文
+// ============================================================
+
+function toggleFavExpand(id) {
+    getAllFavorites().then(function(favs) {
+        var item = favs.find(function(f) { return f.id === id; });
+        if (!item) return;
+        var el = document.getElementById('fav_text_' + id);
+        if (!el) return;
+        var isExpanded = el.classList.contains('expanded');
+        if (isExpanded) {
+            el.textContent = item.content.substring(0, 80) + '...';
+            el.classList.remove('expanded');
+            var btn = el.parentElement.querySelector('.expand-btn');
+            if (btn) btn.textContent = '展开全部';
+        } else {
+            el.textContent = item.content;
+            el.classList.add('expanded');
+            var btn2 = el.parentElement.querySelector('.expand-btn');
+            if (btn2) btn2.textContent = '收起';
+        }
+    });
+}
+
+// ============================================================
+//  💬 收藏屋 Toast
+// ============================================================
+
+var favToastTimer = null;
+
+function showFavToast(msg) {
+    var el = document.getElementById('favToast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(favToastTimer);
+    favToastTimer = setTimeout(function() {
+        el.classList.remove('show');
+    }, 2000);
+}
+
+// ============================================================
+//  🚪 打开/关闭收藏屋
+// ============================================================
+
+function openFavorite() {
+    document.getElementById('launcherScreen').classList.add('hidden');
+    document.getElementById('chatScreen').classList.remove('open');
+    document.getElementById('contactsScreen').classList.remove('open');
+    document.getElementById('memeScreen').classList.remove('open');
+    document.getElementById('diaryScreen').classList.remove('open');
+    document.getElementById('favoriteScreen').classList.add('open');
+    renderFavorites();
+    if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300);
+}
+
+function closeFavorite() {
+    document.getElementById('favoriteScreen').classList.remove('open');
+    document.getElementById('launcherScreen').classList.remove('hidden');
+}
+
+// ============================================================
+//  ⭐ 收藏消息（长按菜单调用）
+// ============================================================
+
+function collectMessage(roleId, messageId) {
+    var role = roles.find(function(r) { return r.id === roleId; });
+    if (!role) { showToast('⚠️ 未找到角色'); return; }
+    var msg = role.messages.find(function(m) { return m.id === messageId; });
+    if (!msg) { showToast('⚠️ 未找到消息'); return; }
+
+    // 检查是否已收藏
+    isFavoriteCollected(messageId).then(function(exists) {
+        if (exists) {
+            showToast('💡 已收藏过了');
+            return;
+        }
+
+        var favorite = {
+            id: 'fav_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            roleId: roleId,
+            roleName: role.name,
+            sender: msg.role,
+            content: msg.content,
+            type: msg.type || 'text',
+            audioUrl: msg.audioUrl || null,
+            audioDuration: msg.audioDuration || 0,
+            collectedAt: new Date().toISOString(),
+            sourceMsgId: messageId,
+            roleAvatar: role.avatar || ''
+        };
+
+        saveFavorite(favorite).then(function() {
+            showToast('⭐ 已收藏');
+            // 如果收藏屋开着，刷新列表
+            if (document.getElementById('favoriteScreen').classList.contains('open')) {
+                renderFavorites();
+            }
+        }).catch(function(e) {
+            console.error('收藏失败:', e);
+            showToast('⚠️ 收藏失败');
+        });
+    }).catch(function(e) {
+        console.error('检查收藏失败:', e);
+        showToast('⚠️ 操作失败');
+    });
+} </script>
+<!-- ===== 收藏屋 ===== -->
+    <div class="screen-favorite" id="favoriteScreen">
+        <!-- 顶部导航 -->
+        <div class="favorite-header">
+            <button class="back-btn" id="backFromFavorite"><i class="fas fa-chevron-left"></i></button>
+            <div class="header-title">
+                ⭐ 收藏屋
+                <span class="count-badge" id="favCountBadge">0</span>
+            </div>
+            <div class="header-actions">
+                <button id="clearAllFavBtn" title="清空所有收藏"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        </div>
+
+        <!-- 内容区域 -->
+        <div class="favorite-body" id="favoriteBody"></div>
+
+        <!-- 底部统计 -->
+        <div class="favorite-footer-stat">
+            <span class="stat-left">📌 共 <span id="favTotalCount">0</span> 条收藏</span>
+            <span class="stat-right">
+                <span id="favStorageSize">已用 0 KB</span>
+                <button class="clear-all-btn" id="clearAllFavBtn2">清空全部</button>
+            </span>
+        </div>
+
+        <!-- Toast -->
+        <div class="favorite-toast" id="favToast"></div>
+    </div> </body>
 </html>
