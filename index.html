@@ -8468,10 +8468,11 @@ function fetchAudioAsBase64(url) {
         }
 
         // 如果是语音消息，需要把音频转成 Base64
-        var audioPromise = Promise.resolve(null);
-        if (msg.type === 'voice' && msg.audioUrl) {
-            audioPromise = fetchAudioAsBase64(msg.audioUrl);
-        }
+var audioPromise = Promise.resolve(null);
+if (msg.audioUrl) {  // ⭐ 只要有 audioUrl 就转，不管 type 是什么
+    console.log('🎵 检测到 audioUrl，开始转 Base64...');
+    audioPromise = fetchAudioAsBase64(msg.audioUrl);
+}
 
         audioPromise.then(function(audioData) {
             var favorite = {
