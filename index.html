@@ -774,465 +774,6 @@
         }
         @media (max-width: 460px) { .phone-frame { border-radius: 0; height: 100vh; max-height: 100vh; } body { padding: 0; } }
         @media (min-width: 431px) { .phone-frame { border-radius: 32px; height: 780px; max-height: 90vh; box-shadow: 0 20px 60px rgba(0,0,0,0.6); } body { padding: 12px; } }
-
-/* ============================================================
-   ⭐ 收藏屋样式
-   ============================================================ */
-
-/* ----- 收藏屋主容器 ----- */
-
-.screen-favorite {
-    width: 100%;
-    height: 100%;
-    background: var(--bg-secondary);
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 25;  /* ⭐ 确保 z-index 比所有页面都高 */
-    transform: translateX(100%);
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.screen-favorite.open {
-    transform: translateX(0);
-}
-
-/* ----- 顶部导航 ----- */
-.favorite-header {
-    background: var(--header-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: calc(12px + var(--safe-top, 0px)) 16px 12px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-    min-height: 52px;
-    position: relative;
-    z-index: 1;
-}
-.favorite-header .back-btn {
-    font-size: 20px;
-    color: #576b95;
-    cursor: pointer;
-    border: none;
-    background: none;
-    padding: 4px;
-}
-.favorite-header .header-title {
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--text-primary);
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.favorite-header .header-title .count-badge {
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--text-secondary);
-    background: var(--bg-secondary);
-    padding: 1px 10px;
-    border-radius: 12px;
-}
-.favorite-header .header-actions {
-    display: flex;
-    gap: 6px;
-}
-.favorite-header .header-actions button {
-    background: none;
-    border: none;
-    font-size: 16px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 4px 6px;
-    transition: 0.15s;
-}
-.favorite-header .header-actions button:active {
-    transform: scale(0.9);
-}
-
-/* ----- 收藏屋内容区 ----- */
-.favorite-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 14px 12px;
-    background: transparent;
-    -webkit-overflow-scrolling: touch;
-    position: relative;
-    z-index: 1;
-}
-
-/* ----- 日期分隔线 ----- */
-.favorite-date-divider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 14px 0 10px;
-    width: 100%;
-}
-.favorite-date-divider .divider-line {
-    flex: 1;
-    height: 1px;
-    background: var(--border-color);
-    max-width: 30px;
-}
-.favorite-date-divider .divider-text {
-    font-size: 12px;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    padding: 0 8px;
-    font-weight: 400;
-    letter-spacing: 0.5px;
-    opacity: 0.6;
-}
-
-/* ----- 收藏卡片 ----- */
-.favorite-card {
-    background: var(--bg-card);
-    border-radius: 16px;
-    padding: 14px 16px 12px;
-    margin-bottom: 8px;
-    box-shadow: 0 2px 12px var(--shadow-color);
-    border: 1px solid var(--border-color);
-    transition: 0.15s;
-    position: relative;
-    animation: fadeInUp 0.25s ease;
-}
-.favorite-card:active {
-    transform: scale(0.98);
-}
-
-.favorite-card .card-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-}
-.favorite-card .card-avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #07c160;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    color: #fff;
-    font-weight: 500;
-    background-size: cover;
-    background-position: center;
-}
-.favorite-card .card-avatar.user-avatar {
-    background: #576b95;
-}
-.favorite-card .card-sender {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-    flex: 1;
-}
-.favorite-card .card-sender .sender-tag {
-    font-size: 10px;
-    font-weight: 400;
-    color: var(--text-secondary);
-    margin-left: 4px;
-    opacity: 0.6;
-}
-.favorite-card .card-delete-btn {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 14px;
-    cursor: pointer;
-    padding: 4px;
-    transition: 0.15s;
-    opacity: 0.3;
-}
-.favorite-card .card-delete-btn:active {
-    color: #e74c3c;
-    transform: scale(0.85);
-}
-
-.favorite-card .card-content {
-    font-size: 15px;
-    line-height: 1.6;
-    color: var(--text-primary);
-    word-break: break-word;
-    padding-left: 36px;
-}
-.favorite-card .card-content .content-text {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-.favorite-card .card-content .content-text.expanded {
-    -webkit-line-clamp: unset;
-}
-.favorite-card .card-content .expand-btn {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 12px;
-    cursor: pointer;
-    padding: 2px 4px;
-    margin-top: 2px;
-    opacity: 0.5;
-}
-.favorite-card .card-content .expand-btn:active {
-    color: #576b95;
-}
-.favorite-card .card-content .card-image {
-    max-width: 140px;
-    max-height: 140px;
-    border-radius: 8px;
-    margin-top: 4px;
-    display: block;
-}
-
-.favorite-card .card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 8px;
-    padding-left: 36px;
-}
-.favorite-card .card-time {
-    font-size: 11px;
-    color: var(--text-secondary);
-    font-weight: 400;
-    opacity: 0.5;
-}
-.favorite-card .card-time i {
-    margin-right: 3px;
-    font-size: 10px;
-}
-
-/* ----- 收藏屋里的语音播放器 ----- */
-.favorite-voice-player {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 10px 6px 6px;
-    background: var(--bg-secondary);
-    border-radius: 24px;
-    margin-bottom: 6px;
-    max-width: 220px;
-}
-.favorite-voice-player .voice-play-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(85, 239, 196, 0.15);
-    color: #55efc4;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    flex-shrink: 0;
-    transition: 0.15s;
-}
-.favorite-voice-player .voice-play-btn:active {
-    transform: scale(0.85);
-}
-.favorite-voice-player .voice-play-btn.playing {
-    background: rgba(255, 107, 107, 0.15);
-    color: #ff6b6b;
-}
-.favorite-voice-player .voice-progress-wrap {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-}
-.favorite-voice-player .voice-progress-bar {
-    flex: 1;
-    height: 3px;
-    background: var(--border-color);
-    border-radius: 4px;
-    position: relative;
-    cursor: pointer;
-    min-width: 40px;
-}
-.favorite-voice-player .voice-progress-fill {
-    height: 100%;
-    width: 0%;
-    background: #55efc4;
-    border-radius: 4px;
-    transition: width 0.1s linear;
-}
-.favorite-voice-player .voice-progress-dot {
-    position: absolute;
-    top: 50%;
-    left: 0%;
-    transform: translate(-50%, -50%);
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #55efc4;
-    pointer-events: none;
-    transition: left 0.1s linear;
-}
-.favorite-voice-player .voice-time {
-    font-size: 10px;
-    color: var(--text-secondary);
-    font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
-    min-width: 28px;
-    text-align: right;
-    letter-spacing: 0.3px;
-    opacity: 0.5;
-}
-.favorite-voice-player + .voice-text-follow {
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--text-primary);
-    padding-left: 2px;
-    opacity: 0.8;
-}
-
-/* ----- 空状态 ----- */
-.favorite-empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 24px 40px;
-    text-align: center;
-    min-height: 300px;
-}
-.favorite-empty-state .empty-icon {
-    font-size: 56px;
-    color: #55efc4;
-    opacity: 0.4;
-    margin-bottom: 16px;
-}
-.favorite-empty-state .empty-title {
-    font-size: 17px;
-    font-weight: 500;
-    color: var(--text-primary);
-    opacity: 0.5;
-    margin-bottom: 6px;
-}
-.favorite-empty-state .empty-desc {
-    font-size: 13px;
-    color: var(--text-secondary);
-    opacity: 0.4;
-    line-height: 1.6;
-}
-.favorite-empty-state .empty-hint {
-    margin-top: 14px;
-    padding: 8px 16px;
-    background: rgba(85, 239, 196, 0.08);
-    border-radius: 20px;
-    font-size: 12px;
-    color: #55efc4;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-/* ----- 底部统计 ----- */
-.favorite-footer-stat {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 14px 8px;
-    border-top: 1px solid var(--border-color);
-    font-size: 11px;
-    color: var(--text-secondary);
-    flex-shrink: 0;
-    background: var(--bg-secondary);
-    opacity: 0.6;
-}
-.favorite-footer-stat .stat-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.favorite-footer-stat .stat-right {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.favorite-footer-stat .clear-all-btn {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 11px;
-    cursor: pointer;
-    padding: 2px 8px;
-    border-radius: 12px;
-    transition: 0.15s;
-    opacity: 0.5;
-}
-.favorite-footer-stat .clear-all-btn:active {
-    color: #e74c3c;
-    background: rgba(231, 76, 60, 0.06);
-}
-
-/* ----- 收藏屋 Toast ----- */
-.favorite-toast {
-    position: absolute;
-    bottom: 100px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.75);
-    color: #fff;
-    padding: 8px 20px;
-    border-radius: 10px;
-    font-size: 13px;
-    z-index: 200;
-    animation: fadeInUp 0.3s ease;
-    text-align: center;
-    max-width: 80%;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-.favorite-toast.show {
-    opacity: 1;
-}
-[data-theme="light"] .favorite-toast {
-    background: rgba(40, 40, 40, 0.85);
-}
-
-/* ----- 收藏屋滚动条 ----- */
-.favorite-body::-webkit-scrollbar {
-    width: 3px;
-}
-.favorite-body::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 4px;
-}
-
-/* ----- 深色模式适配（覆盖变量） ----- */
-[data-theme="dark"] .favorite-card .card-delete-btn {
-    opacity: 0.15;
-}
-[data-theme="dark"] .favorite-card .card-delete-btn:active {
-    color: #e74c3c;
-}
-[data-theme="dark"] .favorite-voice-player {
-    background: rgba(255, 255, 255, 0.04);
-}
-[data-theme="dark"] .favorite-voice-player .voice-progress-bar {
-    background: rgba(255, 255, 255, 0.08);
-}
-[data-theme="dark"] .favorite-voice-player .voice-time {
-    color: rgba(255, 255, 255, 0.2);
-}
-[data-theme="dark"] .favorite-voice-player + .voice-text-follow {
-    color: rgba(255, 255, 255, 0.6);
-}
     </style>
 </head>
 <body>
@@ -1438,11 +979,7 @@
     <div class="diary-notification" id="diaryNotification"><div class="notif-icon">📖</div><h3>他的日记已送达</h3><p id="diaryNotifText">✨ 今晚的故事，他已经写好了...</p><button class="notif-btn" id="diaryNotifBtn">📖 去阅读</button><br /><button class="notif-close" id="diaryNotifClose">稍后再说</button></div>
     <div class="floating-heart" id="floatingHeart"><span class="fh-value" id="fhValue">65</span><span class="fh-label">BPM</span></div>
     <div class="heart-detail-overlay" id="heartDetailOverlay"><div class="heart-detail-panel"><button class="close-btn" id="hdCloseBtn">&times;</button><div class="hd-avatar" id="hdAvatar"></div><div class="hd-name" id="hdName">未绑定角色</div><div class="hd-value" id="hdValue">65<span class="hd-percent">%</span><span class="hd-bpm">♥ BPM</span></div><div class="hd-level" id="hdLevel">平静</div><div class="hd-signature" id="hdSignature">今天也很想你 💕</div><div class="hd-recent" id="hdRecent">最近心跳加速：<span class="highlight">等待你的第一句情话</span></div></div></div>
-    <div class="longpress-menu" id="longpressMenu">
-    <button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button>
-    <button class="menu-item" data-action="collect"><i class="fas fa-star" style="color:#fdcb6e;"></i> 收藏</button>
-    <button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button>
-</div>
+    <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div>
 <script> // ============================================================
 //  🚀 梦女空间 v4.0 - 多模型 + 百炼语音版
@@ -2100,37 +1637,42 @@ function saveSummaryToMemory(role, summary) {
     }
     debouncedSaveAllData();
     console.log('🧠 对话摘要已存入近期记忆（按需调用）:', summary);
-} function fetchWithRetry(url, options, maxRetries) {
-    maxRetries = maxRetries || 1;
-    var retryCount = 0;
-    function doFetch(remainingRetries) {
-        if (remainingRetries === undefined) remainingRetries = maxRetries;
-        return fetch(url, options).then(function(resp) {
-            if (!resp.ok && retryCount < maxRetries && remainingRetries > 0) {
-                retryCount++;
-                console.log('🔄 API 请求失败，第 ' + retryCount + ' 次重试...');
-                return new Promise(function(resolve) {
-                    setTimeout(function() {
-                        doFetch(remainingRetries - 1).then(resolve);
-                    }, 1000 * retryCount);
-                });
+} // ===== 修复：不会无限重试的 fetchWithRetry =====
+async function fetchWithRetry(url, options, maxRetries) {
+    maxRetries = maxRetries || 2;  // 最多重试2次
+    var lastError = null;
+    
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            var resp = await fetch(url, options);
+            if (resp.ok) return resp;  // 成功了就返回
+            
+            // 如果是 4xx 错误（比如 401 密钥错误、404 地址错误），不重试
+            if (resp.status >= 400 && resp.status < 500) {
+                console.log('❌ 客户端错误 ' + resp.status + '，不重试');
+                return resp;
             }
-            return resp;
-        }).catch(function(err) {
-            if (retryCount < maxRetries && remainingRetries > 0) {
-                retryCount++;
-                console.log('🔄 API 请求异常，第 ' + retryCount + ' 次重试...');
-                return new Promise(function(resolve) {
-                    setTimeout(function() {
-                        doFetch(remainingRetries - 1).then(resolve);
-                    }, 1000 * retryCount);
-                });
-            }
-            throw err;
-        });
+            
+            lastError = new Error('HTTP ' + resp.status);
+        } catch (e) {
+            lastError = e;
+            console.log('⚠️ 网络请求异常:', e.message);
+        }
+        
+        // 还没成功，等一会儿再重试（指数退避：第1次等1秒，第2次等2秒）
+        if (attempt < maxRetries) {
+            var waitTime = 1000 * Math.pow(2, attempt);
+            console.log('🔄 第 ' + (attempt + 1) + ' 次重试，等待 ' + waitTime + 'ms...');
+            await new Promise(function(r) { 
+                setTimeout(r, waitTime); 
+            });
+        }
     }
-    return doFetch(maxRetries);
+    
+    // 所有重试都失败了
+    throw lastError || new Error('所有重试均失败，请检查网络');
 }
+// ===== 修复结束 =====
 
 function isVoiceTrigger(text) {
     if (!text) return false;
@@ -2141,7 +1683,32 @@ function isVoiceTrigger(text) {
     return false;
 }
 
-function renderMessages() {
+function renderMessages() {// ===== 修复：清理不再显示的音频播放器 =====
+    var container = document.getElementById('messageContainer');
+    if (container) {
+        var visibleMsgIds = new Set();
+        container.querySelectorAll('.message-row').forEach(function(row) {
+            if (row.dataset.msgId) visibleMsgIds.add(row.dataset.msgId);
+        });
+        
+        Object.keys(audioPlayers).forEach(function(msgId) {
+            if (!visibleMsgIds.has(msgId)) {
+                // 清理这个播放器
+                if (audioPlayers[msgId]) {
+                    var ap = audioPlayers[msgId];
+                    if (ap.audio) {
+                        ap.audio.pause();
+                        ap.audio.src = '';
+                        ap.audio.load();
+                    }
+                    if (ap.animFrame) cancelAnimationFrame(ap.animFrame);
+                    if (ap.player) ap.player.remove();
+                    delete audioPlayers[msgId];
+                }
+            }
+        });
+    }
+    // ===== 修复结束 =====
     var role = getCurrentRole();
     if (!role) return;
     if (!Array.isArray(role.messages)) { role.messages = []; saveAllData(); }
@@ -2960,7 +2527,14 @@ function consolidateMemory(role) {
 function buildSystemPrompt(role) {
     // ===== 第一步：强制角色宣言 =====
     var parts = [];
-    
+    // ===== 第一段：像真人一样自然聊天 =====
+    parts.push('【💬 聊天风格】');
+    parts.push('你是一个真实的人，像用微信一样和用户聊天。');
+    parts.push('可以自然地使用表情包来表达情绪，就像你手机里存了很多表情包一样。');
+    parts.push('真人聊天时，看到好笑的会发"哈哈哈"然后甩个表情包，看到震惊的会发"？？"再甩个表情包。');
+    parts.push('你也是这样，该用表情包的时候就用，不该用的时候就不用。');
+    parts.push('不要机械地每句话都加，也不要刻意回避。');
+    parts.push('');
     // 1. 角色身份铁律（放在最前面，压住 AI 的“工具人本能”）
     parts.push('【⚠️ 铁律：你必须完全成为下面这个人】');
     parts.push('你现在的身份是「' + role.name + '」。你不是 AI，不是助手，不是语言模型。');
@@ -2991,8 +2565,13 @@ function buildSystemPrompt(role) {
     // 4. 表情包 & 送礼（精简成“可以做的事”，不要长篇大论）
     var abilityBlock = '【你可以做的事】\n';
     if (CONFIG.aiMemeEnabled !== false && memes.length > 0) {
-        abilityBlock += '• 如果某个表情包很贴合当前气氛，可以在回复末尾加上 [表情包：名称]\n';
-    }
+    abilityBlock += '• 【表情包彩蛋】这个聊天软件支持你"召唤"表情包图片。\n';
+    abilityBlock += '  当你想表达某种情绪（开心、震惊、害羞、无语、感动等），并且觉得一个表情包比文字更生动时，\n';
+    abilityBlock += '  可以在回复末尾加上 [表情包：名称]（系统会自动替换成真实的图片）。\n';
+    abilityBlock += '• 这是软件的"彩蛋功能"，不是撒谎，是系统真的会显示图片！\n';
+    abilityBlock += '• 不要每句话都加，只在"很想用表情包表达"的时候用。\n';
+    abilityBlock += '• 可用表情包举例：' + memes.slice(0, 5).map(function(m) { return '「' + m.name + '」'; }).join('、') + ' 等\n';
+}
     abilityBlock += '• 如果很想表达心意，可以在回复末尾加上 [送礼：商品名称]\n';
     abilityBlock += '• 这些是加分项，不是必须做的，不强行使用。';
     parts.push(abilityBlock);
@@ -3148,7 +2727,10 @@ function callDeepSeekDirect(userMessage, role, voiceRequested) {
             break;
         }
     }
-    var systemPrompt = buildSystemPrompt(role);
+    var systemPrompt = buildSystemPrompt(role); var systemPrompt = buildSystemPrompt(role);
+// ===== 小钩子：在系统提示最后加一句温柔提醒 =====
+systemPrompt += '\n\n💡 小提示：如果需要用表情包表达情绪，就大胆用 [表情包：名称] 吧！系统会自动显示图片的～';
+// ===== 小钩子结束 =====
     var recentMemoryText = '';
     if (shouldRecall) {
         recentMemoryText = retrieveRelevantMemory(role, userMessage);
@@ -4008,11 +3590,6 @@ function setupLongPress() {
                 hideLongpressMenu();
             }
         };
- var collectItem = menu.querySelector('[data-action="collect"]');
-collectItem.onclick = function() {
-    collectMessage(role.id, msg.id);
-    hideLongpressMenu();
-};
     }
     container.addEventListener('touchstart', function(e) {
         var row = e.target.closest('.message-row');
@@ -6454,13 +6031,12 @@ async function generateVoiceForMessage(msgId, role) {
     if (!role) return;
     var msg = role.messages.find(function(m) { return m.id === msgId; });
     if (!msg) return;
-    if (msg.hasAudio && msg.audioUrl && msg.audioBase64) {
+    if (msg.hasAudio && msg.audioUrl) {
         createVoicePlayer(msgId, msg.audioUrl, msg.audioDuration);
         return;
     }
     if (!msg.content || msg.content.trim().length === 0) return;
     if (CONFIG.voice.mode === 'none') return;
-    
     try {
         var audioUrl;
         if (CONFIG.voice.mode === 'bailian') {
@@ -6471,29 +6047,8 @@ async function generateVoiceForMessage(msgId, role) {
         } else {
             return;
         }
-        
         msg.hasAudio = true;
         msg.audioUrl = audioUrl;
-        
-        // ⭐ 新增：把音频转成 Base64 存到消息里
-        if (audioUrl) {
-            try {
-                var response = await fetch(audioUrl);
-                var blob = await response.blob();
-                var base64 = await new Promise(function(resolve, reject) {
-                    var reader = new FileReader();
-                    reader.onload = function() { resolve(reader.result); };
-                    reader.onerror = function() { reject(new Error('读取失败')); };
-                    reader.readAsDataURL(blob);
-                });
-                msg.audioBase64 = base64;
-                console.log('✅ 音频 Base64 已缓存到消息中');
-            } catch (e) {
-                console.warn('⚠️ 无法缓存音频 Base64:', e);
-                msg.audioBase64 = null;
-            }
-        }
-        
         var audio = new Audio(audioUrl);
         audio.addEventListener('loadedmetadata', function() {
             msg.audioDuration = audio.duration || 10;
@@ -7352,11 +6907,8 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (app === 'mall') openMall();
         else if (app === 'phone') openPhone();
         else if (app === 'favorite') {
-    openFavorite(); // ===== 收藏屋事件绑定 =====
-document.getElementById('backFromFavorite').addEventListener('click', closeFavorite);
-document.getElementById('clearAllFavBtn').addEventListener('click', clearAllFavItems);
-document.getElementById('clearAllFavBtn2').addEventListener('click', clearAllFavItems);
-}
+            showToast('⭐ 收藏屋开发中...');
+        }
         else showToast('📱 功能开发中~');
     });
 });
@@ -7838,801 +7390,6 @@ document.getElementById('refreshTtsCacheBtn').addEventListener('click', refreshT
         showToast('⚠️ 应用初始化失败，请刷新页面重试');
     }
 });
-// ============================================================
-//  ⭐ 收藏屋 - 完整逻辑
-//  存储：IndexedDB（FavoriteDB）
-//  特点：完全独立，删除消息/角色不影响收藏
-// ============================================================
-
-// ----- 打开收藏屋数据库 -----
-function openFavoriteDB() {
-    return new Promise(function(resolve, reject) {
-        var request = indexedDB.open('FavoriteDB', 1);
-        request.onupgradeneeded = function(e) {
-            var db = e.target.result;
-            if (!db.objectStoreNames.contains('favorites')) {
-                var store = db.createObjectStore('favorites', { keyPath: 'id' });
-                store.createIndex('collectedAt', 'collectedAt');
-                store.createIndex('roleId', 'roleId');
-            }
-        };
-        request.onsuccess = function(e) { resolve(e.target.result); };
-        request.onerror = function(e) { reject(e.target.error); };
-    });
-}
-
-// ----- 保存收藏 -----
-function saveFavorite(favorite) {
-    return openFavoriteDB().then(function(db) {
-        return new Promise(function(resolve, reject) {
-            var tx = db.transaction('favorites', 'readwrite');
-            var store = tx.objectStore('favorites');
-            var request = store.put(favorite);
-            request.onsuccess = function() { db.close(); resolve(); };
-            request.onerror = function() { db.close(); reject(request.error); };
-        });
-    });
-}
-
-// ----- 获取所有收藏（按时间倒序） -----
-function getAllFavorites() {
-    return openFavoriteDB().then(function(db) {
-        return new Promise(function(resolve, reject) {
-            var tx = db.transaction('favorites', 'readonly');
-            var store = tx.objectStore('favorites');
-            var index = store.index('collectedAt');
-            var request = index.openCursor(null, 'prev'); // 倒序
-            var results = [];
-            request.onsuccess = function(e) {
-                var cursor = e.target.result;
-                if (cursor) {
-                    results.push(cursor.value);
-                    cursor.continue();
-                } else {
-                    db.close();
-                    resolve(results);
-                }
-            };
-            request.onerror = function(e) {
-                db.close();
-                reject(e.target.error);
-            };
-        });
-    });
-}
-
-// ----- 删除单条收藏 -----
-function deleteFavoriteFromDB(id) {
-    return openFavoriteDB().then(function(db) {
-        return new Promise(function(resolve, reject) {
-            var tx = db.transaction('favorites', 'readwrite');
-            var store = tx.objectStore('favorites');
-            var request = store.delete(id);
-            request.onsuccess = function() { db.close(); resolve(); };
-            request.onerror = function() { db.close(); reject(request.error); };
-        });
-    });
-}
-
-// ----- 清空所有收藏 -----
-function clearAllFavoritesFromDB() {
-    return openFavoriteDB().then(function(db) {
-        return new Promise(function(resolve, reject) {
-            var tx = db.transaction('favorites', 'readwrite');
-            var store = tx.objectStore('favorites');
-            var request = store.clear();
-            request.onsuccess = function() { db.close(); resolve(); };
-            request.onerror = function() { db.close(); reject(request.error); };
-        });
-    });
-}
-
-// ----- 检查是否已收藏 -----
-function isFavoriteCollected(sourceMsgId) {
-    return openFavoriteDB().then(function(db) {
-        return new Promise(function(resolve, reject) {
-            var tx = db.transaction('favorites', 'readonly');
-            var store = tx.objectStore('favorites');
-            var request = store.openCursor();
-            var found = false;
-            request.onsuccess = function(e) {
-                var cursor = e.target.result;
-                if (cursor) {
-                    if (cursor.value.sourceMsgId === sourceMsgId) {
-                        found = true;
-                        db.close();
-                        resolve(true);
-                        return;
-                    }
-                    cursor.continue();
-                } else {
-                    db.close();
-                    resolve(false);
-                }
-            };
-            request.onerror = function(e) {
-                db.close();
-                reject(e.target.error);
-            };
-        });
-    });
-}
-
-// ============================================================
-//  🎨 渲染收藏列表
-// ============================================================
-
-var favAudioPlayers = {};
-var favPlayingId = null;
-var favAudioIntervals = {};
-
-function renderFavorites() {
-    var body = document.getElementById('favoriteBody');
-    var totalEl = document.getElementById('favTotalCount');
-    var badgeEl = document.getElementById('favCountBadge');
-    var storageEl = document.getElementById('favStorageSize');
-
-    if (!body) return;
-
-    getAllFavorites().then(function(favorites) {
-        var count = favorites.length;
-        if (totalEl) totalEl.textContent = count;
-        if (badgeEl) badgeEl.textContent = count;
-
-        // 计算存储用量（估算）
-        var totalSize = 0;
-        favorites.forEach(function(item) {
-            totalSize += JSON.stringify(item).length;
-        });
-        var sizeKB = Math.round(totalSize / 1024);
-        if (storageEl) storageEl.textContent = '已用 ' + sizeKB + ' KB';
-
-        if (count === 0) {
-            body.innerHTML = `
-                <div class="favorite-empty-state">
-                    <div class="empty-icon">✨</div>
-                    <div class="empty-title">还没有收藏</div>
-                    <div class="empty-desc">去收藏一些美好瞬间吧 💕</div>
-                    <div class="empty-hint">
-                        <i class="fas fa-hand-pointer"></i>
-                        长按消息 → 点击「收藏」
-                    </div>
-                </div>
-            `;
-            return;
-        }
-
-        var html = '';
-        var lastDateKey = '';
-
-        favorites.forEach(function(item) {
-            var date = new Date(item.collectedAt);
-            var dateKey = date.getFullYear() + '-' +
-                String(date.getMonth() + 1).padStart(2, '0') + '-' +
-                String(date.getDate()).padStart(2, '0');
-            var dateDisplay = date.getFullYear() + '年' +
-                (date.getMonth() + 1) + '月' +
-                date.getDate() + '日';
-            var timeStr = String(date.getHours()).padStart(2, '0') + ':' +
-                String(date.getMinutes()).padStart(2, '0');
-
-            if (dateKey !== lastDateKey) {
-                html += `
-                    <div class="favorite-date-divider">
-                        <span class="divider-line"></span>
-                        <span class="divider-text">📅 ${dateDisplay}</span>
-                        <span class="divider-line"></span>
-                    </div>
-                `;
-                lastDateKey = dateKey;
-            }
-
-            var senderName = item.sender === 'user' ? '我' : (item.roleName || '已删除的角色');
-            var avatarClass = item.sender === 'user' ? 'user-avatar' : '';
-            var avatarText = item.sender === 'user' ? '我' : (item.roleName ? item.roleName.charAt(0) : '?');
-            var senderTag = item.sender === 'user' ? '(你)' : '';
-
-            var contentHtml = '';
-            if (item.type === 'voice') {
-    var durationStr = formatTimeDisplay(item.audioDuration || 0);
-    // 检查是否有音频数据（Base64）
-    var hasAudio = item.audioBase64 && item.audioBase64.length > 0;
-    var audioSrc = hasAudio ? item.audioBase64 : '';
-    contentHtml = `
-        <div class="favorite-voice-player" data-audio="${audioSrc}">
-            <button class="voice-play-btn" data-id="${item.id}" onclick="toggleFavVoice('${item.id}')">
-                <i class="fas fa-play"></i>
-            </button>
-            <div class="voice-progress-wrap">
-                <div class="voice-progress-bar" onclick="seekFavVoice(event, '${item.id}')">
-                    <div class="voice-progress-fill" id="fav_progress_${item.id}" style="width:0%;"></div>
-                    <div class="voice-progress-dot" id="fav_dot_${item.id}" style="left:0%;"></div>
-                </div>
-                <span class="voice-time" id="fav_time_${item.id}">${durationStr}</span>
-            </div>
-        </div>
-        <div class="voice-text-follow">${escapeHtml(item.content)}</div>
-    `;
-} else if (item.type === 'image') {
-                contentHtml = `<img src="${item.content}" alt="图片" class="card-image" />`;
-            } else {
-                var displayContent = item.content.length > 80 ?
-                    item.content.substring(0, 80) + '...' :
-                    item.content;
-                var isLong = item.content.length > 80;
-                contentHtml = `
-                    <div class="content-text" id="fav_text_${item.id}">${escapeHtml(displayContent)}</div>
-                    ${isLong ? `<button class="expand-btn" onclick="toggleFavExpand('${item.id}')">展开全部</button>` : ''}
-                `;
-            }
-
-            html += `
-                <div class="favorite-card" data-id="${item.id}">
-                    <div class="card-header">
-                        <div class="card-avatar ${avatarClass}" style="${item.roleAvatar ? 'background-image:url(' + item.roleAvatar + ');background-size:cover;background-position:center;' : ''}">${item.roleAvatar ? '' : avatarText}</div>
-                        <span class="card-sender">${escapeHtml(senderName)} <span class="sender-tag">${senderTag}</span></span>
-                        <button class="card-delete-btn" onclick="deleteFavItem('${item.id}')" title="删除">
-                            <i class="fas fa-times-circle"></i>
-                        </button>
-                    </div>
-                    <div class="card-content">
-                        ${contentHtml}
-                    </div>
-                    <div class="card-footer">
-                        <span class="card-time"><i class="far fa-clock"></i> ${timeStr}</span>
-                    </div>
-                </div>
-            `;
-        });
-
-        body.innerHTML = html;
-    }).catch(function(e) {
-        console.error('加载收藏失败:', e);
-        body.innerHTML = `<div class="favorite-empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">加载失败</div><div class="empty-desc">请刷新重试</div></div>`;
-    });
-}
-
-// ============================================================
-//  🎵 收藏屋语音控制
-// ============================================================
-
-// 全局变量：收藏屋的音频播放器
-var favAudioElement = null;
-
-function toggleFavVoice(id) {
-    var btn = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + id + '"]');
-    if (!btn) return;
-
-    // 获取音频数据
-    var player = btn.closest('.favorite-voice-player');
-    var audioSrc = player ? player.dataset.audio : null;
-
-    if (!audioSrc || audioSrc.length === 0) {
-        showFavToast('⚠️ 没有音频数据');
-        return;
-    }
-
-    // 如果已经在播放这个，暂停
-    if (favPlayingId === id) {
-        btn.innerHTML = '<i class="fas fa-play"></i>';
-        btn.classList.remove('playing');
-        favPlayingId = null;
-        if (favAudioIntervals[id]) {
-            clearInterval(favAudioIntervals[id]);
-            delete favAudioIntervals[id];
-        }
-        if (favAudioElement) {
-            favAudioElement.pause();
-        }
-        showFavToast('⏸️ 已暂停');
-        return;
-    }
-
-    // 停止之前的播放
-    if (favPlayingId) {
-        var oldBtn = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + favPlayingId + '"]');
-        if (oldBtn) {
-            oldBtn.innerHTML = '<i class="fas fa-play"></i>';
-            oldBtn.classList.remove('playing');
-        }
-        if (favAudioIntervals[favPlayingId]) {
-            clearInterval(favAudioIntervals[favPlayingId]);
-            delete favAudioIntervals[favPlayingId];
-        }
-        if (favAudioElement) {
-            favAudioElement.pause();
-        }
-        // 重置进度
-        var oldFill = document.getElementById('fav_progress_' + favPlayingId);
-        var oldDot = document.getElementById('fav_dot_' + favPlayingId);
-        var oldTime = document.getElementById('fav_time_' + favPlayingId);
-        if (oldFill) oldFill.style.width = '0%';
-        if (oldDot) oldDot.style.left = '0%';
-        if (oldTime) {
-            getAllFavorites().then(function(favs) {
-                var found = favs.find(function(f) { return f.id === favPlayingId; });
-                if (found) oldTime.textContent = formatTimeDisplay(found.audioDuration || 0);
-            });
-        }
-    }
-
-    // 开始播放新的
-    btn.innerHTML = '<i class="fas fa-pause"></i>';
-    btn.classList.add('playing');
-    favPlayingId = id;
-
-    getAllFavorites().then(function(favs) {
-        var found = favs.find(function(f) { return f.id === id; });
-        var total = found ? found.audioDuration || 8 : 8;
-
-        // 创建 Audio 对象播放 Base64
-        if (favAudioElement) {
-            favAudioElement.pause();
-            favAudioElement.src = '';
-        }
-        favAudioElement = new Audio(audioSrc);
-
-        favAudioElement.onloadedmetadata = function() {
-            var actualDuration = favAudioElement.duration || total;
-            if (found) found.audioDuration = actualDuration;
-            var timeEl = document.getElementById('fav_time_' + id);
-            if (timeEl) timeEl.textContent = formatTimeDisplay(actualDuration);
-        };
-
-        favAudioElement.onended = function() {
-            // 播放结束
-            var fill = document.getElementById('fav_progress_' + id);
-            var dot = document.getElementById('fav_dot_' + id);
-            var timeEl = document.getElementById('fav_time_' + id);
-            if (fill) fill.style.width = '100%';
-            if (dot) dot.style.left = '100%';
-            if (timeEl && found) timeEl.textContent = formatTimeDisplay(found.audioDuration || total);
-            favPlayingId = null;
-            var btn2 = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + id + '"]');
-            if (btn2) {
-                btn2.innerHTML = '<i class="fas fa-play"></i>';
-                btn2.classList.remove('playing');
-            }
-            if (favAudioIntervals[id]) {
-                clearInterval(favAudioIntervals[id]);
-                delete favAudioIntervals[id];
-            }
-            showFavToast('✅ 播放完成');
-        };
-
-        favAudioElement.onerror = function(e) {
-            console.error('播放失败:', e);
-            showFavToast('⚠️ 播放失败');
-            var btn2 = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + id + '"]');
-            if (btn2) {
-                btn2.innerHTML = '<i class="fas fa-play"></i>';
-                btn2.classList.remove('playing');
-            }
-            favPlayingId = null;
-            if (favAudioIntervals[id]) {
-                clearInterval(favAudioIntervals[id]);
-                delete favAudioIntervals[id];
-            }
-        };
-
-        favAudioElement.play().catch(function(e) {
-            console.error('播放失败:', e);
-            showFavToast('⚠️ 播放失败，请重试');
-        });
-
-        // 进度更新
-        var progress = 0;
-        var step = 100 / (total * 10);
-        if (favAudioIntervals[id]) clearInterval(favAudioIntervals[id]);
-
-        favAudioIntervals[id] = setInterval(function() {
-            if (!favAudioElement || favAudioElement.paused) {
-                return;
-            }
-            var currentTime = favAudioElement.currentTime || 0;
-            var duration = favAudioElement.duration || total;
-            var pct = (currentTime / duration) * 100;
-            if (pct >= 100) {
-                pct = 100;
-                clearInterval(favAudioIntervals[id]);
-                delete favAudioIntervals[id];
-            }
-            var fill = document.getElementById('fav_progress_' + id);
-            var dot = document.getElementById('fav_dot_' + id);
-            var timeEl = document.getElementById('fav_time_' + id);
-            if (fill) fill.style.width = Math.min(100, pct) + '%';
-            if (dot) dot.style.left = Math.min(100, pct) + '%';
-            if (timeEl) timeEl.textContent = formatTimeDisplay(currentTime);
-        }, 100);
-
-        showFavToast('▶️ 正在播放...');
-    });
-}
-
-function seekFavVoice(e, id) {
-    var bar = e.target.closest('.voice-progress-bar');
-    if (!bar) return;
-    var rect = bar.getBoundingClientRect();
-    var pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-
-    var fill = document.getElementById('fav_progress_' + id);
-    var dot = document.getElementById('fav_dot_' + id);
-    var timeEl = document.getElementById('fav_time_' + id);
-
-    getAllFavorites().then(function(favs) {
-        var found = favs.find(function(f) { return f.id === id; });
-        var total = found ? found.audioDuration || 8 : 8;
-        if (fill) fill.style.width = pct + '%';
-        if (dot) dot.style.left = pct + '%';
-        if (timeEl) {
-            var current = (pct / 100) * total;
-            timeEl.textContent = formatTimeDisplay(current);
-        }
-
-        if (favPlayingId === id) {
-            var progress = pct;
-            var step = 100 / (total * 10);
-            if (favAudioIntervals[id]) {
-                clearInterval(favAudioIntervals[id]);
-                delete favAudioIntervals[id];
-            }
-            favAudioIntervals[id] = setInterval(function() {
-                progress += step;
-                if (progress >= 100) {
-                    progress = 100;
-                    var fill2 = document.getElementById('fav_progress_' + id);
-                    var dot2 = document.getElementById('fav_dot_' + id);
-                    var timeEl2 = document.getElementById('fav_time_' + id);
-                    if (fill2) fill2.style.width = '100%';
-                    if (dot2) dot2.style.left = '100%';
-                    if (timeEl2) timeEl2.textContent = formatTimeDisplay(total);
-                    clearInterval(favAudioIntervals[id]);
-                    delete favAudioIntervals[id];
-                    favPlayingId = null;
-                    var btn2 = document.querySelector('.favorite-voice-player .voice-play-btn[data-id="' + id + '"]');
-                    if (btn2) {
-                        btn2.innerHTML = '<i class="fas fa-play"></i>';
-                        btn2.classList.remove('playing');
-                    }
-                    showFavToast('✅ 播放完成');
-                    return;
-                }
-                var fill3 = document.getElementById('fav_progress_' + id);
-                var dot3 = document.getElementById('fav_dot_' + id);
-                var timeEl3 = document.getElementById('fav_time_' + id);
-                if (fill3) fill3.style.width = progress + '%';
-                if (dot3) dot3.style.left = progress + '%';
-                if (timeEl3) {
-                    var current2 = (progress / 100) * total;
-                    timeEl3.textContent = formatTimeDisplay(current2);
-                }
-            }, 100);
-        }
-    });
-}
-
-// ============================================================
-//  🗑️ 删除收藏
-// ============================================================
-
-function deleteFavItem(id) {
-    if (!confirm('确定要删除这条收藏吗？')) return;
-    deleteFavoriteFromDB(id).then(function() {
-        if (favPlayingId === id) {
-            favPlayingId = null;
-            if (favAudioIntervals[id]) {
-                clearInterval(favAudioIntervals[id]);
-                delete favAudioIntervals[id];
-            }
-        }
-        renderFavorites();
-        showFavToast('🗑️ 已删除');
-    }).catch(function(e) {
-        console.error('删除失败:', e);
-        showFavToast('⚠️ 删除失败');
-    });
-}
-
-// ============================================================
-//  🧹 清空所有收藏
-// ============================================================
-
-function clearAllFavItems() {
-    getAllFavorites().then(function(favs) {
-        if (favs.length === 0) {
-            showFavToast('📌 已经是空的了');
-            return;
-        }
-        if (!confirm('确定要清空所有收藏吗？（共 ' + favs.length + ' 条）')) return;
-        clearAllFavoritesFromDB().then(function() {
-            if (favPlayingId) {
-                favPlayingId = null;
-                for (var key in favAudioIntervals) {
-                    if (favAudioIntervals[key]) {
-                        clearInterval(favAudioIntervals[key]);
-                        delete favAudioIntervals[key];
-                    }
-                }
-            }
-            renderFavorites();
-            showFavToast('🗑️ 已清空所有收藏');
-        }).catch(function(e) {
-            console.error('清空失败:', e);
-            showFavToast('⚠️ 清空失败');
-        });
-    });
-}
-
-// ============================================================
-//  📖 展开全文
-// ============================================================
-
-function toggleFavExpand(id) {
-    getAllFavorites().then(function(favs) {
-        var item = favs.find(function(f) { return f.id === id; });
-        if (!item) return;
-        var el = document.getElementById('fav_text_' + id);
-        if (!el) return;
-        var isExpanded = el.classList.contains('expanded');
-        if (isExpanded) {
-            el.textContent = item.content.substring(0, 80) + '...';
-            el.classList.remove('expanded');
-            var btn = el.parentElement.querySelector('.expand-btn');
-            if (btn) btn.textContent = '展开全部';
-        } else {
-            el.textContent = item.content;
-            el.classList.add('expanded');
-            var btn2 = el.parentElement.querySelector('.expand-btn');
-            if (btn2) btn2.textContent = '收起';
-        }
-    });
-}
-
-// ============================================================
-//  💬 收藏屋 Toast
-// ============================================================
-
-var favToastTimer = null;
-
-function showFavToast(msg) {
-    var el = document.getElementById('favToast');
-    if (!el) return;
-    el.textContent = msg;
-    el.classList.add('show');
-    clearTimeout(favToastTimer);
-    favToastTimer = setTimeout(function() {
-        el.classList.remove('show');
-    }, 2000);
-}
-
-// ============================================================
-//  🚪 打开/关闭收藏屋
-// ============================================================
-
-function openFavorite() {
-    // ⭐ 强制隐藏所有页面
-    var launcher = document.getElementById('launcherScreen');
-    var chat = document.getElementById('chatScreen');
-    var contacts = document.getElementById('contactsScreen');
-    var meme = document.getElementById('memeScreen');
-    var diary = document.getElementById('diaryScreen');
-    var favorite = document.getElementById('favoriteScreen');
-    
-    // 隐藏桌面（直接设置 display）
-    launcher.style.display = 'none';
-    
-    // 关闭所有其他页面
-    chat.classList.remove('open');
-    contacts.classList.remove('open');
-    meme.classList.remove('open');
-    diary.classList.remove('open');
-    
-    // 显示收藏屋
-    favorite.classList.add('open');
-    favorite.style.display = 'flex';
-    
-    renderFavorites();
-    if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300);
-}
-
-function closeFavorite() {
-    var launcher = document.getElementById('launcherScreen');
-    var favorite = document.getElementById('favoriteScreen');
-    
-    // 关闭收藏屋
-    favorite.classList.remove('open');
-    favorite.style.display = 'none';
-    
-    // 恢复桌面显示
-    launcher.style.display = 'flex';
-    
-    // 确保其他页面关闭
-    document.getElementById('chatScreen').classList.remove('open');
-    document.getElementById('contactsScreen').classList.remove('open');
-    document.getElementById('memeScreen').classList.remove('open');
-    document.getElementById('diaryScreen').classList.remove('open');
-}
-
-// ============================================================
-//  ⭐ 收藏消息（长按菜单调用）
-// ============================================================
-
-// ============================================================
-//  🎵 音频转 Base64（用于收藏语音）
-// ============================================================
-
-function fetchAudioAsBase64(url) {
-    return new Promise(function(resolve, reject) {
-        console.log('🔄 开始获取音频:', url);
-        
-        // 如果是 blob: 开头，用 fetch 获取
-        if (url.startsWith('blob:')) {
-            fetch(url)
-                .then(function(response) {
-                    if (!response.ok) throw new Error('获取音频失败: ' + response.status);
-                    return response.blob();
-                })
-                .then(function(blob) {
-                    var reader = new FileReader();
-                    reader.onload = function() {
-                        console.log('✅ Blob 转 Base64 成功, 长度:', reader.result.length);
-                        resolve(reader.result);
-                    };
-                    reader.onerror = function() {
-                        reject(new Error('读取 Blob 失败'));
-                    };
-                    reader.readAsDataURL(blob);
-                })
-                .catch(function(e) {
-                    console.error('❌ 获取 Blob 失败:', e);
-                    reject(e);
-                });
-            return;
-        }
-        
-        // 如果是百炼返回的临时 URL，用 fetch 获取
-        fetch(url, {
-            mode: 'cors',
-            headers: {
-                'Accept': 'audio/*'
-            }
-        })
-            .then(function(response) {
-                if (!response.ok) throw new Error('获取音频失败: ' + response.status);
-                return response.blob();
-            })
-            .then(function(blob) {
-                var reader = new FileReader();
-                reader.onload = function() {
-                    console.log('✅ URL 转 Base64 成功, 长度:', reader.result.length);
-                    resolve(reader.result);
-                };
-                reader.onerror = function() {
-                    reject(new Error('读取音频失败'));
-                };
-                reader.readAsDataURL(blob);
-            })
-            .catch(function(e) {
-                console.error('❌ 获取 URL 音频失败:', e);
-                // 用 XHR 兜底
-                tryFetchWithXHR(url, resolve, reject);
-            });
-    });
-}
-
-// 用 XMLHttpRequest 兜底获取音频
-function tryFetchWithXHR(url, resolve, reject) {
-    console.log('🔄 尝试用 XHR 获取音频...');
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.responseType = 'blob';
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-            var blob = xhr.response;
-            var reader = new FileReader();
-            reader.onload = function() {
-                console.log('✅ XHR 转 Base64 成功, 长度:', reader.result.length);
-                resolve(reader.result);
-            };
-            reader.onerror = function() {
-                reject(new Error('读取音频失败'));
-            };
-            reader.readAsDataURL(blob);
-        } else {
-            reject(new Error('XHR 获取失败: ' + xhr.status));
-        }
-    };
-    xhr.onerror = function() {
-        reject(new Error('XHR 网络错误'));
-    };
-    xhr.send();
-} // ============================================================
-//  ⭐ 收藏消息（长按菜单调用）
-// ============================================================
-
-function collectMessage(roleId, messageId) {
-    var role = roles.find(function(r) { return r.id === roleId; });
-    if (!role) { showToast('⚠️ 未找到角色'); return; }
-    var msg = role.messages.find(function(m) { return m.id === messageId; });
-    if (!msg) { showToast('⚠️ 未找到消息'); return; }
-
-    isFavoriteCollected(messageId).then(function(exists) {
-        if (exists) {
-            showToast('💡 已收藏过了');
-            return;
-        }
-
-        // ⭐ 直接从消息里拿 audioBase64
-        var audioPromise = Promise.resolve(null);
-        if (msg.audioBase64) {
-            console.log('🎵 直接使用消息中的 audioBase64');
-            audioPromise = Promise.resolve(msg.audioBase64);
-        } else if (msg.audioUrl) {
-            console.log('🎵 消息中没有 Base64，尝试从 URL 获取...');
-            audioPromise = fetchAudioAsBase64(msg.audioUrl);
-        }
-
-        audioPromise.then(function(audioData) {
-            var isVoice = !!(audioData && audioData.length > 0);
-            
-            var favorite = {
-                id: 'fav_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                roleId: roleId,
-                roleName: role.name,
-                sender: msg.role,
-                content: msg.content,
-                type: isVoice ? 'voice' : (msg.type || 'text'),
-                audioBase64: audioData,
-                audioDuration: msg.audioDuration || 0,
-                collectedAt: new Date().toISOString(),
-                sourceMsgId: messageId,
-                roleAvatar: role.avatar || ''
-            };
-
-            return saveFavorite(favorite);
-        }).then(function() {
-            showToast('⭐ 已收藏');
-            if (document.getElementById('favoriteScreen').classList.contains('open')) {
-                renderFavorites();
-            }
-        }).catch(function(e) {
-            console.error('❌ 收藏失败:', e);
-            showToast('⚠️ 收藏失败');
-        });
-    }).catch(function(e) {
-        console.error('❌ 检查收藏失败:', e);
-        showToast('⚠️ 操作失败');
-    });
-}
-
 </script>
-<!-- ===== 收藏屋 ===== -->
-    <div class="screen-favorite" id="favoriteScreen">
-        <!-- 顶部导航 -->
-        <div class="favorite-header">
-            <button class="back-btn" id="backFromFavorite"><i class="fas fa-chevron-left"></i></button>
-            <div class="header-title">
-                ⭐ 收藏屋
-                <span class="count-badge" id="favCountBadge">0</span>
-            </div>
-            <div class="header-actions">
-                <button id="clearAllFavBtn" title="清空所有收藏"><i class="fas fa-trash-alt"></i></button>
-            </div>
-        </div>
-
-        <!-- 内容区域 -->
-        <div class="favorite-body" id="favoriteBody"></div>
-
-        <!-- 底部统计 -->
-        <div class="favorite-footer-stat">
-            <span class="stat-left">📌 共 <span id="favTotalCount">0</span> 条收藏</span>
-            <span class="stat-right">
-                <span id="favStorageSize">已用 0 KB</span>
-                <button class="clear-all-btn" id="clearAllFavBtn2">清空全部</button>
-            </span>
-        </div>
-
-        <!-- Toast -->
-        <div class="favorite-toast" id="favToast"></div>
-    </div> </body>
+</body>
 </html>
