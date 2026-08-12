@@ -790,7 +790,7 @@
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 50;  /* ⭐ 确保 z-index 比所有页面都高 */
+    z-index: 25;  /* ⭐ 确保 z-index 比所有页面都高 */
     transform: translateX(100%);
     transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -7966,32 +7966,7 @@ var favAudioPlayers = {};
 var favPlayingId = null;
 var favAudioIntervals = {};
 
-function renderFavorites() {function renderFavorites() {
-    // ⭐ 如果收藏屋没打开，不渲染（防止幽灵渲染）
-    var screen = document.getElementById('favoriteScreen');
-    if (!screen || !screen.classList.contains('open')) {
-        console.log('⏸️ 收藏屋未打开，跳过渲染');
-        return;
-    }
-    
-    var body = document.getElementById('favoriteBody');
-    if (!body) {
-        console.error('❌ favoriteBody 不存在');
-        return;
-    }
-    
-    // ⭐ 确保 body 在正确的位置
-    if (!body.closest('#favoriteScreen')) {
-        console.error('❌ favoriteBody 不在 favoriteScreen 内！重建...');
-        var newBody = document.createElement('div');
-        newBody.id = 'favoriteBody';
-        newBody.className = 'favorite-body';
-        screen.appendChild(newBody);
-        body = newBody;
-    }
-    
-    // ... 原来的代码（从 getAllFavorites 开始）
-}
+function renderFavorites() {
     var body = document.getElementById('favoriteBody');
     var totalEl = document.getElementById('favTotalCount');
     var badgeEl = document.getElementById('favCountBadge');
@@ -8435,21 +8410,15 @@ function showFavToast(msg) {
 // ============================================================
 
 function openFavorite() {
+    // ⭐ 强制隐藏所有页面
     var launcher = document.getElementById('launcherScreen');
-    var favorite = document.getElementById('favoriteScreen');
-    var app = document.getElementById('app');
     var chat = document.getElementById('chatScreen');
     var contacts = document.getElementById('contactsScreen');
     var meme = document.getElementById('memeScreen');
     var diary = document.getElementById('diaryScreen');
+    var favorite = document.getElementById('favoriteScreen');
     
-    // ⭐ 安全检查：如果收藏屋不在 #app 里面，强制放回去
-    if (favorite && app && !app.contains(favorite)) {
-        console.warn('⚠️ 收藏屋位置异常，已自动修复');
-        app.appendChild(favorite);
-    }
-    
-    // 隐藏桌面
+    // 隐藏桌面（直接设置 display）
     launcher.style.display = 'none';
     
     // 关闭所有其他页面
@@ -8462,63 +8431,26 @@ function openFavorite() {
     favorite.classList.add('open');
     favorite.style.display = 'flex';
     
-    // ⭐ 强制清空后重新渲染
-    var body = document.getElementById('favoriteBody');
-    if (body) {
-        body.innerHTML = '';
-    }
-    
-    // 延迟一帧再渲染，确保 DOM 已更新
-    requestAnimationFrame(function() {
-        renderFavorites();
-    });
-    
+    renderFavorites();
     if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300);
 }
 
 function closeFavorite() {
     var launcher = document.getElementById('launcherScreen');
     var favorite = document.getElementById('favoriteScreen');
-    var app = document.getElementById('app');
     
-    // ⭐ 关闭时也检查位置
-    if (favorite && app && !app.contains(favorite)) {
-        console.warn('⚠️ 收藏屋位置异常，已自动修复');
-        app.appendChild(favorite);
-    }
-    
-    // ⭐ 清理所有不在 #favoriteScreen 里的幽灵元素
-    document.querySelectorAll('.favorite-card, .favorite-body, .favorite-header, .favorite-footer-stat, .favorite-toast').forEach(function(el) {
-        if (!el.closest('#favoriteScreen')) {
-            el.remove();
-        }
-    });
-    
+    // 关闭收藏屋
     favorite.classList.remove('open');
     favorite.style.display = 'none';
     
-    // ⭐ 强制清空内容，防止残留
-    var body = document.getElementById('favoriteBody');
-    if (body) {
-        body.innerHTML = '';
-    }
-    
-    // ⭐ 清理语音播放器
-    if (favAudioElement) {
-        favAudioElement.pause();
-        favAudioElement.src = '';
-        favAudioElement = null;
-    }
-    favPlayingId = null;
-    for (var key in favAudioIntervals) {
-        if (favAudioIntervals[key]) {
-            clearInterval(favAudioIntervals[key]);
-            delete favAudioIntervals[key];
-        }
-    }
-    
-    // 恢复桌面
+    // 恢复桌面显示
     launcher.style.display = 'flex';
+    
+    // 确保其他页面关闭
+    document.getElementById('chatScreen').classList.remove('open');
+    document.getElementById('contactsScreen').classList.remove('open');
+    document.getElementById('memeScreen').classList.remove('open');
+    document.getElementById('diaryScreen').classList.remove('open');
 }
 
 // ============================================================
@@ -8660,9 +8592,9 @@ function collectMessage(roleId, messageId) {
             return saveFavorite(favorite);
         }).then(function() {
             showToast('⭐ 已收藏');
-            if (document.getElementById('favoriteScreen') && document.getElementById('favoriteScreen').classList.contains('open')) {
-    renderFavorites();
-}
+            if (document.getElementById('favoriteScreen').classList.contains('open')) {
+                renderFavorites();
+            }
         }).catch(function(e) {
             console.error('❌ 收藏失败:', e);
             showToast('⚠️ 收藏失败');
