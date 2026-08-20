@@ -778,7 +778,7 @@
 
 <!-- ========== 通话系统样式 ========== -->
 <style>
-    /* 通话系统全局样式 */
+    /* ========== 来电弹窗 ========== */
     #incomingCallOverlay {
         position: fixed;
         inset: 0;
@@ -791,6 +791,7 @@
         animation: fadeIn 0.3s ease;
     }
     #incomingCallOverlay.active { display: flex; }
+
     .incoming-card {
         background: linear-gradient(145deg, #1a1a2e, #16213e);
         border-radius: 32px 32px 0 0;
@@ -800,6 +801,7 @@
         animation: slideUp 0.4s cubic-bezier(0.32, 0.72, 0, 1);
         border-top: 1px solid rgba(255,255,255,0.06);
         box-shadow: 0 -20px 60px rgba(0,0,0,0.4);
+        text-align: center;
     }
     .incoming-card .avatar-wrap {
         width: 80px;
@@ -828,28 +830,22 @@
         font-size: 22px;
         font-weight: 600;
         color: #fff;
-        text-align: center;
     }
     .incoming-card .caller-sub {
         font-size: 14px;
         color: rgba(255,255,255,0.4);
-        text-align: center;
         margin-top: 4px;
         letter-spacing: 0.5px;
     }
     .incoming-card .caller-reason {
         font-size: 13px;
         color: rgba(255,255,255,0.25);
-        text-align: center;
         margin-top: 8px;
         font-style: italic;
         padding: 6px 16px;
         background: rgba(255,255,255,0.04);
         border-radius: 20px;
         display: inline-block;
-        margin-left: auto;
-        margin-right: auto;
-        width: auto;
     }
     .incoming-card .btn-row {
         display: flex;
@@ -886,7 +882,7 @@
         50% { box-shadow: 0 0 0 20px rgba(7,193,96,0); }
     }
 
-    /* 通话全屏界面 */
+    /* ========== 通话全屏界面 ========== */
     #callFullscreen {
         position: fixed;
         inset: 0;
@@ -899,6 +895,7 @@
         animation: fadeIn 0.3s ease;
     }
     #callFullscreen.active { display: flex; }
+
     .call-video-area {
         flex: 1;
         width: 100%;
@@ -915,7 +912,7 @@
         aspect-ratio: 4/3;
         border-radius: 20px;
         overflow: hidden;
-        background: #111118;
+        background: #0a0a0f;
         box-shadow: 0 8px 40px rgba(0,0,0,0.5);
         position: relative;
         border: 1px solid rgba(255,255,255,0.04);
@@ -928,7 +925,7 @@
         align-items: center;
         justify-content: center;
         position: relative;
-        background: #0d0d18;
+        background: #0a0a0f;
     }
     .call-video-area .video-container .ai-video canvas {
         width: 100%;
@@ -939,8 +936,8 @@
     .call-video-area .video-container .ai-video .avatar-overlay {
         position: relative;
         z-index: 2;
-        width: 80px;
-        height: 80px;
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
         background-size: cover;
         background-position: center;
@@ -959,20 +956,6 @@
         margin-top: 12px;
         letter-spacing: 1px;
     }
-    .call-video-area .video-container .ai-video .status-tag {
-        position: absolute;
-        bottom: 16px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 2;
-        color: rgba(255,255,255,0.3);
-        font-size: 11px;
-        background: rgba(0,0,0,0.4);
-        padding: 4px 14px;
-        border-radius: 20px;
-        backdrop-filter: blur(4px);
-        letter-spacing: 0.5px;
-    }
     .call-video-area .video-container .user-video-preview {
         position: absolute;
         bottom: 12px;
@@ -982,7 +965,7 @@
         border-radius: 12px;
         background: #1a1a2e;
         border: 1px solid rgba(255,255,255,0.06);
-        display: flex;
+        display: none;
         align-items: center;
         justify-content: center;
         color: rgba(255,255,255,0.08);
@@ -1000,17 +983,30 @@
     .call-video-area .video-container .user-video-preview .placeholder i { font-size: 18px; }
     .call-video-area .video-container .user-video-preview .placeholder span { font-size: 8px; letter-spacing: 0.5px; }
 
-    /* 语音模式 */
-    #callFullscreen.voice-mode .video-container .ai-video canvas { opacity: 0; }
+    /* 语音模式 - 全黑背景，大头像 */
+    #callFullscreen.voice-mode .video-container {
+        background: #0a0a0f;
+        border: none;
+        box-shadow: none;
+    }
+    #callFullscreen.voice-mode .video-container .ai-video canvas { display: none; }
     #callFullscreen.voice-mode .video-container .ai-video .avatar-overlay {
-        width: 140px;
-        height: 140px;
+        width: 120px;
+        height: 120px;
     }
     #callFullscreen.voice-mode .user-video-preview { display: none; }
     #callFullscreen.voice-mode .video-mode-buttons { display: none !important; }
     #callFullscreen.voice-mode .voice-mode-buttons { display: flex !important; }
     #callFullscreen:not(.voice-mode) .voice-mode-buttons { display: none !important; }
     #callFullscreen:not(.voice-mode) .video-mode-buttons { display: flex !important; }
+
+    /* 呼叫中状态（未接听） */
+    #callFullscreen.calling .video-container .ai-video .avatar-overlay {
+        animation: breathe 1.2s ease-in-out infinite;
+    }
+    #callFullscreen.calling .call-status-text {
+        color: rgba(255,255,255,0.3);
+    }
 
     .call-info {
         text-align: center;
@@ -1025,7 +1021,7 @@
     }
     .call-info .call-status-text {
         font-size: 12px;
-        color: rgba(255,255,255,0.2);
+        color: rgba(255,255,255,0.15);
         letter-spacing: 2px;
         margin-top: 2px;
     }
@@ -1086,7 +1082,7 @@
         align-items: center;
     }
 
-    /* 悬浮窗 */
+    /* ========== 悬浮窗 ========== */
     #callFloating {
         position: fixed;
         bottom: 180px;
@@ -1160,7 +1156,7 @@
         50% { opacity: 0.3; transform: translateX(-50%) scale(0.8); }
     }
 
-    /* 加号菜单 */
+    /* ========== 加号菜单 ========== */
     .plus-menu-container {
         display: none;
         position: absolute;
@@ -1238,6 +1234,10 @@
         #callFloating { width: 56px; height: 56px; bottom: 160px; }
         #callFloating .floating-avatar { width: 34px; height: 34px; }
         .voice-mode-buttons, .video-mode-buttons { gap: 20px; }
+        #callFullscreen.voice-mode .video-container .ai-video .avatar-overlay {
+            width: 100px;
+            height: 100px;
+        }
     }
 </style>
 </head>
@@ -8083,7 +8083,6 @@ const CallController = {
             incomingAnswer: document.getElementById('incomingAnswer'),
             callTimer: document.getElementById('callTimer'),
             callStatusText: document.getElementById('callStatusText'),
-            callStatusTag: document.getElementById('callStatusTag'),
             callAvatar: document.getElementById('callAvatar'),
             callNameTag: document.getElementById('callNameTag'),
             floatingTimer: document.getElementById('floatingTimer'),
@@ -8105,8 +8104,7 @@ const CallController = {
         this.els.btnHangup.addEventListener('click', () => this.hangupCall());
         this.els.btnMinimize.addEventListener('click', () => this.toggleMinimize());
         this.els.btnMute.addEventListener('click', () => this.toggleMute());
-        
-        // 视频模式按钮
+
         const btnHangupVideo = document.getElementById('btnHangupVideo');
         const btnMinimizeVideo = document.getElementById('btnMinimizeVideo');
         const btnMuteVideo = document.getElementById('btnMuteVideo');
@@ -8117,7 +8115,7 @@ const CallController = {
         if (btnMuteVideo) btnMuteVideo.addEventListener('click', () => this.toggleMute());
         if (btnSpeakerVideo) btnSpeakerVideo.addEventListener('click', () => this.toggleSpeaker());
         if (btnToggleVideo) btnToggleVideo.addEventListener('click', () => this.toggleVideoMode());
-        
+
         this.els.floatingHangup.addEventListener('click', (e) => {
             e.stopPropagation();
             this.hangupCall();
@@ -8213,22 +8211,36 @@ const CallController = {
 
     showCallingState(role) {
         this.els.callNameTag.textContent = role.name || 'AI 伴侣';
-        this.els.callStatusText.textContent = '📞 呼叫中...';
-        this.els.callStatusTag.textContent = '⏳ 等待接听...';
+        this.els.callStatusText.textContent = '呼叫中...';
         this.els.fullscreen.classList.add('active');
-        this.els.fullscreen.classList.remove('voice-mode');
+        this.els.fullscreen.classList.add('calling');
+
+        // 根据模式显示不同UI
+        if (this.isVideoMode) {
+            this.els.fullscreen.classList.remove('voice-mode');
+            document.querySelector('.voice-mode-buttons').style.display = 'none';
+            document.querySelector('.video-mode-buttons').style.display = 'flex';
+            if (this.particleVideo) {
+                setTimeout(() => this.particleVideo.start(), 100);
+            }
+            this.els.userPreview.style.display = 'flex';
+        } else {
+            this.els.fullscreen.classList.add('voice-mode');
+            document.querySelector('.voice-mode-buttons').style.display = 'flex';
+            document.querySelector('.video-mode-buttons').style.display = 'none';
+            if (this.particleVideo) this.particleVideo.stop();
+            this.els.userPreview.style.display = 'none';
+        }
+
         this.updateAvatar(role);
         this.els.callTimer.textContent = '00:00';
-        // 显示语音模式按钮
-        document.querySelector('.voice-mode-buttons').style.display = 'flex';
-        document.querySelector('.video-mode-buttons').style.display = 'none';
-        if (this.particleVideo) this.particleVideo.stop();
         this.isActive = true;
         this.isIncoming = false;
     },
 
     hideCallingState() {
         this.els.fullscreen.classList.remove('active');
+        this.els.fullscreen.classList.remove('calling');
         this.isActive = false;
         if (this.particleVideo) this.particleVideo.stop();
     },
@@ -8269,9 +8281,9 @@ const CallController = {
         this.callStartTime = Date.now();
         this.els.callNameTag.textContent = role.name || 'AI 伴侣';
         this.els.callStatusText.textContent = '通话中';
-        this.els.callStatusTag.textContent = '📞 通话中';
         this.els.fullscreen.classList.add('active');
-        
+        this.els.fullscreen.classList.remove('calling');
+
         if (this.isVideoMode) {
             this.els.fullscreen.classList.remove('voice-mode');
             document.querySelector('.voice-mode-buttons').style.display = 'none';
@@ -8287,7 +8299,7 @@ const CallController = {
             if (this.particleVideo) this.particleVideo.stop();
             this.els.userPreview.style.display = 'none';
         }
-        
+
         this.updateAvatar(role);
         this.startTimer();
         this.showFloating(role);
@@ -8303,6 +8315,7 @@ const CallController = {
         if (this.particleVideo) this.particleVideo.stop();
         CallAudio.hangupTone();
         this.els.fullscreen.classList.remove('active');
+        this.els.fullscreen.classList.remove('calling');
         this.hideFloating();
 
         const isEffective = duration >= 30;
@@ -8405,6 +8418,7 @@ const CallController = {
             if (this.particleVideo) this.particleVideo.stop();
             this.els.userPreview.style.display = 'none';
         }
+        this.updateControls();
         this.showToast(this.isVideoMode ? '📹 视频已开启' : '📹 视频已关闭');
     },
 
@@ -8424,25 +8438,21 @@ const CallController = {
     },
 
     updateControls() {
-        // 语音模式静音按钮
         const muteBtn = document.getElementById('btnMute');
         if (muteBtn) {
             muteBtn.classList.toggle('muted', this.isMuted);
             muteBtn.innerHTML = this.isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
         }
-        // 视频模式静音按钮
         const muteBtnVideo = document.getElementById('btnMuteVideo');
         if (muteBtnVideo) {
             muteBtnVideo.classList.toggle('muted', this.isMuted);
             muteBtnVideo.innerHTML = this.isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
         }
-        // 视频模式扬声器按钮
         const speakerBtn = document.getElementById('btnSpeakerVideo');
         if (speakerBtn) {
             speakerBtn.classList.toggle('active', this.isSpeakerOn);
             speakerBtn.innerHTML = this.isSpeakerOn ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
         }
-        // 视频切换按钮
         const toggleBtn = document.getElementById('btnToggleVideo');
         if (toggleBtn) {
             if (this.isVideoMode) {
@@ -8511,7 +8521,6 @@ const CallController = {
             if (window.renderContacts) window.renderContacts();
             if (window.debouncedSaveAllData) window.debouncedSaveAllData();
         }
-        console.log('📝 通话记录已添加: ' + messageContent);
     },
 
     addMissedCallMessage(role, status) {
@@ -8619,6 +8628,7 @@ const CallController = {
         this.hangupCall();
         this.els.overlay.classList.remove('active');
         this.els.fullscreen.classList.remove('active');
+        this.els.fullscreen.classList.remove('calling');
         this.hideFloating();
         if (this.particleVideo) this.particleVideo.stop();
         if (this._ringInterval) {
@@ -8764,7 +8774,6 @@ window.initCallSystem = initCallSystem;
                 <canvas id="particleCanvas"></canvas>
                 <div class="avatar-overlay" id="callAvatar"></div>
                 <div class="name-tag" id="callNameTag">温柔学长</div>
-              
                 <div class="user-video-preview" id="userPreview">
                     <div class="placeholder">
                         <i class="fas fa-user"></i>
