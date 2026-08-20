@@ -8495,45 +8495,116 @@ const CallController = {
     },
 
     addCallLogMessage(data) {
-        if (!this.currentRole) return;
-        const role = this.currentRole;
-        const durationStr = this.formatTime(data.duration || 0);
-        const isUserInitiated = this.isUserInitiated;
-        let messageContent = '';
+    if (!this.currentRole) return;
+    const role = this.currentRole;
+    const durationStr = this.formatTime(data.duration || 0);
+    const isUserInitiated = this.isUserInitiated;
+    let messageContent = '';
 
-        if (data.hangupReason === 'rejected') {
-            messageContent = '对方拒绝了你的通话';
-        } else if (data.hangupReason === 'missed') {
-            messageContent = '对方未接听';
-        } else if (data.hangupReason === 'timeout') {
-            messageContent = '对方未接听 (超时)';
-        } else if (data.hangupReason === 'ended') {
-            const modeText = this.isVideoMode ? '视频通话' : '语音通话';
-            messageContent = modeText + ' ' + durationStr;
-        } else {
-            messageContent = '通话结束 (' + durationStr + ')';
-        }
+    if (data.hangupReason === 'rejected') {
+        messageContent = '对方拒绝了你的通话';
+    } else if (data.hangupReason === 'missed') {
+        messageContent = '对方未接听';
+    } else if (data.hangupReason === 'timeout') {
+        messageContent = '对方未接听 (超时)';
+    } else if (data.hangupReason === 'ended') {
+        const modeText = this.isVideoMode ? '视频通话' : '语音通话';
+        messageContent = modeText + ' ' + durationStr;
+    } else {
+        messageContent = '通话结束 (' + durationStr + ')';
+    }
 
-        const msgRole = isUserInitiated ? 'user' : 'assistant';
-        if (window.addMessageToRole) {
-            window.addMessageToRole(role.id, msgRole, messageContent);
-            if (window.renderMessages) window.renderMessages();
-            if (window.renderContacts) window.renderContacts();
+    const msgRole = isUserInitiated ? 'user' : 'assistant';
+    
+    // 添加消息到聊天
+    if (window.addMessageToRole) {
+        window.addMessageToRole(role.id, msgRole, messageContent);
+        if (window.renderMessages) window.renderMessages();
+        if (window.renderContacts) window.renderContacts();
+        if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+    }
+
+    // ========== 新增：把通话记录写入 AI 记忆 ==========
+    if (data.hangupReason === 'ended') {
+        const modeText = this.isVideoMode ? '视频通话' : '语音通话';
+        const callType = isUserInitiated ? '你给' + role.name + '打了' : role.name + '给你打了';
+        const memoryText = '📞 ' + callType + modeText + '，时长 ' + durationStr + '。';
+        
+        if (!role.memory) role.memory = [];
+        // 检查是否已经存在相同记录（避免重复）
+        const exists = role.memory.some(function(m) {
+            return m.text && m.text.indexOf(memoryText.substring(0, 20)) !== -1;
+        });
+        if (!exists) {
+            role.memory.push({
+                text: memoryText,
+                level: 'recent',
+                timestamp: Date.now(),
+                source: 'call_log'
+            });
+            // 同时更新 contextSummary，让 AI 能快速感知
+            if (role.extendedState) {
+                const summary = '你们刚刚进行了一次' + modeText + '，时长' + durationStr + '。';
+                role.extendedState.contextSummary = summary;
+            }
             if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+            console.log('🧠 通话记录已存入 AI 记忆:', memoryText);
         }
-    },
+    } else if (data.hangupReason === 'rejected' || data.hangupReason === 'missed' || data.hangupReason === 'timeout') {
+        // 未接来电也记录
+        const callType = isUserInitiated ? '你给' + role.name + '打电话' : role.name + '给你打电话';
+        const statusText = data.hangupReason === 'rejected' ? '被拒绝了' : '对方未接听';
+        const memoryText = '📞 ' + callType + statusText + '。';
+        
+        if (!role.memory) role.memory = [];
+        const exists = role.memory.some(function(m) {
+            return m.text && m.text.indexOf(memoryText.substring(0, 20)) !== -1;
+        });
+        if (!exists) {
+            role.memory.push({
+                text: memoryText,
+                level: 'recent',
+                timestamp: Date.now(),
+                source: 'call_log'
+            });
+            if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+            console.log('🧠 未接来电已存入 AI 记忆:', memoryText);
+        }
+    }
+},
 
     addMissedCallMessage(role, status) {
-        if (!role) return;
-        const isUserInitiated = this.isUserInitiated;
-        const msgRole = isUserInitiated ? 'user' : 'assistant';
-        if (window.addMessageToRole) {
-            window.addMessageToRole(role.id, msgRole, status);
-            if (window.renderMessages) window.renderMessages();
-            if (window.renderContacts) window.renderContacts();
-            if (window.debouncedSaveAllData) window.debouncedSaveAllData();
-        }
-    },
+    if (!role) return;
+    const isUserInitiated = this.isUserInitiated;
+    const msgRole = isUserInitiated ? 'user' : 'assistant';
+    
+    // 添加消息到聊天
+    if (window.addMessageToRole) {
+        window.addMessageToRole(role.id, msgRole, status);
+        if (window.renderMessages) window.renderMessages();
+        if (window.renderContacts) window.renderContacts();
+        if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+    }
+
+    // ========== 新增：把未接来电写入 AI 记忆 ==========
+    const callType = isUserInitiated ? '你给' + role.name + '打电话' : role.name + '给你打电话';
+    const memoryText = '📞 ' + callType + status + '。';
+    
+    if (!role.memory) role.memory = [];
+    const exists = role.memory.some(function(m) {
+        return m.text && m.text.indexOf(memoryText.substring(0, 20)) !== -1;
+    });
+    if (!exists) {
+        role.memory.push({
+            text: memoryText,
+            level: 'recent',
+            timestamp: Date.now(),
+            source: 'call_log'
+        });
+        if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+        console.log('🧠 未接来电已存入 AI 记忆:', memoryText);
+    }
+},
 
     applyBonuses(heartBonus, intimacyBonus) {
         if (!this.currentRole) return;
