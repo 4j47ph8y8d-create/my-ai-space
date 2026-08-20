@@ -778,7 +778,6 @@
 
 <!-- ========== 通话系统样式 ========== -->
 <style>
-    /* ========== 来电弹窗 ========== */
     #incomingCallOverlay {
         position: fixed;
         inset: 0;
@@ -791,7 +790,6 @@
         animation: fadeIn 0.3s ease;
     }
     #incomingCallOverlay.active { display: flex; }
-
     .incoming-card {
         background: linear-gradient(145deg, #1a1a2e, #16213e);
         border-radius: 32px 32px 0 0;
@@ -825,6 +823,10 @@
     @keyframes ringPulse {
         0% { transform: scale(1); opacity: 1; }
         100% { transform: scale(1.4); opacity: 0; }
+    }
+    @keyframes pulseRing {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(7,193,96,0.2); }
+        50% { box-shadow: 0 0 0 16px rgba(7,193,96,0); }
     }
     .incoming-card .caller-name {
         font-size: 22px;
@@ -882,7 +884,6 @@
         50% { box-shadow: 0 0 0 20px rgba(7,193,96,0); }
     }
 
-    /* ========== 通话全屏界面 ========== */
     #callFullscreen {
         position: fixed;
         inset: 0;
@@ -895,7 +896,6 @@
         animation: fadeIn 0.3s ease;
     }
     #callFullscreen.active { display: flex; }
-
     .call-video-area {
         flex: 1;
         width: 100%;
@@ -983,35 +983,19 @@
     .call-video-area .video-container .user-video-preview .placeholder i { font-size: 18px; }
     .call-video-area .video-container .user-video-preview .placeholder span { font-size: 8px; letter-spacing: 0.5px; }
 
-    /* 语音模式 - 全黑背景，大头像 */
-    #callFullscreen.voice-mode .video-container {
-        background: #0a0a0f;
-        border: none;
-        box-shadow: none;
-    }
+    #callFullscreen.voice-mode .video-container { background: #0a0a0f; border: none; box-shadow: none; }
     #callFullscreen.voice-mode .video-container .ai-video canvas { display: none; }
-    #callFullscreen.voice-mode .video-container .ai-video .avatar-overlay {
-        width: 120px;
-        height: 120px;
-    }
+    #callFullscreen.voice-mode .video-container .ai-video .avatar-overlay { width: 120px; height: 120px; }
     #callFullscreen.voice-mode .user-video-preview { display: none; }
     #callFullscreen.voice-mode .video-mode-buttons { display: none !important; }
     #callFullscreen.voice-mode .voice-mode-buttons { display: flex !important; }
     #callFullscreen:not(.voice-mode) .voice-mode-buttons { display: none !important; }
     #callFullscreen:not(.voice-mode) .video-mode-buttons { display: flex !important; }
 
-    /* 呼叫中状态（未接听） */
-    #callFullscreen.calling .video-container .ai-video .avatar-overlay {
-        animation: breathe 1.2s ease-in-out infinite;
-    }
-    #callFullscreen.calling .call-status-text {
-        color: rgba(255,255,255,0.3);
-    }
+    #callFullscreen.calling .video-container .ai-video .avatar-overlay { animation: breathe 1.2s ease-in-out infinite; }
+    #callFullscreen.calling .call-status-text { color: rgba(255,255,255,0.3); }
 
-    .call-info {
-        text-align: center;
-        margin: 8px 0 4px;
-    }
+    .call-info { text-align: center; margin: 8px 0 4px; }
     .call-info .call-timer {
         font-size: 32px;
         font-weight: 200;
@@ -1066,9 +1050,7 @@
         height: 60px;
         font-size: 22px;
     }
-    .call-controls .ctrl-btn.btn-hangup:active {
-        background: rgba(255,59,48,0.3);
-    }
+    .call-controls .ctrl-btn.btn-hangup:active { background: rgba(255,59,48,0.3); }
     .call-controls .ctrl-btn.btn-minimize {
         background: rgba(255,255,255,0.02);
         color: rgba(255,255,255,0.2);
@@ -1082,63 +1064,57 @@
         align-items: center;
     }
 
-    /* ========== 悬浮窗 ========== */
     #callFloating {
-        position: fixed;
-        bottom: 180px;
-        right: 16px;
-        z-index: 9998;
-        width: 64px;
-        height: 64px;
-        border-radius: 50%;
-        background: rgba(20,20,30,0.85);
-        backdrop-filter: blur(16px);
-        border: 1px solid rgba(255,255,255,0.06);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: 0.2s ease;
-        touch-action: none;
-        user-select: none;
-        overflow: hidden;
-    }
-    #callFloating.visible { display: flex; }
-    #callFloating:active { transform: scale(0.92); }
-    #callFloating .floating-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: #07c160;
-        background-size: cover;
-        background-position: center;
-        border: 1px solid rgba(255,255,255,0.06);
-    }
-    #callFloating .floating-timer {
-        font-size: 8px;
-        color: rgba(255,255,255,0.3);
-        margin-top: 1px;
-        font-variant-numeric: tabular-nums;
-    }
-    #callFloating .floating-hangup {
-        position: absolute;
-        top: -4px;
-        right: -4px;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: #ff3b30;
-        border: none;
-        color: #fff;
-        font-size: 8px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 8px rgba(255,59,48,0.3);
-    }
+    position: fixed;
+    bottom: 180px;
+    right: 16px;
+    z-index: 9998;
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s ease;
+    touch-action: none;
+    user-select: none;
+    overflow: hidden;
+}
+#callFloating.visible { display: flex; }
+#callFloating:active { transform: scale(0.92); }
+
+#callFloating .floating-icon {
+    font-size: 18px;
+    color: #07c160;
+    line-height: 1;
+}
+#callFloating .floating-timer {
+    font-size: 9px;
+    color: rgba(0,0,0,0.35);
+    margin-top: 1px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+
+/* 深色模式适配 */
+[data-theme="dark"] #callFloating {
+    background: rgba(40,40,50,0.92);
+    border-color: rgba(255,255,255,0.06);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+[data-theme="dark"] #callFloating .floating-icon {
+    color: #07c160;
+}
+[data-theme="dark"] #callFloating .floating-timer {
+    color: rgba(255,255,255,0.3);
+}
     #callFloating .floating-hangup:active { transform: scale(0.85); }
     #callFloating .floating-status-dot {
         position: absolute;
@@ -1156,7 +1132,6 @@
         50% { opacity: 0.3; transform: translateX(-50%) scale(0.8); }
     }
 
-    /* ========== 加号菜单 ========== */
     .plus-menu-container {
         display: none;
         position: absolute;
@@ -1217,10 +1192,6 @@
     @keyframes slideUp {
         from { transform: translateY(100%); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
-    }
-    @keyframes pulseRing {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(7,193,96,0.2); }
-        50% { box-shadow: 0 0 0 16px rgba(7,193,96,0); }
     }
 
     @media (max-width: 480px) {
@@ -7356,14 +7327,14 @@ function init() {
     console.log('✅ 支持百炼 CosyVoice TTS');
     console.log('✅ 每个角色独立 Voice ID');
     console.log('✅ 语音按需触发（用户说「发语音」等触发词时生成语音条）');
-// ========== 初始化通话系统 ==========
+// 初始化通话系统
     try {
         if (typeof CallController !== 'undefined' && typeof initCallSystem === 'function') {
             initCallSystem();
-            console.log('📞 通话系统已初始化');
+            console.log('通话系统已初始化');
         }
     } catch (e) {
-        console.error('❌ 通话系统初始化失败:', e);
+        console.error('通话系统初始化失败:', e);
     }
 }
 
@@ -7866,10 +7837,9 @@ document.getElementById('refreshTtsCacheBtn').addEventListener('click', refreshT
 });
 
 // ============================================================
-//  📞 通话系统 JavaScript
+//  📞 通话系统 JavaScript（完整版，无 emoji）
 // ============================================================
 
-// ========== 通话音效 ==========
 const CallAudio = {
     ctx: null,
     enabled: true,
@@ -7973,7 +7943,6 @@ const CallAudio = {
     }
 };
 
-// ========== Canvas 粒子视频流 ==========
 class ParticleVideo {
     constructor(canvas) {
         this.canvas = canvas;
@@ -8050,7 +8019,6 @@ class ParticleVideo {
     }
 }
 
-// ========== 通话控制器 ==========
 const CallController = {
     isActive: false,
     isIncoming: false,
@@ -8087,7 +8055,7 @@ const CallController = {
             callNameTag: document.getElementById('callNameTag'),
             floatingTimer: document.getElementById('floatingTimer'),
             floatingAvatar: document.getElementById('floatingAvatar'),
-            floatingHangup: document.getElementById('floatingHangup'),
+           
             btnMute: document.getElementById('btnMute'),
             btnHangup: document.getElementById('btnHangup'),
             btnMinimize: document.getElementById('btnMinimize'),
@@ -8116,10 +8084,7 @@ const CallController = {
         if (btnSpeakerVideo) btnSpeakerVideo.addEventListener('click', () => this.toggleSpeaker());
         if (btnToggleVideo) btnToggleVideo.addEventListener('click', () => this.toggleVideoMode());
 
-        this.els.floatingHangup.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.hangupCall();
-        });
+       
         this.els.floating.addEventListener('click', () => this.toggleMinimize());
     },
 
@@ -8171,7 +8136,7 @@ const CallController = {
         this.isVideoMode = (mode === 'video');
 
         if (Math.random() < 0.15) {
-            this.showToast(role.name + ' 现在不方便接听 💕');
+            this.showToast(role.name + ' 现在不方便接听');
             const data = {
                 duration: 0,
                 isEffective: false,
@@ -8184,7 +8149,7 @@ const CallController = {
             return;
         }
 
-        this.showToast('📞 正在呼叫 ' + role.name + '...');
+        this.showToast('正在呼叫 ' + role.name + '...');
         CallAudio.dialTone();
         this.showCallingState(role);
 
@@ -8194,7 +8159,7 @@ const CallController = {
                 this.startCall(role);
             } else {
                 CallAudio.hangupTone();
-                this.showToast(role.name + ' 没有接听 💕');
+                this.showToast(role.name + ' 没有接听');
                 const data = {
                     duration: 0,
                     isEffective: false,
@@ -8215,7 +8180,6 @@ const CallController = {
         this.els.fullscreen.classList.add('active');
         this.els.fullscreen.classList.add('calling');
 
-        // 根据模式显示不同UI
         if (this.isVideoMode) {
             this.els.fullscreen.classList.remove('voice-mode');
             document.querySelector('.voice-mode-buttons').style.display = 'none';
@@ -8274,170 +8238,104 @@ const CallController = {
     },
 
     startCall(role) {
-    this.currentRole = role;
-    this.isActive = true;
-    this.isIncoming = false;
-    this.isInCall = true;
-    this.callStartTime = Date.now();
-    this.els.callNameTag.textContent = role.name || 'AI 伴侣';
-    this.els.callStatusText.textContent = '通话中';
-    this.els.fullscreen.classList.add('active');
-    this.els.fullscreen.classList.remove('calling');
+        this.currentRole = role;
+        this.isActive = true;
+        this.isIncoming = false;
+        this.isInCall = true;
+        this.callStartTime = Date.now();
+        this.els.callNameTag.textContent = role.name || 'AI 伴侣';
+        this.els.callStatusText.textContent = '通话中';
+        this.els.fullscreen.classList.add('active');
+        this.els.fullscreen.classList.remove('calling');
 
-    if (this.isVideoMode) {
-        this.els.fullscreen.classList.remove('voice-mode');
-        document.querySelector('.voice-mode-buttons').style.display = 'none';
-        document.querySelector('.video-mode-buttons').style.display = 'flex';
-        if (this.particleVideo) {
-            setTimeout(() => this.particleVideo.start(), 200);
+        if (this.isVideoMode) {
+            this.els.fullscreen.classList.remove('voice-mode');
+            document.querySelector('.voice-mode-buttons').style.display = 'none';
+            document.querySelector('.video-mode-buttons').style.display = 'flex';
+            if (this.particleVideo) {
+                setTimeout(() => this.particleVideo.start(), 200);
+            }
+            this.els.userPreview.style.display = 'flex';
+        } else {
+            this.els.fullscreen.classList.add('voice-mode');
+            document.querySelector('.voice-mode-buttons').style.display = 'flex';
+            document.querySelector('.video-mode-buttons').style.display = 'none';
+            if (this.particleVideo) this.particleVideo.stop();
+            this.els.userPreview.style.display = 'none';
         }
-        this.els.userPreview.style.display = 'flex';
-    } else {
-        this.els.fullscreen.classList.add('voice-mode');
-        document.querySelector('.voice-mode-buttons').style.display = 'flex';
-        document.querySelector('.video-mode-buttons').style.display = 'none';
-        if (this.particleVideo) this.particleVideo.stop();
-        this.els.userPreview.style.display = 'none';
-    }
 
-    this.updateAvatar(role);
-    this.startTimer();
-    this.showFloating(role);
-    this.updateControls();
-    CallAudio.answerTone();
+        this.updateAvatar(role);
+        this.startTimer();
+        this.showFloating(role);
+        this.updateControls();
+        CallAudio.answerTone();
 
-    // ========== 新增：接通后 AI 主动说话 ==========
-    const isUserInitiated = this.isUserInitiated;
-    const modeText = this.isVideoMode ? '视频' : '语音';
-    
-    // 根据发起方生成不同的开场白
-    let greeting = '';
-    const greetings = {
-        user_voice: [
-            '听到你声音了… 💕',
-            '怎么突然给我打电话了？',
-            '宝宝，想我了吗？',
-            '我刚还在想你呢，你就打来了 💕',
-            '好久没听到你声音了…'
-        ],
-        user_video: [
-            '让我看看你… 💕',
-            '怎么突然打视频过来了？',
-            '宝宝，今天这么想我呀？',
-            '我刚洗完澡，你就打来了 😳'
-        ],
-        ai_voice: [
-            '想你了，所以给你打了个电话 💕',
-            '听到你声音真好…',
-            '你今天过得好吗？',
-            '我刚忙完，第一时间就想给你打电话'
-        ],
-        ai_video: [
-            '想看看你 💕',
-            '我今天特别想你，就想看看你',
-            '你方便接视频吗？',
-            '想你了，所以打视频过来了'
-        ]
-    };
+        const isUserInitiated = this.isUserInitiated;
+        setTimeout(() => {
+            this.generateCallGreeting(role, isUserInitiated);
+        }, 600);
 
-    // 选择对应的开场白列表
-    let greetingList = [];
-    if (isUserInitiated) {
-        greetingList = this.isVideoMode ? greetings.user_video : greetings.user_voice;
-    } else {
-        greetingList = this.isVideoMode ? greetings.ai_video : greetings.ai_voice;
-    }
-    greeting = greetingList[Math.floor(Math.random() * greetingList.length)];
-
-    // 延迟一点发送，模拟真实通话接通后的瞬间
-    setTimeout(() => {
-        if (window.addMessageToRole) {
-            window.addMessageToRole(role.id, 'assistant', '📞 ' + greeting);
-            if (window.renderMessages) window.renderMessages();
-            if (window.debouncedSaveAllData) window.debouncedSaveAllData();
-        }
-        console.log('📞 AI 通话开场白:', greeting);
-    }, 600);
-
-    console.log('📞 通话开始: ' + role.name);
-},
+        console.log('通话开始: ' + role.name);
+    },
 
     hangupCall() {
-    if (!this.isActive) return;
-    const duration = this.getCallDuration();
-    this.stopTimer();
-    if (this.particleVideo) this.particleVideo.stop();
-    CallAudio.hangupTone();
-    this.els.fullscreen.classList.remove('active');
-    this.els.fullscreen.classList.remove('calling');
-    this.hideFloating();
+        if (!this.isActive) return;
+        const duration = this.getCallDuration();
+        this.stopTimer();
+        if (this.particleVideo) this.particleVideo.stop();
+        CallAudio.hangupTone();
+        this.els.fullscreen.classList.remove('active');
+        this.els.fullscreen.classList.remove('calling');
+        this.hideFloating();
 
-    const isEffective = duration >= 30;
-    let heartBonus = 0, intimacyBonus = 0;
-    if (isEffective) {
-        const baseBonus = Math.min(15, 5 + Math.floor(duration / 10));
-        heartBonus = 5 + Math.floor(Math.random() * baseBonus);
-        intimacyBonus = 2 + Math.floor(duration / 20);
-        heartBonus = Math.min(20, heartBonus);
-        intimacyBonus = Math.min(15, intimacyBonus);
-        this.applyBonuses(heartBonus, intimacyBonus);
-    }
+        const isEffective = duration >= 30;
+        let heartBonus = 0, intimacyBonus = 0;
+        if (isEffective) {
+            const baseBonus = Math.min(15, 5 + Math.floor(duration / 10));
+            heartBonus = 5 + Math.floor(Math.random() * baseBonus);
+            intimacyBonus = 2 + Math.floor(duration / 20);
+            heartBonus = Math.min(20, heartBonus);
+            intimacyBonus = Math.min(15, intimacyBonus);
+            this.applyBonuses(heartBonus, intimacyBonus);
+        }
 
-    const modeText = this.isVideoMode ? '视频通话' : '语音通话';
-    const durationStr = this.formatTime(duration);
-    const messageContent = modeText + ' ' + durationStr;
-    const msgRole = this.isUserInitiated ? 'user' : 'assistant';
+        const modeText = this.isVideoMode ? '视频通话' : '语音通话';
+        const durationStr = this.formatTime(duration);
+        const messageContent = modeText + ' ' + durationStr;
+        const msgRole = this.isUserInitiated ? 'user' : 'assistant';
 
-    if (window.addMessageToRole) {
-        window.addMessageToRole(this.currentRole.id, msgRole, messageContent);
-        if (window.renderMessages) window.renderMessages();
-        if (window.renderContacts) window.renderContacts();
-        if (window.debouncedSaveAllData) window.debouncedSaveAllData();
-    }
+        if (window.addMessageToRole) {
+            window.addMessageToRole(this.currentRole.id, msgRole, messageContent);
+            if (window.renderMessages) window.renderMessages();
+            if (window.renderContacts) window.renderContacts();
+            if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+        }
 
-    // ========== 新增：挂断后 AI 说结束语（如果通话时长 ≥ 10秒） ==========
-    if (duration >= 10) {
-        const role = this.currentRole;
-        const isUserInitiated = this.isUserInitiated;
-        const modeText2 = this.isVideoMode ? '视频' : '语音';
-        
-        let ending = '';
-        const endings = [
-            '好，那先挂了 💕',
-            '下次再聊～',
-            '我挂啦，你早点休息',
-            '拜拜宝宝 💕',
-            '那先这样，想你'
-        ];
-        ending = endings[Math.floor(Math.random() * endings.length)];
+        if (duration >= 10) {
+            const role = this.currentRole;
+            const isUserInitiated = this.isUserInitiated;
+            setTimeout(() => {
+                this.generateCallEnding(role, duration, isUserInitiated);
+            }, 500);
+        }
 
-        setTimeout(() => {
-            if (window.addMessageToRole) {
-                window.addMessageToRole(role.id, 'assistant', '📞 ' + ending);
-                if (window.renderMessages) window.renderMessages();
-                if (window.debouncedSaveAllData) window.debouncedSaveAllData();
-            }
-            console.log('📞 AI 挂断语:', ending);
-        }, 500);
-    }
-
-    this.isActive = false;
-    this.isVideoMode = false;
-    this.isMinimized = false;
-    this.isInCall = false;
-    this.currentRole = null;
-    this.callStartTime = null;
-    this.isUserInitiated = false;
-    if (this.timerInterval) {
-        clearInterval(this.timerInterval);
-        this.timerInterval = null;
-    }
-    if (this.incomingTimer) {
-        clearInterval(this.incomingTimer);
-        this.incomingTimer = null;
-    }
-    console.log('📞 通话结束: ' + duration + 's');
-},
+        this.isActive = false;
+        this.isVideoMode = false;
+        this.isMinimized = false;
+        this.isInCall = false;
+        this.currentRole = null;
+        this.callStartTime = null;
+        this.isUserInitiated = false;
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        if (this.incomingTimer) {
+            clearInterval(this.incomingTimer);
+            this.incomingTimer = null;
+        }
+        console.log('通话结束: ' + duration + 's');
+    },
 
     startTimer() {
         this.callStartTime = Date.now();
@@ -8471,13 +8369,13 @@ const CallController = {
     toggleMute() {
         this.isMuted = !this.isMuted;
         this.updateControls();
-        this.showToast(this.isMuted ? '🔇 已静音' : '🎤 已取消静音');
+        this.showToast(this.isMuted ? '已静音' : '已取消静音');
     },
 
     toggleSpeaker() {
         this.isSpeakerOn = !this.isSpeakerOn;
         this.updateControls();
-        this.showToast(this.isSpeakerOn ? '🔊 扬声器已开启' : '🔇 扬声器已关闭');
+        this.showToast(this.isSpeakerOn ? '扬声器已开启' : '扬声器已关闭');
     },
 
     toggleVideoMode() {
@@ -8499,7 +8397,7 @@ const CallController = {
             this.els.userPreview.style.display = 'none';
         }
         this.updateControls();
-        this.showToast(this.isVideoMode ? '📹 视频已开启' : '📹 视频已关闭');
+        this.showToast(this.isVideoMode ? '视频已开启' : '视频已关闭');
     },
 
     toggleMinimize() {
@@ -8546,25 +8444,33 @@ const CallController = {
     },
 
     showFloating(role) {
-        this.els.floating.classList.add('visible');
-        this.updateAvatar(role, this.els.floatingAvatar);
-        this.els.floatingTimer.textContent = this.formatTime(this.getCallDuration());
-    },
+    this.els.floating.classList.add('visible');
+    // 设置通话图标颜色（根据模式）
+    const icon = this.els.floating.querySelector('.floating-icon i');
+    if (icon) {
+        if (this.isVideoMode) {
+            icon.className = 'fas fa-video';
+        } else {
+            icon.className = 'fas fa-phone';
+        }
+    }
+    this.els.floatingTimer.textContent = this.formatTime(this.getCallDuration());
+},
 
     hideFloating() {
         this.els.floating.classList.remove('visible');
     },
 
     updateAvatar(role, element) {
-        const el = element || this.els.callAvatar;
-        if (role && role.avatar) {
-            el.style.backgroundImage = 'url(' + role.avatar + ')';
-            el.style.backgroundColor = 'transparent';
-        } else {
-            el.style.backgroundImage = '';
-            el.style.backgroundColor = '#07c160';
-        }
-    },
+    const el = element || this.els.callAvatar;
+    if (role && role.avatar) {
+        el.style.backgroundImage = 'url(' + role.avatar + ')';
+        el.style.backgroundColor = 'transparent';
+    } else {
+        el.style.backgroundImage = '';
+        el.style.backgroundColor = '#07c160';
+    }
+},
 
     showToast(msg) {
         if (window.showToast) {
@@ -8575,116 +8481,285 @@ const CallController = {
     },
 
     addCallLogMessage(data) {
-    if (!this.currentRole) return;
-    const role = this.currentRole;
-    const durationStr = this.formatTime(data.duration || 0);
-    const isUserInitiated = this.isUserInitiated;
-    let messageContent = '';
+        if (!this.currentRole) return;
+        const role = this.currentRole;
+        const durationStr = this.formatTime(data.duration || 0);
+        const isUserInitiated = this.isUserInitiated;
+        let messageContent = '';
 
-    if (data.hangupReason === 'rejected') {
-        messageContent = '对方拒绝了你的通话';
-    } else if (data.hangupReason === 'missed') {
-        messageContent = '对方未接听';
-    } else if (data.hangupReason === 'timeout') {
-        messageContent = '对方未接听 (超时)';
-    } else if (data.hangupReason === 'ended') {
-        const modeText = this.isVideoMode ? '视频通话' : '语音通话';
-        messageContent = modeText + ' ' + durationStr;
-    } else {
-        messageContent = '通话结束 (' + durationStr + ')';
-    }
-
-    const msgRole = isUserInitiated ? 'user' : 'assistant';
-    
-    // 添加消息到聊天
-    if (window.addMessageToRole) {
-        window.addMessageToRole(role.id, msgRole, messageContent);
-        if (window.renderMessages) window.renderMessages();
-        if (window.renderContacts) window.renderContacts();
-        if (window.debouncedSaveAllData) window.debouncedSaveAllData();
-    }
-
-    // ========== 新增：把通话记录写入 AI 记忆 ==========
-    if (data.hangupReason === 'ended') {
-        const modeText = this.isVideoMode ? '视频通话' : '语音通话';
-        const callType = isUserInitiated ? '你给' + role.name + '打了' : role.name + '给你打了';
-        const memoryText = '📞 ' + callType + modeText + '，时长 ' + durationStr + '。';
-        
-        if (!role.memory) role.memory = [];
-        // 检查是否已经存在相同记录（避免重复）
-        const exists = role.memory.some(function(m) {
-            return m.text && m.text.indexOf(memoryText.substring(0, 20)) !== -1;
-        });
-        if (!exists) {
-            role.memory.push({
-                text: memoryText,
-                level: 'recent',
-                timestamp: Date.now(),
-                source: 'call_log'
-            });
-            // 同时更新 contextSummary，让 AI 能快速感知
-            if (role.extendedState) {
-                const summary = '你们刚刚进行了一次' + modeText + '，时长' + durationStr + '。';
-                role.extendedState.contextSummary = summary;
-            }
-            if (window.debouncedSaveAllData) window.debouncedSaveAllData();
-            console.log('🧠 通话记录已存入 AI 记忆:', memoryText);
+        if (data.hangupReason === 'rejected') {
+            messageContent = '对方拒绝了你的通话';
+        } else if (data.hangupReason === 'missed') {
+            messageContent = '对方未接听';
+        } else if (data.hangupReason === 'timeout') {
+            messageContent = '对方未接听 (超时)';
+        } else if (data.hangupReason === 'ended') {
+            const modeText = this.isVideoMode ? '视频通话' : '语音通话';
+            messageContent = modeText + ' ' + durationStr;
+        } else {
+            messageContent = '通话结束 (' + durationStr + ')';
         }
-    } else if (data.hangupReason === 'rejected' || data.hangupReason === 'missed' || data.hangupReason === 'timeout') {
-        // 未接来电也记录
-        const callType = isUserInitiated ? '你给' + role.name + '打电话' : role.name + '给你打电话';
-        const statusText = data.hangupReason === 'rejected' ? '被拒绝了' : '对方未接听';
-        const memoryText = '📞 ' + callType + statusText + '。';
-        
-        if (!role.memory) role.memory = [];
-        const exists = role.memory.some(function(m) {
-            return m.text && m.text.indexOf(memoryText.substring(0, 20)) !== -1;
-        });
-        if (!exists) {
-            role.memory.push({
-                text: memoryText,
-                level: 'recent',
-                timestamp: Date.now(),
-                source: 'call_log'
-            });
+
+        const msgRole = isUserInitiated ? 'user' : 'assistant';
+        if (window.addMessageToRole) {
+            window.addMessageToRole(role.id, msgRole, messageContent);
+            if (window.renderMessages) window.renderMessages();
+            if (window.renderContacts) window.renderContacts();
             if (window.debouncedSaveAllData) window.debouncedSaveAllData();
-            console.log('🧠 未接来电已存入 AI 记忆:', memoryText);
         }
-    }
-},
+    },
 
     addMissedCallMessage(role, status) {
-    if (!role) return;
-    const isUserInitiated = this.isUserInitiated;
-    const msgRole = isUserInitiated ? 'user' : 'assistant';
-    
-    // 添加消息到聊天
-    if (window.addMessageToRole) {
-        window.addMessageToRole(role.id, msgRole, status);
-        if (window.renderMessages) window.renderMessages();
-        if (window.renderContacts) window.renderContacts();
-        if (window.debouncedSaveAllData) window.debouncedSaveAllData();
-    }
+        if (!role) return;
+        const isUserInitiated = this.isUserInitiated;
+        const msgRole = isUserInitiated ? 'user' : 'assistant';
+        if (window.addMessageToRole) {
+            window.addMessageToRole(role.id, msgRole, status);
+            if (window.renderMessages) window.renderMessages();
+            if (window.renderContacts) window.renderContacts();
+            if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+        }
+    },
 
-    // ========== 新增：把未接来电写入 AI 记忆 ==========
-    const callType = isUserInitiated ? '你给' + role.name + '打电话' : role.name + '给你打电话';
-    const memoryText = '📞 ' + callType + status + '。';
-    
-    if (!role.memory) role.memory = [];
-    const exists = role.memory.some(function(m) {
-        return m.text && m.text.indexOf(memoryText.substring(0, 20)) !== -1;
-    });
-    if (!exists) {
-        role.memory.push({
-            text: memoryText,
-            level: 'recent',
-            timestamp: Date.now(),
-            source: 'call_log'
+    generateCallGreeting(role, isUserInitiated) {
+        console.log('生成开场白, role:', role ? role.name : 'null', 'isUserInitiated:', isUserInitiated);
+        if (!role) return;
+
+        var apiKey = null;
+        var endpoint = null;
+        var model = 'deepseek-v4-pro';
+        
+        if (window.CONFIG) {
+            var mode = window.CONFIG.accessMode || 'direct';
+            if (mode === 'direct') {
+                apiKey = window.CONFIG.apiKey;
+                endpoint = 'https://api.deepseek.com/v1';
+                model = window.CONFIG.model || 'deepseek-v4-pro';
+            } else if (mode === 'relay') {
+                apiKey = window.CONFIG.relayApiKey || window.CONFIG.apiKey;
+                endpoint = window.CONFIG.relayEndpoint;
+                model = window.CONFIG.relayModel || 'gpt-3.5-turbo';
+            } else if (mode === 'websearch') {
+                apiKey = window.CONFIG.websearchApiKey;
+                endpoint = window.CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+                model = window.CONFIG.websearchModel || 'qwen-plus';
+            }
+        }
+
+        if (!apiKey) {
+            var directInput = document.getElementById('directApiKey');
+            if (directInput && directInput.value) {
+                apiKey = directInput.value;
+                endpoint = 'https://api.deepseek.com/v1';
+                model = 'deepseek-v4-pro';
+            }
+        }
+
+        const modeText = this.isVideoMode ? '视频' : '语音';
+
+        if (!apiKey || !endpoint) {
+            const fallbackGreetings = isUserInitiated 
+                ? ['喂，宝宝', '听到你声音了…', '怎么突然给我打电话了？', '想我了？']
+                : ['喂，是我', '想你了，所以给你打电话', '你今天过得好吗？', '突然好想听听你的声音'];
+            const greeting = fallbackGreetings[Math.floor(Math.random() * fallbackGreetings.length)];
+            if (window.addMessageToRole) {
+                window.addMessageToRole(role.id, 'assistant', greeting);
+                if (window.renderMessages) window.renderMessages();
+                if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+            }
+            return;
+        }
+
+        const initiator = isUserInitiated ? '用户' : role.name;
+        const receiver = isUserInitiated ? role.name : '用户';
+
+        const systemPrompt = '你正在和用户进行' + modeText + '通话。电话刚刚接通。\n\n' +
+            '【角色设定】\n' +
+            '你是 ' + role.name + '。' + 
+            (role.persona ? '\n人设：' + role.persona : '') +
+            (role.background ? '\n背景：' + role.background : '') +
+            (role.style ? '\n说话风格：' + role.style : '') +
+            '\n\n【当前情境】\n' +
+            initiator + ' 拨通了 ' + receiver + ' 的' + modeText + '电话，现在电话接通了。\n\n' +
+            '【任务】\n' +
+            '请用第一人称「我」说一句自然的话，作为通话的开场白。\n' +
+            '要求：\n' +
+            '1. 像真实打电话一样自然，不要说"你好"这种生硬的开场\n' +
+            '2. 根据你是谁（角色设定）来决定语气\n' +
+            '3. 如果是用户打给你，你可以表达惊喜、想念、或疑惑\n' +
+            '4. 如果是你打给用户，你可以表达想念、关心、或分享心情\n' +
+            '5. 控制在 1-2 句话，要口语化\n' +
+            '6. 不要使用表情包或送礼标记\n' +
+            '7. 直接输出对话内容，不要加任何前缀';
+
+        const userPrompt = '电话接通了，请说一句自然的话。';
+
+        fetch(endpoint + '/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.85,
+                max_tokens: 100
+            })
+        })
+        .then(function(resp) {
+            if (!resp.ok) {
+                throw new Error('API 请求失败: ' + resp.status);
+            }
+            return resp.json();
+        })
+        .then(function(data) {
+            var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+            if (reply) {
+                reply = reply.trim();
+                if (window.addMessageToRole) {
+                    window.addMessageToRole(role.id, 'assistant', reply);
+                    if (window.renderMessages) window.renderMessages();
+                    if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+                }
+            } else {
+                const fallback = isUserInitiated ? '喂' : '喂，是我';
+                if (window.addMessageToRole) {
+                    window.addMessageToRole(role.id, 'assistant', fallback);
+                    if (window.renderMessages) window.renderMessages();
+                    if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+                }
+            }
+        })
+        .catch(function(e) {
+            console.error('生成通话开场白失败:', e);
+            const fallback = isUserInitiated ? '喂' : '喂，是我';
+            if (window.addMessageToRole) {
+                window.addMessageToRole(role.id, 'assistant', fallback);
+                if (window.renderMessages) window.renderMessages();
+                if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+            }
         });
-        if (window.debouncedSaveAllData) window.debouncedSaveAllData();
-        console.log('🧠 未接来电已存入 AI 记忆:', memoryText);
-    }
-},
+    },
+
+    generateCallEnding(role, duration, isUserInitiated) {
+        console.log('生成结束语, role:', role ? role.name : 'null', 'duration:', duration);
+        if (!role) return;
+
+        var apiKey = null;
+        var endpoint = null;
+        var model = 'deepseek-v4-pro';
+        
+        if (window.CONFIG) {
+            var mode = window.CONFIG.accessMode || 'direct';
+            if (mode === 'direct') {
+                apiKey = window.CONFIG.apiKey;
+                endpoint = 'https://api.deepseek.com/v1';
+                model = window.CONFIG.model || 'deepseek-v4-pro';
+            } else if (mode === 'relay') {
+                apiKey = window.CONFIG.relayApiKey || window.CONFIG.apiKey;
+                endpoint = window.CONFIG.relayEndpoint;
+                model = window.CONFIG.relayModel || 'gpt-3.5-turbo';
+            } else if (mode === 'websearch') {
+                apiKey = window.CONFIG.websearchApiKey;
+                endpoint = window.CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+                model = window.CONFIG.websearchModel || 'qwen-plus';
+            }
+        }
+
+        if (!apiKey) {
+            var directInput = document.getElementById('directApiKey');
+            if (directInput && directInput.value) {
+                apiKey = directInput.value;
+                endpoint = 'https://api.deepseek.com/v1';
+                model = 'deepseek-v4-pro';
+            }
+        }
+
+        const durationStr = this.formatTime(duration);
+        const modeText = this.isVideoMode ? '视频' : '语音';
+
+        if (!apiKey || !endpoint) {
+            const fallback = ['好，那先挂了', '下次再聊～', '拜拜', '想你', '挂了，早点休息'];
+            const ending = fallback[Math.floor(Math.random() * fallback.length)];
+            if (window.addMessageToRole) {
+                window.addMessageToRole(role.id, 'assistant', ending);
+                if (window.renderMessages) window.renderMessages();
+                if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+            }
+            return;
+        }
+
+        const systemPrompt = '你刚刚和用户结束了一次' + modeText + '通话，通话时长 ' + durationStr + '。\n\n' +
+            '【角色设定】\n' +
+            '你是 ' + role.name + '。' + 
+            (role.persona ? '\n人设：' + role.persona : '') +
+            (role.background ? '\n背景：' + role.background : '') +
+            (role.style ? '\n说话风格：' + role.style : '') +
+            '\n\n【任务】\n' +
+            '请用第一人称「我」说一句自然的结束语。\n' +
+            '要求：\n' +
+            '1. 像真实挂电话一样自然，可以说拜拜、先挂了、下次再聊等\n' +
+            '2. 根据你是谁（角色设定）来决定语气\n' +
+            '3. 控制在 1 句话\n' +
+            '4. 不要使用表情包标记\n' +
+            '5. 直接输出对话内容，不要加任何前缀';
+
+        const userPrompt = '电话挂断了，请说一句自然的结束语。';
+
+        fetch(endpoint + '/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.85,
+                max_tokens: 80
+            })
+        })
+        .then(function(resp) {
+            if (!resp.ok) {
+                throw new Error('API 请求失败: ' + resp.status);
+            }
+            return resp.json();
+        })
+        .then(function(data) {
+            var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+            if (reply) {
+                reply = reply.trim();
+                if (window.addMessageToRole) {
+                    window.addMessageToRole(role.id, 'assistant', reply);
+                    if (window.renderMessages) window.renderMessages();
+                    if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+                }
+            } else {
+                const fallback = '好，先挂了';
+                if (window.addMessageToRole) {
+                    window.addMessageToRole(role.id, 'assistant', fallback);
+                    if (window.renderMessages) window.renderMessages();
+                    if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+                }
+            }
+        })
+        .catch(function(e) {
+            console.error('生成通话结束语失败:', e);
+            const fallback = '好，先挂了';
+            if (window.addMessageToRole) {
+                window.addMessageToRole(role.id, 'assistant', fallback);
+                if (window.renderMessages) window.renderMessages();
+                if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+            }
+        });
+    },
 
     applyBonuses(heartBonus, intimacyBonus) {
         if (!this.currentRole) return;
@@ -8694,11 +8769,11 @@ const CallController = {
             const newValue = Math.min(99, oldValue + heartBonus);
             role.heartData.value = newValue;
             role.heartData.peakValue = Math.max(role.heartData.peakValue || 65, newValue);
-            role.heartData.recentTrigger = '📞 通话 ' + this.formatTime(this.getCallDuration());
+            role.heartData.recentTrigger = '通话 ' + this.formatTime(this.getCallDuration());
             if (window.CONFIG && window.CONFIG.heart && window.CONFIG.heart.bindRoleId === role.id) {
                 window.CONFIG.heart.value = newValue;
                 window.CONFIG.heart.peakValue = newValue;
-                window.CONFIG.heart.recentTrigger = '📞 通话 ' + this.formatTime(this.getCallDuration());
+                window.CONFIG.heart.recentTrigger = '通话 ' + this.formatTime(this.getCallDuration());
                 if (window.updateHeartDisplay) window.updateHeartDisplay();
                 const wrap = document.getElementById('heartWrap');
                 if (wrap) {
@@ -8735,7 +8810,7 @@ const CallController = {
             const fullscreenActive = this.els.fullscreen.classList.contains('active');
             const overlayActive = this.els.overlay.classList.contains('active');
             if (!fullscreenActive && !overlayActive) {
-                console.log('⚠️ 检测到状态残留，自动重置');
+                console.log('检测到状态残留，自动重置');
                 this.isActive = false;
                 this.isIncoming = false;
                 this.isRinging = false;
@@ -8749,7 +8824,7 @@ const CallController = {
                     this.incomingTimer = null;
                 }
             } else {
-                this.showToast('⚠️ 当前已有通话进行中');
+                this.showToast('当前已有通话进行中');
                 return;
             }
         }
@@ -8767,7 +8842,7 @@ const CallController = {
         const condition = (heart > 60 || intimacy > 60) && minutesSinceChat > 30;
         const probability = Math.min(0.3, 0.05 + (heart - 60) / 200 + (intimacy - 60) / 300);
         if (condition && Math.random() < probability) {
-            const reasons = ['突然好想你...', '想听听你的声音 💕', '今天过得好吗？', '我刚刚想到你了', '想你了，所以打给你'];
+            const reasons = ['突然好想你...', '想听听你的声音', '今天过得好吗？', '我刚刚想到你了', '想你了，所以打给你'];
             const reason = reasons[Math.floor(Math.random() * reasons.length)];
             this.incomingCall(role, reason);
             return true;
@@ -8803,11 +8878,10 @@ const CallController = {
             clearInterval(this.timerInterval);
             this.timerInterval = null;
         }
-        console.log('📞 通话系统已重置');
+        console.log('通话系统已重置');
     }
 };
 
-// ========== 添加功能到 + 号菜单 ==========
 function addCallButtonToChat() {
     var plusBtn = document.querySelector('.plus-btn');
     if (!plusBtn) return;
@@ -8851,20 +8925,20 @@ function addCallButtonToChat() {
 
             if (action === 'image') {
                 if (window.CONFIG && window.CONFIG.permission === 'denied') {
-                    CallController.showToast('🚫 相册权限已被拒绝');
+                    CallController.showToast('相册权限已被拒绝');
                     return;
                 }
                 if (window.openImagePicker) {
                     window.openImagePicker('chatImage');
                 } else {
-                    CallController.showToast('📷 图片功能加载中...');
+                    CallController.showToast('图片功能加载中...');
                 }
             } else if (action === 'voice' || action === 'video') {
                 var role = window.getCurrentRole ? window.getCurrentRole() : null;
                 if (role) {
                     CallController.callRole(role, action);
                 } else {
-                    CallController.showToast('⚠️ 请先选择一个角色');
+                    CallController.showToast('请先选择一个角色');
                 }
             }
         });
@@ -8877,7 +8951,6 @@ function addCallButtonToChat() {
     });
 }
 
-// ========== 初始化通话系统 ==========
 function initCallSystem() {
     CallController.init();
     addCallButtonToChat();
@@ -8890,7 +8963,7 @@ function initCallSystem() {
         });
     }, 120000);
 
-    console.log('📞 通话系统已集成！');
+    console.log('通话系统已集成！');
 }
 
 window.CallController = CallController;
@@ -8907,7 +8980,7 @@ window.initCallSystem = initCallSystem;
             <div class="ring-anim"></div>
         </div>
         <div class="caller-name" id="incomingName">温柔学长</div>
-        <div class="caller-sub" id="incomingSub">💕 AI 来电</div>
+        <div class="caller-sub" id="incomingSub">AI 来电</div>
         <div class="caller-reason" id="incomingReason">"突然好想你..."</div>
         <div class="btn-row">
             <button class="call-btn btn-reject" id="incomingReject"><i class="fas fa-phone-slash"></i></button>
@@ -8956,12 +9029,10 @@ window.initCallSystem = initCallSystem;
     </div>
 </div>
 
-<!-- 悬浮窗 -->
+<!-- 通话悬浮窗 -->
 <div id="callFloating">
-    <div class="floating-avatar" id="floatingAvatar"></div>
+    <div class="floating-icon"><i class="fas fa-phone"></i></div>
     <div class="floating-timer" id="floatingTimer">00:00</div>
-    <button class="floating-hangup" id="floatingHangup"><i class="fas fa-phone-slash"></i></button>
-    <div class="floating-status-dot"></div>
 </div>
 </body>
 </html>
