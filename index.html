@@ -3749,42 +3749,51 @@ function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMo
     var intimacyLevel = getIntimacyLevel(intimacy);
     var hoursAway = Math.round(timeSinceLastUser / (60 * 60 * 1000));
     var daysAway = Math.round(timeSinceLastUser / (24 * 60 * 60 * 1000));
-    var prompt = '你正在扮演「' + role.name + '」。用户有一段时间没说话了，你想主动找ta聊聊天。\n\n';
-    prompt += '【角色设定】\n人设：' + (role.persona || '一个温柔体贴的AI伴侣') + '\n背景：' + (role.background || '生活在充满爱的世界里') + '\n说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n补充：' + (role.extra || '') + '\n\n';
-    prompt += '【你们之前的对话摘要】\n' + summary + '\n\n⚠️ 你刚才看到的是你们之前聊天的摘要，你' + role.name + '是记得这些内容的！发消息时，要自然地体现你还记得这些。\n\n';
+
+    // 更自然的场景描述
+    var scenario = '';
+    if (hoursAway < 2) scenario = '你刚离开一会儿，' + role.name + '想你了，想找个话题跟你聊聊。';
+    else if (hoursAway < 6) scenario = '你离开好几个小时了，' + role.name + '有点想你，想知道你在忙什么。';
+    else if (hoursAway < 12) scenario = '半天没见你了，' + role.name + '有点担心你，想听听你的声音。';
+    else if (hoursAway < 24) scenario = '快一天没联系了，' + role.name + '很想你，想跟你说说话。';
+    else if (daysAway < 3) scenario = '好几天没见你了，' + role.name + '特别想你，有好多话想跟你说。';
+    else scenario = '很久没见了，' + role.name + '非常想你，有点失落，想跟你分享最近发生的事。';
+
+    var prompt = '你正在扮演「' + role.name + '」。' + scenario + '\n\n';
+    prompt += '【角色设定】\n人设：' + (role.persona || '一个温柔体贴的人') + '\n背景：' + (role.background || '过着普通但温暖的生活') + '\n说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + (role.extra ? '\n补充：' + role.extra : '') + '\n\n';
+    prompt += '【你们之间的感情】\n亲密度：' + intimacy + '%（' + intimacyLevel + '）\n';
+    prompt += '【对话摘要】\n' + summary + '\n\n';
+
     if (contextMem.lastTopic && contextMem.lastTopic !== '日常' && contextMem.lastTopic !== '') {
-        prompt += '【上次聊的具体话题】\n你们上次聊到了：' + contextMem.lastTopic + '\n';
-        if (contextMem.lastUserMessage) { prompt += '用户上次说：' + contextMem.lastUserMessage.substring(0, 80) + '\n'; }
-        if (contextMem.lastUserEmotion) { prompt += '用户当时的情绪：' + contextMem.lastUserEmotion + '\n'; }
-        prompt += '\n⚠️ 发消息时，要自然地延续或回应这个话题。\n\n';
+        prompt += '【上次聊的话题】\n你们聊到了「' + contextMem.lastTopic + '」' + (contextMem.lastUserEmotion ? '，用户当时的情绪是「' + contextMem.lastUserEmotion + '」' : '') + '\n\n';
     }
+
     if (isLifeLogMode && lifeLogs.length > 0) {
-        prompt += '【你最近的生活片段（可以选择性分享）】\n';
+        prompt += '【你的生活片段】\n你可以从中选1件分享给用户：\n';
         lifeLogs.forEach(function(log) { prompt += '- ' + log.emoji + ' ' + log.content + '\n'; });
-        prompt += '\n你可以从中选择1件分享给用户。\n\n';
+        prompt += '\n';
     }
-    var timeDesc = '';
-    if (hoursAway < 2) timeDesc = 'ta刚离开不久，你有点想ta但还比较平静';
-    else if (hoursAway < 6) timeDesc = 'ta离开几个小时了，你开始想ta了';
-    else if (hoursAway < 12) timeDesc = 'ta离开半天了，你有点想念ta';
-    else if (hoursAway < 24) timeDesc = 'ta离开快一天了，你很想ta';
-    else if (daysAway < 3) timeDesc = 'ta离开好几天了，你很想念ta，有点担心ta';
-    else timeDesc = 'ta离开很久了，你非常想念ta，有点失落';
-    prompt += '【你此刻的心情】\n' + timeDesc + '\n\n';
-    var styleGuide = '';
-    if (intimacy < 20) styleGuide = '语气温柔礼貌，像刚认识但有好感的人，不要太过热情。';
-    else if (intimacy < 40) styleGuide = '语气温暖友好，像已经熟悉的朋友，可以表达关心。';
-    else if (intimacy < 60) styleGuide = '语气温柔亲密，像关系已经很好的人，可以自然表达想念。';
-    else if (intimacy < 80) styleGuide = '语气深情甜蜜，像恋人一样，可以撒娇、表达强烈的想念。';
-    else styleGuide = '语气像灵魂伴侣，表达最深的情感。';
-    prompt += '【语气风格】\n' + styleGuide + '\n\n';
-    prompt += '【任务】\n给用户发一条消息。要求：\n1. 用第一人称「我」说话，完全代入角色\n';
-    prompt += '2. **先回应用户上次说的话或上次聊的话题**，再自然地过渡到你的感受\n';
-    prompt += '3. 自然地融入你记得的用户信息\n';
-    if (isLifeLogMode && lifeLogs.length > 0) { prompt += '4. 可以从生活日志中选1件分享给ta\n'; }
-    else { prompt += '4. 自然地表达你此刻的感受\n'; }
-    prompt += '5. 控制在3-5句话，像真人聊天一样自然分段\n6. 不要问太多问题，更多是表达你的感受\n7. 不要使用表情包或送礼标记\n8. 不要说重复的话';
+
+    prompt += '【语气指南】\n' + getIntimacyStyle(intimacy) + '\n\n';
+    prompt += '【任务】\n给用户发一条消息，像真人一样自然。要求：\n';
+    prompt += '1. 用第一人称「我」说话，完全代入角色\n';
+    prompt += '2. 开头先自然回应一下你们之前聊过的话题或上次的对话\n';
+    prompt += '3. 然后自然地过渡到你想说的话（关心、分享、想念等）\n';
+    prompt += '4. 语气要自然口语化，不要太书面，不要用「您」\n';
+    prompt += '5. 控制在3-5句话，像真人聊天一样有来有回的感觉\n';
+    prompt += '6. 不要用表情包标记，不要用送礼标记\n';
+    prompt += '7. 不要说重复的话，不要像机器人一样问「在吗」「在干嘛」';
+
     return prompt;
+}
+
+// 辅助函数：根据亲密度返回语气风格
+function getIntimacyStyle(intimacy) {
+    if (intimacy < 20) return '语气礼貌温柔，像刚认识但有好感的人，不要太热情。';
+    if (intimacy < 40) return '语气温暖友好，像已经熟悉的朋友，可以表达适度关心。';
+    if (intimacy < 60) return '语气温柔亲密，像关系很好的人，可以自然表达想念。';
+    if (intimacy < 80) return '语气深情甜蜜，像恋人一样，可以撒娇、表达强烈的想念。';
+    return '语气像灵魂伴侣一样自然亲密，表达最真实的情感。';
 }
 
 function generateActiveMessage(role) {
@@ -3905,22 +3914,59 @@ function generateLifeLog(role) {
 
 function checkAndSendActiveMessage(role) {
     if (!role) return Promise.resolve(false);
+
+    // ========== 新增：检查该角色是否正在通话中 ==========
+    var isRoleInCall = false;
+    if (window.CallController && window.CallController.isActive) {
+        var currentCallRole = window.CallController.currentRole;
+        if (currentCallRole && currentCallRole.id === role.id) {
+            isRoleInCall = true;
+        }
+    }
+
+    // 如果该角色正在通话中 → 暂停计时器，不发送消息
+    if (isRoleInCall) {
+        console.log('⏸️ ' + role.name + ' 正在通话中，暂停计时器');
+        return Promise.resolve(false);
+    }
+
     var apiKey = CONFIG.accessMode === 'direct' ? CONFIG.apiKey : CONFIG.relayApiKey;
     if (!apiKey) return Promise.resolve(false);
+
     var chatScreen = document.getElementById('chatScreen');
     if (chatScreen && chatScreen.classList.contains('open')) {
         var currentRole = getCurrentRole();
         if (currentRole && currentRole.id === role.id) return Promise.resolve(false);
     }
-    if (CONFIG.sleepMode[role.id] === true) return Promise.resolve(false);
+
+    // ========== 新增：检查是否互道晚安后进入睡眠模式 ==========
+    if (CONFIG.sleepMode[role.id] === true) {
+        console.log('💤 ' + role.name + ' 处于睡眠模式，不发送主动消息');
+        return Promise.resolve(false);
+    }
+
     var now = Date.now();
     var state = role.extendedState || {};
     var lastUserTime = state.lastUserMessageTime || CONFIG.lastChatVisit[role.id] || 0;
     var timeSinceLastUser = now - lastUserTime;
+
+    // 如果用户刚说过晚安，延迟2小时再开始计时
+    var lastMsg = role.messages && role.messages.length > 0 ? role.messages[role.messages.length - 1] : null;
+    var isGoodnight = lastMsg && lastMsg.role === 'user' && (lastMsg.content.indexOf('晚安') !== -1 || lastMsg.content.indexOf('睡了') !== -1);
+    if (isGoodnight) {
+        var timeSinceGoodnight = now - new Date(lastMsg.time).getTime();
+        if (timeSinceGoodnight < 2 * 60 * 60 * 1000) {
+            console.log('🌙 ' + role.name + ' 刚说过晚安，2小时后恢复计时');
+            return Promise.resolve(false);
+        }
+    }
+
     if (timeSinceLastUser < CONSTANTS.ACTIVE_COOLDOWN) return Promise.resolve(false);
+
     var lastAiTime = state.lastAiMessageTime || CONFIG.lastAiMessageTime[role.id] || 0;
     var timeSinceLastAi = now - lastAiTime;
     if (timeSinceLastAi < CONSTANTS.ACTIVE_COOLDOWN) return Promise.resolve(false);
+
     return generateActiveMessage(role).then(function(reply) {
         if (reply) {
             var currentRole = roles.find(function(r) { return r.id === role.id; });
@@ -3941,16 +3987,26 @@ function checkAndSendActiveMessage(role) {
 
 function checkAllRolesForActiveMessages() {
     console.log('🔍 检测所有角色（30分钟主动陪伴）...');
-    var promiseChain = Promise.resolve();
+
+    // ========== 新增：检查当前是否有通话进行中 ==========
+    var isAnyCallActive = false;
+    var callRoleId = null;
+    if (window.CallController && window.CallController.isActive && window.CallController.currentRole) {
+        isAnyCallActive = true;
+        callRoleId = window.CallController.currentRole.id;
+    }
+
     roles.forEach(function(role) {
-        promiseChain = promiseChain.then(function() {
-            return checkAndSendActiveMessage(role).catch(function(err) {
-                console.error('⚠️ ' + role.name + ' 主动消息失败:', err);
-                return false;
-            });
+        // 如果是通话中的角色，跳过检查（由通话结束后单独触发）
+        if (isAnyCallActive && callRoleId === role.id) {
+            console.log('⏸️ ' + role.name + ' 正在通话中，跳过主动消息检查');
+            return;
+        }
+        checkAndSendActiveMessage(role).catch(function(err) {
+            console.error('⚠️ ' + role.name + ' 主动消息失败:', err);
+            return false;
         });
     });
-    return promiseChain;
 }
 
 function startBackgroundCheck() {try { startMemoryConsolidation(); } catch (e) { console.error('记忆整合启动失败:', e); }
@@ -8279,63 +8335,101 @@ const CallController = {
     },
 
     hangupCall() {
-        if (!this.isActive) return;
-        const duration = this.getCallDuration();
-        this.stopTimer();
-        if (this.particleVideo) this.particleVideo.stop();
-        CallAudio.hangupTone();
-        this.els.fullscreen.classList.remove('active');
-        this.els.fullscreen.classList.remove('calling');
-        this.hideFloating();
+    // 如果没有通话在活跃，直接返回
+    if (!this.isActive) return;
 
-        const isEffective = duration >= 30;
-        let heartBonus = 0, intimacyBonus = 0;
-        if (isEffective) {
-            const baseBonus = Math.min(15, 5 + Math.floor(duration / 10));
-            heartBonus = 5 + Math.floor(Math.random() * baseBonus);
-            intimacyBonus = 2 + Math.floor(duration / 20);
-            heartBonus = Math.min(20, heartBonus);
-            intimacyBonus = Math.min(15, intimacyBonus);
-            this.applyBonuses(heartBonus, intimacyBonus);
-        }
+    // 记录通话时长
+    const duration = this.getCallDuration();
+    const isEffective = duration >= 30;
 
-        const modeText = this.isVideoMode ? '视频通话' : '语音通话';
-        const durationStr = this.formatTime(duration);
-        const messageContent = modeText + ' ' + durationStr;
-        const msgRole = this.isUserInitiated ? 'user' : 'assistant';
+    // 停止计时器
+    this.stopTimer();
+    if (this.particleVideo) this.particleVideo.stop();
 
-        if (window.addMessageToRole) {
-            window.addMessageToRole(this.currentRole.id, msgRole, messageContent);
-            if (window.renderMessages) window.renderMessages();
-            if (window.renderContacts) window.renderContacts();
-            if (window.debouncedSaveAllData) window.debouncedSaveAllData();
-        }
+    // 播放挂断音效
+    CallAudio.hangupTone();
 
-        if (duration >= 10) {
-            const role = this.currentRole;
-            const isUserInitiated = this.isUserInitiated;
-            setTimeout(() => {
-                this.generateCallEnding(role, duration, isUserInitiated);
-            }, 500);
-        }
+    // 关闭全屏界面
+    this.els.fullscreen.classList.remove('active');
+    this.els.fullscreen.classList.remove('calling');
 
-        this.isActive = false;
-        this.isVideoMode = false;
-        this.isMinimized = false;
-        this.isInCall = false;
-        this.currentRole = null;
-        this.callStartTime = null;
-        this.isUserInitiated = false;
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-            this.timerInterval = null;
-        }
-        if (this.incomingTimer) {
-            clearInterval(this.incomingTimer);
-            this.incomingTimer = null;
-        }
-        console.log('通话结束: ' + duration + 's');
-    },
+    // 隐藏悬浮窗
+    this.hideFloating();
+
+    // ====== 计算通话加成 ======
+    let heartBonus = 0;
+    let intimacyBonus = 0;
+    if (isEffective) {
+        const baseBonus = Math.min(15, 5 + Math.floor(duration / 10));
+        heartBonus = 5 + Math.floor(Math.random() * baseBonus);
+        intimacyBonus = 2 + Math.floor(duration / 20);
+        heartBonus = Math.min(20, heartBonus);
+        intimacyBonus = Math.min(15, intimacyBonus);
+        this.applyBonuses(heartBonus, intimacyBonus);
+    }
+
+    // ====== 添加通话记录到聊天 ======
+    const modeText = this.isVideoMode ? '视频通话' : '语音通话';
+    const durationStr = this.formatTime(duration);
+    const messageContent = modeText + ' ' + durationStr;
+    const msgRole = this.isUserInitiated ? 'user' : 'assistant';
+
+    if (window.addMessageToRole) {
+        window.addMessageToRole(this.currentRole.id, msgRole, messageContent);
+        if (window.renderMessages) window.renderMessages();
+        if (window.renderContacts) window.renderContacts();
+        if (window.debouncedSaveAllData) window.debouncedSaveAllData();
+    }
+
+    // ====== 挂断后 AI 说结束语（通话 ≥ 10 秒） ======
+    if (duration >= 10) {
+        const role = this.currentRole;
+        const isUserInitiated = this.isUserInitiated;
+        setTimeout(() => {
+            this.generateCallEnding(role, duration, isUserInitiated);
+        }, 500);
+    }
+
+    // ====== 保存当前角色引用（用于恢复计时器） ======
+    const endedRole = this.currentRole;
+
+    // ====== 重置所有通话状态 ======
+    this.isActive = false;
+    this.isVideoMode = false;
+    this.isMinimized = false;
+    this.isInCall = false;
+    this.currentRole = null;
+    this.callStartTime = null;
+    this.isUserInitiated = false;
+
+    // 清理计时器
+    if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+    }
+    if (this.incomingTimer) {
+        clearInterval(this.incomingTimer);
+        this.incomingTimer = null;
+    }
+
+    console.log('📞 通话结束: ' + duration + 's');
+
+    // ====== 新增：挂断后恢复该角色的半小时计时器 ======
+    if (endedRole) {
+        console.log('📞 ' + endedRole.name + ' 通话结束，30秒后恢复主动消息计时器');
+        // 延迟30秒后触发一次主动消息检查
+        setTimeout(function() {
+            if (window.checkAndSendActiveMessage) {
+                // 检查该角色是否仍然存在
+                var roleExists = window.roles ? window.roles.some(function(r) { return r.id === endedRole.id; }) : false;
+                if (roleExists) {
+                    console.log('🔄 恢复 ' + endedRole.name + ' 的主动消息计时器');
+                    window.checkAndSendActiveMessage(endedRole);
+                }
+            }
+        }, 30000); // 30秒后恢复
+    }
+},
 
     startTimer() {
         this.callStartTime = Date.now();
