@@ -9233,6 +9233,32 @@ function initCallSystem() {
 window.CallController = CallController;
 window.addCallButtonToChat = addCallButtonToChat;
 window.initCallSystem = initCallSystem;
+
+function generateNaturalMemoryText(role) {
+    var memories = Array.isArray(role.memory) ? role.memory : [];
+    if (memories.length === 0) return '';
+    
+    var coreMemories = memories.filter(function(m) { 
+        return m.level === 'core' || !m.level; 
+    });
+    if (coreMemories.length === 0) return '';
+    
+    var topMemories = coreMemories.slice(0, 6);
+    
+    var lines = topMemories.map(function(mem) {
+        var text = mem.text || '';
+        text = text.replace(/用户/g, '你');
+        text = text.replace(/名字：/g, '名字是');
+        text = text.replace(/喜欢：/g, '喜欢');
+        text = text.replace(/不喜欢：/g, '不喜欢');
+        text = text.replace(/所在地：/g, '住在');
+        text = text.replace(/生日：/g, '生日是');
+        return '• ' + text;
+    });
+    
+    if (lines.length === 0) return '';
+    return '我记得：\n' + lines.join('\n');
+}
 </script>
 
 <!-- ========== 通话系统 HTML ========== -->
