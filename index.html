@@ -2231,6 +2231,39 @@ function createMessageRow(msg, role) {
     var contentHtml = msg.content;
     var isVoiceBubble = msg.role === 'assistant' && msg.voiceRequested === true && msg.type !== 'gift';
 
+    // ========== 新增：如果消息包含引用，渲染引用块 ==========
+    var quoteHtml = '';
+    if (msg.quoted && msg.quoted.content) {
+        var quotedName = msg.quoted.name || '对方';
+        var quotedContent = msg.quoted.content;
+        // 截断过长的引用（保留完整内容但用 CSS 控制显示）
+        if (quotedContent.length > 100) {
+            quotedContent = quotedContent.substring(0, 100) + '…';
+        }
+        // 替换换行符为 <br>
+        quotedContent = quotedContent.replace(/\n/g, '<br>');
+        quoteHtml = `
+    <div class="quote-block" style="
+        background: rgba(255,255,255,0.06);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-left: 2px solid rgba(255,255,255,0.15);
+        padding: 6px 12px;
+        margin-bottom: 6px;
+        border-radius: 6px;
+        font-size: calc(var(--font-size-base) - 2px);
+        color: var(--text-primary);
+        word-break: break-word;
+    ">
+        <div style="font-size: calc(var(--font-size-base) - 4px); color: rgba(255,255,255,0.7); font-weight: 500; margin-bottom: 1px; letter-spacing: 0.3px;">
+            ${escapeHtml(quotedName)}
+        </div>
+        <div style="font-style: italic; color: rgba(255,255,255,0.8);">${escapeHtml(quotedContent)}</div>
+    </div>
+`;
+    }
+
+    // ========== 处理礼物消息 ==========
     if (msg.type === 'gift') {
         var giftData = msg.giftData || {};
         var productName = giftData.productName || '礼物';
@@ -2239,9 +2272,15 @@ function createMessageRow(msg, role) {
         var note = giftData.note || '';
         var statusText = msg.role === 'user' ? '你送出了礼物' : (fromName + ' 送给你 💕');
         contentHtml = '<div class="gift-card" data-product-name="' + productName + '" data-from-name="' + fromName + '" data-note="' + note + '"><div class="gift-row"><div class="gift-icon-box">🎁</div><div class="gift-info"><div class="gift-name">' + productName + '</div><div class="gift-from">来自：' + fromName + '</div>' + (price > 0 ? '<div class="gift-price">¥' + price + '</div>' : '') + '</div></div>' + (note ? '<div class="gift-note-text">💬 ' + note + '</div>' : '') + '<div class="gift-status">' + statusText + '</div></div>';
-    } else if (msg.type === 'image') {
+    }
+
+    // ========== 处理图片消息 ==========
+    else if (msg.type === 'image') {
         contentHtml = '<img src="' + msg.content + '" alt="图片" />';
-    } else if (isVoiceBubble) {
+    }
+
+    // ========== 处理语音消息 ==========
+    else if (isVoiceBubble) {
         var hasAudio = msg.hasAudio && msg.audioUrl;
         var duration = msg.audioDuration || 0;
         var durationStr = formatTimeDisplay(duration);
@@ -2265,7 +2304,10 @@ function createMessageRow(msg, role) {
         voiceHtml += '<div class="voice-text-follow">' + escapeHtml(msg.content) + '</div>';
         voiceHtml += '</div>';
         contentHtml = voiceHtml;
-    } else {
+    }
+
+    // ========== 处理表情包消息 ==========
+    else {
         var memeMatch = contentHtml.match(/\[表情包：([^\]]+)\]/);
         if (memeMatch) {
             var memeName = memeMatch[1];
@@ -2278,8 +2320,10 @@ function createMessageRow(msg, role) {
         }
     }
 
+    // ========== 时间显示 ==========
     var timeStr = formatTime(msg.time, CONFIG.timeMode || 'HH:MM');
 
+    // ========== 消息操作按钮 ==========
     var actionsHtml = '';
     if (msg.role === 'assistant' && msg.type !== 'gift' && !isVoiceBubble) {
         actionsHtml = '<div class="msg-actions"><button class="action-btn regenerate-btn" data-msgid="' + msg.id + '" title="重新生成"><i class="fas fa-sync-alt"></i></button><button class="action-btn delete-btn" data-msgid="' + msg.id + '" title="删除"><i class="fas fa-trash-alt"></i></button></div>';
@@ -2289,9 +2333,14 @@ function createMessageRow(msg, role) {
 
     var footerHtml = '';
 
+    // ========== 构建最终 HTML ==========
+    // ⭐ 关键：quoteHtml 放在 contentHtml 上面，形成引用块+用户消息的样式
     row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div><div class="bubble-container">' +
         (timeStr ? '<div class="msg-time">' + timeStr + '</div>' : '') +
-        '<div class="bubble-row"><div class="bubble" style="padding:' + (isVoiceBubble ? '0' : '') + ';background:' + (isVoiceBubble ? 'transparent' : '') + ';box-shadow:' + (isVoiceBubble ? 'none' : '') + ';">' + contentHtml + '</div>' + actionsHtml + '</div>' +
+        '<div class="bubble-row"><div class="bubble" style="padding:' + (isVoiceBubble ? '0' : '') + ';background:' + (isVoiceBubble ? 'transparent' : '') + ';box-shadow:' + (isVoiceBubble ? 'none' : '') + ';">' +
+        quoteHtml +  // ← 引用块显示在消息内容上方
+        contentHtml +
+        '</div>' + actionsHtml + '</div>' +
         footerHtml +
         '</div>';
 
@@ -2490,6 +2539,41 @@ function setupMessageEventDelegation() {
             }
             return;
         }
+
+// ========== 新增：单击消息弹出操作菜单 ==========
+// 检查点击的是否是消息气泡本身（而不是按钮、图片等）
+var bubble = e.target.closest('.bubble');
+var messageRow = e.target.closest('.message-row');
+
+// 如果点击了按钮（如重新生成、删除等），不处理
+if (e.target.closest('button')) return;
+// 如果点击了图片，不处理
+if (e.target.closest('img')) return;
+// 如果点击了礼物卡片，不处理
+if (e.target.closest('.gift-card')) return;
+// 如果点击了语音播放器，不处理
+if (e.target.closest('.voice-player')) return;
+if (e.target.closest('.voice-bubble')) return;
+
+if (bubble && messageRow) {
+    var msgId = messageRow.dataset.msgId;
+    if (!msgId) return;
+    
+    var role = getCurrentRole();
+    if (!role) return;
+    var msg = role.messages.find(function(m) { return m.id === msgId; });
+    if (!msg) return;
+    if (msg.type === 'gift') return;
+    if (msg.role !== 'user' && msg.role !== 'assistant') return;
+    
+    // 获取点击位置
+    var rect = bubble.getBoundingClientRect();
+    var x = e.clientX;
+    var y = e.clientY;
+    
+    // 显示操作菜单
+    showMessageActionMenu(msgId, msg, x, y, bubble);
+}
     });
 }
 
@@ -2706,12 +2790,20 @@ function handleSend() {
     }
     
     var finalMessage = text;
-    if (quotedMsg) {
-        var quotedContent = quotedMsg.content.replace(/\n/g, '\n> ');
-        finalMessage = '> ' + quotedContent + '\n\n' + text;
-        quotedMsg = null;
-        document.getElementById('quoteBar').classList.remove('active');
-    }
+var quotedMsgRef = null;
+if (quotedMsg) {
+    // 保存引用信息，用于在消息中显示引用块
+    quotedMsgRef = {
+        content: quotedMsg.content,
+        name: quotedMsg.name || '对方'
+    };
+    // 用户自己的话就是输入框的内容，不拼接
+    finalMessage = text;
+    // 把引用信息存储到全局，供 addMessageToRole 使用
+    window._pendingQuote = quotedMsgRef;
+    quotedMsg = null;
+    document.getElementById('quoteBar').classList.remove('active');
+}
     var role = getCurrentRole();
     if (!role) { showToast('⚠️ 未找到当前角色'); return; }
     
@@ -2866,6 +2958,17 @@ function addMessageToRole(roleId, role, content, type, giftData, voiceRequested)
     if (!Array.isArray(r.messages)) r.messages = [];
     var msgId = generateId();
     var timeStr = new Date().toISOString();
+
+    // ========== 新增：检查是否有待处理的引用 ==========
+    var quotedData = null;
+    if (window._pendingQuote && role === 'user') {
+        quotedData = {
+            content: window._pendingQuote.content,
+            name: window._pendingQuote.name || '对方'
+        };
+        window._pendingQuote = null; // 消费掉，防止重复使用
+    }
+
     var msg = {
         id: msgId,
         role: role,
@@ -2875,10 +2978,12 @@ function addMessageToRole(roleId, role, content, type, giftData, voiceRequested)
         hasAudio: false,
         audioUrl: null,
         audioDuration: 0,
-        voiceRequested: voiceRequested || false
+        voiceRequested: voiceRequested || false,
+        quoted: quotedData // ← 新增：存储引用信息
     };
     if (giftData) msg.giftData = giftData;
     r.messages.push(msg);
+
     if (role === 'user') {
         detectSleepMode(roleId, content);
         updateContextMemory(r, content, null);
@@ -2900,32 +3005,6 @@ function addMessageToRole(roleId, role, content, type, giftData, voiceRequested)
     immediateSaveAllData();
     updateHeartDisplay();
     return msgId;
-} function generateNaturalMemoryText(role) {
-    var memories = Array.isArray(role.memory) ? role.memory : [];
-    if (memories.length === 0) return '';
-    
-    var coreMemories = memories.filter(function(m) { 
-        return m.level === 'core' || !m.level; 
-    });
-    if (coreMemories.length === 0) return '';
-    
-    // 只取前 6 条核心记忆，避免太长
-    var topMemories = coreMemories.slice(0, 6);
-    
-    var lines = topMemories.map(function(mem) {
-        var text = mem.text || '';
-        // 把“用户”改成“你”，让 AI 感觉是在对真人说话
-        text = text.replace(/用户/g, '你');
-        text = text.replace(/名字：/g, '名字是');
-        text = text.replace(/喜欢：/g, '喜欢');
-        text = text.replace(/不喜欢：/g, '不喜欢');
-        text = text.replace(/所在地：/g, '住在');
-        text = text.replace(/生日：/g, '生日是');
-        return '• ' + text;
-    });
-    
-    if (lines.length === 0) return '';
-    return '我记得：\n' + lines.join('\n');
 }
 
 function consolidateMemory(role) {
@@ -4037,72 +4116,6 @@ document.addEventListener('visibilitychange', function() {
         }
     }
 });
-
-function setupLongPress() {
-    var container = document.getElementById('messageContainer');
-    var longpressTimer = null;
-    function hideLongpressMenu() {
-        var menu = document.getElementById('longpressMenu');
-        if (menu) menu.classList.remove('active');
-    }
-    function showLongpressMenu(e, row) {
-        var role = getCurrentRole();
-        if (!role) return;
-        var idx = Array.from(document.querySelectorAll('#messageContainer .message-row')).indexOf(row);
-        var msgs = role.messages || [];
-        if (idx >= msgs.length) return;
-        var msg = msgs[idx];
-        if (!msg || msg.type === 'gift') { hideLongpressMenu(); return; }
-        var senderName = msg.role === 'user' ? '我' : (role ? role.name : '对方');
-        var preview = msg.content.length > 50 ? msg.content.substring(0, 50) + '…' : msg.content;
-        var menu = document.getElementById('longpressMenu');
-        var touch = e.touches ? e.touches[0] : e;
-        var x = touch.clientX || window.innerWidth / 2;
-        var y = touch.clientY || window.innerHeight / 2;
-        if (x + 150 > window.innerWidth) x = window.innerWidth - 160;
-        if (y + 70 > window.innerHeight) y = window.innerHeight - 80;
-        if (x < 10) x = 10;
-        if (y < 10) y = 10;
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
-        menu.classList.add('active');
-        var quoteItem = menu.querySelector('[data-action="quote"]');
-        quoteItem.onclick = function() {
-    quotedMsg = { id: msg.id, role: msg.role, content: msg.content, name: senderName };
-    document.getElementById('quoteText').textContent = '引用 ' + senderName + '：' + preview;
-    document.getElementById('quoteBar').classList.add('active');
-    document.getElementById('messageInput').focus();
-    hideLongpressMenu();
-    showToast('💬 已引用，输入回复内容');
-};
-        var deleteItem = menu.querySelector('[data-action="delete"]');
-        deleteItem.onclick = function() {
-            if (confirm('确定要删除这条消息吗？关联的记忆也会被删除。')) {
-                deleteMessageAndMemory(role.id, msg.id);
-                hideLongpressMenu();
-            }
-        };
-    }
-    container.addEventListener('touchstart', function(e) {
-        var row = e.target.closest('.message-row');
-        if (!row) return;
-        longpressTimer = setTimeout(function() {
-            showLongpressMenu(e, row);
-            longpressTimer = null;
-        }, 500);
-    }, { passive: true });
-    container.addEventListener('touchend', function() {
-        clearTimeout(longpressTimer);
-        longpressTimer = null;
-    }, { passive: true });
-    container.addEventListener('touchmove', function() {
-        clearTimeout(longpressTimer);
-        longpressTimer = null;
-    }, { passive: true });
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.longpress-menu')) { hideLongpressMenu(); }
-    });
-}
 
 function openImagePicker(action) {
     currentPickerTarget = action;
@@ -7210,6 +7223,163 @@ function showToast(msg) {
     toastElement._hideTimer = setTimeout(function() { toastElement.style.display = 'none'; }, CONSTANTS.TOAST_DURATION);
 }
 
+// ========== 消息操作菜单 ==========
+function showMessageActionMenu(msgId, msg, x, y, bubble) {
+    // 先关闭已有的菜单
+    closeMessageActionMenu();
+    
+    // 判断消息归属
+    var senderName = msg.role === 'user' ? '我' : (getCurrentRole() ? getCurrentRole().name : '对方');
+    
+    // 创建菜单容器
+    var menu = document.createElement('div');
+    menu.className = 'message-action-menu';
+    menu.style.cssText = `
+        position: fixed;
+        z-index: 9999;
+        background: rgba(40,40,50,0.96);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: 14px;
+        padding: 6px 0;
+        min-width: 130px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.06);
+        animation: menuFadeIn 0.15s ease;
+    `;
+    
+    // 判断菜单位置（如果点击位置靠近底部，菜单显示在上方）
+    var menuHeight = 100;
+    var top = y - menuHeight / 2;
+    if (top + menuHeight > window.innerHeight - 20) {
+        top = window.innerHeight - menuHeight - 20;
+    }
+    if (top < 20) top = 20;
+    var left = x - 65;
+    if (left < 10) left = 10;
+    if (left + 130 > window.innerWidth - 10) left = window.innerWidth - 140;
+    
+    menu.style.top = top + 'px';
+    menu.style.left = left + 'px';
+    
+    // 构建菜单项
+    var items = '';
+    
+    // 引用按钮（所有消息都可以引用）
+    var preview = msg.content;
+    if (preview.length > 30) preview = preview.substring(0, 30) + '…';
+    items += `
+        <button class="menu-action-item" data-action="quote" style="
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 18px;
+            width: 100%;
+            border: none;
+            background: none;
+            color: rgba(255,255,255,0.8);
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.1s;
+            font-family: inherit;
+            text-align: left;
+            border-radius: 14px 14px 0 0;
+        ">
+            <i class="fas fa-quote-left" style="color:#07c160;width:16px;"></i>
+            引用
+        </button>
+    `;
+    
+    // 删除按钮（所有消息都可以删除）
+    items += `
+        <button class="menu-action-item" data-action="delete" style="
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 18px;
+            width: 100%;
+            border: none;
+            background: none;
+            color: rgba(255,255,255,0.8);
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.1s;
+            font-family: inherit;
+            text-align: left;
+            border-top: 1px solid rgba(255,255,255,0.04);
+            border-radius: 0 0 14px 14px;
+        ">
+            <i class="fas fa-trash-alt" style="color:#ff3b30;width:16px;"></i>
+            删除
+        </button>
+    `;
+    
+    menu.innerHTML = items;
+    document.body.appendChild(menu);
+    
+    // 菜单项点击事件
+    menu.querySelectorAll('.menu-action-item').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var action = this.dataset.action;
+            
+            if (action === 'quote') {
+                // 引用功能
+                var quotedMsg = {
+                    id: msg.id,
+                    role: msg.role,
+                    content: msg.content,
+                    name: senderName
+                };
+                window.quotedMsg = quotedMsg;
+                document.getElementById('quoteText').textContent = '引用 ' + senderName + '：' + preview;
+                document.getElementById('quoteBar').classList.add('active');
+                document.getElementById('messageInput').focus();
+                showToast('💬 已引用，输入回复内容');
+                closeMessageActionMenu();
+            } else if (action === 'delete') {
+                // 删除功能
+                if (confirm('确定要删除这条消息吗？关联的记忆也会被删除。')) {
+                    deleteMessageAndMemory(getCurrentRole().id, msg.id);
+                    closeMessageActionMenu();
+                }
+            }
+        });
+    });
+    
+    // 点击其他地方关闭菜单
+    setTimeout(function() {
+        document.addEventListener('click', function closeMenu(e) {
+            if (!menu.contains(e.target)) {
+                closeMessageActionMenu();
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }, 10);
+}
+
+// 关闭操作菜单
+function closeMessageActionMenu() {
+    var existing = document.querySelector('.message-action-menu');
+    if (existing) existing.remove();
+}
+
+// 菜单动画
+var menuStyle = document.createElement('style');
+menuStyle.textContent = `
+    @keyframes menuFadeIn {
+        from { opacity: 0; transform: scale(0.92); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .message-action-menu button:hover {
+        background: rgba(255,255,255,0.04);
+    }
+    .message-action-menu button:active {
+        background: rgba(255,255,255,0.08);
+    }
+`;
+document.head.appendChild(menuStyle);
+
 // ========== 初始化 ==========
 function init() {
     try { loadAllData(); } catch (e) { console.error('加载数据失败:', e); }
@@ -7285,7 +7455,7 @@ function init() {
         updateStatusTime();
         setInterval(updateStatusTime, 30000);
         setupMessageEventDelegation();
-        setupLongPress();
+       
     } catch (e) { console.error('界面渲染失败:', e); }
     try {
         document.getElementById('launcherScreen').classList.remove('hidden');
