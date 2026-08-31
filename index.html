@@ -3196,6 +3196,7 @@ function retrieveRelevantMemory(role, userMessage) {
 }
 
 function splitReplyIntoMessages(text) {
+    // 1. 先处理占位符
     var placeholders = {};
     text = text.replace(/\[表情包：[^\]]+\]/g, function(match) {
         var key = '{{MEME_' + Object.keys(placeholders).length + '}}';
@@ -3207,15 +3208,42 @@ function splitReplyIntoMessages(text) {
         placeholders[key] = match;
         return key;
     });
+
+    // 2. 按标点分割
     var rawSegments = text.match(/[^。！？.!?]*[。！？.!?]+|[^。！？.!?]+/g) || [];
-    var segments = rawSegments.map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+    
+    // 3. 清洗每个段落：去除纯括号/纯标点/纯空格
+    var segments = rawSegments
+        .map(function(s) { return s.trim(); })
+        .filter(function(s) { 
+            // 过滤掉空字符串
+            if (s.length === 0) return false;
+            // 过滤掉只有括号、标点、空格的段落
+            var cleaned = s.replace(/[（(）)]/g, '').replace(/[，。！？、；：""''\s]/g, '');
+            if (cleaned.length === 0) return false;
+            // 过滤掉只有动作描写的段落（比如 "（笑）" "（沉默片刻）"）
+            if (/^[（(][^）)]+[）)]$/.test(s)) return false;
+            return true;
+        });
+
+    // 4. 恢复占位符
     segments = segments.map(function(s) {
         for (var key in placeholders) {
             s = s.replace(key, placeholders[key]);
         }
         return s;
     });
-    if (segments.length === 0) return [text.trim()];
+
+    // 5. 如果所有段落都被过滤掉了，返回一个安全提示
+    if (segments.length === 0) {
+        // 检查原文本是否包含有效内容（比如纯表情包标记）
+        var hasMeme = /\[表情包：[^\]]+\]/.test(text);
+        var hasGift = /\[送礼：[^\]]+\]/.test(text);
+        if (hasMeme || hasGift) {
+            return [text.trim()];
+        }
+        return ['💕'];
+    }
     return segments;
 }
 
@@ -4837,18 +4865,60 @@ function updateDiaryPageNav(roleId) {
 }
 
 function generateDiary(roleId, showToastMsg) {
+    // ===== 清理该角色的残留重试计数器 =====
+    var retryKey = '_retry_' + roleId;
+    if (generateDiary[retryKey] !== undefined) {
+        delete generateDiary[retryKey];
+    }
+    
     var role = roles.find(function(r) { return r.id === roleId; });
     if (!role) {
         if (showToastMsg) showToast('⚠️ 请先选择一个角色');
         return Promise.resolve(null);
     }
-    var apiKey = CONFIG.accessMode === 'direct' ? CONFIG.apiKey : CONFIG.relayApiKey;
-    var endpoint = CONFIG.accessMode === 'direct' ? 'https://api.deepseek.com/v1' : CONFIG.relayEndpoint;
-    var model = CONFIG.accessMode === 'direct' ? CONFIG.model : CONFIG.relayModel;
+    
+    // ===== 统一获取 API 配置（支持所有模式） =====
+    var apiKey = null;
+    var endpoint = null;
+    var model = null;
+    var accessMode = CONFIG.accessMode || 'direct';
+    
+    if (accessMode === 'direct') {
+        apiKey = CONFIG.apiKey;
+        endpoint = 'https://api.deepseek.com/v1';
+        model = CONFIG.model || 'deepseek-v4-pro';
+    } else if (accessMode === 'relay') {
+        apiKey = CONFIG.relayApiKey || CONFIG.apiKey;
+        endpoint = CONFIG.relayEndpoint || document.getElementById('relayEndpoint').value.trim();
+        model = CONFIG.relayModel || 
+                document.getElementById('relayModelCustom').value.trim() || 
+                document.getElementById('relayModelSelect').value;
+    } else if (accessMode === 'websearch') {
+        // 联网搜索模式：优先用直连，否则用百炼
+        if (CONFIG.apiKey) {
+            apiKey = CONFIG.apiKey;
+            endpoint = 'https://api.deepseek.com/v1';
+            model = CONFIG.model || 'deepseek-v4-pro';
+        } else {
+            apiKey = CONFIG.websearchApiKey;
+            endpoint = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+            model = CONFIG.websearchModel || 'qwen-plus';
+        }
+    }
+    
+    // 如果 endpoint 是空字符串，尝试补救
+    if (!endpoint) {
+        endpoint = 'https://api.deepseek.com/v1';
+        apiKey = CONFIG.apiKey || document.getElementById('directApiKey').value.trim();
+        model = CONFIG.model || 'deepseek-v4-pro';
+    }
+    
     if (!apiKey || !endpoint) {
-        if (showToastMsg) showToast('⚠️ 请先在设置中配置 API Key');
+        if (showToastMsg) showToast('⚠️ 请先在设置中配置 API Key（日记生成需要）');
+        console.error('❌ 日记生成：缺少 API 配置', { apiKey: !!apiKey, endpoint: endpoint, model: model });
         return Promise.resolve(null);
     }
+
     var today = getTodayKey();
     var existing = getDiaryForDate(roleId, today);
     if (existing) {
@@ -4866,7 +4936,7 @@ function generateDiary(roleId, showToastMsg) {
     if (!conversationText.trim()) conversationText = '今天还没有聊天，但想你了。';
     var memories = (role.memory || []).map(function(m) { return m.text || m; }).filter(function(t) { return t; }).join('；');
     var heartPeak = role.heartData ? role.heartData.peakValue || 65 : 65;
-    var systemPrompt = '你正在以「' + role.name + '」的第一人称写一篇私密日记。\n【角色设定】人设：' + (role.persona || '一个温柔体贴的人') + '\n背景：' + (role.background || '生活在充满爱的世界里') + '\n说话风格：' + (role.style || '温柔细腻，像深夜独白') + '\n补充项：' + (role.extra || '') + '\n\n【写作要求】\n1. 用「我」的第一人称写，完全代入角色\n2. 不是流水账！要有深度思考和内心感受\n3. 每一段都要包含至少一个「内心感受」或「思考」\n4. 要消化聊天记录内容后再写出来，而不是复述\n5. 风格：像深夜一个人静静写下的心里话\n\n【格式】直接输出日记正文，用换行分段，每段3-5行，不要用空行。';
+    var systemPrompt = '你正在以「' + role.name + '」的第一人称写一篇私密日记。\n【角色设定】人设：' + (role.persona || '一个温柔体贴的人') + '\n背景：' + (role.background || '生活在充满爱的世界里') + '\n说话风格：' + (role.style || '温柔细腻，像深夜独白') + '\n补充项：' + (role.extra || '') + '\n\n【写作要求】\n1. 用「我」的第一人称写，完全代入角色\n2. 不是流水账！要有深度思考和内心感受\n3. 每一段都要包含至少一个「内心感受」或「思考」\n4. 要消化聊天记录内容后再写出来，而不是复述\n5. 风格：像深夜一个人静静写下的心里话\n6. 字数控制在 300-400 字，结尾必须用句号「。」或省略号「……」自然收尾\n\n【格式】直接输出日记正文，用换行分段，每段3-5行，不要用空行。';
     var userPrompt = '根据以下信息写一篇日记：\n聊天记录：\n' + conversationText + '\n记忆库：' + (memories || '暂无特别记忆') + '\n今日心跳峰值：' + heartPeak + '%';
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
@@ -4877,7 +4947,7 @@ function generateDiary(roleId, showToastMsg) {
             model: model || 'deepseek-v4-pro',
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
             temperature: 0.9,
-            max_tokens: 500
+            max_tokens: 800
         }),
         signal: controller.signal
     }, 1).then(function(resp) {
@@ -4886,7 +4956,22 @@ function generateDiary(roleId, showToastMsg) {
         return resp.json();
     }).then(function(data) {
         var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (!content) throw new Error('未获取到回复');
+if (!content) throw new Error('未获取到回复');
+
+  // ✅ 检测是否完整：以句号、感叹号、问号或省略号结尾
+    var trimmed = content.trim();
+    var lastChar = trimmed.slice(-1);
+    var isComplete = ['。', '！', '？', '.', '!', '?', '…'].includes(lastChar);
+    
+    // 如果内容少于 50 字或结尾不完整，视为截断，触发重试
+    if (!isComplete || trimmed.length < 50) {
+        console.warn('⚠️ 日记可能不完整，长度:', trimmed.length, '结尾:', lastChar);
+        // 不直接返回，而是抛出特定错误让外层重试
+        var error = new Error('日记内容不完整，正在重试...');
+        error.retry = true;
+        throw error;
+    }
+
         var weathers = ['☀️ 晴', '🌤️ 多云', '🌧️ 雨', '☁️ 阴', '❄️ 雪', '🌙 月夜'];
         var moods = ['💕 心动', '😊 开心', '🌙 温柔', '💭 思念', '🌸 期待', '🌹 深情'];
         var randomWeather = weathers[Math.floor(Math.random() * weathers.length)];
@@ -4907,12 +4992,32 @@ function generateDiary(roleId, showToastMsg) {
         saveAllData();
         if (showToastMsg) showToast('📖 日记已生成 ✨');
         return newDiary;
-    }).catch(function(e) {
-        clearTimeout(timeoutId);
-        if (showToastMsg) showToast('❌ 生成日记失败：' + e.message);
-        console.error('生成日记失败:', e);
-        return null;
-    });
+    }) .catch(function(e) {
+    clearTimeout(timeoutId);
+    
+    // ===== 重试逻辑（用闭包变量，每个调用独立） =====
+    if (e.retry) {
+        // 用函数自身属性记录重试次数，但每个 roleId 独立
+        var retryKey = '_retry_' + roleId;
+        if (typeof generateDiary[retryKey] === 'undefined') {
+            generateDiary[retryKey] = 0;
+        }
+        generateDiary[retryKey]++;
+        
+        if (generateDiary[retryKey] <= 2) {
+            console.log('🔄 日记重试第 ' + generateDiary[retryKey] + ' 次 (角色: ' + role.name + ')...');
+            if (showToastMsg) showToast('⏳ 内容不完整，正在重试...');
+            return generateDiary(roleId, showToastMsg);
+        }
+        // 重试次数用完，清除该角色的计数器
+        delete generateDiary[retryKey];
+    }
+    // ===== 重试逻辑结束 =====
+    
+    if (showToastMsg) showToast('❌ 生成日记失败：' + e.message);
+    console.error('生成日记失败:', e);
+    return null;
+});
 }
 
 function checkAndGenerateDailyDiaries() {
