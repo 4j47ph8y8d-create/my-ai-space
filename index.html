@@ -1081,8 +1081,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: 0.2s ease;
+    cursor: grab;           /* ← 改这里：pointer → grab */
+    transition: none;       /* ← 改这里：0.2s ease → none */
     touch-action: none;
     user-select: none;
     overflow: hidden;
@@ -5843,6 +5843,125 @@ function initFloatingDrag() {
     });
 }
 
+// ===== 通话悬浮窗拖动功能 =====
+function initCallFloatingDrag() {
+    var el = document.getElementById('callFloating');
+    if (!el) return;
+    
+    var dragData = {
+        isDragging: false,
+        startX: 0,
+        startY: 0,
+        offsetX: 0,
+        offsetY: 0,
+        hasMoved: false
+    };
+    
+    el.addEventListener('touchstart', function(e) {
+        var touch = e.touches[0];
+        var rect = el.getBoundingClientRect();
+        dragData.isDragging = true;
+        dragData.startX = touch.clientX;
+        dragData.startY = touch.clientY;
+        dragData.offsetX = touch.clientX - rect.left;
+        dragData.offsetY = touch.clientY - rect.top;
+        dragData.hasMoved = false;
+        el.style.transition = 'none';
+    }, { passive: true });
+    
+    el.addEventListener('touchmove', function(e) {
+        if (!dragData.isDragging) return;
+        e.preventDefault();
+        var touch = e.touches[0];
+        var newX = touch.clientX - dragData.offsetX;
+        var newY = touch.clientY - dragData.offsetY;
+        var maxX = window.innerWidth - el.offsetWidth;
+        var maxY = window.innerHeight - el.offsetHeight;
+        newX = Math.max(0, Math.min(maxX, newX));
+        newY = Math.max(0, Math.min(maxY, newY));
+        el.style.left = newX + 'px';
+        el.style.top = newY + 'px';
+        el.style.right = 'auto';
+        el.style.bottom = 'auto';
+        dragData.hasMoved = true;
+    }, { passive: false });
+    
+    el.addEventListener('touchend', function(e) {
+        if (!dragData.isDragging) return;
+        dragData.isDragging = false;
+        el.style.transition = '';
+        try {
+            var pos = { x: parseInt(el.style.left) || 0, y: parseInt(el.style.top) || 0 };
+            localStorage.setItem('callFloatingPosition', JSON.stringify(pos));
+        } catch(err) {}
+        if (!dragData.hasMoved) {
+            e.preventDefault();
+            if (window.CallController && CallController.toggleMinimize) {
+                CallController.toggleMinimize();
+            }
+        }
+        dragData.hasMoved = false;
+    }, { passive: false });
+    
+    el.addEventListener('mousedown', function(e) {
+        var rect = el.getBoundingClientRect();
+        dragData.isDragging = true;
+        dragData.startX = e.clientX;
+        dragData.startY = e.clientY;
+        dragData.offsetX = e.clientX - rect.left;
+        dragData.offsetY = e.clientY - rect.top;
+        dragData.hasMoved = false;
+        el.style.transition = 'none';
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!dragData.isDragging) return;
+        var newX = e.clientX - dragData.offsetX;
+        var newY = e.clientY - dragData.offsetY;
+        var maxX = window.innerWidth - el.offsetWidth;
+        var maxY = window.innerHeight - el.offsetHeight;
+        newX = Math.max(0, Math.min(maxX, newX));
+        newY = Math.max(0, Math.min(maxY, newY));
+        el.style.left = newX + 'px';
+        el.style.top = newY + 'px';
+        el.style.right = 'auto';
+        el.style.bottom = 'auto';
+        dragData.hasMoved = true;
+    });
+    
+    document.addEventListener('mouseup', function(e) {
+        if (dragData.isDragging) {
+            dragData.isDragging = false;
+            el.style.transition = '';
+            try {
+                var pos2 = { x: parseInt(el.style.left) || 0, y: parseInt(el.style.top) || 0 };
+                localStorage.setItem('callFloatingPosition', JSON.stringify(pos2));
+            } catch(err) {}
+            if (!dragData.hasMoved) {
+                e.preventDefault();
+                if (window.CallController && CallController.toggleMinimize) {
+                    CallController.toggleMinimize();
+                }
+            }
+            dragData.hasMoved = false;
+        }
+    });
+    
+    try {
+        var saved = localStorage.getItem('callFloatingPosition');
+        if (saved) {
+            var pos = JSON.parse(saved);
+            if (pos.x !== undefined && pos.y !== undefined) {
+                el.style.left = pos.x + 'px';
+                el.style.top = pos.y + 'px';
+                el.style.right = 'auto';
+                el.style.bottom = 'auto';
+            }
+        }
+    } catch(err) {}
+}
+
 function updateStatusTime() {
     var now = new Date();
     var hours = String(now.getHours()).padStart(2, '0');
@@ -7548,6 +7667,7 @@ function init() {
         updateHeartDisplay();
         startHeartBeatFluctuation();
         initFloatingDrag();
+initCallFloatingDrag();
         updateStorageDisplay();
     } catch (e) { console.error('心跳系统初始化失败:', e); }
     try {
