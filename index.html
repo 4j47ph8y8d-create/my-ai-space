@@ -117,6 +117,7 @@
         .app-icon .icon-wrap.mall { background: linear-gradient(135deg,#7bed9f,#2ed573); color: #fff; box-shadow: 0 4px 12px rgba(46,213,115,0.4); }
         .app-icon .icon-wrap.phone { background: linear-gradient(135deg,#74b9ff,#0984e3); color: #fff; box-shadow: 0 4px 12px rgba(9,132,227,0.4); }
         .app-icon .icon-wrap.memory { background: linear-gradient(135deg,#a29bfe,#6c5ce7); color: #fff; box-shadow: 0 4px 12px rgba(108,92,231,0.4); }
+.app-icon .icon-wrap.video { background: linear-gradient(135deg,#b2bec3,#636e72); color: #fff; box-shadow: 0 4px 12px rgba(99,110,114,0.4); }
         .app-icon .app-name { font-size: 10px; color: rgba(255,255,255,0.85); text-align: center; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
         [data-theme="light"] .app-icon .app-name { color: rgba(0,0,0,0.7); text-shadow: none; }
         .dock { display: flex; justify-content: center; gap: 20px; padding: 8px 0 4px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: auto; flex-shrink: 0; position: relative; z-index: 2; }
@@ -772,6 +773,258 @@
         [data-theme="light"] .voice-bubble .voice-status {
             color: rgba(0, 0, 0, 0.2);
         }
+
+/* ===== 视频素材库样式 ===== */
+.screen-video-library {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 15;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+}
+.screen-video-library.open {
+    transform: translateX(0);
+}
+.video-header {
+    background: var(--header-bg);
+    backdrop-filter: blur(10px);
+    padding: calc(12px + var(--safe-top, 0px)) 16px 12px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    min-height: 52px;
+}
+.video-header .back-btn {
+    font-size: 20px;
+    color: #576b95;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 4px;
+}
+.video-header .title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+}
+.video-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px 20px;
+}
+
+/* 角色列表 */
+.video-role-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    margin: 4px 0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.15s;
+    box-shadow: 0 1px 4px var(--shadow-color);
+}
+.video-role-item:active {
+    transform: scale(0.97);
+}
+.video-role-item .role-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background-color: #07c160;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+}
+.video-role-item .role-info {
+    flex: 1;
+}
+.video-role-item .role-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+.video-role-item .role-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.video-role-item .role-arrow {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* 素材库网格 */
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 4px 0;
+}
+.video-grid-item {
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    cursor: pointer;
+    transition: 0.15s;
+    position: relative;
+    aspect-ratio: 1;
+}
+.video-grid-item:active {
+    transform: scale(0.95);
+}
+.video-grid-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.video-grid-item .video-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 6px 8px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    font-size: 10px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.video-grid-item .video-checkbox {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    border: 2px solid rgba(255,255,255,0.3);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 12px;
+}
+.video-grid-item .video-checkbox.checked {
+    display: flex;
+    background: #e74c3c;
+    border-color: #e74c3c;
+}
+.video-grid-item.delete-mode .video-checkbox {
+    display: flex;
+}
+.video-grid-item .video-duration {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* 空状态 */
+.video-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+.video-empty i {
+    font-size: 48px;
+    opacity: 0.2;
+    margin-bottom: 12px;
+}
+.video-empty p {
+    font-size: 14px;
+    line-height: 1.6;
+}
+.video-empty .hint {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-top: 4px;
+}
+
+/* 素材库头部 */
+.video-library-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 4px 12px;
+}
+.video-library-header .title-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.video-library-header .back-to-roles {
+    background: none;
+    border: none;
+    color: #576b95;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+.video-library-header .back-to-roles:active {
+    opacity: 0.6;
+}
+.video-library-header .role-name-display {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.video-library-header .actions {
+    display: flex;
+    gap: 8px;
+}
+.video-library-header .actions button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: 0.15s;
+    color: var(--text-secondary);
+}
+.video-library-header .actions button:active {
+    transform: scale(0.9);
+}
+.video-library-header .actions .btn-add {
+    color: #07c160;
+}
+.video-library-header .actions .btn-delete {
+    color: #e74c3c;
+}
+.video-library-header .actions .btn-delete.active {
+    background: rgba(231,76,60,0.1);
+}
+.video-count-badge {
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    padding: 2px 10px;
+    border-radius: 12px;
+}
+
         @media (max-width: 460px) { .phone-frame { border-radius: 0; height: 100vh; max-height: 100vh; } body { padding: 0; } }
         @media (min-width: 431px) { .phone-frame { border-radius: 32px; height: 780px; max-height: 90vh; box-shadow: 0 20px 60px rgba(0,0,0,0.6); } body { padding: 12px; } }
     </style>
@@ -885,48 +1138,53 @@
     }
 
     #callFullscreen {
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        background: #0a0a0f;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        animation: fadeIn 0.3s ease;
-    }
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    background: #0a0a0f;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
     #callFullscreen.active { display: flex; }
     .call-video-area {
-        flex: 1;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        position: relative;
-    }
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    position: relative;
+}
     .call-video-area .video-container {
-        width: 100%;
-        max-width: 400px;
-        aspect-ratio: 4/3;
-        border-radius: 20px;
-        overflow: hidden;
-        background: #0a0a0f;
-        box-shadow: 0 8px 40px rgba(0,0,0,0.5);
-        position: relative;
-        border: 1px solid rgba(255,255,255,0.04);
-    }
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 0;
+    overflow: hidden;
+    background: #0a0a0f;
+    box-shadow: none;
+    position: relative;
+    border: none;
+    flex: 1;
+}
     .call-video-area .video-container .ai-video {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        background: #0a0a0f;
-    }
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: #0a0a0f;
+    overflow: hidden;
+}
     .call-video-area .video-container .ai-video canvas {
         width: 100%;
         height: 100%;
@@ -956,6 +1214,24 @@
         margin-top: 12px;
         letter-spacing: 1px;
     }
+
+/* ===== 通话头像（全屏适配） ===== */
+.call-video-area .video-container .ai-video .avatar-overlay {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    border: 2px solid rgba(255,255,255,0.08);
+    animation: breathe 2s ease-in-out infinite;
+    z-index: 2;
+}
+
+@keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
     .call-video-area .video-container .user-video-preview {
         position: absolute;
         bottom: 12px;
@@ -995,7 +1271,19 @@
     #callFullscreen.calling .video-container .ai-video .avatar-overlay { animation: breathe 1.2s ease-in-out infinite; }
     #callFullscreen.calling .call-status-text { color: rgba(255,255,255,0.3); }
 
-    .call-info { text-align: center; margin: 8px 0 4px; }
+    .call-info {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    margin: 0;
+    z-index: 10;
+    background: rgba(0,0,0,0.3);
+    padding: 4px 16px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+}
     .call-info .call-timer {
         font-size: 32px;
         font-weight: 200;
@@ -1011,15 +1299,20 @@
     }
 
     .call-controls {
-        display: flex;
-        justify-content: center;
-        gap: 30px;
-        padding: 16px 20px 32px;
-        width: 100%;
-        max-width: 480px;
-        flex-shrink: 0;
-        align-items: center;
-    }
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    padding: 0;
+    width: auto;
+    max-width: 100%;
+    flex-shrink: 0;
+    align-items: center;
+    z-index: 10;
+}
     .call-controls .ctrl-btn {
         width: 52px;
         height: 52px;
@@ -1237,6 +1530,12 @@
     <span class="app-name">收藏屋</span>
 </div>
 
+<!-- 🎬 视频素材库 -->
+    <button class="app-icon" data-app="video">
+        <div class="icon-wrap video"><i class="fas fa-film"></i></div>
+        <span class="app-name">视频素材库</span>
+    </button>
+
             <button class="app-icon" data-app="style"><div class="icon-wrap style"><i class="fas fa-palette"></i></div><span class="app-name">个性化</span></button>
             <button class="app-icon" data-app="meme"><div class="icon-wrap meme"><i class="fas fa-face-smile"></i></div><span class="app-name">表情包</span></button>
             <button class="app-icon" data-app="diary"><div class="icon-wrap diary"><i class="fas fa-book-open"></i></div><span class="app-name">他的日记</span></button>
@@ -1253,6 +1552,17 @@
     <div class="screen-chat" id="chatScreen"><div class="chat-bg-layer" id="chatBgLayer"></div><div class="chat-header"><button class="back-btn" id="backFromChat"><i class="fas fa-chevron-left"></i></button><div class="title"><span class="chat-role-name" id="chatRoleName">DeepSeek</span></div><div class="actions"><i class="fas fa-trash-alt" id="clearChatBtn" style="color:#e74c3c;cursor:pointer;font-size:16px;" title="清空聊天记录"></i></div></div><div class="chat-messages" id="messageContainer"></div><div class="chat-input-area"><div class="quote-bar" id="quoteBar"><i class="fas fa-quote-left" style="color:#07c160;font-size:11px;"></i><span class="quote-text" id="quoteText">引用内容</span><button class="quote-cancel" id="quoteCancelBtn"><i class="fas fa-times"></i></button></div><div class="input-row"><button class="meme-btn" id="memeBtn" title="选择表情包"><i class="fas fa-face-smile"></i></button><button class="plus-btn" id="plusBtn"><i class="fas fa-plus-circle"></i></button><input type="text" id="messageInput" placeholder="输入消息..." /><button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></button></div></div></div>
     <div class="screen-meme" id="memeScreen"><div class="meme-header-bar"><button class="back-btn" id="backFromMeme"><i class="fas fa-chevron-left"></i></button><div class="title" id="memeTitle">📚 表情包</div><div class="meme-actions" style="display:flex;gap:8px;"><button class="meme-action-btn" id="memeExportBtn" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:var(--text-secondary);" title="导出表情包"><i class="fas fa-download"></i></button><button class="meme-action-btn" id="memeImportBtn" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:var(--text-secondary);" title="导入表情包"><i class="fas fa-upload"></i></button></div></div><div class="meme-body-scroll" id="memeBodyScroll"></div></div>
     <div class="screen-diary" id="diaryScreen"><div class="diary-header"><button class="back-btn" id="backFromDiary"><i class="fas fa-chevron-left"></i></button><div class="title"><i class="fas fa-book-open"></i> 他的日记</div><div class="diary-actions"><select class="role-selector" id="diaryRoleSelector"></select><button class="write-btn" id="writeDiaryBtn"><i class="fas fa-feather-alt"></i> 写今日</button></div></div><div class="calendar-toggle-outside" id="calendarToggle"><span class="toggle-label"><i class="fas fa-calendar-alt"></i> 日历</span><span class="toggle-icon" id="toggleIcon"><i class="fas fa-chevron-up"></i></span></div><div class="diary-calendar-nav" id="diaryCalendarNav"><div class="month-nav"><button class="month-btn" id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button><span class="month-label" id="monthLabel">2026年6月</span><button class="month-btn" id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button></div><div class="weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="days-grid" id="daysGrid"></div></div><div class="diary-body" id="diaryBody"></div><div class="diary-page-nav" id="diaryPageNav"><button class="page-btn" id="prevDayBtn"><i class="fas fa-chevron-left"></i> 上一篇</button><span class="page-indicator" id="pageIndicator">今天</span><button class="page-btn" id="nextDayBtn">下一篇 <i class="fas fa-chevron-right"></i></button></div></div>
+
+ <!-- ===== 视频素材库 ===== -->
+    <div class="screen-video-library" id="videoLibraryScreen">
+        <div class="video-header">
+            <button class="back-btn" id="backFromVideoLibrary"><i class="fas fa-chevron-left"></i></button>
+            <div class="title" id="videoLibraryTitle">🎬 视频素材库</div>
+        </div>
+        <div class="video-body" id="videoLibraryBody">
+            <!-- 角色列表或素材库由 JavaScript 渲染 -->
+        </div>
+    </div>
     <div class="meme-picker-overlay" id="memePickerOverlay"><div class="meme-picker-panel" id="memePickerPanel"><div class="meme-picker-header"><span class="meme-picker-title" id="memePickerTitle">选择表情包</span><button class="meme-picker-close" id="memePickerClose">&times;</button></div><div class="meme-picker-body" id="memePickerBody"></div></div></div>
     <div class="image-picker-overlay" id="imagePickerOverlay"><div class="image-picker-menu"><div class="menu-title" id="pickerTitle">选择图片来源</div><div class="picker-options"><button id="pickerCamera"><span class="icon-bg"><i class="fas fa-camera"></i></span><span>拍照</span></button><button id="pickerGallery"><span class="icon-bg"><i class="fas fa-images"></i></span><span>相册</span></button></div><button class="cancel-btn" id="pickerCancel">取消</button></div></div>
     <div class="settings-overlay" id="settingsOverlay"><div class="settings-drawer"><button class="close-drawer" id="closeSettingsBtn">×</button><h2><i class="fas fa-sliders-h"></i> 设置</h2>
@@ -5491,6 +5801,22 @@ function openDiary() {
     if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300);
 }
 
+// ===== 视频素材库 =====
+function openVideoLibrary() {
+    document.getElementById('launcherScreen').classList.add('hidden');
+    document.getElementById('chatScreen').classList.remove('open');
+    document.getElementById('contactsScreen').classList.remove('open');
+    document.getElementById('memeScreen').classList.remove('open');
+    document.getElementById('diaryScreen').classList.remove('open');
+    document.getElementById('videoLibraryScreen').classList.add('open');
+    renderVideoLibrary();
+}
+
+function closeVideoLibrary() {
+    document.getElementById('videoLibraryScreen').classList.remove('open');
+    document.getElementById('launcherScreen').classList.remove('hidden');
+}
+
 function closeDiary() {
     document.getElementById('diaryScreen').classList.remove('open');
     document.getElementById('launcherScreen').classList.remove('hidden');
@@ -7805,6 +8131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (app === 'favorite') {
             showToast('⭐ 收藏屋开发中...');
         }
+else if (app === 'video') openVideoLibrary();
         else showToast('📱 功能开发中~');
     });
 });
@@ -7813,7 +8140,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('backFromChat').addEventListener('click', closeChat);
     document.getElementById('backFromMeme').addEventListener('click', closeMeme);
     document.getElementById('backFromDiary').addEventListener('click', closeDiary);
-    document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
+    document.getElementById('backFromVideoLibrary').addEventListener('click', closeVideoLibrary); 
+
+document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
     document.getElementById('settingsOverlay').addEventListener('click', function(e) {
         if (e.target === this) closeSettings();
     });
@@ -9459,6 +9788,464 @@ window.CallController = CallController;
 window.addCallButtonToChat = addCallButtonToChat;
 window.initCallSystem = initCallSystem;
 
+// ============================================================
+//  🎬 视频素材库 - 完整功能
+// ============================================================
+
+// ----- 存储相关 -----
+function openVideoDB() {
+    return new Promise(function(resolve, reject) {
+        var request = indexedDB.open('VideoDB', 1);
+        request.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('videos')) {
+                db.createObjectStore('videos', { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = function(e) { resolve(e.target.result); };
+        request.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+function saveVideoToDB(roleId, blob, name, duration) {
+    var id = 'video_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+    return openVideoDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('videos', 'readwrite');
+            var store = tx.objectStore('videos');
+            var request = store.put({
+                id: id,
+                roleId: roleId,
+                blob: blob,
+                name: name || '未命名视频',
+                duration: duration || 0,
+                uploadedAt: Date.now()
+            });
+            request.onsuccess = function() { db.close(); resolve(id); };
+            request.onerror = function() { db.close(); reject(request.error); };
+        });
+    });
+}
+
+function getVideosForRole(roleId) {
+    return openVideoDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('videos', 'readonly');
+            var store = tx.objectStore('videos');
+            var request = store.getAll();
+            request.onsuccess = function() {
+                db.close();
+                var all = request.result || [];
+                var filtered = all.filter(function(v) { return v.roleId === roleId; });
+                resolve(filtered);
+            };
+            request.onerror = function() { db.close(); reject(request.error); };
+        });
+    });
+}
+
+function deleteVideoFromDB(videoId) {
+    return openVideoDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('videos', 'readwrite');
+            var store = tx.objectStore('videos');
+            var request = store.delete(videoId);
+            request.onsuccess = function() { db.close(); resolve(); };
+            request.onerror = function() { db.close(); reject(request.error); };
+        });
+    });
+}
+
+function deleteVideosFromDB(videoIds) {
+    return openVideoDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('videos', 'readwrite');
+            var store = tx.objectStore('videos');
+            var promises = videoIds.map(function(id) {
+                return new Promise(function(res, rej) {
+                    var req = store.delete(id);
+                    req.onsuccess = res;
+                    req.onerror = rej;
+                });
+            });
+            Promise.all(promises).then(function() {
+                db.close();
+                resolve();
+            }).catch(function(e) {
+                db.close();
+                reject(e);
+            });
+        });
+    });
+}
+
+function getVideoCountForRole(roleId) {
+    return getVideosForRole(roleId).then(function(videos) {
+        return videos.length;
+    });
+}
+
+// ----- 渲染函数 -----
+var videoLibraryState = {
+    currentRoleId: null,
+    deleteMode: false,
+    selectedIds: []
+};
+
+function renderVideoLibrary() {
+    if (!videoLibraryState.currentRoleId) {
+        renderVideoRoleList();
+    } else {
+        renderVideoGrid(videoLibraryState.currentRoleId);
+    }
+}
+
+function renderVideoRoleList() {
+    var body = document.getElementById('videoLibraryBody');
+    if (!body) return;
+    
+    document.getElementById('videoLibraryTitle').textContent = '🎬 视频素材库';
+    
+    if (roles.length === 0) {
+        body.innerHTML = '<div class="video-empty"><i class="fas fa-users"></i><p>还没有角色<br />先去「设置 → 角色管理」创建吧</p></div>';
+        return;
+    }
+    
+    var html = '';
+    roles.forEach(function(role) {
+        var avatarStyle = role.avatar ? 'background-image: url(' + role.avatar + ');' : 'background-color: #07c160;';
+        html += '<div class="video-role-item" data-roleid="' + role.id + '">' +
+            '<div class="role-avatar" style="' + avatarStyle + '"></div>' +
+            '<div class="role-info"><div class="role-name">' + escapeHtml(role.name) + '</div>' +
+            '<div class="role-count" id="videoCount_' + role.id + '">加载中...</div></div>' +
+            '<div class="role-arrow"><i class="fas fa-chevron-right"></i></div>' +
+            '</div>';
+    });
+    body.innerHTML = html;
+    
+    body.querySelectorAll('.video-role-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            var roleId = this.dataset.roleid;
+            videoLibraryState.currentRoleId = roleId;
+            videoLibraryState.deleteMode = false;
+            videoLibraryState.selectedIds = [];
+            renderVideoGrid(roleId);
+        });
+    });
+    
+    roles.forEach(function(role) {
+        getVideosForRole(role.id).then(function(videos) {
+            var countEl = document.getElementById('videoCount_' + role.id);
+            if (countEl) countEl.textContent = videos.length + ' / 5 个视频';
+        });
+    });
+}
+
+function renderVideoGrid(roleId) {
+    var body = document.getElementById('videoLibraryBody');
+    if (!body) return;
+    
+    var role = roles.find(function(r) { return r.id === roleId; });
+    if (!role) {
+        videoLibraryState.currentRoleId = null;
+        renderVideoRoleList();
+        return;
+    }
+    
+    document.getElementById('videoLibraryTitle').textContent = '🎬 ' + role.name + ' 的素材';
+    
+    getVideosForRole(roleId).then(function(videos) {
+        var html = '';
+        
+        html += '<div class="video-library-header">' +
+            '<div class="title-left">' +
+            '<button class="back-to-roles" id="backToRoleList"><i class="fas fa-arrow-left"></i> 返回</button>' +
+            '<span class="role-name-display">' + escapeHtml(role.name) + '</span>' +
+            '<span class="video-count-badge">' + videos.length + ' / 5</span>' +
+            '</div>' +
+            '<div class="actions">' +
+            '<button class="btn-add" id="videoAddBtn" title="添加视频"><i class="fas fa-plus"></i></button>' +
+            '<button class="btn-delete' + (videoLibraryState.deleteMode ? ' active' : '') + '" id="videoDeleteBtn" title="删除视频"><i class="fas fa-trash-alt"></i></button>' +
+            '</div>' +
+            '</div>';
+        
+        if (videos.length === 0) {
+            html += '<div class="video-empty">' +
+                '<i class="fas fa-film"></i>' +
+                '<p>📹 没有视频</p>' +
+                '<p class="hint">请上传 5-15 秒视频体验该功能</p>' +
+                '</div>';
+        } else {
+            html += '<div class="video-grid" id="videoGrid">';
+            videos.forEach(function(video) {
+                var isSelected = videoLibraryState.selectedIds.indexOf(video.id) !== -1;
+                var url = URL.createObjectURL(video.blob);
+                var durationText = video.duration ? Math.round(video.duration) + 's' : '';
+                html += '<div class="video-grid-item' + (videoLibraryState.deleteMode ? ' delete-mode' : '') + '" data-videoid="' + video.id + '">' +
+                    '<video src="' + url + '" muted preload="metadata"></video>' +
+                    (durationText ? '<div class="video-duration">' + durationText + '</div>' : '') +
+                    '<div class="video-name">' + escapeHtml(video.name) + '</div>' +
+                    '<div class="video-checkbox' + (isSelected ? ' checked' : '') + '"><i class="fas fa-check"></i></div>' +
+                    '</div>';
+            });
+            html += '</div>';
+        }
+        
+        body.innerHTML = html;
+        
+        document.getElementById('backToRoleList').addEventListener('click', function() {
+            videoLibraryState.currentRoleId = null;
+            videoLibraryState.deleteMode = false;
+            videoLibraryState.selectedIds = [];
+            renderVideoRoleList();
+        });
+        
+        document.getElementById('videoAddBtn').addEventListener('click', function() {
+            if (videos.length >= 5) {
+                showToast('⚠️ 最多只能上传 5 个视频');
+                return;
+            }
+            openVideoPicker(roleId);
+        });
+        
+        document.getElementById('videoDeleteBtn').addEventListener('click', function() {
+            if (videos.length === 0) {
+                showToast('📌 没有视频可删除');
+                return;
+            }
+            videoLibraryState.deleteMode = !videoLibraryState.deleteMode;
+            if (!videoLibraryState.deleteMode) {
+                videoLibraryState.selectedIds = [];
+            }
+            renderVideoGrid(roleId);
+            if (videoLibraryState.deleteMode) {
+                showToast('📌 点击视频选中/取消选中，再次点击删除按钮执行删除');
+            }
+        });
+        
+        body.querySelectorAll('.video-grid-item').forEach(function(item) {
+            item.addEventListener('click', function() {
+                var videoId = this.dataset.videoid;
+                if (videoLibraryState.deleteMode) {
+                    var idx = videoLibraryState.selectedIds.indexOf(videoId);
+                    if (idx !== -1) {
+                        videoLibraryState.selectedIds.splice(idx, 1);
+                    } else {
+                        videoLibraryState.selectedIds.push(videoId);
+                    }
+                    renderVideoGrid(roleId);
+                    if (videoLibraryState.selectedIds.length > 0) {
+                        showToast('已选中 ' + videoLibraryState.selectedIds.length + ' 个视频，点击删除按钮执行');
+                    }
+                } else {
+                    var videoEl = this.querySelector('video');
+                    if (videoEl) {
+                        if (videoEl.paused) {
+                            videoEl.play();
+                        } else {
+                            videoEl.pause();
+                        }
+                    }
+                }
+            });
+        });
+        
+        if (videoLibraryState.deleteMode && videoLibraryState.selectedIds.length > 0) {
+            var grid = document.getElementById('videoGrid');
+            if (grid) {
+                var confirmDiv = document.createElement('div');
+                confirmDiv.style.cssText = 'grid-column: 1 / -1; padding: 12px 0; text-align: center;';
+                confirmDiv.innerHTML = '<button id="confirmDeleteVideos" style="padding:10px 30px;background:#e74c3c;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-weight:600;">🗑️ 删除选中的 ' + videoLibraryState.selectedIds.length + ' 个视频</button>' +
+                    '<button id="cancelDeleteVideos" style="margin-left:12px;padding:10px 20px;background:var(--bg-secondary);color:var(--text-secondary);border:none;border-radius:10px;font-size:14px;cursor:pointer;">取消</button>';
+                grid.parentNode.insertBefore(confirmDiv, grid.nextSibling);
+                
+                document.getElementById('confirmDeleteVideos').addEventListener('click', function() {
+                    if (videoLibraryState.selectedIds.length === 0) return;
+                    if (confirm('确定要删除选中的 ' + videoLibraryState.selectedIds.length + ' 个视频吗？')) {
+                        deleteVideosFromDB(videoLibraryState.selectedIds).then(function() {
+                            var count = videoLibraryState.selectedIds.length;
+                            videoLibraryState.selectedIds = [];
+                            videoLibraryState.deleteMode = false;
+                            renderVideoGrid(roleId);
+                            showToast('✅ 已删除 ' + count + ' 个视频');
+                        }).catch(function(e) {
+                            showToast('❌ 删除失败: ' + e.message);
+                        });
+                    }
+                });
+                document.getElementById('cancelDeleteVideos').addEventListener('click', function() {
+                    videoLibraryState.selectedIds = [];
+                    videoLibraryState.deleteMode = false;
+                    renderVideoGrid(roleId);
+                });
+            }
+        }
+    }).catch(function(e) {
+        console.error('加载视频失败:', e);
+        body.innerHTML = '<div class="video-empty"><i class="fas fa-exclamation-triangle"></i><p>加载失败: ' + e.message + '</p></div>';
+    });
+}
+
+// ----- 视频上传 -----
+function openVideoPicker(roleId) {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/*';
+    input.multiple = true;
+    input.onchange = function(e) {
+        var files = e.target.files;
+        if (!files || files.length === 0) return;
+        
+        getVideosForRole(roleId).then(function(existing) {
+            var available = 5 - existing.length;
+            if (files.length > available) {
+                showToast('⚠️ 最多还能上传 ' + available + ' 个视频');
+                return;
+            }
+            
+            var uploaded = 0;
+            var total = Math.min(files.length, available);
+            
+            Array.from(files).slice(0, available).forEach(function(file) {
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast('⚠️ ' + file.name + ' 超过 10MB，跳过');
+                    return;
+                }
+                
+                var video = document.createElement('video');
+                video.preload = 'metadata';
+                video.onloadedmetadata = function() {
+                    var duration = video.duration || 0;
+                    if (duration < 5 || duration > 15) {
+                        showToast('⚠️ ' + file.name + ' 时长 ' + Math.round(duration) + 's，建议 5-15 秒');
+                    }
+                    var reader = new FileReader();
+                    reader.onload = function(ev) {
+                        var blob = new Blob([ev.target.result], { type: file.type });
+                        saveVideoToDB(roleId, blob, file.name, duration).then(function() {
+                            uploaded++;
+                            if (uploaded === total) {
+                                renderVideoGrid(roleId);
+                                showToast('✅ 已上传 ' + uploaded + ' 个视频');
+                            }
+                        }).catch(function(err) {
+                            showToast('❌ 上传失败: ' + err.message);
+                        });
+                    };
+                    reader.readAsArrayBuffer(file);
+                };
+                video.onerror = function() {
+                    var reader = new FileReader();
+                    reader.onload = function(ev) {
+                        var blob = new Blob([ev.target.result], { type: file.type });
+                        saveVideoToDB(roleId, blob, file.name, 0).then(function() {
+                            uploaded++;
+                            if (uploaded === total) {
+                                renderVideoGrid(roleId);
+                                showToast('✅ 已上传 ' + uploaded + ' 个视频');
+                            }
+                        });
+                    };
+                    reader.readAsArrayBuffer(file);
+                };
+                video.src = URL.createObjectURL(file);
+            });
+        });
+    };
+    input.click();
+}
+
+// ===== 修改 CallController，集成视频素材 =====
+var _originalStartCall = CallController.startCall;
+
+CallController.startCall = function(role) {
+    _originalStartCall.call(this, role);
+    this.playRandomVideoForRole(role);
+};
+
+CallController.playRandomVideoForRole = function(role) {
+    var videoEl = document.getElementById('callVideoPlayer');
+    if (!videoEl) return;
+    
+    if (!role) {
+        videoEl.style.display = 'none';
+        return;
+    }
+    
+    getVideosForRole(role.id).then(function(videos) {
+        if (!videos || videos.length === 0) {
+            videoEl.style.display = 'none';
+            document.getElementById('callAvatar').style.display = 'block';
+            if (CallController.particleVideo) {
+                CallController.particleVideo.start();
+            }
+            return;
+        }
+        
+        var randomIndex = Math.floor(Math.random() * videos.length);
+        var selected = videos[randomIndex];
+        
+        try {
+            var url = URL.createObjectURL(selected.blob);
+            videoEl.src = url;
+            videoEl.style.display = 'block';
+            videoEl.muted = true;
+            videoEl.loop = true;
+            videoEl.playsInline = true;
+            
+            document.getElementById('callAvatar').style.display = 'none';
+            
+            if (CallController.particleVideo) {
+                CallController.particleVideo.stop();
+            }
+            
+            videoEl.play().then(function() {
+                console.log('🎬 视频播放中:', selected.name);
+            }).catch(function(e) {
+                console.log('⚠️ 视频播放失败，回退到粒子动画', e);
+                videoEl.style.display = 'none';
+                document.getElementById('callAvatar').style.display = 'block';
+                if (CallController.particleVideo) {
+                    CallController.particleVideo.start();
+                }
+            });
+        } catch(e) {
+            console.log('⚠️ 视频加载失败', e);
+            videoEl.style.display = 'none';
+            document.getElementById('callAvatar').style.display = 'block';
+            if (CallController.particleVideo) {
+                CallController.particleVideo.start();
+            }
+        }
+    }).catch(function(e) {
+        console.log('⚠️ 获取视频素材失败', e);
+        videoEl.style.display = 'none';
+        document.getElementById('callAvatar').style.display = 'block';
+        if (CallController.particleVideo) {
+            CallController.particleVideo.start();
+        }
+    });
+};
+
+var _originalHangupCall = CallController.hangupCall;
+
+CallController.hangupCall = function() {
+    var videoEl = document.getElementById('callVideoPlayer');
+    if (videoEl) {
+        videoEl.pause();
+        videoEl.src = '';
+        videoEl.style.display = 'none';
+        document.getElementById('callAvatar').style.display = 'block';
+        if (CallController.particleVideo) {
+            setTimeout(function() {
+                CallController.particleVideo.start();
+            }, 200);
+        }
+    }
+    
+    _originalHangupCall.call(this);
+};
+
 function generateNaturalMemoryText(role) {
     var memories = Array.isArray(role.memory) ? role.memory : [];
     if (memories.length === 0) return '';
@@ -9511,8 +10298,17 @@ function generateNaturalMemoryText(role) {
         <div class="video-container" id="videoContainer">
             <div class="ai-video" id="aiVideo">
                 <canvas id="particleCanvas"></canvas>
+
+<video id="callVideoPlayer" 
+           style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;display:none;"
+           muted
+           loop
+           playsinline
+           autoplay>
+    </video>
+
                 <div class="avatar-overlay" id="callAvatar"></div>
-                <div class="name-tag" id="callNameTag">温柔学长</div>
+                <div class="name-tag" id="callNameTag" style="display:none;">温柔学长</div>
                 <div class="user-video-preview" id="userPreview">
                     <div class="placeholder">
                         <i class="fas fa-user"></i>
