@@ -9409,6 +9409,8 @@ restoreVideoInFullscreen() {
         el.onclick = function() {
             CallController.toggleMinimize();
         };
+el.style.display = 'none';
+el.classList.remove('visible');
     }
 },
 
