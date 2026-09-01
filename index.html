@@ -9219,19 +9219,28 @@ const CallController = {
     },
 
     toggleMinimize() {
-        if (!this.isActive) return;
-        this.isMinimized = !this.isMinimized;
-        if (this.isMinimized) {
-            this.els.fullscreen.classList.remove('active');
-            this.showFloating(this.currentRole);
+    if (!this.isActive) return;
+    this.isMinimized = !this.isMinimized;
+    if (this.isMinimized) {
+        this.els.fullscreen.classList.remove('active');
+        // ===== 新增：视频模式最小化时显示视频小窗 =====
+        if (this.isVideoMode) {
+            this.showVideoFloating(this.currentRole);
         } else {
-            this.els.fullscreen.classList.add('active');
-            this.hideFloating();
-            if (this.isVideoMode && this.particleVideo) {
-                setTimeout(() => this.particleVideo.start(), 100);
-            }
+            this.showFloating(this.currentRole);
         }
-    },
+    } else {
+        this.els.fullscreen.classList.add('active');
+        this.hideFloating();
+        // 回到全屏时，恢复视频播放（如果是视频模式）
+        if (this.isVideoMode) {
+            this.restoreVideoInFullscreen();
+        }
+        if (this.isVideoMode && this.particleVideo) {
+            setTimeout(() => this.particleVideo.stop(), 100);
+        }
+    }
+},
 
     updateControls() {
         const muteBtn = document.getElementById('btnMute');
@@ -9275,9 +9284,133 @@ const CallController = {
     this.els.floatingTimer.textContent = this.formatTime(this.getCallDuration());
 },
 
+// ===== 新增：视频模式最小化悬浮窗（显示缩小视频） =====
+showVideoFloating(role) {
+    var el = this.els.floating;
+    if (!el) return;
+    
+    // 改成视频小窗样式：变宽、变高，显示视频
+    el.style.width = '120px';
+    el.style.height = '160px';
+    el.style.borderRadius = '12px';
+    el.style.overflow = 'hidden';
+    el.style.background = '#0a0a0f';
+    el.style.padding = '0';
+    el.style.gap = '0';
+    el.style.boxShadow = '0 8px 30px rgba(0,0,0,0.5)';
+    el.style.border = '1px solid rgba(255,255,255,0.06)';
+    
+    // 清空内容，放视频进去
+    el.innerHTML = '';
+    
+    // 创建视频播放器
+    var videoWrapper = document.createElement('div');
+    videoWrapper.style.cssText = 'width:100%;height:100%;position:relative;';
+    
+    var videoEl = document.createElement('video');
+    videoEl.id = 'floatingVideoPlayer';
+    videoEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    videoEl.muted = true;
+    videoEl.loop = true;
+    videoEl.playsInline = true;
+    videoEl.autoplay = true;
+    
+    // 复制全屏视频的 src
+    var fullscreenVideo = document.getElementById('callVideoPlayer');
+    if (fullscreenVideo && fullscreenVideo.src) {
+        videoEl.src = fullscreenVideo.src;
+    }
+    
+    // 加上计时器覆盖层
+    var timerOverlay = document.createElement('div');
+    timerOverlay.style.cssText = 'position:absolute;bottom:6px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.7);font-size:10px;background:rgba(0,0,0,0.4);padding:2px 10px;border-radius:10px;font-variant-numeric:tabular-nums;';
+    timerOverlay.textContent = this.formatTime(this.getCallDuration());
+    timerOverlay.id = 'floatingTimerOverlay';
+    
+    videoWrapper.appendChild(videoEl);
+    videoWrapper.appendChild(timerOverlay);
+    el.appendChild(videoWrapper);
+    
+    // 显示悬浮窗
+    el.classList.add('visible');
+    el.style.display = 'flex';
+    el.style.opacity = '1';
+    el.style.pointerEvents = 'auto';
+    
+    // 播放视频
+    videoEl.play().catch(function(e) {
+        console.log('小窗视频播放失败:', e);
+    });
+    
+    // 更新计时器
+    this._floatingTimerInterval = setInterval(() => {
+        var overlay = document.getElementById('floatingTimerOverlay');
+        if (overlay) {
+            overlay.textContent = this.formatTime(this.getCallDuration());
+        }
+    }, 1000);
+    
+    // 点击悬浮窗恢复全屏
+    el.onclick = function() {
+        CallController.toggleMinimize();
+    };
+},
+
+// ===== 新增：从最小化恢复到全屏时恢复视频 =====
+restoreVideoInFullscreen() {
+    var fullscreenVideo = document.getElementById('callVideoPlayer');
+    var floatingVideo = document.getElementById('floatingVideoPlayer');
+    
+    if (floatingVideo && floatingVideo.src) {
+        if (fullscreenVideo) {
+            fullscreenVideo.src = floatingVideo.src;
+            fullscreenVideo.style.display = 'block';
+            fullscreenVideo.play().catch(function(e) {
+                console.log('恢复全屏视频播放失败:', e);
+            });
+            // 隐藏头像
+            document.getElementById('callAvatar').style.display = 'none';
+        }
+    } else if (fullscreenVideo) {
+        // 如果没有小窗视频，尝试重新播放
+        fullscreenVideo.style.display = 'block';
+        fullscreenVideo.play().catch(function(e) {
+            console.log('恢复全屏视频播放失败:', e);
+        });
+        document.getElementById('callAvatar').style.display = 'none';
+    }
+},
+
     hideFloating() {
-        this.els.floating.classList.remove('visible');
-    },
+    this.els.floating.classList.remove('visible');
+    // ===== 新增：清理小窗定时器和视频 =====
+    if (this._floatingTimerInterval) {
+        clearInterval(this._floatingTimerInterval);
+        this._floatingTimerInterval = null;
+    }
+    // 恢复悬浮窗为默认样式（给语音用）
+    var el = this.els.floating;
+    if (el) {
+        el.style.width = '';
+        el.style.height = '';
+        el.style.borderRadius = '';
+        el.style.overflow = '';
+        el.style.background = '';
+        el.style.padding = '';
+        el.style.gap = '';
+        el.style.boxShadow = '';
+        el.style.border = '';
+        // 恢复内容（语音模式）
+        el.innerHTML = `
+            <div class="floating-icon"><i class="fas fa-phone"></i></div>
+            <div class="floating-timer" id="floatingTimer">00:00</div>
+        `;
+        // 重新绑定点击事件
+        el.onclick = function() {
+            CallController.toggleMinimize();
+        };
+    }
+},
 
     updateAvatar(role, element) {
     const el = element || this.els.callAvatar;
