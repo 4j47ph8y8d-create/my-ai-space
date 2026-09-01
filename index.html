@@ -8909,11 +8909,11 @@ const CallController = {
     },
 
     initiateCall(role, mode) {
-        if (this.isActive || this.isIncoming) return;
-        if (!role) return;
-        this.currentRole = role;
-        this.isUserInitiated = true;
-        this.isVideoMode = (mode === 'video');
+    if (this.isActive || this.isIncoming) return;
+    if (!role) return;
+    this.currentRole = role;
+    this.isUserInitiated = true;
+    this.isVideoMode = (mode === 'video');
 
         if (Math.random() < 0.15) {
             this.showToast(role.name + ' 现在不方便接听');
@@ -9017,46 +9017,63 @@ const CallController = {
         this.currentRole = null;
     },
 
-    startCall(role) {
-        this.currentRole = role;
-        this.isActive = true;
-        this.isIncoming = false;
-        this.isInCall = true;
-        this.callStartTime = Date.now();
-        this.els.callNameTag.textContent = role.name || 'AI 伴侣';
-        this.els.callStatusText.textContent = '通话中';
-        this.els.fullscreen.classList.add('active');
-        this.els.fullscreen.classList.remove('calling');
+   startCall(role) {
+    this.currentRole = role;
+    this.isActive = true;
+    this.isIncoming = false;
+    this.isInCall = true;
+    this.callStartTime = Date.now();
+    this.els.callNameTag.textContent = role.name || 'AI 伴侣';
+    this.els.callStatusText.textContent = '通话中';
+    this.els.fullscreen.classList.add('active');
+    this.els.fullscreen.classList.remove('calling');
 
-        if (this.isVideoMode) {
-            this.els.fullscreen.classList.remove('voice-mode');
-            document.querySelector('.voice-mode-buttons').style.display = 'none';
-            document.querySelector('.video-mode-buttons').style.display = 'flex';
-            if (this.particleVideo) {
-                setTimeout(() => this.particleVideo.start(), 200);
-            }
-            this.els.userPreview.style.display = 'flex';
-        } else {
-            this.els.fullscreen.classList.add('voice-mode');
-            document.querySelector('.voice-mode-buttons').style.display = 'flex';
-            document.querySelector('.video-mode-buttons').style.display = 'none';
-            if (this.particleVideo) this.particleVideo.stop();
-            this.els.userPreview.style.display = 'none';
+    if (this.isVideoMode === true) {
+        this.els.fullscreen.classList.remove('voice-mode');
+        document.querySelector('.voice-mode-buttons').style.display = 'none';
+        document.querySelector('.video-mode-buttons').style.display = 'flex';
+        if (this.particleVideo) {
+            setTimeout(() => this.particleVideo.start(), 200);
         }
+        this.els.userPreview.style.display = 'flex';
+        var videoEl = document.getElementById('callVideoPlayer');
+        if (videoEl) {
+            videoEl.style.display = 'block';
+        }
+        document.getElementById('callAvatar').style.display = 'none';
+    } else {
+        // ===== 语音模式 =====
+        this.els.fullscreen.classList.add('voice-mode');
+        document.querySelector('.voice-mode-buttons').style.display = 'flex';
+        document.querySelector('.video-mode-buttons').style.display = 'none';
+        if (this.particleVideo) this.particleVideo.stop();
+        this.els.userPreview.style.display = 'none';
+        
+        // ===== 关键修复：彻底清空视频 =====
+        var videoEl = document.getElementById('callVideoPlayer');
+        if (videoEl) {
+            videoEl.pause();
+            videoEl.src = '';           // ← 清空 src
+            videoEl.load();             // ← 重新加载（清空）
+            videoEl.style.display = 'none';
+        }
+        // ===== 显示头像 =====
+        document.getElementById('callAvatar').style.display = 'block';
+    }
 
-        this.updateAvatar(role);
-        this.startTimer();
-        this.showFloating(role);
-        this.updateControls();
-        CallAudio.answerTone();
+    this.updateAvatar(role);
+    this.startTimer();
+    this.showFloating(role);
+    this.updateControls();
+    CallAudio.answerTone();
 
-        const isUserInitiated = this.isUserInitiated;
-        setTimeout(() => {
-            this.generateCallGreeting(role, isUserInitiated);
-        }, 600);
+    const isUserInitiated = this.isUserInitiated;
+    setTimeout(() => {
+        this.generateCallGreeting(role, isUserInitiated);
+    }, 600);
 
-        console.log('通话开始: ' + role.name);
-    },
+    console.log('通话开始: ' + role.name);
+},
 
     hangupCall() {
     // 如果没有通话在活跃，直接返回
@@ -9218,13 +9235,12 @@ const CallController = {
         this.showToast(this.isVideoMode ? '视频已开启' : '视频已关闭');
     },
 
-    toggleMinimize() {
+   toggleMinimize() {
     if (!this.isActive) return;
     this.isMinimized = !this.isMinimized;
     if (this.isMinimized) {
         this.els.fullscreen.classList.remove('active');
-        // ===== 新增：视频模式最小化时显示视频小窗 =====
-        if (this.isVideoMode) {
+        if (this.isVideoMode === true) {
             this.showVideoFloating(this.currentRole);
         } else {
             this.showFloating(this.currentRole);
@@ -9232,13 +9248,119 @@ const CallController = {
     } else {
         this.els.fullscreen.classList.add('active');
         this.hideFloating();
-        // 回到全屏时，恢复视频播放（如果是视频模式）
-        if (this.isVideoMode) {
+        if (this.isVideoMode === true) {
             this.restoreVideoInFullscreen();
+            if (this.particleVideo) {
+                setTimeout(() => this.particleVideo.stop(), 100);
+            }
+        } else {
+            // ===== 语音模式回到全屏：隐藏视频，显示头像 =====
+            var videoEl = document.getElementById('callVideoPlayer');
+            if (videoEl) {
+                videoEl.style.display = 'none';
+                videoEl.pause();
+            }
+            document.getElementById('callAvatar').style.display = 'block';
+            if (this.particleVideo) {
+                this.particleVideo.start();
+            }
         }
-        if (this.isVideoMode && this.particleVideo) {
-            setTimeout(() => this.particleVideo.stop(), 100);
+    }
+},
+
+// ===== 视频模式最小化：显示缩小的视频小窗 =====
+showVideoFloating(role) {
+// ===== 如果是语音模式，不执行 =====
+    if (this.isVideoMode !== true) return;
+    
+    var el = this.els.floating;
+    if (!el) return;
+    var el = this.els.floating;
+    if (!el) return;
+    
+    el.style.width = '120px';
+    el.style.height = '160px';
+    el.style.borderRadius = '12px';
+    el.style.overflow = 'hidden';
+    el.style.background = '#0a0a0f';
+    el.style.padding = '0';
+    el.style.gap = '0';
+    el.style.boxShadow = '0 8px 30px rgba(0,0,0,0.5)';
+    el.style.border = '1px solid rgba(255,255,255,0.06)';
+    el.innerHTML = '';
+    
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'width:100%;height:100%;position:relative;';
+    
+    var videoEl = document.createElement('video');
+    videoEl.id = 'floatingVideoPlayer';
+    videoEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    videoEl.muted = true;
+    videoEl.loop = true;
+    videoEl.playsInline = true;
+    videoEl.autoplay = true;
+    
+    var fullscreenVideo = document.getElementById('callVideoPlayer');
+    if (fullscreenVideo && fullscreenVideo.src) {
+        videoEl.src = fullscreenVideo.src;
+    }
+    
+    var timerOverlay = document.createElement('div');
+    timerOverlay.style.cssText = 'position:absolute;bottom:6px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.7);font-size:10px;background:rgba(0,0,0,0.4);padding:2px 10px;border-radius:10px;font-variant-numeric:tabular-nums;';
+    timerOverlay.textContent = this.formatTime(this.getCallDuration());
+    timerOverlay.id = 'floatingTimerOverlay';
+    
+    wrapper.appendChild(videoEl);
+    wrapper.appendChild(timerOverlay);
+    el.appendChild(wrapper);
+    
+    el.classList.add('visible');
+    el.style.display = 'flex';
+    el.style.opacity = '1';
+    el.style.pointerEvents = 'auto';
+    
+    videoEl.play().catch(function(e) {
+        console.log('小窗视频播放失败:', e);
+    });
+    
+    if (this._floatingTimerInterval) clearInterval(this._floatingTimerInterval);
+    this._floatingTimerInterval = setInterval(() => {
+        var overlay = document.getElementById('floatingTimerOverlay');
+        if (overlay) {
+            overlay.textContent = this.formatTime(this.getCallDuration());
         }
+    }, 1000);
+    
+    el.onclick = function() {
+        CallController.toggleMinimize();
+    };
+},
+
+// ===== 从最小化恢复到全屏时恢复视频 =====
+restoreVideoInFullscreen() {
+// ===== 如果是语音模式，不执行 =====
+    if (this.isVideoMode !== true) return;
+    
+    var fullscreenVideo = document.getElementById('callVideoPlayer');
+    var floatingVideo = document.getElementById('floatingVideoPlayer');
+    var fullscreenVideo = document.getElementById('callVideoPlayer');
+    var floatingVideo = document.getElementById('floatingVideoPlayer');
+    
+    if (floatingVideo && floatingVideo.src) {
+        if (fullscreenVideo) {
+            fullscreenVideo.src = floatingVideo.src;
+            fullscreenVideo.style.display = 'block';
+            fullscreenVideo.play().catch(function(e) {
+                console.log('恢复全屏视频播放失败:', e);
+            });
+            document.getElementById('callAvatar').style.display = 'none';
+        }
+    } else if (fullscreenVideo && fullscreenVideo.src) {
+        fullscreenVideo.style.display = 'block';
+        fullscreenVideo.play().catch(function(e) {
+            console.log('恢复全屏视频播放失败:', e);
+        });
+        document.getElementById('callAvatar').style.display = 'none';
     }
 },
 
@@ -9272,123 +9394,15 @@ const CallController = {
 
     showFloating(role) {
     this.els.floating.classList.add('visible');
-    // 设置通话图标颜色（根据模式）
+    
+    // ===== 语音模式：用圆形图标 =====
     const icon = this.els.floating.querySelector('.floating-icon i');
     if (icon) {
-        if (this.isVideoMode) {
-            icon.className = 'fas fa-video';
-        } else {
-            icon.className = 'fas fa-phone';
-        }
+        icon.className = 'fas fa-phone';  // ← 固定为电话图标
     }
     this.els.floatingTimer.textContent = this.formatTime(this.getCallDuration());
-},
-
-// ===== 新增：视频模式最小化悬浮窗（显示缩小视频） =====
-showVideoFloating(role) {
-    var el = this.els.floating;
-    if (!el) return;
     
-    // 改成视频小窗样式：变宽、变高，显示视频
-    el.style.width = '120px';
-    el.style.height = '160px';
-    el.style.borderRadius = '12px';
-    el.style.overflow = 'hidden';
-    el.style.background = '#0a0a0f';
-    el.style.padding = '0';
-    el.style.gap = '0';
-    el.style.boxShadow = '0 8px 30px rgba(0,0,0,0.5)';
-    el.style.border = '1px solid rgba(255,255,255,0.06)';
-    
-    // 清空内容，放视频进去
-    el.innerHTML = '';
-    
-    // 创建视频播放器
-    var videoWrapper = document.createElement('div');
-    videoWrapper.style.cssText = 'width:100%;height:100%;position:relative;';
-    
-    var videoEl = document.createElement('video');
-    videoEl.id = 'floatingVideoPlayer';
-    videoEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
-    videoEl.muted = true;
-    videoEl.loop = true;
-    videoEl.playsInline = true;
-    videoEl.autoplay = true;
-    
-    // 复制全屏视频的 src
-    var fullscreenVideo = document.getElementById('callVideoPlayer');
-    if (fullscreenVideo && fullscreenVideo.src) {
-        videoEl.src = fullscreenVideo.src;
-    }
-    
-    // 加上计时器覆盖层
-    var timerOverlay = document.createElement('div');
-    timerOverlay.style.cssText = 'position:absolute;bottom:6px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.7);font-size:10px;background:rgba(0,0,0,0.4);padding:2px 10px;border-radius:10px;font-variant-numeric:tabular-nums;';
-    timerOverlay.textContent = this.formatTime(this.getCallDuration());
-    timerOverlay.id = 'floatingTimerOverlay';
-    
-    videoWrapper.appendChild(videoEl);
-    videoWrapper.appendChild(timerOverlay);
-    el.appendChild(videoWrapper);
-    
-    // 显示悬浮窗
-    el.classList.add('visible');
-    el.style.display = 'flex';
-    el.style.opacity = '1';
-    el.style.pointerEvents = 'auto';
-    
-    // 播放视频
-    videoEl.play().catch(function(e) {
-        console.log('小窗视频播放失败:', e);
-    });
-    
-    // 更新计时器
-    this._floatingTimerInterval = setInterval(() => {
-        var overlay = document.getElementById('floatingTimerOverlay');
-        if (overlay) {
-            overlay.textContent = this.formatTime(this.getCallDuration());
-        }
-    }, 1000);
-    
-    // 点击悬浮窗恢复全屏
-    el.onclick = function() {
-        CallController.toggleMinimize();
-    };
-},
-
-// ===== 新增：从最小化恢复到全屏时恢复视频 =====
-restoreVideoInFullscreen() {
-    var fullscreenVideo = document.getElementById('callVideoPlayer');
-    var floatingVideo = document.getElementById('floatingVideoPlayer');
-    
-    if (floatingVideo && floatingVideo.src) {
-        if (fullscreenVideo) {
-            fullscreenVideo.src = floatingVideo.src;
-            fullscreenVideo.style.display = 'block';
-            fullscreenVideo.play().catch(function(e) {
-                console.log('恢复全屏视频播放失败:', e);
-            });
-            // 隐藏头像
-            document.getElementById('callAvatar').style.display = 'none';
-        }
-    } else if (fullscreenVideo) {
-        // 如果没有小窗视频，尝试重新播放
-        fullscreenVideo.style.display = 'block';
-        fullscreenVideo.play().catch(function(e) {
-            console.log('恢复全屏视频播放失败:', e);
-        });
-        document.getElementById('callAvatar').style.display = 'none';
-    }
-},
-
-    hideFloating() {
-    this.els.floating.classList.remove('visible');
-    // ===== 新增：清理小窗定时器和视频 =====
-    if (this._floatingTimerInterval) {
-        clearInterval(this._floatingTimerInterval);
-        this._floatingTimerInterval = null;
-    }
-    // 恢复悬浮窗为默认样式（给语音用）
+    // ===== 确保恢复语音小窗的样式 =====
     var el = this.els.floating;
     if (el) {
         el.style.width = '';
@@ -9400,21 +9414,65 @@ restoreVideoInFullscreen() {
         el.style.gap = '';
         el.style.boxShadow = '';
         el.style.border = '';
-        // 恢复内容（语音模式）
+        el.style.display = 'flex';
+        el.style.flexDirection = 'column';
+        el.style.alignItems = 'center';
+        el.style.justifyContent = 'center';
+        // 恢复内容（确保是语音图标）
+        if (!el.querySelector('.floating-icon')) {
+            el.innerHTML = `
+                <div class="floating-icon"><i class="fas fa-phone"></i></div>
+                <div class="floating-timer" id="floatingTimer">00:00</div>
+            `;
+        }
+        el.onclick = function() {
+            CallController.toggleMinimize();
+        };
+    }
+},
+
+    hideFloating() {
+    // 隐藏悬浮窗
+    this.els.floating.classList.remove('visible');
+    
+    // 清理视频小窗的计时器
+    if (this._floatingTimerInterval) {
+        clearInterval(this._floatingTimerInterval);
+        this._floatingTimerInterval = null;
+    }
+    
+    // ===== 恢复悬浮窗为语音模式默认样式 =====
+    var el = this.els.floating;
+    if (el) {
+        el.style.width = '';
+        el.style.height = '';
+        el.style.borderRadius = '';
+        el.style.overflow = '';
+        el.style.background = '';
+        el.style.padding = '';
+        el.style.gap = '';
+        el.style.boxShadow = '';
+        el.style.border = '';
+        el.style.display = 'none';
+        el.style.flexDirection = '';
+        el.style.alignItems = '';
+        el.style.justifyContent = '';
+        
+        // 恢复语音模式的内容
         el.innerHTML = `
             <div class="floating-icon"><i class="fas fa-phone"></i></div>
             <div class="floating-timer" id="floatingTimer">00:00</div>
         `;
-        // 重新绑定点击事件
+        
         el.onclick = function() {
             CallController.toggleMinimize();
         };
-el.style.display = 'none';
-el.classList.remove('visible');
+        
+        el.classList.remove('visible');
     }
 },
 
-    updateAvatar(role, element) {
+updateAvatar(role, element) {
     const el = element || this.els.callAvatar;
     if (role && role.avatar) {
         el.style.backgroundImage = 'url(' + role.avatar + ')';
@@ -10294,11 +10352,51 @@ function openVideoPicker(roleId) {
 var _originalStartCall = CallController.startCall;
 
 CallController.startCall = function(role) {
+    // 先调用原始的 startCall
     _originalStartCall.call(this, role);
-    this.playRandomVideoForRole(role);
+    
+    // ===== 只有视频模式才播放视频 =====
+    if (this.isVideoMode === true) {
+        this.playRandomVideoForRole(role);
+    } else {
+        // 语音模式：确保视频被隐藏
+        var videoEl = document.getElementById('callVideoPlayer');
+        if (videoEl) {
+            videoEl.pause();
+            videoEl.src = '';
+            videoEl.load();
+            videoEl.style.display = 'none';
+        }
+        document.getElementById('callAvatar').style.display = 'block';
+        if (this.particleVideo) {
+            this.particleVideo.start();
+        }
+        console.log('🎤 语音模式，不播放视频');
+    }
 };
 
 CallController.playRandomVideoForRole = function(role) {
+
+// ===== 只有视频模式才播放视频 =====
+    if (CallController.isVideoMode !== true) {
+        console.log('🎤 语音模式，跳过视频播放');
+        // 确保视频被隐藏
+        var videoEl = document.getElementById('callVideoPlayer');
+        if (videoEl) {
+            videoEl.pause();
+            videoEl.src = '';
+            videoEl.load();
+            videoEl.style.display = 'none';
+        }
+        document.getElementById('callAvatar').style.display = 'block';
+        if (CallController.particleVideo) {
+            CallController.particleVideo.start();
+        }
+        return;
+    }
+    
+    var videoEl = document.getElementById('callVideoPlayer');
+    if (!videoEl) return;
     var videoEl = document.getElementById('callVideoPlayer');
     if (!videoEl) return;
     
