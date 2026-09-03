@@ -5,9 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="我的AI空间" />
+    <meta name="apple-mobile-web-app-title" content="LunarReverie" />
     <link rel="manifest" href="manifest.json" />
-    <title>我的AI空间</title>
+<!-- 主屏幕图标（iOS/macOS Safari 添加到主屏幕用） -->
+<link rel="apple-touch-icon" href="icon.png" />
+
+<!-- 浏览器标签页图标（favicon） -->
+<link rel="icon" href="icon.png" type="image/png" />
+    <title>LunarReverie</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
     <style> /* ============================================================
@@ -1506,10 +1511,163 @@
 </style>
 </head>
 <body>
-<div class="phone-frame" id="app"> <div class="screen-launcher" id="launcherScreen">
+<!-- ===== 🌙 登录界面 ===== -->
+    <div id="loginScreen" style="
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #B8A9C9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        transition: opacity 0.6s ease;
+    ">
+        <!-- 毛玻璃卡片 -->
+        <div style="
+            width: 100%;
+            max-width: 360px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px 32px 32px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+        ">
+            <!-- 标题 -->
+            <div style="text-align: center; margin-bottom: 32px;">
+                <div style="
+                    font-size: 13px;
+                    color: rgba(255, 255, 255, 0.5);
+                    letter-spacing: 3px;
+                    margin-bottom: 6px;
+                ">欢迎回来</div>
+                <div style="
+                    font-size: 22px;
+                    font-weight: 600;
+                    color: rgba(255, 255, 255, 0.9);
+                    letter-spacing: 1px;
+                ">LunarReverie</div>
+                <div style="
+                    font-size: 13px;
+                    color: rgba(255, 255, 255, 0.35);
+                    margin-top: 4px;
+                "> ✦ 月色构筑我们相逢的梦境 ✦ </div>
+            </div>
+
+            <!-- 表单 -->
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <!-- 邮箱 -->
+                <div>
+                    <label style="
+                        font-size: 11px;
+                        color: rgba(255, 255, 255, 0.4);
+                        letter-spacing: 1px;
+                        display: block;
+                        margin-bottom: 5px;
+                    ">账号邮箱</label>
+                    <input type="email" id="loginEmail" placeholder="your@dream.com" style="
+                        width: 100%;
+                        padding: 12px 14px;
+                        background: rgba(255, 255, 255, 0.06);
+                        border: 1px solid rgba(255, 255, 255, 0.08);
+                        border-radius: 12px;
+                        color: rgba(255, 255, 255, 0.8);
+                        font-size: 14px;
+                        outline: none;
+                        box-sizing: border-box;
+                        font-family: inherit;
+                        transition: 0.3s;
+                    " onfocus="this.style.borderColor='rgba(255,255,255,0.2)'; this.style.background='rgba(255,255,255,0.08)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.background='rgba(255,255,255,0.06)'">
+                </div>
+                <!-- 密码 -->
+                <div>
+                    <label style="
+                        font-size: 11px;
+                        color: rgba(255, 255, 255, 0.4);
+                        letter-spacing: 1px;
+                        display: block;
+                        margin-bottom: 5px;
+                    ">梦境密码</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" style="
+                        width: 100%;
+                        padding: 12px 14px;
+                        background: rgba(255, 255, 255, 0.06);
+                        border: 1px solid rgba(255, 255, 255, 0.08);
+                        border-radius: 12px;
+                        color: rgba(255, 255, 255, 0.8);
+                        font-size: 14px;
+                        outline: none;
+                        box-sizing: border-box;
+                        font-family: inherit;
+                        transition: 0.3s;
+                    " onfocus="this.style.borderColor='rgba(255,255,255,0.2)'; this.style.background='rgba(255,255,255,0.08)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.background='rgba(255,255,255,0.06)'">
+                </div>
+
+                <!-- 选项栏 -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+                    <label style="
+                        font-size: 12px;
+                        color: rgba(255, 255, 255, 0.3);
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        cursor: pointer;
+                    ">
+                        <input type="checkbox" id="rememberMe" style="
+                            accent-color: rgba(255,255,255,0.3);
+                            width: 14px;
+                            height: 14px;
+                            cursor: pointer;
+                        ">
+                        记住我
+                    </label>
+                    <a href="#" style="
+                        font-size: 12px;
+                        color: rgba(255, 255, 255, 0.2);
+                        text-decoration: none;
+                        cursor: pointer;
+                    ">忘记密码</a>
+                </div>
+
+                <!-- 登录按钮 -->
+                <button id="loginBtn" style="
+                    width: 100%;
+                    padding: 13px;
+                    background: rgba(255, 255, 255, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 12px;
+                    color: rgba(255, 255, 255, 0.7);
+                    font-size: 15px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: 0.3s;
+                    margin-top: 4px;
+                    font-family: inherit;
+                    letter-spacing: 2px;
+                " onmouseenter="this.style.background='rgba(255,255,255,0.14)'; this.style.color='rgba(255,255,255,0.9)'" onmouseleave="this.style.background='rgba(255,255,255,0.08)'; this.style.color='rgba(255,255,255,0.7)'">
+                    登入梦境
+                </button>
+
+                <!-- 注册 -->
+                <div style="text-align: center; margin-top: 10px;">
+                    <span style="font-size: 12px; color: rgba(255, 255, 255, 0.2);">还没有梦境账户？</span>
+                    <a href="#" id="goToRegister" style="
+                        font-size: 12px;
+                        color: rgba(255, 255, 255, 0.3);
+                        text-decoration: none;
+                        cursor: pointer;
+                        transition: 0.3s;
+                    " onmouseenter="this.style.color='rgba(255,255,255,0.6)'" onmouseleave="this.style.color='rgba(255,255,255,0.3)'">立即创建</a>
+                </div>
+            </div>
+        </div>
+    </div>
+screen-launcher" id="launcherScreen">
         <button class="theme-toggle-btn" id="themeToggleBtn" title="切换深色/浅色模式"><i class="fas fa-moon" id="themeIcon"></i></button>
         <div class="status-bar"><span class="time" id="statusTime">21:00</span><span class="icons"><i class="fas fa-signal"></i> <i class="fas fa-wifi"></i> <i class="fas fa-battery-three-quarters"></i></span></div>
-        <div class="desktop-title">✦ 我的 AI 空间 ✦</div>
+        <div class="desktop-title">✦ LunarReverie ✦</div>
         <div class="heart-card" id="heartCard">
             <div class="heart-wrap normal" id="heartWrap"><svg viewBox="0 0 100 92" id="heartSvg"><path d="M 50 90 C 30 70, 0 50, 0 30 C 0 12, 18 0, 34 6 C 42 10, 48 20, 50 26 C 52 20, 58 10, 66 6 C 82 0, 100 12, 100 30 C 100 50, 70 70, 50 90 Z" fill="#ff6b81" /></svg><div class="heart-glow" id="heartGlow"></div></div>
             <div class="heart-value" id="heartValueDisplay">65<span class="percent">%</span><span class="bpm-label">♥ BPM</span></div>
@@ -1728,6 +1886,100 @@
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div>
 <script> // ============================================================
+//  🌙 登录界面控制
+// ============================================================
+
+function showLoginScreen() {
+    var el = document.getElementById('loginScreen');
+    if (el) {
+        el.style.display = 'flex';
+        el.style.opacity = '1';
+    }
+}
+
+function hideLoginScreen() {
+    var el = document.getElementById('loginScreen');
+    if (el) {
+        el.style.opacity = '0';
+        setTimeout(function() {
+            el.style.display = 'none';
+        }, 500);
+    }
+}
+
+function checkLoginStatus() {
+    var loggedIn = localStorage.getItem('dream_user_logged_in');
+    if (loggedIn === 'true') {
+        hideLoginScreen();
+        return true;
+    } else {
+        showLoginScreen();
+        return false;
+    }
+}
+
+// 登录按钮
+document.addEventListener('DOMContentLoaded', function() {
+    var loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', function() {
+            var email = document.getElementById('loginEmail').value.trim();
+            var password = document.getElementById('loginPassword').value.trim();
+            var remember = document.getElementById('rememberMe').checked;
+
+            if (!email || !password) {
+                alert('请填写完整的账号和密码');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('密码长度至少 6 位');
+                return;
+            }
+
+            // 保存登录状态
+            localStorage.setItem('dream_user_logged_in', 'true');
+            localStorage.setItem('dream_user_email', email);
+            if (remember) {
+                localStorage.setItem('dream_user_remember', 'true');
+            } else {
+                localStorage.removeItem('dream_user_remember');
+            }
+
+            alert('✨ 欢迎回来，' + email.split('@')[0] + '！');
+            hideLoginScreen();
+        });
+    }
+
+    // 注册跳转
+    var registerLink = document.getElementById('goToRegister');
+    if (registerLink) {
+        registerLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('注册功能开发中\n请使用测试账号登录：\ntest@dream.com / 123456');
+        });
+    }
+
+    // Enter 键登录
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            var loginScreen = document.getElementById('loginScreen');
+            if (loginScreen && loginScreen.style.display !== 'none' && loginScreen.style.opacity !== '0') {
+                var btn = document.getElementById('loginBtn');
+                if (btn) btn.click();
+            }
+        }
+    });
+
+    // 检查登录状态
+    checkLoginStatus();
+});
+
+// 暴露给全局
+window.showLoginScreen = showLoginScreen;
+window.hideLoginScreen = hideLoginScreen;
+window.checkLoginStatus = checkLoginStatus;
+// ============================================================
 //  🚀 梦女空间 v4.0 - 多模型 + 百炼语音版
 //  新增：语音条功能（微信风格），用户说"发语音"等触发词时生成语音条
 //  修复：语音播放器样式紧凑好看
@@ -7931,7 +8183,14 @@ menuStyle.textContent = `
 document.head.appendChild(menuStyle);
 
 // ========== 初始化 ==========
+
 function init() {
+    // ===== 检查登录状态 =====
+    if (!checkLoginStatus()) {
+        console.log('🔒 等待登录...');
+        return;
+    }
+
     try { loadAllData(); } catch (e) { console.error('加载数据失败:', e); }
     try {
         loadMemeData().then(function() {
