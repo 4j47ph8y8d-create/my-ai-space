@@ -1515,160 +1515,100 @@
 
 <body>
     <!-- ============================================================
-    🌙 登录界面
-    ============================================================ -->
-    <div id="loginScreen" style="
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        background: #B8A9C9;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        transition: opacity 0.6s ease;
+🌙 登录界面（含注册切换）
+============================================================ -->
+<div id="loginScreen" style="
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #B8A9C9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    transition: opacity 0.6s ease;
+">
+    <div style="
+        width: 100%;
+        max-width: 360px;
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 40px 32px 32px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
     ">
-        <!-- 毛玻璃卡片 -->
-        <div style="
-            width: 100%;
-            max-width: 360px;
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 40px 32px 32px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-        ">
-            <!-- 标题 -->
-            <div style="text-align: center; margin-bottom: 32px;">
-                <div style="
-                    font-size: 13px;
-                    color: rgba(255, 255, 255, 0.5);
-                    letter-spacing: 3px;
-                    margin-bottom: 6px;
-                ">欢迎回来</div>
-                <div style="
-                    font-size: 22px;
-                    font-weight: 600;
-                    color: rgba(255, 255, 255, 0.9);
-                    letter-spacing: 1px;
-                ">LunarReverie</div>
-                <div style="
-                    font-size: 13px;
-                    color: rgba(255, 255, 255, 0.35);
-                    margin-top: 4px;
-                ">✦ 月色构筑我们相逢的梦境 ✦</div>
-            </div>
+        <!-- 标题 -->
+        <div style="text-align: center; margin-bottom: 32px;">
+            <div style="
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.5);
+                letter-spacing: 3px;
+                margin-bottom: 6px;
+            " id="formTitle">欢迎回来</div>
+            <div style="
+                font-size: 22px;
+                font-weight: 600;
+                color: rgba(255, 255, 255, 0.9);
+                letter-spacing: 1px;
+            ">LunarReverie</div>
+            <div style="
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.35);
+                margin-top: 4px;
+            " id="formSubtitle">✦ 月色构筑我们相逢的梦境 ✦</div>
+        </div>
 
-            <!-- 表单 -->
+        <!-- ===== 登录表单 ===== -->
+        <div id="loginForm">
             <div style="display: flex; flex-direction: column; gap: 14px;">
-                <!-- 邮箱 -->
                 <div>
-                    <label style="
-                        font-size: 11px;
-                        color: rgba(255, 255, 255, 0.4);
-                        letter-spacing: 1px;
-                        display: block;
-                        margin-bottom: 5px;
-                    ">账号邮箱</label>
-                    <input type="email" id="loginEmail" placeholder="your@dream.com" style="
-                        width: 100%;
-                        padding: 12px 14px;
-                        background: rgba(255, 255, 255, 0.06);
-                        border: 1px solid rgba(255, 255, 255, 0.08);
-                        border-radius: 12px;
-                        color: rgba(255, 255, 255, 0.8);
-                        font-size: 14px;
-                        outline: none;
-                        box-sizing: border-box;
-                        font-family: inherit;
-                        transition: 0.3s;
-                    " onfocus="this.style.borderColor='rgba(255,255,255,0.2)'; this.style.background='rgba(255,255,255,0.08)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.background='rgba(255,255,255,0.06)'">
+                    <label style="font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:1px;display:block;margin-bottom:5px;">账号邮箱</label>
+                    <input type="email" id="loginEmail" placeholder="your@dream.com" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:rgba(255,255,255,0.8);font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;transition:0.3s;" onfocus="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='rgba(255,255,255,0.08)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.06)'">
                 </div>
-                <!-- 密码 -->
                 <div>
-                    <label style="
-                        font-size: 11px;
-                        color: rgba(255, 255, 255, 0.4);
-                        letter-spacing: 1px;
-                        display: block;
-                        margin-bottom: 5px;
-                    ">梦境密码</label>
-                    <input type="password" id="loginPassword" placeholder="••••••••" style="
-                        width: 100%;
-                        padding: 12px 14px;
-                        background: rgba(255, 255, 255, 0.06);
-                        border: 1px solid rgba(255, 255, 255, 0.08);
-                        border-radius: 12px;
-                        color: rgba(255, 255, 255, 0.8);
-                        font-size: 14px;
-                        outline: none;
-                        box-sizing: border-box;
-                        font-family: inherit;
-                        transition: 0.3s;
-                    " onfocus="this.style.borderColor='rgba(255,255,255,0.2)'; this.style.background='rgba(255,255,255,0.08)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.background='rgba(255,255,255,0.06)'">
+                    <label style="font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:1px;display:block;margin-bottom:5px;">梦境密码</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:rgba(255,255,255,0.8);font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;transition:0.3s;" onfocus="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='rgba(255,255,255,0.08)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.06)'">
                 </div>
-
-                <!-- 选项栏 -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
-                    <label style="
-                        font-size: 12px;
-                        color: rgba(255, 255, 255, 0.3);
-                        display: flex;
-                        align-items: center;
-                        gap: 6px;
-                        cursor: pointer;
-                    ">
-                        <input type="checkbox" id="rememberMe" style="
-                            accent-color: rgba(255,255,255,0.3);
-                            width: 14px;
-                            height: 14px;
-                            cursor: pointer;
-                        ">
-                        记住我
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
+                    <label style="font-size:12px;color:rgba(255,255,255,0.3);display:flex;align-items:center;gap:6px;cursor:pointer;">
+                        <input type="checkbox" id="rememberMe" style="accent-color:rgba(255,255,255,0.3);width:14px;height:14px;cursor:pointer;"> 记住我
                     </label>
-                    <a href="#" style="
-                        font-size: 12px;
-                        color: rgba(255, 255, 255, 0.2);
-                        text-decoration: none;
-                        cursor: pointer;
-                    ">忘记密码</a>
+                    <a href="#" style="font-size:12px;color:rgba(255,255,255,0.2);text-decoration:none;cursor:pointer;">忘记密码</a>
                 </div>
+                <button id="loginBtn" style="width:100%;padding:13px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.7);font-size:15px;font-weight:500;cursor:pointer;transition:0.3s;margin-top:4px;font-family:inherit;letter-spacing:2px;" onmouseenter="this.style.background='rgba(255,255,255,0.14)';this.style.color='rgba(255,255,255,0.9)'" onmouseleave="this.style.background='rgba(255,255,255,0.08)';this.style.color='rgba(255,255,255,0.7)'">登入梦境</button>
+                <div style="text-align:center;margin-top:10px;">
+                    <span style="font-size:12px;color:rgba(255,255,255,0.2);">还没有梦境账户？</span>
+                    <a href="#" id="switchToRegister" style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:none;cursor:pointer;transition:0.3s;" onmouseenter="this.style.color='rgba(255,255,255,0.6)'" onmouseleave="this.style.color='rgba(255,255,255,0.3)'">立即创建</a>
+                </div>
+            </div>
+        </div>
 
-                <!-- 登录按钮 -->
-                <button id="loginBtn" style="
-                    width: 100%;
-                    padding: 13px;
-                    background: rgba(255, 255, 255, 0.08);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 12px;
-                    color: rgba(255, 255, 255, 0.7);
-                    font-size: 15px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: 0.3s;
-                    margin-top: 4px;
-                    font-family: inherit;
-                    letter-spacing: 2px;
-                " onmouseenter="this.style.background='rgba(255,255,255,0.14)'; this.style.color='rgba(255,255,255,0.9)'" onmouseleave="this.style.background='rgba(255,255,255,0.08)'; this.style.color='rgba(255,255,255,0.7)'">
-                    登入梦境
-                </button>
-
-                <!-- 注册 -->
-                <div style="text-align: center; margin-top: 10px;">
-                    <span style="font-size: 12px; color: rgba(255, 255, 255, 0.2);">还没有梦境账户？</span>
-                    <a href="#" id="goToRegister" style="
-                        font-size: 12px;
-                        color: rgba(255, 255, 255, 0.3);
-                        text-decoration: none;
-                        cursor: pointer;
-                        transition: 0.3s;
-                    " onmouseenter="this.style.color='rgba(255,255,255,0.6)'" onmouseleave="this.style.color='rgba(255,255,255,0.3)'">立即创建</a>
+        <!-- ===== 注册表单 ===== -->
+        <div id="registerForm" style="display:none;">
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div>
+                    <label style="font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:1px;display:block;margin-bottom:5px;">账号邮箱</label>
+                    <input type="email" id="regEmail" placeholder="your@dream.com" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:rgba(255,255,255,0.8);font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;transition:0.3s;" onfocus="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='rgba(255,255,255,0.08)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.06)'">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:1px;display:block;margin-bottom:5px;">梦境密码</label>
+                    <input type="password" id="regPassword" placeholder="至少 6 位" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:rgba(255,255,255,0.8);font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;transition:0.3s;" onfocus="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='rgba(255,255,255,0.08)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.06)'">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:1px;display:block;margin-bottom:5px;">确认密码</label>
+                    <input type="password" id="regConfirmPassword" placeholder="再次输入密码" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:rgba(255,255,255,0.8);font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;transition:0.3s;" onfocus="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='rgba(255,255,255,0.08)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.06)'">
+                </div>
+                <button id="registerBtn" style="width:100%;padding:13px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.7);font-size:15px;font-weight:500;cursor:pointer;transition:0.3s;margin-top:4px;font-family:inherit;letter-spacing:2px;" onmouseenter="this.style.background='rgba(255,255,255,0.14)';this.style.color='rgba(255,255,255,0.9)'" onmouseleave="this.style.background='rgba(255,255,255,0.08)';this.style.color='rgba(255,255,255,0.7)'">创建梦境账户</button>
+                <div style="text-align:center;margin-top:10px;">
+                    <span style="font-size:12px;color:rgba(255,255,255,0.2);">已有梦境账户？</span>
+                    <a href="#" id="switchToLogin" style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:none;cursor:pointer;transition:0.3s;" onmouseenter="this.style.color='rgba(255,255,255,0.6)'" onmouseleave="this.style.color='rgba(255,255,255,0.3)'">去登录</a>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
    
 
@@ -1908,8 +1848,22 @@
 // ============================================================ 
 
 // ============================================================
-//  🌙 登录界面控制
+//  🌙 登录界面控制（完整版：登录 + 注册）
 // ============================================================
+
+// ----- 工具函数 -----
+function getUsers() {
+    try {
+        var raw = localStorage.getItem('dream_users');
+        return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveUsers(users) {
+    localStorage.setItem('dream_users', JSON.stringify(users));
+}
 
 function showLoginScreen() {
     var el = document.getElementById('loginScreen');
@@ -1940,8 +1894,81 @@ function checkLoginStatus() {
     }
 }
 
-// 登录按钮
+// ----- 切换登录/注册表单 -----
+function showLoginForm() {
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('formTitle').textContent = '欢迎回来';
+    document.getElementById('formSubtitle').textContent = '✦ 月色构筑我们相逢的梦境 ✦';
+}
+
+function showRegisterForm() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'block';
+    document.getElementById('formTitle').textContent = '创建梦境账户';
+    document.getElementById('formSubtitle').textContent = '✦ 加入月光下的梦境 ✦';
+}
+
+// ----- DOM 加载完成后绑定事件 -----
 document.addEventListener('DOMContentLoaded', function() {
+    // 切换按钮
+    var switchToRegister = document.getElementById('switchToRegister');
+    var switchToLogin = document.getElementById('switchToLogin');
+    if (switchToRegister) {
+        switchToRegister.addEventListener('click', function(e) {
+            e.preventDefault();
+            showRegisterForm();
+        });
+    }
+    if (switchToLogin) {
+        switchToLogin.addEventListener('click', function(e) {
+            e.preventDefault();
+            showLoginForm();
+        });
+    }
+
+    // ----- 注册逻辑 -----
+    var registerBtn = document.getElementById('registerBtn');
+    if (registerBtn) {
+        registerBtn.addEventListener('click', function() {
+            var email = document.getElementById('regEmail').value.trim();
+            var password = document.getElementById('regPassword').value.trim();
+            var confirm = document.getElementById('regConfirmPassword').value.trim();
+
+            if (!email || !password || !confirm) {
+                alert('请完整填写所有字段');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('密码长度至少 6 位');
+                return;
+            }
+
+            if (password !== confirm) {
+                alert('两次输入的密码不一致');
+                return;
+            }
+
+            var users = getUsers();
+            if (users[email]) {
+                alert('该邮箱已注册，请直接登录');
+                return;
+            }
+
+            users[email] = password;
+            saveUsers(users);
+            alert('✅ 注册成功！请登录');
+            showLoginForm();
+
+            // 清空注册表单
+            document.getElementById('regEmail').value = '';
+            document.getElementById('regPassword').value = '';
+            document.getElementById('regConfirmPassword').value = '';
+        });
+    }
+
+    // ----- 登录逻辑 -----
     var loginBtn = document.getElementById('loginBtn');
     if (loginBtn) {
         loginBtn.addEventListener('click', function() {
@@ -1954,11 +1981,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (password.length < 6) {
-                alert('密码长度至少 6 位');
+            var users = getUsers();
+            if (!users[email]) {
+                alert('❌ 账号不存在，请先注册');
                 return;
             }
 
+            if (users[email] !== password) {
+                alert('❌ 密码错误，请重试');
+                return;
+            }
+
+            // 登录成功
             localStorage.setItem('dream_user_logged_in', 'true');
             localStorage.setItem('dream_user_email', email);
             if (remember) {
@@ -1972,24 +2006,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    var registerLink = document.getElementById('goToRegister');
-    if (registerLink) {
-        registerLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            alert('注册功能开发中\n请使用测试账号登录：\ntest@dream.com / 123456');
-        });
-    }
-
+    // ----- Enter 键登录 -----
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             var loginScreen = document.getElementById('loginScreen');
             if (loginScreen && loginScreen.style.display !== 'none' && loginScreen.style.opacity !== '0') {
-                var btn = document.getElementById('loginBtn');
-                if (btn) btn.click();
+                // 如果当前显示的是登录表单
+                if (document.getElementById('loginForm').style.display !== 'none') {
+                    var btn = document.getElementById('loginBtn');
+                    if (btn) btn.click();
+                } else {
+                    var regBtn = document.getElementById('registerBtn');
+                    if (regBtn) regBtn.click();
+                }
             }
         }
     });
 
+    // 检查登录状态
     checkLoginStatus();
 });
 
