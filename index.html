@@ -1503,10 +1503,20 @@
             height: 100px;
         }
     }
+
 </style>
+
+    <!-- 主屏幕图标（Safari 添加到主屏幕用） -->
+    <link rel="apple-touch-icon" href="icon.PNG" />
+    <!-- 浏览器标签页图标 -->
+    <link rel="icon" href="icon.PNG" type="image/png" />
+
 </head>
+
 <body>
-<!-- ===== 🌙 登录界面 ===== -->
+    <!-- ============================================================
+    🌙 登录界面
+    ============================================================ -->
     <div id="loginScreen" style="
         position: fixed;
         inset: 0;
@@ -1548,7 +1558,7 @@
                     font-size: 13px;
                     color: rgba(255, 255, 255, 0.35);
                     margin-top: 4px;
-                "> ✦ 月色构筑我们相逢的梦境 ✦ </div>
+                ">✦ 月色构筑我们相逢的梦境 ✦</div>
             </div>
 
             <!-- 表单 -->
@@ -1660,7 +1670,9 @@
         </div>
     </div>
 
-<div class="screen-launcher" id="launcherScreen">
+   
+
+<div class="phone-frame" id="app"> <div class="screen-launcher" id="launcherScreen">
         <button class="theme-toggle-btn" id="themeToggleBtn" title="切换深色/浅色模式"><i class="fas fa-moon" id="themeIcon"></i></button>
         <div class="status-bar"><span class="time" id="statusTime">21:00</span><span class="icons"><i class="fas fa-signal"></i> <i class="fas fa-wifi"></i> <i class="fas fa-battery-three-quarters"></i></span></div>
         <div class="desktop-title">✦ LunarReverie ✦</div>
@@ -1882,6 +1894,20 @@
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div>
 <script> // ============================================================
+//  🚀 梦女空间 v4.0 - 多模型 + 百炼语音版
+//  新增：语音条功能（微信风格），用户说"发语音"等触发词时生成语音条
+//  修复：语音播放器样式紧凑好看
+//  修复：时间戳 NaN:NaN
+//  修复：数据导出/导入完整实现
+//  修复：语音试听音频叠加
+//  修复：generateContextSummary 加保护
+//  ✨ 新增：时光胶囊记忆联动 - AI 读取 role.memory
+//  ✨ 新增：对话摘要自动存入近期记忆
+//  ⭐ 核心修复：立即保存机制，解决刷新丢消息问题
+//  ⭐ 核心修复：联网搜索模式 API Key 检查
+// ============================================================ 
+
+// ============================================================
 //  🌙 登录界面控制
 // ============================================================
 
@@ -1933,7 +1959,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // 保存登录状态
             localStorage.setItem('dream_user_logged_in', 'true');
             localStorage.setItem('dream_user_email', email);
             if (remember) {
@@ -1947,7 +1972,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 注册跳转
     var registerLink = document.getElementById('goToRegister');
     if (registerLink) {
         registerLink.addEventListener('click', function(e) {
@@ -1956,7 +1980,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Enter 键登录
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             var loginScreen = document.getElementById('loginScreen');
@@ -1967,27 +1990,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 检查登录状态
     checkLoginStatus();
 });
 
-// 暴露给全局
 window.showLoginScreen = showLoginScreen;
 window.hideLoginScreen = hideLoginScreen;
 window.checkLoginStatus = checkLoginStatus;
-// ============================================================
-//  🚀 梦女空间 v4.0 - 多模型 + 百炼语音版
-//  新增：语音条功能（微信风格），用户说"发语音"等触发词时生成语音条
-//  修复：语音播放器样式紧凑好看
-//  修复：时间戳 NaN:NaN
-//  修复：数据导出/导入完整实现
-//  修复：语音试听音频叠加
-//  修复：generateContextSummary 加保护
-//  ✨ 新增：时光胶囊记忆联动 - AI 读取 role.memory
-//  ✨ 新增：对话摘要自动存入近期记忆
-//  ⭐ 核心修复：立即保存机制，解决刷新丢消息问题
-//  ⭐ 核心修复：联网搜索模式 API Key 检查
-// ============================================================ 
 
 var CONSTANTS = {
     AI_CHECK_INTERVAL: 30 * 60 * 1000,
@@ -8179,9 +8187,9 @@ menuStyle.textContent = `
 document.head.appendChild(menuStyle);
 
 // ========== 初始化 ==========
-
 function init() {
-    // ===== 检查登录状态 =====
+
+// ===== 检查登录状态 =====
     if (!checkLoginStatus()) {
         console.log('🔒 等待登录...');
         return;
