@@ -14,6 +14,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: '服务器运行正常' });
 });
 
+// ===== 根路由 =====
+app.get('/', (req, res) => {
+  res.send('🚀 LunarReverie 后端运行中！');
+});
+
 // ===== 注册接口 =====
 app.post('/api/auth/register', async (req, res) => {
   try {
