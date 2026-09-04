@@ -8,15 +8,16 @@ const app = express();
 // 中间件
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+app.use(express.static(__dirname));  // ← 新增：让前端文件可访问
 
 // ===== 健康检查 =====
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: '服务器运行正常' });
 });
 
-// ===== 根路由 =====
+// ===== 根路由 - 跳转到前端 =====
 app.get('/', (req, res) => {
-  res.send('🚀 LunarReverie 后端运行中！');
+  res.redirect('/index.html');
 });
 
 // ===== 注册接口 =====
