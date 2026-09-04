@@ -1805,7 +1805,16 @@
         <div class="temp-slider-container"><div class="temp-header"><span class="temp-label"><i class="fas fa-cut" style="color:#07c160;"></i> 分段生成</span><span class="temp-value" id="splitToggleDisplay">开启</span></div><input type="range" id="splitToggleSlider" min="0" max="1" step="1" value="1" /><div class="temp-hints"><span>关闭</span><span>开启</span></div></div>
         <div style="margin-bottom:12px;"><div class="role-manager-header"><h3><i class="fas fa-users" style="color:#07c160;"></i> 角色管理</h3><button class="add-role-btn" id="addRoleBtn"><i class="fas fa-plus"></i> 新建</button></div><div id="roleManagerContainer"></div></div>
         <hr class="module-divider" />
-        <div class="beauty-section"><div class="beauty-title"><i class="fas fa-paint-brush"></i> 美化</div><div class="beauty-item" id="wallpaperPickerBtn"><div class="left"><i class="fas fa-desktop"></i><span>桌面壁纸</span></div><div class="right"><span id="wallpaperStatus">默认</span><div class="preview-box" id="wallpaperPreview"><img id="wallpaperPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div><div class="beauty-item" id="chatBgPickerBtn"><div class="left"><i class="fas fa-comment-alt"></i><span>聊天背景（全局默认）</span></div><div class="right"><span id="chatBgStatus">默认</span><div class="preview-box" id="chatBgPreview"><img id="chatBgPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div><div class="beauty-item" id="userAvatarPickerBtn"><div class="left"><i class="fas fa-user"></i><span>我的头像</span></div><div class="right"><span id="userAvatarStatus">默认</span><div class="preview-box" id="userAvatarPreview"><img id="userAvatarPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div></div>
+        <div class="beauty-section"><div class="beauty-title"><i class="fas fa-paint-brush"></i> 美化</div><div class="beauty-item" id="wallpaperPickerBtn"><div class="left"><i class="fas fa-desktop"></i><span>桌面壁纸</span></div><div class="right"><span id="wallpaperStatus">默认</span><div class="preview-box" id="wallpaperPreview"><img id="wallpaperPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div><div class="beauty-item" id="chatBgPickerBtn"><div class="left"><i class="fas fa-comment-alt"></i><span>聊天背景（全局默认）</span></div><div class="right"><span id="chatBgStatus">默认</span><div class="preview-box" id="chatBgPreview"><img id="chatBgPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div><div class="beauty-item" id="userAvatarPickerBtn"><div class="left"><i class="fas fa-user"></i><span>我的头像</span></div><div class="right"><span id="userAvatarStatus">默认</span><div class="preview-box" id="userAvatarPreview"><img id="userAvatarPreviewImg" src="" alt="预览" style="display:none;" /></div><i class="fas fa-chevron-right"></i></div></div></div> <!-- ===== 退出登录按钮 ===== -->
+<div class="beauty-item" id="logoutBtn" style="border-top: 1px solid var(--border-color); margin-top: 4px; padding-top: 10px;">
+    <div class="left">
+        <i class="fas fa-sign-out-alt" style="color: #e74c3c;"></i>
+        <span style="color: #e74c3c;">退出登录</span>
+    </div>
+    <div class="right">
+        <i class="fas fa-chevron-right" style="color: #e74c3c;"></i>
+    </div>
+</div>
         <hr class="module-divider" />
         <div class="temp-slider-container" style="border-left:3px solid #34d399;border-radius:12px;">
             <div class="temp-header"><span class="temp-label" style="font-size:13px;"><i class="fas fa-cut" style="color:#34d399;"></i> 清理旧消息</span><span class="temp-value" id="trimStatus" style="font-size:12px;color:#34d399;">保留最新</span></div>
@@ -2173,7 +2182,6 @@ function immediateSaveAllData() {
     try {
         var configToSave = JSON.parse(JSON.stringify(CONFIG));
         if (configToSave.heart) delete configToSave.heart.recoveryTimer;
-        // 删除多余的空字符串，保留真实数据
         var data = { 
             config: configToSave, 
             roles: roles.map(function(r) { return deepCloneRole(r); }), 
@@ -2181,6 +2189,26 @@ function immediateSaveAllData() {
         };
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
         saveMemeData().catch(function(e) { console.error('表情包保存失败:', e); });
+        
+        // ===== 同步到云端 =====
+        var token = localStorage.getItem('dream_token');
+        if (token) {
+            fetch(API_BASE + '/data/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(data)
+            }).then(function(res) {
+                return res.json();
+            }).then(function(result) {
+                console.log('☁️ 数据已同步到云端', result);
+            }).catch(function(e) {
+                console.error('☁️ 云端同步失败:', e);
+            });
+        }
+        // ===== 云端同步结束 =====
     } catch (e) {
         console.error('保存数据失败:', e);
     }
@@ -8914,6 +8942,29 @@ document.getElementById('refreshTtsCacheBtn').addEventListener('click', refreshT
         });
     });
 
+// ===== 退出登录 =====
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        if (confirm('确定要退出登录吗？')) {
+            // 清除登录状态
+            localStorage.removeItem('dream_user_logged_in');
+            localStorage.removeItem('dream_user_email');
+            localStorage.removeItem('dream_token');
+            localStorage.removeItem('dream_user_remember');
+            
+            // 关闭设置面板
+            closeSettings();
+            
+            // 显示登录界面
+            showLoginScreen();
+            
+            // 清空当前数据
+            roles = [];
+            CONFIG = {};
+            
+            showToast('👋 已退出登录');
+        }
+    });
+
     try { init(); } catch (e) {
         console.error('初始化失败:', e);
         showToast('⚠️ 应用初始化失败，请刷新页面重试');
@@ -10882,5 +10933,75 @@ function generateNaturalMemoryText(role) {
     <div class="floating-icon"><i class="fas fa-phone"></i></div>
     <div class="floating-timer" id="floatingTimer">00:00</div>
 </div>
+
+// ============================================================
+//  ☁️ 登录后从云端加载数据（独立于 loadAllData）
+// ============================================================
+
+// 在页面加载完成后执行
+document.addEventListener('DOMContentLoaded', function() {
+    // 等待 1 秒让本地数据先加载完
+    setTimeout(function() {
+        var token = localStorage.getItem('dream_token');
+        if (!token) return;
+        
+        console.log('☁️ 检查云端数据...');
+        
+        fetch(API_BASE + '/data/load', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(result) {
+            if (result.success && result.data) {
+                console.log('☁️ 从云端加载数据成功');
+                var cloudData = result.data;
+                
+                // 合并配置
+                if (cloudData.config) {
+                    var oldApiKey = CONFIG.apiKey;
+                    var oldRelayApiKey = CONFIG.relayApiKey;
+                    var oldTtsApiKey = CONFIG.voice && CONFIG.voice.apiKey;
+                    
+                    CONFIG = Object.assign({}, CONFIG, cloudData.config);
+                    
+                    CONFIG.apiKey = oldApiKey || CONFIG.apiKey;
+                    CONFIG.relayApiKey = oldRelayApiKey || CONFIG.relayApiKey;
+                    if (CONFIG.voice) {
+                        CONFIG.voice.apiKey = oldTtsApiKey || CONFIG.voice.apiKey;
+                    }
+                }
+                
+                // 合并角色数据
+                if (cloudData.roles && cloudData.roles.length > 0) {
+                    // 如果本地没有数据，或者云端数据更新，使用云端
+                    if (roles.length === 0 || cloudData.roles.length > roles.length) {
+                        roles = cloudData.roles;
+                        if (!currentRoleId || !roles.find(function(r) { return r.id === currentRoleId; })) {
+                            currentRoleId = roles[0] ? roles[0].id : null;
+                        }
+                        console.log('☁️ 已加载 ' + roles.length + ' 个角色');
+                    }
+                }
+                
+                // 合并日记数据
+                if (cloudData.diaries) {
+                    CONFIG.diaries = cloudData.diaries;
+                }
+                
+                // 重新渲染界面
+                if (typeof renderContacts === 'function') renderContacts();
+                if (typeof renderRoleManager === 'function') renderRoleManager();
+                if (typeof renderDiaryAll === 'function') renderDiaryAll();
+                if (typeof updateChatTitle === 'function') updateChatTitle();
+                if (typeof updateHeartDisplay === 'function') updateHeartDisplay();
+                
+                console.log('☁️ 已合并云端数据到本地');
+            }
+        })
+        .catch(function(e) {
+            console.error('☁️ 云端加载失败:', e);
+        });
+    }, 1000);
+});
 </body>
 </html>
