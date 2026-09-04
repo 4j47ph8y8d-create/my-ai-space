@@ -1,9 +1,13 @@
+// Service Worker
+const CACHE_NAME = 'lunar-v1';
+
 self.addEventListener('install', function(e) {
     e.waitUntil(
-        caches.open('lunar-v1').then(function(cache) {
+        caches.open(CACHE_NAME).then(function(cache) {
             return cache.addAll([
                 '/index.html',
-                '/icon.PNG'
+                '/icon.PNG',
+                '/manifest.json'
             ]);
         })
     );
