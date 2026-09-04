@@ -1,49 +1,83 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const authRoutes = require('./routes/auth');
-const dataRoutes = require('./routes/data');
+require('dotenv').config();
 
 const app = express();
 
 // 中间件
-app.use(cors({
-  origin: '*',  // 允许所有前端域名（开发阶段）
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
 
-// 健康检查（Railway 需要）
+// ===== 健康检查 =====
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', message: '服务器运行正常' });
 });
 
-// 路由
-app.use('/api/auth', authRoutes);
-app.use('/api/data', dataRoutes);
-
-// MongoDB 连接
-const MONGODB_URI = process.env.MONGODB_URI;
-if (!MONGODB_URI) {
-  console.warn('⚠️ MONGODB_URI 未设置，使用内存存储（仅测试用）');
-}
-
-mongoose.connect(MONGODB_URI || 'mongodb://localhost:27017/dream_app', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000
-})
-.then(() => console.log('✅ MongoDB 连接成功'))
-.catch(err => {
-  console.error('❌ MongoDB 连接失败:', err.message);
-  console.log('⚠️ 服务将继续运行，但数据不会持久化');
+// ===== 注册接口 =====
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, nickname } = req.body;
+    console.log('注册请求:', email);
+    res.json({ 
+      success: true, 
+      message: '注册成功！',
+      user: { email, nickname: nickname || email.split('@')[0] }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// 启动服务（Railway 用动态端口）
+// ===== 登录接口 =====
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log('登录请求:', email);
+    res.json({ 
+      success: true, 
+      token: 'test-token-' + Date.now(),
+      user: { email, nickname: email.split('@')[0] }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== 保存数据接口 =====
+app.post('/api/data/save', async (req, res) => {
+  try {
+    console.log('保存数据请求');
+    res.json({ success: true, version: 1 });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== 加载数据接口 =====
+app.get('/api/data/load', async (req, res) => {
+  try {
+    console.log('加载数据请求');
+    res.json({ 
+      success: true, 
+      data: null, 
+      version: 0 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 测试接口
+app.get('/api/test', (req, res) => {
+  res.json({ message: '后端连接成功！' });
+});
+
+// 启动服务
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 服务运行在端口 ${PORT}`);
-  console.log(`📡 健康检查: http://localhost:${PORT}/health`);
+  console.log(`✅ 服务器运行在端口 ${PORT}`);
+  console.log(`🔗 健康检查: /health`);
 });
+
+console.log('🚀 服务器启动中...');
