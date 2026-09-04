@@ -1833,7 +1833,9 @@
     <div class="heart-detail-overlay" id="heartDetailOverlay"><div class="heart-detail-panel"><button class="close-btn" id="hdCloseBtn">&times;</button><div class="hd-avatar" id="hdAvatar"></div><div class="hd-name" id="hdName">未绑定角色</div><div class="hd-value" id="hdValue">65<span class="hd-percent">%</span><span class="hd-bpm">♥ BPM</span></div><div class="hd-level" id="hdLevel">平静</div><div class="hd-signature" id="hdSignature">今天也很想你 💕</div><div class="hd-recent" id="hdRecent">最近心跳加速：<span class="highlight">等待你的第一句情话</span></div></div></div>
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div>
-<script> // ============================================================
+<script>
+ const API_BASE = 'https://my-ai-space-production.up.railway.app/api';
+// ============================================================
 //  🚀 梦女空间 v4.0 - 多模型 + 百炼语音版
 //  新增：语音条功能（微信风格），用户说"发语音"等触发词时生成语音条
 //  修复：语音播放器样式紧凑好看
@@ -1929,82 +1931,87 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ----- 注册逻辑 -----
     var registerBtn = document.getElementById('registerBtn');
-    if (registerBtn) {
-        registerBtn.addEventListener('click', function() {
-            var email = document.getElementById('regEmail').value.trim();
-            var password = document.getElementById('regPassword').value.trim();
-            var confirm = document.getElementById('regConfirmPassword').value.trim();
+if (registerBtn) {
+    registerBtn.addEventListener('click', async function() {
+        var email = document.getElementById('regEmail').value.trim();
+        var password = document.getElementById('regPassword').value.trim();
+        var confirm = document.getElementById('regConfirmPassword').value.trim();
 
-            if (!email || !password || !confirm) {
-                alert('请完整填写所有字段');
-                return;
+        if (!email || !password || !confirm) {
+            alert('请完整填写所有字段');
+            return;
+        }
+        if (password.length < 6) {
+            alert('密码长度至少 6 位');
+            return;
+        }
+        if (password !== confirm) {
+            alert('两次输入的密码不一致');
+            return;
+        }
+
+        try {
+            var res = await fetch(API_BASE + '/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            var data = await res.json();
+            if (data.success) {
+                alert('✅ 注册成功！请登录');
+                showLoginForm();
+                document.getElementById('regEmail').value = '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regConfirmPassword').value = '';
+            } else {
+                alert('❌ ' + (data.error || '注册失败'));
             }
-
-            if (password.length < 6) {
-                alert('密码长度至少 6 位');
-                return;
-            }
-
-            if (password !== confirm) {
-                alert('两次输入的密码不一致');
-                return;
-            }
-
-            var users = getUsers();
-            if (users[email]) {
-                alert('该邮箱已注册，请直接登录');
-                return;
-            }
-
-            users[email] = password;
-            saveUsers(users);
-            alert('✅ 注册成功！请登录');
-            showLoginForm();
-
-            // 清空注册表单
-            document.getElementById('regEmail').value = '';
-            document.getElementById('regPassword').value = '';
-            document.getElementById('regConfirmPassword').value = '';
-        });
-    }
+        } catch(e) {
+            alert('❌ 网络错误，请检查后端是否运行');
+        }
+    });
+}
 
     // ----- 登录逻辑 -----
     var loginBtn = document.getElementById('loginBtn');
-    if (loginBtn) {
-        loginBtn.addEventListener('click', function() {
-            var email = document.getElementById('loginEmail').value.trim();
-            var password = document.getElementById('loginPassword').value.trim();
-            var remember = document.getElementById('rememberMe').checked;
+if (loginBtn) {
+    loginBtn.addEventListener('click', async function() {
+        var email = document.getElementById('loginEmail').value.trim();
+        var password = document.getElementById('loginPassword').value.trim();
+        var remember = document.getElementById('rememberMe').checked;
 
-            if (!email || !password) {
-                alert('请填写完整的账号和密码');
-                return;
-            }
+        if (!email || !password) {
+            alert('请填写完整的账号和密码');
+            return;
+        }
 
-            var users = getUsers();
-            if (!users[email]) {
-                alert('❌ 账号不存在，请先注册');
-                return;
-            }
-
-            if (users[email] !== password) {
-                alert('❌ 密码错误，请重试');
-                return;
-            }
-
-            // 登录成功
-            localStorage.setItem('dream_user_logged_in', 'true');
-            localStorage.setItem('dream_user_email', email);
-            if (remember) {
-                localStorage.setItem('dream_user_remember', 'true');
+        try {
+            var res = await fetch(API_BASE + '/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            var data = await res.json();
+            if (data.success) {
+                localStorage.setItem('dream_user_logged_in', 'true');
+                localStorage.setItem('dream_user_email', email);
+                localStorage.setItem('dream_token', data.token || '');
+                if (remember) {
+                    localStorage.setItem('dream_user_remember', 'true');
+                } else {
+                    localStorage.removeItem('dream_user_remember');
+                }
+                alert('✨ 欢迎回来！');
+                hideLoginScreen();
+                location.reload();
             } else {
-                localStorage.removeItem('dream_user_remember');
+                alert('❌ ' + (data.error || '登录失败'));
             }
-
-            alert('✨ 欢迎回来，' + email.split('@')[0] + '！');
-            hideLoginScreen();
-        });
-    }
+        } catch(e) {
+            alert('❌ 网络错误，请检查后端是否运行');
+        }
+    });
+}
 
     // ----- Enter 键登录 -----
     document.addEventListener('keydown', function(e) {
