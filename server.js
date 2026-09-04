@@ -1,92 +1,49 @@
+require('dotenv').config();
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
+const authRoutes = require('./routes/auth');
+const dataRoutes = require('./routes/data');
+
 const app = express();
+
+// 中间件
+app.use(cors({
+  origin: '*',  // 允许所有前端域名（开发阶段）
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// 健康检查（Railway 需要）
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// 路由
+app.use('/api/auth', authRoutes);
+app.use('/api/data', dataRoutes);
+
+// MongoDB 连接
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  console.warn('⚠️ MONGODB_URI 未设置，使用内存存储（仅测试用）');
+}
+
+mongoose.connect(MONGODB_URI || 'mongodb://localhost:27017/dream_app', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000
+})
+.then(() => console.log('✅ MongoDB 连接成功'))
+.catch(err => {
+  console.error('❌ MongoDB 连接失败:', err.message);
+  console.log('⚠️ 服务将继续运行，但数据不会持久化');
+});
+
+// 启动服务（Railway 用动态端口）
 const PORT = process.env.PORT || 3000;
-
-// 允许所有跨域请求
-app.use(cors());
-app.use(express.json());
-
-// 测试路由 - 访问根路径时返回成功信息
-app.get('/', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    message: 'LunarReverie 后端运行正常',
-    time: new Date().toISOString()
-  });
-});
-
-// 用户数据存储（临时，重启会清空）
-const users = {};
-
-// 注册
-app.post('/api/register', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: '邮箱和密码不能为空' });
-  }
-  if (password.length < 6) {
-    return res.status(400).json({ success: false, message: '密码至少 6 位' });
-  }
-  if (users[email]) {
-    return res.status(400).json({ success: false, message: '该邮箱已注册' });
-  }
-  users[email] = { 
-    password: password, 
-    data: { 
-      config: {}, 
-      roles: [], 
-      currentRoleId: null, 
-      diaries: [] 
-    } 
-  };
-  res.json({ success: true, message: '注册成功' });
-});
-
-// 登录
-app.post('/api/login', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: '邮箱和密码不能为空' });
-  }
-  const user = users[email];
-  if (!user) {
-    return res.status(400).json({ success: false, message: '账号不存在，请先注册' });
-  }
-  if (user.password !== password) {
-    return res.status(400).json({ success: false, message: '密码错误' });
-  }
-  res.json({ success: true, message: '登录成功', email: email });
-});
-
-// 保存数据
-app.post('/api/save', (req, res) => {
-  const { email, data } = req.body;
-  if (!email || !data) {
-    return res.status(400).json({ success: false, message: '缺少必要参数' });
-  }
-  if (!users[email]) {
-    return res.status(400).json({ success: false, message: '用户不存在' });
-  }
-  users[email].data = data;
-  res.json({ success: true, message: '数据已保存' });
-});
-
-// 加载数据
-app.post('/api/load', (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ success: false, message: '缺少邮箱' });
-  }
-  if (!users[email]) {
-    return res.status(400).json({ success: false, message: '用户不存在' });
-  }
-  res.json({ success: true, data: users[email].data });
-});
-
-// 启动服务器
 app.listen(PORT, '0.0.0.0', () => {
-  console.log('🌙 LunarReverie 后端已启动');
-  console.log('📍 端口:', PORT);
+  console.log(`🚀 服务运行在端口 ${PORT}`);
+  console.log(`📡 健康检查: http://localhost:${PORT}/health`);
 });
-
