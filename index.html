@@ -10859,6 +10859,70 @@ function generateNaturalMemoryText(role) {
     if (lines.length === 0) return '';
     return '我记得：\n' + lines.join('\n');
 }
+
+// ============================================================
+//  ☁️ 登录后从云端加载数据
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        var token = localStorage.getItem('dream_token');
+        if (!token) return;
+        
+        console.log('☁️ 检查云端数据...');
+        
+        fetch(API_BASE + '/data/load', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(result) {
+            if (result.success && result.data) {
+                console.log('☁️ 从云端加载数据成功');
+                var cloudData = result.data;
+                
+                if (cloudData.config) {
+                    var oldApiKey = CONFIG.apiKey;
+                    var oldRelayApiKey = CONFIG.relayApiKey;
+                    var oldTtsApiKey = CONFIG.voice && CONFIG.voice.apiKey;
+                    
+                    CONFIG = Object.assign({}, CONFIG, cloudData.config);
+                    
+                    CONFIG.apiKey = oldApiKey || CONFIG.apiKey;
+                    CONFIG.relayApiKey = oldRelayApiKey || CONFIG.relayApiKey;
+                    if (CONFIG.voice) {
+                        CONFIG.voice.apiKey = oldTtsApiKey || CONFIG.voice.apiKey;
+                    }
+                }
+                
+                if (cloudData.roles && cloudData.roles.length > 0) {
+                    if (roles.length === 0 || cloudData.roles.length > roles.length) {
+                        roles = cloudData.roles;
+                        if (!currentRoleId || !roles.find(function(r) { return r.id === currentRoleId; })) {
+                            currentRoleId = roles[0] ? roles[0].id : null;
+                        }
+                        console.log('☁️ 已加载 ' + roles.length + ' 个角色');
+                    }
+                }
+                
+                if (cloudData.diaries) {
+                    CONFIG.diaries = cloudData.diaries;
+                }
+                
+                if (typeof renderContacts === 'function') renderContacts();
+                if (typeof renderRoleManager === 'function') renderRoleManager();
+                if (typeof renderDiaryAll === 'function') renderDiaryAll();
+                if (typeof updateChatTitle === 'function') updateChatTitle();
+                if (typeof updateHeartDisplay === 'function') updateHeartDisplay();
+                
+                console.log('☁️ 已合并云端数据到本地');
+            }
+        })
+        .catch(function(e) {
+            console.error('☁️ 云端加载失败:', e);
+        });
+    }, 1000);
+});
+
 </script>
 
 <!-- ========== 通话系统 HTML ========== -->
@@ -10933,75 +10997,5 @@ function generateNaturalMemoryText(role) {
     <div class="floating-icon"><i class="fas fa-phone"></i></div>
     <div class="floating-timer" id="floatingTimer">00:00</div>
 </div>
-
-// ============================================================
-//  ☁️ 登录后从云端加载数据（独立于 loadAllData）
-// ============================================================
-
-// 在页面加载完成后执行
-document.addEventListener('DOMContentLoaded', function() {
-    // 等待 1 秒让本地数据先加载完
-    setTimeout(function() {
-        var token = localStorage.getItem('dream_token');
-        if (!token) return;
-        
-        console.log('☁️ 检查云端数据...');
-        
-        fetch(API_BASE + '/data/load', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        })
-        .then(function(res) { return res.json(); })
-        .then(function(result) {
-            if (result.success && result.data) {
-                console.log('☁️ 从云端加载数据成功');
-                var cloudData = result.data;
-                
-                // 合并配置
-                if (cloudData.config) {
-                    var oldApiKey = CONFIG.apiKey;
-                    var oldRelayApiKey = CONFIG.relayApiKey;
-                    var oldTtsApiKey = CONFIG.voice && CONFIG.voice.apiKey;
-                    
-                    CONFIG = Object.assign({}, CONFIG, cloudData.config);
-                    
-                    CONFIG.apiKey = oldApiKey || CONFIG.apiKey;
-                    CONFIG.relayApiKey = oldRelayApiKey || CONFIG.relayApiKey;
-                    if (CONFIG.voice) {
-                        CONFIG.voice.apiKey = oldTtsApiKey || CONFIG.voice.apiKey;
-                    }
-                }
-                
-                // 合并角色数据
-                if (cloudData.roles && cloudData.roles.length > 0) {
-                    // 如果本地没有数据，或者云端数据更新，使用云端
-                    if (roles.length === 0 || cloudData.roles.length > roles.length) {
-                        roles = cloudData.roles;
-                        if (!currentRoleId || !roles.find(function(r) { return r.id === currentRoleId; })) {
-                            currentRoleId = roles[0] ? roles[0].id : null;
-                        }
-                        console.log('☁️ 已加载 ' + roles.length + ' 个角色');
-                    }
-                }
-                
-                // 合并日记数据
-                if (cloudData.diaries) {
-                    CONFIG.diaries = cloudData.diaries;
-                }
-                
-                // 重新渲染界面
-                if (typeof renderContacts === 'function') renderContacts();
-                if (typeof renderRoleManager === 'function') renderRoleManager();
-                if (typeof renderDiaryAll === 'function') renderDiaryAll();
-                if (typeof updateChatTitle === 'function') updateChatTitle();
-                if (typeof updateHeartDisplay === 'function') updateHeartDisplay();
-                
-                console.log('😊已合并云端数据到本地');
-            }
-        })
-        .catch(function(e) {
-            console.error('😞云端加载失败:', e);
-        });
-    }, 1000);
-});
 </body>
 </html>
