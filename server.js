@@ -111,7 +111,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-// ===== 登录接口 =====
+// ===== 登录接口（升级版：使用 JWT） =====
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -132,8 +132,18 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: '账号或密码错误' });
         }
         
-        // 生成简单 token（真实项目应该用 JWT）
-        const token = 'token_' + user._id + '_' + Date.now();
+        // ===== 使用 JWT 生成 token（安全！） =====
+        const jwt = require('jsonwebtoken');
+        const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
+        
+        const token = jwt.sign(
+            { 
+                userId: user._id.toString(),
+                email: user.email 
+            },
+            JWT_SECRET,
+            { expiresIn: '7d' }  // ← 7天后自动过期
+        );
         
         res.json({
             success: true,
