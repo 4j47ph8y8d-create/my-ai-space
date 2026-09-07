@@ -2002,24 +2002,46 @@ if (loginBtn) {
             });
             var data = await res.json();
             if (data.success) {
-                localStorage.setItem('dream_user_logged_in', 'true');
-                localStorage.setItem('dream_user_email', email);
-                localStorage.setItem('dream_token', data.token || '');
-                if (remember) {
-                    localStorage.setItem('dream_user_remember', 'true');
-                } else {
-                    localStorage.removeItem('dream_user_remember');
-                }
-                alert('✨ 欢迎回来！');
-                hideLoginScreen();
-                location.reload();
-            } else {
-                alert('❌ ' + (data.error || '登录失败'));
+    localStorage.setItem('dream_user_logged_in', 'true');
+    localStorage.setItem('dream_user_email', email);
+    localStorage.setItem('dream_token', data.token || '');
+    if (remember) {
+        localStorage.setItem('dream_user_remember', 'true');
+    } else {
+        localStorage.removeItem('dream_user_remember');
+    }
+    
+    // ===== 新增：登录后从云端加载数据 =====
+    try {
+        const loadRes = await fetch(API_BASE + '/data/load', {
+            headers: { 'Authorization': 'Bearer ' + data.token }
+        });
+        const loadData = await loadRes.json();
+        if (loadData.success && loadData.data && loadData.data.roles && loadData.data.roles.length > 0) {
+            // 把云端数据保存到本地
+            roles = loadData.data.roles;
+            CONFIG = loadData.data.config || CONFIG;
+            CONFIG.diaries = loadData.data.diaries || [];
+            if (roles.length > 0) {
+                currentRoleId = roles[0].id;
             }
-        } catch(e) {
-            alert('❌ 网络错误，请检查后端是否运行');
+            // 保存到本地缓存
+            var saveData = {
+                config: CONFIG,
+                roles: roles,
+                currentRoleId: currentRoleId
+            };
+            localStorage.setItem('ds_multirole_v2', JSON.stringify(saveData));
+            console.log('☁️ 已从云端加载数据');
         }
-    });
+    } catch (e) {
+        console.error('加载云端数据失败:', e);
+    }
+    // ===== 新增结束 =====
+    
+    alert('✨ 欢迎回来！');
+    hideLoginScreen();
+    location.reload();
 }
 
     // ----- Enter 键登录 -----
@@ -2180,35 +2202,51 @@ function getHeartData(role) { if (!role) return { value: 65, restingValue: 65, p
 
 function immediateSaveAllData() {
     try {
+        // ===== 1. 先保存到本地 =====
         var configToSave = JSON.parse(JSON.stringify(CONFIG));
         if (configToSave.heart) delete configToSave.heart.recoveryTimer;
-        var data = { 
-            config: configToSave, 
-            roles: roles.map(function(r) { return deepCloneRole(r); }), 
-            currentRoleId: currentRoleId 
+        
+        // 壁纸特殊处理（存到 IndexedDB，不存到 LocalStorage）
+        var wallpaperFlag = configToSave.wallpaper ? 'saved' : '';
+        configToSave.wallpaper = wallpaperFlag;
+        
+        var data = {
+            config: configToSave,
+            roles: roles.map(function(r) { return deepCloneRole(r); }),
+            currentRoleId: currentRoleId
         };
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
         saveMemeData().catch(function(e) { console.error('表情包保存失败:', e); });
         
-        // ===== 同步到云端 =====
+        // ===== 2. 同步到云端 =====
         var token = localStorage.getItem('dream_token');
         if (token) {
+            var cloudData = {
+                config: configToSave,
+                roles: roles.map(function(r) { return deepCloneRole(r); }),
+                diaries: CONFIG.diaries || []
+            };
+            
             fetch(API_BASE + '/data/save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + token
                 },
-                body: JSON.stringify(data)
-            }).then(function(res) {
-                return res.json();
-            }).then(function(result) {
-                console.log('☁️ 数据已同步到云端', result);
-            }).catch(function(e) {
-                console.error('☁️ 云端同步失败:', e);
+                body: JSON.stringify(cloudData)
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    console.log('☁️ 数据已同步到云端 (版本: ' + result.version + ')');
+                } else {
+                    console.error('☁️ 云端同步失败:', result.error);
+                }
+            })
+            .catch(function(e) {
+                console.error('☁️ 云端同步网络错误:', e);
             });
         }
-        // ===== 云端同步结束 =====
     } catch (e) {
         console.error('保存数据失败:', e);
     }
@@ -8446,6 +8484,51 @@ initCallFloatingDrag();
         }
     } catch (e) {
         console.error('通话系统初始化失败:', e);
+    }
+
+// ===== 新增：登录后检查云端数据 =====
+    var token = localStorage.getItem('dream_token');
+    if (token) {
+        setTimeout(function() {
+            fetch(API_BASE + '/data/load', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(result) {
+                if (result.success && result.data && result.data.roles) {
+                    var cloudRoles = result.data.roles || [];
+                    var localRoles = roles || [];
+                    
+                    // 如果云端有数据，且比本地多，或本地为空，则使用云端数据
+                    if (cloudRoles.length > localRoles.length || localRoles.length === 0) {
+                        console.log('☁️ 检测到云端有更新的数据，正在同步...');
+                        roles = cloudRoles;
+                        CONFIG = result.data.config || CONFIG;
+                        CONFIG.diaries = result.data.diaries || [];
+                        if (!currentRoleId || !roles.find(function(r) { return r.id === currentRoleId; })) {
+                            currentRoleId = roles[0] ? roles[0].id : null;
+                        }
+                        // 保存到本地
+                        var saveData = {
+                            config: CONFIG,
+                            roles: roles,
+                            currentRoleId: currentRoleId
+                        };
+                        localStorage.setItem('ds_multirole_v2', JSON.stringify(saveData));
+                        // 刷新界面
+                        if (typeof renderContacts === 'function') renderContacts();
+                        if (typeof renderRoleManager === 'function') renderRoleManager();
+                        if (typeof renderDiaryAll === 'function') renderDiaryAll();
+                        if (typeof updateChatTitle === 'function') updateChatTitle();
+                        if (typeof updateHeartDisplay === 'function') updateHeartDisplay();
+                        showToast('☁️ 已从云端同步数据');
+                    }
+                }
+            })
+            .catch(function(e) {
+                console.log('⚠️ 云端数据检查失败:', e);
+            });
+        }, 2000);
     }
 }
 
