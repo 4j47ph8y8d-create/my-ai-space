@@ -5,8 +5,6 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const app = express();
-
-// ===== JWT 密钥 =====
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-me';
 
 // ===== 中间件 =====
@@ -20,10 +18,6 @@ app.use(express.static(__dirname));
 
 // ===== 连接 MongoDB =====
 const MONGODB_URI = process.env.MONGODB_URI;
-if (!MONGODB_URI) {
-    console.warn('⚠️ MONGODB_URI 未设置，使用内存存储（仅测试用）');
-}
-
 mongoose.connect(MONGODB_URI || 'mongodb://localhost:27017/dream_app', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -32,7 +26,6 @@ mongoose.connect(MONGODB_URI || 'mongodb://localhost:27017/dream_app', {
 .then(() => console.log('✅ MongoDB 连接成功'))
 .catch(err => {
     console.error('❌ MongoDB 连接失败:', err.message);
-    console.log('⚠️ 使用内存存储，数据不会持久化');
 });
 
 // ===== 用户模型 =====
@@ -70,7 +63,21 @@ const UserDataSchema = new mongoose.Schema({
 const UserData = mongoose.model('UserData', UserDataSchema);
 
 // ============================================================
-//  🔐 身份验证中间件（第4步）
+//  🔐 登录失败限制
+// ============================================================
+const loginAttempts = {};
+
+setInterval(() => {
+    const now = Date.now();
+    for (const key in loginAttempts) {
+        if (now - loginAttempts[key].lastAttempt > 60 * 60 * 1000) {
+            delete loginAttempts[key];
+        }
+    }
+}, 60 * 60 * 1000);
+
+// ============================================================
+//  🔐 身份验证中间件
 // ============================================================
 function authenticate(req, res, next) {
     const authHeader = req.headers.authorization;
@@ -91,17 +98,19 @@ function authenticate(req, res, next) {
     }
 }
 
-// ===== 健康检查 =====
+// ============================================================
+//  📡 路由
+// ============================================================
+
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', message: '服务器运行正常' });
 });
 
-// ===== 根路由 =====
 app.get('/', (req, res) => {
     res.redirect('/index.html');
 });
 
-// ===== 注册接口 =====
+// ===== 注册 =====
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { email, password, nickname } = req.body;
@@ -109,7 +118,6 @@ app.post('/api/auth/register', async (req, res) => {
         if (!email || !password) {
             return res.status(400).json({ error: '请填写完整信息' });
         }
-        
         if (password.length < 6) {
             return res.status(400).json({ error: '密码至少 6 位' });
         }
@@ -136,7 +144,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-// ===== 登录接口（使用 JWT） =====
+// ===== 登录（含失败限制） =====
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -145,22 +153,50 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ error: '请填写完整信息' });
         }
         
+        // 检查登录失败次数
+        const key = `login_${email}`;
+        if (loginAttempts[key] && loginAttempts[key].count >= 5) {
+            const timeLeft = Math.ceil((loginAttempts[key].lockedUntil - Date.now()) / 60000);
+            if (timeLeft > 0) {
+                return res.status(429).json({ 
+                    error: `尝试过多，请 ${timeLeft} 分钟后重试` 
+                });
+            } else {
+                delete loginAttempts[key];
+            }
+        }
+        
         const user = await User.findOne({ email });
         if (!user) {
+            if (!loginAttempts[key]) {
+                loginAttempts[key] = { count: 0, lastAttempt: Date.now() };
+            }
+            loginAttempts[key].count++;
+            loginAttempts[key].lastAttempt = Date.now();
+            if (loginAttempts[key].count >= 5) {
+                loginAttempts[key].lockedUntil = Date.now() + 15 * 60 * 1000;
+            }
             return res.status(401).json({ error: '账号或密码错误' });
         }
         
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
+            if (!loginAttempts[key]) {
+                loginAttempts[key] = { count: 0, lastAttempt: Date.now() };
+            }
+            loginAttempts[key].count++;
+            loginAttempts[key].lastAttempt = Date.now();
+            if (loginAttempts[key].count >= 5) {
+                loginAttempts[key].lockedUntil = Date.now() + 15 * 60 * 1000;
+            }
             return res.status(401).json({ error: '账号或密码错误' });
         }
         
-        // 生成 JWT（7天过期）
+        // 登录成功，清除失败记录
+        delete loginAttempts[key];
+        
         const token = jwt.sign(
-            { 
-                userId: user._id.toString(),
-                email: user.email 
-            },
+            { userId: user._id.toString(), email: user.email },
             JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -176,16 +212,11 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// ===== 保存数据接口（安全版） =====
+// ===== 保存数据 =====
 app.post('/api/data/save', authenticate, async (req, res) => {
     try {
         const userId = req.userId;
         const { config, roles, diaries } = req.body;
-        
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(401).json({ error: '用户不存在' });
-        }
         
         let userData = await UserData.findOne({ userId });
         
@@ -207,15 +238,10 @@ app.post('/api/data/save', authenticate, async (req, res) => {
     }
 });
 
-// ===== 加载数据接口（安全版） =====
+// ===== 加载数据 =====
 app.get('/api/data/load', authenticate, async (req, res) => {
     try {
         const userId = req.userId;
-        
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(401).json({ error: '用户不存在' });
-        }
         
         const userData = await UserData.findOne({ userId });
         if (!userData) {
@@ -237,16 +263,16 @@ app.get('/api/data/load', authenticate, async (req, res) => {
     }
 });
 
-// ===== 测试接口 =====
+// ===== 测试 =====
 app.get('/api/test', (req, res) => {
     res.json({ message: '后端连接成功！' });
 });
 
-// ===== 启动服务 =====
+// ============================================================
+//  🚀 启动
+// ============================================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ 服务器运行在端口 ${PORT}`);
     console.log(`🔗 健康检查: /health`);
 });
-
-console.log('🚀 服务器启动中...');
