@@ -174,16 +174,13 @@ app.post('/api/data/save', async (req, res) => {
         let userData = await UserData.findOne({ userId });
         
         if (userData) {
-            userData.config = config || userData.config;
-            userData.roles = roles || userData.roles;
-            userData.diaries = diaries || userData.diaries;
-            userData.version += 1;
-            userData.updatedAt = new Date();
-            await userData.save();
-        } else {
-            userData = new UserData({ userId, config, roles, diaries });
-            await userData.save();
-        }
+    userData.config = config || userData.config;
+    userData.roles = roles || userData.roles;
+    userData.diaries = diaries || userData.diaries;
+    // 去掉版本递增，直接用当前版本
+    userData.updatedAt = new Date();
+    await userData.save();
+}
         
         res.json({ success: true, version: userData.version });
     } catch (error) {
