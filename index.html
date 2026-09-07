@@ -1982,7 +1982,7 @@ if (registerBtn) {
 }
 
     // ----- 登录逻辑 -----
-    var loginBtn = document.getElementById('loginBtn');
+var loginBtn = document.getElementById('loginBtn');
 if (loginBtn) {
     loginBtn.addEventListener('click', async function() {
         var email = document.getElementById('loginEmail').value.trim();
@@ -2002,46 +2002,52 @@ if (loginBtn) {
             });
             var data = await res.json();
             if (data.success) {
-    localStorage.setItem('dream_user_logged_in', 'true');
-    localStorage.setItem('dream_user_email', email);
-    localStorage.setItem('dream_token', data.token || '');
-    if (remember) {
-        localStorage.setItem('dream_user_remember', 'true');
-    } else {
-        localStorage.removeItem('dream_user_remember');
-    }
-    
-    // ===== 新增：登录后从云端加载数据 =====
-    try {
-        const loadRes = await fetch(API_BASE + '/data/load', {
-            headers: { 'Authorization': 'Bearer ' + data.token }
-        });
-        const loadData = await loadRes.json();
-        if (loadData.success && loadData.data && loadData.data.roles && loadData.data.roles.length > 0) {
-            // 把云端数据保存到本地
-            roles = loadData.data.roles;
-            CONFIG = loadData.data.config || CONFIG;
-            CONFIG.diaries = loadData.data.diaries || [];
-            if (roles.length > 0) {
-                currentRoleId = roles[0].id;
+                localStorage.setItem('dream_user_logged_in', 'true');
+                localStorage.setItem('dream_user_email', email);
+                localStorage.setItem('dream_token', data.token || '');
+                if (remember) {
+                    localStorage.setItem('dream_user_remember', 'true');
+                } else {
+                    localStorage.removeItem('dream_user_remember');
+                }
+                
+                // ===== 新增：登录后从云端加载数据 =====
+                try {
+                    const loadRes = await fetch(API_BASE + '/data/load', {
+                        headers: { 'Authorization': 'Bearer ' + data.token }
+                    });
+                    const loadData = await loadRes.json();
+                    if (loadData.success && loadData.data && loadData.data.roles && loadData.data.roles.length > 0) {
+                        roles = loadData.data.roles;
+                        CONFIG = loadData.data.config || CONFIG;
+                        CONFIG.diaries = loadData.data.diaries || [];
+                        if (roles.length > 0) {
+                            currentRoleId = roles[0].id;
+                        }
+                        var saveData = {
+                            config: CONFIG,
+                            roles: roles,
+                            currentRoleId: currentRoleId
+                        };
+                        localStorage.setItem('ds_multirole_v2', JSON.stringify(saveData));
+                        console.log('☁️ 已从云端加载数据');
+                    }
+                } catch (e) {
+                    console.error('加载云端数据失败:', e);
+                }
+                // ===== 新增结束 =====
+                
+                alert('✨ 欢迎回来！');
+                hideLoginScreen();
+                location.reload();
+            } else {
+                alert('❌ ' + (data.error || '登录失败'));
             }
-            // 保存到本地缓存
-            var saveData = {
-                config: CONFIG,
-                roles: roles,
-                currentRoleId: currentRoleId
-            };
-            localStorage.setItem('ds_multirole_v2', JSON.stringify(saveData));
-            console.log('☁️ 已从云端加载数据');
+        } catch (e) {
+            console.error('登录请求失败:', e);
+            alert('❌ 网络错误，请检查后端是否运行');
         }
-    } catch (e) {
-        console.error('加载云端数据失败:', e);
-    }
-    // ===== 新增结束 =====
-    
-    alert('✨ 欢迎回来！');
-    hideLoginScreen();
-    location.reload();
+    });
 }
 
     // ----- Enter 键登录 -----
