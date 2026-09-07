@@ -1995,11 +1995,18 @@ if (loginBtn) {
         }
 
         try {
-            var res = await fetch(API_BASE + '/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+            // ===== 对密码进行 SHA-256 哈希 =====
+const encoder = new TextEncoder();
+const data = encoder.encode(password);
+const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+const hashArray = Array.from(new Uint8Array(hashBuffer));
+const hashedPassword = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+var res = await fetch(API_BASE + '/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password: hashedPassword })
+});
             var data = await res.json();
             if (data.success) {
                 localStorage.setItem('dream_user_logged_in', 'true');
