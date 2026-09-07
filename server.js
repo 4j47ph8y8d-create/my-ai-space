@@ -1,12 +1,20 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const app = express();
 
-// 中间件
-app.use(cors());
+// ===== JWT 密钥 =====
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-me';
+
+// ===== 中间件 =====
+app.use(cors({
+    origin: ['https://my-ai-space-production.up.railway.app', 'http://localhost:3000'],
+    methods: ['GET', 'POST'],
+    credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
 
@@ -35,7 +43,6 @@ const UserSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-// 密码加密（保存前自动执行）
 UserSchema.pre('save', async function(next) {
     if (!this.isModified('password')) return next();
     const bcrypt = require('bcryptjs');
@@ -43,7 +50,6 @@ UserSchema.pre('save', async function(next) {
     next();
 });
 
-// 验证密码方法
 UserSchema.methods.comparePassword = async function(password) {
     const bcrypt = require('bcryptjs');
     return await bcrypt.compare(password, this.password);
@@ -62,6 +68,28 @@ const UserDataSchema = new mongoose.Schema({
 });
 
 const UserData = mongoose.model('UserData', UserDataSchema);
+
+// ============================================================
+//  🔐 身份验证中间件（第4步）
+// ============================================================
+function authenticate(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: '未认证，请先登录' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.userId = decoded.userId;
+        next();
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: '登录已过期，请重新登录' });
+        }
+        return res.status(401).json({ error: '无效的 token' });
+    }
+}
 
 // ===== 健康检查 =====
 app.get('/health', (req, res) => {
@@ -86,17 +114,14 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ error: '密码至少 6 位' });
         }
         
-        // 检查邮箱是否已存在
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ error: '该邮箱已注册' });
         }
         
-        // 创建用户
         const user = new User({ email, password, nickname });
         await user.save();
         
-        // 创建空的数据记录
         const userData = new UserData({ userId: user._id });
         await userData.save();
         
@@ -111,7 +136,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-// ===== 登录接口（升级版：使用 JWT） =====
+// ===== 登录接口（使用 JWT） =====
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -120,29 +145,24 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ error: '请填写完整信息' });
         }
         
-        // 查找用户
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(401).json({ error: '账号或密码错误' });
         }
         
-        // 验证密码
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             return res.status(401).json({ error: '账号或密码错误' });
         }
         
-        // ===== 使用 JWT 生成 token（安全！） =====
-        const jwt = require('jsonwebtoken');
-        const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
-        
+        // 生成 JWT（7天过期）
         const token = jwt.sign(
             { 
                 userId: user._id.toString(),
                 email: user.email 
             },
             JWT_SECRET,
-            { expiresIn: '7d' }  // ← 7天后自动过期
+            { expiresIn: '7d' }
         );
         
         res.json({
@@ -156,64 +176,41 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// ===== 保存数据接口 =====
-app.post('/api/data/save', async (req, res) => {
+// ===== 保存数据接口（安全版） =====
+app.post('/api/data/save', authenticate, async (req, res) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: '未认证' });
-        }
+        const userId = req.userId;
+        const { config, roles, diaries } = req.body;
         
-        const token = authHeader.split(' ')[1];
-        // 从 token 中提取 userId（简单实现）
-        const userIdMatch = token.match(/token_(.+?)_/);
-        if (!userIdMatch) {
-            return res.status(401).json({ error: '无效的 token' });
-        }
-        
-        const userId = userIdMatch[1];
-        
-        // 验证用户是否存在
         const user = await User.findById(userId);
         if (!user) {
             return res.status(401).json({ error: '用户不存在' });
         }
         
-        const { config, roles, diaries } = req.body;
-        
         let userData = await UserData.findOne({ userId });
         
         if (userData) {
-    userData.config = config || userData.config;
-    userData.roles = roles || userData.roles;
-    userData.diaries = diaries || userData.diaries;
-    // 去掉版本递增，直接用当前版本
-    userData.updatedAt = new Date();
-    await userData.save();
-}
+            userData.config = config || userData.config;
+            userData.roles = roles || userData.roles;
+            userData.diaries = diaries || userData.diaries;
+            userData.updatedAt = new Date();
+            await userData.save();
+        } else {
+            userData = new UserData({ userId, config, roles, diaries });
+            await userData.save();
+        }
         
-        res.json({ success: true, version: userData.version });
+        res.json({ success: true, version: userData.version || 1 });
     } catch (error) {
         console.error('保存数据错误:', error);
         res.status(500).json({ error: '数据保存失败' });
     }
 });
 
-// ===== 加载数据接口 =====
-app.get('/api/data/load', async (req, res) => {
+// ===== 加载数据接口（安全版） =====
+app.get('/api/data/load', authenticate, async (req, res) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: '未认证' });
-        }
-        
-        const token = authHeader.split(' ')[1];
-        const userIdMatch = token.match(/token_(.+?)_/);
-        if (!userIdMatch) {
-            return res.status(401).json({ error: '无效的 token' });
-        }
-        
-        const userId = userIdMatch[1];
+        const userId = req.userId;
         
         const user = await User.findById(userId);
         if (!user) {
