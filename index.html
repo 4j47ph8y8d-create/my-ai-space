@@ -775,22 +775,15 @@
         }
 
 /* ===== 送礼卡片（商城同款 · 纯色无气泡） ===== */
-
 .gift-card-snapshot {
     background: #f7f5f2;
     border-radius: 8px;
     padding: 14px 16px 12px 16px;
     margin: 2px 0;
+    border: 1px solid rgba(0,0,0,0.04);
+    box-shadow: 0 1px 6px rgba(0,0,0,0.02);
     max-width: 280px;
     position: relative;
-}
-
-/* ===== 新增：强制覆盖 mall 传过来的样式，保持纯净 ===== */
-.message-row .gift-card-snapshot,
-.bubble-container .gift-card-snapshot,
-.gift-card-snapshot {
-    border: none !important;
-    box-shadow: none !important;
 }
 
 /* 自己发的 - 微暖 */
@@ -3073,54 +3066,48 @@ function createMessageRow(msg, role) {
 
     // ========== 处理礼物消息 ==========
     if (msg.type === 'gift') {
-        var giftData = msg.giftData || {};
-        var productName = giftData.productName || '礼物';
-        var fromName = giftData.fromName || (msg.role === 'user' ? '你' : role.name);
-        var price = giftData.price || 0;
-        var note = giftData.note || '';
-        var isUserGift = msg.role === 'user';
-        var targetName = isUserGift ? role.name : fromName;
-        
-        var now = new Date();
-        var hour = now.getHours();
-        var timeStr = hour < 6 ? '深夜' : hour < 12 ? '清晨' : hour < 17 ? '午后' : '黄昏';
-        
-        var statusText = isUserGift ? '你 → ' + role.name : fromName + ' → 你';
-        
-        // ===== 只渲染礼物卡片，不包含任何额外内容 =====
-        contentHtml = `
+    var giftData = msg.giftData || {};
+    var productName = giftData.productName || '礼物';
+    var fromName = giftData.fromName || (msg.role === 'user' ? '你' : role.name);
+    var price = giftData.price || 0;
+    var note = giftData.note || '';
+    var isUserGift = msg.role === 'user';
+    var targetName = isUserGift ? role.name : fromName;
+    
+    // 判断时间
+    var now = new Date();
+    var hour = now.getHours();
+    var timeStr = hour < 6 ? '深夜' : hour < 12 ? '清晨' : hour < 17 ? '午后' : '黄昏';
+    
+    // 根据送礼方生成不同的显示文案
+    var statusText = isUserGift ? '你 → ' + role.name : fromName + ' → 你';
+    
+    // 日系快照风送礼卡片
+    contentHtml = `
     <div class="gift-card-snapshot" data-product-name="${productName}" data-from-name="${fromName}" data-note="${note}">
-        <div class="gift-card-snapshot-body">
-            <div class="gift-card-snapshot-recipient">TO · <span class="gift-card-snapshot-role">${isUserGift ? role.name : fromName}</span></div>
-            <div class="gift-card-snapshot-message">
-                <span class="gift-card-snapshot-quote">“</span>
-                <span class="gift-card-snapshot-text">${escapeHtml(note || (isUserGift ? '一份心意，请查收 💕' : '送给你一份礼物 💕'))}</span>
-                <span class="gift-card-snapshot-quote">”</span>
-            </div>
-            <div class="gift-card-snapshot-product">
-                <span class="gift-card-snapshot-icon">✦</span>
-                <span class="gift-card-snapshot-name">${escapeHtml(productName)}</span>
-                ${price > 0 ? `<span class="gift-card-snapshot-price">¥${price}</span>` : ''}
-            </div>
-            <div class="gift-card-snapshot-footer">
-                <span class="gift-card-snapshot-time">今 · ${timeStr}</span>
-                <span class="gift-card-snapshot-status">${statusText}</span>
+        <div class="gift-card-snapshot-inner">
+            <div class="gift-card-snapshot-bar"></div>
+            <div class="gift-card-snapshot-body">
+                <div class="gift-card-snapshot-recipient">TO · <span class="gift-card-snapshot-role">${isUserGift ? role.name : fromName}</span></div>
+                <div class="gift-card-snapshot-message">
+                    <span class="gift-card-snapshot-quote">“</span>
+                    <span class="gift-card-snapshot-text">${escapeHtml(note || (isUserGift ? '一份心意，请查收 💕' : '送给你一份礼物 💕'))}</span>
+                    <span class="gift-card-snapshot-quote">”</span>
+                </div>
+                <div class="gift-card-snapshot-product">
+                    <span class="gift-card-snapshot-icon">✦</span>
+                    <span class="gift-card-snapshot-name">${escapeHtml(productName)}</span>
+                    ${price > 0 ? `<span class="gift-card-snapshot-price">¥${price}</span>` : ''}
+                </div>
+                <div class="gift-card-snapshot-footer">
+                    <span class="gift-card-snapshot-time">今 · ${timeStr}</span>
+                    <span class="gift-card-snapshot-status">${statusText}</span>
+                </div>
             </div>
         </div>
     </div>
     `;
-        
-        // ===== 礼物消息直接渲染，不包裹气泡，不显示额外文字 =====
-        row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div>' +
-            '<div class="bubble-container" style="max-width:100%;">' +
-            (timeStr ? '<div class="msg-time">' + timeStr + '</div>' : '') +
-            '<div class="bubble-row" style="width:100%;">' +
-            contentHtml +
-            '</div>' +
-            '</div>';
-        
-        return row;
-    }
+}
 
     // ========== 处理图片消息 ==========
     else if (msg.type === 'image') {
@@ -3181,15 +3168,30 @@ function createMessageRow(msg, role) {
 
     var footerHtml = '';
 
-   // ========== 构建最终 HTML ==========
-// 普通消息：包裹在气泡里
-row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div><div class="bubble-container">' +
-    (timeStr ? '<div class="msg-time">' + timeStr + '</div>' : '') +
-    '<div class="bubble-row"><div class="bubble" style="padding:' + (isVoiceBubble ? '0' : '') + ';background:' + (isVoiceBubble ? 'transparent' : '') + ';box-shadow:' + (isVoiceBubble ? 'none' : '') + ';">' +
-    quoteHtml + contentHtml +
-    '</div>' + actionsHtml + '</div>' +
-    footerHtml +
-    '</div>';
+    // ========== 构建最终 HTML ==========
+// 判断是否为礼物消息（不包裹气泡）
+var isGiftMessage = msg.type === 'gift';
+
+// 礼物消息：不包裹气泡，直接显示卡片
+if (isGiftMessage) {
+    row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div><div class="bubble-container" style="max-width:100%;">' +
+        (timeStr ? '<div class="msg-time">' + timeStr + '</div>' : '') +
+        '<div class="bubble-row" style="width:100%;">' +
+        contentHtml +
+        actionsHtml +
+        '</div>' +
+        footerHtml +
+        '</div>';
+} else {
+    // 普通消息：包裹在气泡里
+    row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div><div class="bubble-container">' +
+        (timeStr ? '<div class="msg-time">' + timeStr + '</div>' : '') +
+        '<div class="bubble-row"><div class="bubble" style="padding:' + (isVoiceBubble ? '0' : '') + ';background:' + (isVoiceBubble ? 'transparent' : '') + ';box-shadow:' + (isVoiceBubble ? 'none' : '') + ';">' +
+        quoteHtml + contentHtml +
+        '</div>' + actionsHtml + '</div>' +
+        footerHtml +
+        '</div>';
+}
 
     return row;
 }
@@ -3826,7 +3828,6 @@ function addMessageToRole(roleId, role, content, type, giftData, voiceRequested)
         audioUrl: null,
         audioDuration: 0,
         voiceRequested: voiceRequested || false,
-quoted: quotedData || null,
         quoted: quotedData // ← 新增：存储引用信息
     };
     if (giftData) msg.giftData = giftData;
@@ -3853,51 +3854,6 @@ quoted: quotedData || null,
     immediateSaveAllData();
     updateHeartDisplay();
     return msgId;
-}
-
-// ===== 新增：确保主应用能正确处理礼物消息 =====
-function ensureGiftMessageInMainApp(roleId, giftData) {
-    try {
-        var role = roles.find(function(r) { return r.id === roleId; });
-        if (!role) return;
-        
-        var raw = localStorage.getItem('ds_multirole_v2');
-        if (!raw) return;
-        var data = JSON.parse(raw);
-        
-        var targetRole = data.roles.find(function(r) { return r.id === roleId; });
-        if (!targetRole) return;
-        
-        // 检查是否已存在这条礼物消息
-        var exists = targetRole.messages.some(function(m) {
-            return m.type === 'gift' && m.giftData && m.giftData.productName === giftData.productName;
-        });
-        
-        if (!exists) {
-            var giftMessage = {
-                id: 'gift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                role: 'user',
-                content: '💝 送了「' + giftData.productName + '」给 ' + role.name + (giftData.note ? '（附言：' + giftData.note + '）' : ''),
-                type: 'gift',
-                time: new Date().toISOString(),
-                giftData: giftData,
-                hasAudio: false,
-                audioUrl: null,
-                audioDuration: 0,
-                voiceRequested: false
-            };
-            targetRole.messages.push(giftMessage);
-            
-            if (!data.config) data.config = {};
-            if (!data.config.unreadCount) data.config.unreadCount = {};
-            data.config.unreadCount[roleId] = (data.config.unreadCount[roleId] || 0) + 1;
-            
-            localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
-            console.log('✅ 已确保礼物消息在主应用中:', giftData.productName);
-        }
-    } catch (e) {
-        console.error('确保礼物消息失败:', e);
-    }
 }
 
 function consolidateMemory(role) {
