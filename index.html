@@ -3065,7 +3065,7 @@ function createMessageRow(msg, role) {
     }
 
     // ========== 处理礼物消息 ==========
-    if (msg.type === 'gift') {
+   if (msg.type === 'gift') {
     var giftData = msg.giftData || {};
     var productName = giftData.productName || '礼物';
     var fromName = giftData.fromName || (msg.role === 'user' ? '你' : role.name);
@@ -3074,39 +3074,45 @@ function createMessageRow(msg, role) {
     var isUserGift = msg.role === 'user';
     var targetName = isUserGift ? role.name : fromName;
     
-    // 判断时间
     var now = new Date();
     var hour = now.getHours();
     var timeStr = hour < 6 ? '深夜' : hour < 12 ? '清晨' : hour < 17 ? '午后' : '黄昏';
     
-    // 根据送礼方生成不同的显示文案
     var statusText = isUserGift ? '你 → ' + role.name : fromName + ' → 你';
     
-    // 日系快照风送礼卡片
     contentHtml = `
     <div class="gift-card-snapshot" data-product-name="${productName}" data-from-name="${fromName}" data-note="${note}">
-        <div class="gift-card-snapshot-inner">
-            <div class="gift-card-snapshot-bar"></div>
-            <div class="gift-card-snapshot-body">
-                <div class="gift-card-snapshot-recipient">TO · <span class="gift-card-snapshot-role">${isUserGift ? role.name : fromName}</span></div>
-                <div class="gift-card-snapshot-message">
-                    <span class="gift-card-snapshot-quote">“</span>
-                    <span class="gift-card-snapshot-text">${escapeHtml(note || (isUserGift ? '一份心意，请查收 💕' : '送给你一份礼物 💕'))}</span>
-                    <span class="gift-card-snapshot-quote">”</span>
-                </div>
-                <div class="gift-card-snapshot-product">
-                    <span class="gift-card-snapshot-icon">✦</span>
-                    <span class="gift-card-snapshot-name">${escapeHtml(productName)}</span>
-                    ${price > 0 ? `<span class="gift-card-snapshot-price">¥${price}</span>` : ''}
-                </div>
-                <div class="gift-card-snapshot-footer">
-                    <span class="gift-card-snapshot-time">今 · ${timeStr}</span>
-                    <span class="gift-card-snapshot-status">${statusText}</span>
-                </div>
+        <div class="gift-card-snapshot-body">
+            <div class="gift-card-snapshot-recipient">TO · <span class="gift-card-snapshot-role">${isUserGift ? role.name : fromName}</span></div>
+            <div class="gift-card-snapshot-message">
+                <span class="gift-card-snapshot-quote">“</span>
+                <span class="gift-card-snapshot-text">${escapeHtml(note || (isUserGift ? '一份心意，请查收 💕' : '送给你一份礼物 💕'))}</span>
+                <span class="gift-card-snapshot-quote">”</span>
+            </div>
+            <div class="gift-card-snapshot-product">
+                <span class="gift-card-snapshot-icon">✦</span>
+                <span class="gift-card-snapshot-name">${escapeHtml(productName)}</span>
+                ${price > 0 ? `<span class="gift-card-snapshot-price">¥${price}</span>` : ''}
+            </div>
+            <div class="gift-card-snapshot-footer">
+                <span class="gift-card-snapshot-time">今 · ${timeStr}</span>
+                <span class="gift-card-snapshot-status">${statusText}</span>
             </div>
         </div>
     </div>
     `;
+    
+    // ⭐ 礼物消息不包裹气泡，直接显示卡片
+    row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div><div class="bubble-container" style="max-width:100%;">' +
+        (timeStr ? '<div class="msg-time">' + timeStr + '</div>' : '') +
+        '<div class="bubble-row" style="width:100%;">' +
+        contentHtml +
+        actionsHtml +
+        '</div>' +
+        footerHtml +
+        '</div>';
+    
+    return row; // ⭐ 直接返回，不继续走后面的逻辑
 }
 
     // ========== 处理图片消息 ==========
