@@ -3937,6 +3937,32 @@ function consolidateMemory(role) {
 }
 
 function buildSystemPrompt(role) {
+    // ===== 新增：加载商品列表 =====
+    var productList = [];
+    try {
+        var raw = localStorage.getItem('ds_multirole_v2');
+        if (raw) {
+            var data = JSON.parse(raw);
+            if (data.mall && data.mall.products) {
+                productList = data.mall.products;
+            }
+        }
+    } catch (_) {}
+    
+    // 如果没有商品，用默认商品
+    if (productList.length === 0) {
+        productList = [
+            { name: '纯白衬衫', price: 129, description: '新疆纯棉制造，柔软舒适' },
+            { name: '真丝睡裙', price: 169, description: '真蚕丝，柔软舒适' },
+            { name: '情侣拖鞋', price: 49, description: 'EVA材质，防滑耐磨' },
+            { name: '手工陶瓷杯', price: 89, description: '手作质感，独一无二' },
+            { name: '木质香薰', price: 65, description: '雪松与白麝香' },
+            { name: '羊绒围巾', price: 139, description: '温暖柔软，冬日必备' },
+        ];
+    }
+    // ===== 新增结束 =====
+    
+
     // ===== 第一步：强制角色宣言 =====
     var parts = [];
     // ===== 第一段：像真人一样自然聊天 =====
@@ -3974,8 +4000,19 @@ function buildSystemPrompt(role) {
         parts.push('【📖 你记得的关于 ta 的事】\n' + memoryText + '\n（这些是你们相处中你记住的，聊天时可以自然地提起）');
     }
     
-    // 4. 表情包 & 送礼（精简成“可以做的事”，不要长篇大论）
-    var abilityBlock = '【你可以做的事】\n';
+    // 4. 表情包 & 送礼（精简成"可以做的事"）
+var abilityBlock = '【你可以做的事】\n';
+
+// ===== 新增：告诉 AI 商城里有这些商品 =====
+abilityBlock += '【🛍️ 商城商品列表】\n';
+abilityBlock += '你可以在聊天中提到这些商品，表达你喜欢哪个、想要哪个。\n';
+productList.forEach(function(p) {
+    abilityBlock += '• 「' + p.name + '」¥' + p.price + '（' + (p.description || '') + '）\n';
+});
+abilityBlock += '\n如果用户提到某件商品，你可以自然地表达你的看法。\n';
+abilityBlock += '如果你特别喜欢某件商品，可以告诉用户你喜欢它、想要它。\n\n';
+// ===== 新增结束 =====
+
     if (CONFIG.aiMemeEnabled !== false && memes.length > 0) {
     abilityBlock += '• 【表情包彩蛋】这个聊天软件支持你"召唤"表情包图片。\n';
     abilityBlock += '  当你想表达某种情绪（开心、震惊、害羞、无语、感动等），并且觉得一个表情包比文字更生动时，\n';
