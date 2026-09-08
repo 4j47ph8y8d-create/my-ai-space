@@ -1318,21 +1318,40 @@ function openMallDetail(product) {
     };
 }
 
-// ===== 购买 / 送礼 =====
+// ===== 购买 / 送礼（可角色选择） =====
 function purchaseProduct(product, qty, note, mode) {
     var totalPrice = product.price * qty;
+    
+    // 送礼模式：弹窗选择角色
+    if (mode === 'gift') {
+        selectTargetRoleForGift(function(selectedRole) {
+            if (!selectedRole) return;
+            if (mallBalance < totalPrice) { showToast('💰 余额不足，去充值吧～'); return; }
+            if (!confirm('💝 送给 ' + selectedRole.name + '「' + product.name + '」×' + qty + ' 吗？\n花费 ¥' + totalPrice)) return;
+            
+            executePurchase(product, qty, note, mode, selectedRole, totalPrice);
+        });
+        return;
+    }
+    
+    // 购买模式：使用当前角色
     var currentRole = getCurrentRoleFromMain();
     if (!currentRole) { showToast('⚠️ 请先在主应用中创建角色'); return; }
     if (mallBalance < totalPrice) { showToast('💰 余额不足，去充值吧～'); return; }
-    if (!confirm(mode === 'gift' ? '💝 送给 ' + currentRole.name + '「' + product.name + '」×' + qty + ' ？' : '购买「' + product.name + '」×' + qty + ' ？')) return;
+    if (!confirm('购买「' + product.name + '」×' + qty + ' 吗？\n花费 ¥' + totalPrice)) return;
+    
+    executePurchase(product, qty, note, mode, currentRole, totalPrice);
+}
 
+// ===== 执行购买 =====
+function executePurchase(product, qty, note, mode, targetRole, totalPrice) {
     mallBalance -= totalPrice;
     var order = {
         id: 'ORD_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
         productId: product.id, productName: product.name, productImage: product.image,
         price: product.price, qty: qty, total: totalPrice,
         note: note || '', mode: mode,
-        roleName: currentRole.name, roleId: currentRole.id,
+        roleName: targetRole.name, roleId: targetRole.id,
         status: 'pending', giftFromAi: false,
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
@@ -1340,12 +1359,66 @@ function purchaseProduct(product, qty, note, mode) {
     saveMallData();
     document.getElementById('mallDetailOverlay').classList.remove('active');
     updateMallUI();
-    showToast('✅ ' + (mode === 'gift' ? '🎁 已送给 ' + currentRole.name : '购买成功'));
+    showToast('✅ ' + (mode === 'gift' ? '🎁 已送给 ' + targetRole.name : '购买成功'));
 
     if (mode === 'gift') {
-        triggerHeartSpikeForGift(currentRole, product, 'gift');
-        addGiftToMemory(currentRole, product, 'user', note);
-        triggerGiftChatReply(currentRole, product, note);
+        triggerHeartSpikeForGift(targetRole, product, 'gift');
+        addGiftToMemory(targetRole, product, 'user', note);
+        triggerGiftChatReply(targetRole, product, note);
+    }
+}
+
+// ===== 选择送礼目标角色 =====
+function selectTargetRoleForGift(callback) {
+    var roles = loadRolesFromMain();
+    if (roles.length === 0) {
+        showToast('⚠️ 暂无角色，请先创建');
+        callback(null);
+        return;
+    }
+    
+    // 如果只有一个角色，直接选择
+    if (roles.length === 1) {
+        callback(roles[0]);
+        return;
+    }
+    
+    // 多个角色：弹窗选择
+    var overlay = document.getElementById('mallRoleSelectOverlay');
+    var list = document.getElementById('mallRoleSelectList');
+    
+    var html = '';
+    roles.forEach(function(role) {
+        var avatarStyle = role.avatar && role.avatar.startsWith('data:') 
+            ? 'background-image:url(' + role.avatar + ');background-size:cover;background-position:center;' 
+            : 'background-color:#d6d0c8;';
+        var intimacy = role.extendedState && role.extendedState.intimacy ? role.extendedState.intimacy : 0;
+        var intimacyText = intimacy > 0 ? ' 💕' + intimacy + '%' : '';
+        html += '<button class="role-select-btn" data-id="' + role.id + '">' +
+            '<div class="rs-avatar" style="' + avatarStyle + '"></div>' +
+            '<span class="rs-name">' + role.name + intimacyText + '</span>' +
+            '<span class="rs-check">💝</span>' +
+            '</button>';
+    });
+    list.innerHTML = html;
+    
+    overlay.classList.add('active');
+    
+    list.querySelectorAll('.role-select-btn').forEach(function(btn) {
+        btn.onclick = function() {
+            overlay.classList.remove('active');
+            var role = roles.find(function(r) { return r.id === btn.dataset.id; });
+            callback(role);
+        };
+    });
+    
+    // 取消按钮
+    var cancelBtn = document.getElementById('mallRoleSelectCancel');
+    if (cancelBtn) {
+        cancelBtn.onclick = function() {
+            overlay.classList.remove('active');
+            callback(null);
+        };
     }
 }
 
