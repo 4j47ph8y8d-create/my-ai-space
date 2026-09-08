@@ -1344,7 +1344,6 @@ function purchaseProduct(product, qty, note, mode) {
 }
 
 // ===== 执行购买 =====
-
 function executePurchase(product, qty, note, mode, targetRole, totalPrice) {
     mallBalance -= totalPrice;
     var order = {
@@ -1363,10 +1362,75 @@ function executePurchase(product, qty, note, mode, targetRole, totalPrice) {
     showToast('✅ ' + (mode === 'gift' ? '🎁 已送给 ' + targetRole.name : '购买成功'));
 
     if (mode === 'gift') {
-        syncGiftToMainApp(targetRole, product, qty, note, totalPrice);  // ← 新增
+        syncGiftToMainApp(targetRole, product, qty, note, totalPrice);
         triggerHeartSpikeForGift(targetRole, product, 'gift');
         addGiftToMemory(targetRole, product, 'user', note);
         triggerGiftChatReply(targetRole, product, note);
+    }
+}
+
+// ===== 新增：同步礼物到主应用 =====
+
+// ===== 同步礼物到主应用 =====
+function syncGiftToMainApp(role, product, qty, note, totalPrice) {
+    try {
+        var raw = localStorage.getItem('ds_multirole_v2');
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        
+        var targetRole = data.roles.find(function(r) { return r.id === role.id; });
+        if (!targetRole) {
+            console.warn('⚠️ 主应用中未找到角色:', role.name);
+            return;
+        }
+        
+        if (!Array.isArray(targetRole.messages)) targetRole.messages = [];
+        
+        // ===== 检查是否已存在相同礼物（防止重复） =====
+        var exists = targetRole.messages.some(function(m) {
+            return m.type === 'gift' && 
+                   m.giftData && 
+                   m.giftData.productName === product.name &&
+                   m.giftData.note === note;
+        });
+        
+        if (exists) {
+            console.log('⏭️ 礼物已存在，跳过重复添加');
+            return;
+        }
+        
+        var giftMessage = {
+            id: 'gift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            role: 'user',
+            content: '💝 送了「' + product.name + '」给 ' + role.name + (note ? '（附言：' + note + '）' : ''),
+            type: 'gift',
+            time: new Date().toISOString(),
+            giftData: {
+                productName: product.name,
+                price: product.price,
+                qty: qty || 1,
+                note: note || '',
+                fromName: '你',
+                toName: role.name,
+                fromId: 'user',
+                toId: role.id,
+                totalPrice: totalPrice || product.price * (qty || 1)
+            },
+            hasAudio: false,
+            audioUrl: null,
+            audioDuration: 0,
+            voiceRequested: false
+        };
+        targetRole.messages.push(giftMessage);
+        
+        if (!data.config) data.config = {};
+        if (!data.config.unreadCount) data.config.unreadCount = {};
+        data.config.unreadCount[role.id] = (data.config.unreadCount[role.id] || 0) + 1;
+        
+        localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+        console.log('✅ 礼物已同步到主应用:', product.name, '→', role.name);
+    } catch (e) {
+        console.error('同步礼物到主应用失败:', e);
     }
 }
 
@@ -1447,62 +1511,14 @@ function addGiftToMemory(role, product, from, note) {
     addMemoryToMain(role.id, giftText);
 }
 
-// ===== 同步礼物到主应用 =====
-function syncGiftToMainApp(role, product, qty, note, totalPrice) {
-    try {
-        var raw = localStorage.getItem('ds_multirole_v2');
-        if (!raw) return;
-        var data = JSON.parse(raw);
-        
-        var targetRole = data.roles.find(function(r) { return r.id === role.id; });
-        if (!targetRole) {
-            console.warn('⚠️ 主应用中未找到角色:', role.name);
-            return;
-        }
-        
-        if (!Array.isArray(targetRole.messages)) targetRole.messages = [];
-        
-        var giftMessage = {
-            id: 'gift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            role: 'user',
-            content: '💝 送了「' + product.name + '」给 ' + role.name + (note ? '（附言：' + note + '）' : ''),
-            type: 'gift',
-            time: new Date().toISOString(),
-            giftData: {
-                productName: product.name,
-                price: product.price,
-                qty: qty,
-                note: note || '',
-                fromName: '你',
-                toName: role.name,
-                fromId: 'user',
-                toId: role.id,
-                totalPrice: totalPrice
-            },
-            hasAudio: false,
-            audioUrl: null,
-            audioDuration: 0,
-            voiceRequested: false
-        };
-        targetRole.messages.push(giftMessage);
-        
-        if (!data.config) data.config = {};
-        if (!data.config.unreadCount) data.config.unreadCount = {};
-        data.config.unreadCount[role.id] = (data.config.unreadCount[role.id] || 0) + 1;
-        
-        localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
-        console.log('✅ 礼物已同步到主应用:', product.name, '→', role.name);
-    } catch (e) {
-        console.error('同步礼物到主应用失败:', e);
-    }
-}
-
 function triggerGiftChatReply(role, product, note) {
     var apiKey = getApiKeyFromMain();
     if (!apiKey) {
         var fallbackReplies = ['哇！谢谢你送的礼物！我太开心了 💕', '你真好，这个礼物我好喜欢！', '天哪，你居然送我这个！我好感动 😭', '谢谢你的心意，我会好好珍惜的 💝'];
         var reply = fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)];
         showToast('💬 ' + role.name + '：' + reply);
+        // ===== 把回复也存入主应用 =====
+        saveReplyToMainApp(role, reply);
         return;
     }
     var model = getModelFromMain();
@@ -1524,10 +1540,59 @@ function triggerGiftChatReply(role, product, note) {
         var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
         if (reply) {
             showToast('💬 ' + role.name + '：' + reply.substring(0, 50) + (reply.length > 50 ? '...' : ''));
+            // ===== 把回复作为独立消息存入主应用 =====
+            saveReplyToMainApp(role, reply);
         }
     }).catch(function(e) {
         console.log('送礼回复失败:', e);
     });
+}
+
+// ===== 新增：保存AI回复到主应用（作为独立消息） =====
+function saveReplyToMainApp(role, reply) {
+    try {
+        var raw = localStorage.getItem('ds_multirole_v2');
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        
+        var targetRole = data.roles.find(function(r) { return r.id === role.id; });
+        if (!targetRole) return;
+        
+        if (!Array.isArray(targetRole.messages)) targetRole.messages = [];
+        
+        // ===== 检查是否已存在相同回复（防止重复） =====
+        var exists = targetRole.messages.some(function(m) {
+            return m.role === 'assistant' && m.content === reply;
+        });
+        
+        if (exists) {
+            console.log('⏭️ 回复已存在，跳过');
+            return;
+        }
+        
+        var replyMessage = {
+            id: 'reply_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            role: 'assistant',
+            content: reply,
+            type: 'text',
+            time: new Date().toISOString(),
+            hasAudio: false,
+            audioUrl: null,
+            audioDuration: 0,
+            voiceRequested: false
+        };
+        targetRole.messages.push(replyMessage);
+        
+        // 更新未读计数
+        if (!data.config) data.config = {};
+        if (!data.config.unreadCount) data.config.unreadCount = {};
+        data.config.unreadCount[role.id] = (data.config.unreadCount[role.id] || 0) + 1;
+        
+        localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+        console.log('✅ AI回复已存入主应用:', reply.substring(0, 30) + '...');
+    } catch (e) {
+        console.error('保存AI回复失败:', e);
+    }
 }
 
 // ===== 购物车 =====
@@ -1638,11 +1703,23 @@ function closeRecharge() {
 }
 
 // ===== 订单列表 =====
+
 function showOrderList() {
     var body = document.getElementById('mallBody');
-    if (!body) return;
-    var html = '<div style="margin-bottom:12px;"><button class="meme-back-btn" id="orderBackBtn" style="background:none;border:none;color:#576b95;font-size:14px;cursor:pointer;padding:4px 8px;display:flex;align-items:center;gap:4px;"><i class="fas fa-arrow-left"></i> 返回商城</button></div>';
+    if (!body) {
+        console.error('❌ mallBody 不存在');
+        return;
+    }
+    
+    // ===== 构建 HTML =====
+    var html = '';
+    html += '<div style="margin-bottom:12px;padding:8px 4px;">';
+    html += '<button id="orderBackBtn" style="background:none;border:none;color:#576b95;font-size:14px;cursor:pointer;padding:8px 12px;display:flex;align-items:center;gap:6px;width:100%;">';
+    html += '<i class="fas fa-arrow-left"></i> 返回商城';
+    html += '</button>';
+    html += '</div>';
     html += '<div class="mall-order-list">';
+    
     if (mallOrders.length === 0) {
         html += '<div class="mall-empty"><i class="fas fa-inbox"></i><p>暂无订单</p></div>';
     } else {
@@ -1661,15 +1738,61 @@ function showOrderList() {
         });
     }
     html += '</div>';
+    
     body.innerHTML = html;
+    
+    // ===== 绑定返回按钮 =====
+    var backBtn = document.getElementById('orderBackBtn');
+    console.log('🔍 查找返回按钮:', backBtn);
+    
+    if (backBtn) {
+        backBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('✅ 返回商城按钮被点击');
+            
+            // ===== 方法1：直接重建商城界面 =====
+            var bodyEl = document.getElementById('mallBody');
+            if (bodyEl) {
+                // 清空
+                bodyEl.innerHTML = '';
+                // 重新创建商品网格
+                var grid = document.createElement('div');
+                grid.className = 'mall-product-grid';
+                grid.id = 'mallProductGrid';
+                bodyEl.appendChild(grid);
+                
+                // 重新渲染
+                renderMallProducts();
+                updateOrderCount();
+                
+                // 显示订单入口
+                var entry = document.getElementById('mallOrderEntry');
+                if (entry) entry.style.display = 'flex';
+                
+                bodyEl.scrollTop = 0;
+                
+                console.log('✅ 商城已恢复');
+            }
+            
+            // ===== 方法2：备用方案（直接调用） =====
+            // 如果方法1失败，直接调用
+            setTimeout(function() {
+                var gridCheck = document.getElementById('mallProductGrid');
+                if (!gridCheck || gridCheck.children.length === 0) {
+                    console.log('⚠️ 方法1可能失败，使用备用方案');
+                    renderMallProducts();
+                    updateOrderCount();
+                    var entry2 = document.getElementById('mallOrderEntry');
+                    if (entry2) entry2.style.display = 'flex';
+                }
+            }, 100);
+        });
+    } else {
+        console.error('❌ 找不到返回按钮');
+    }
 
-    document.getElementById('orderBackBtn').addEventListener('click', function() {
-        renderMallProducts();
-        updateOrderCount();
-        var entry = document.getElementById('mallOrderEntry');
-        if (entry) entry.style.display = 'flex';
-    });
-
+    // ===== 绑定订单操作按钮 =====
     body.querySelectorAll('.btn-refund').forEach(function(btn) {
         btn.onclick = function() { cancelOrderAndRefund(btn.dataset.id); };
     });
