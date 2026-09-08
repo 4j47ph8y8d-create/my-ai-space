@@ -717,20 +717,20 @@
         }
 
         /* ===== 礼物卡片 · 纯净版（和主应用完全一致） ===== */
-.gift-card-snapshot {
-    background: #f7f5f2;
-    border-radius: 8px;
-    padding: 14px 16px 12px 16px;
-    margin: 2px 0;
-    max-width: 280px;
-    position: relative;
-    border: none;
-    box-shadow: none;
-}
+        .gift-card-snapshot {
+            background: #f7f5f2;
+            border-radius: 8px;
+            padding: 14px 16px 12px 16px;
+            margin: 2px 0;
+            max-width: 280px;
+            position: relative;
+            border: none;
+            box-shadow: none;
+        }
 
-.message-row.self .gift-card-snapshot {
-    background: #f7f5f2;
-}
+        .message-row.self .gift-card-snapshot {
+            background: #f7f5f2;
+        }
 
         .gift-card-snapshot-body {
             display: flex;
@@ -991,7 +991,7 @@
 
 <script>
 // ============================================================
-//  🛍️ 街角商店 · 完整版（含陪逛聊天）
+//  🛍️ 街角商店 · 完整版（含陪逛聊天 · 人设驱动版）
 // ============================================================
 
 // ===== 配置 =====
@@ -1369,8 +1369,6 @@ function executePurchase(product, qty, note, mode, targetRole, totalPrice) {
     }
 }
 
-// ===== 新增：同步礼物到主应用 =====
-
 // ===== 同步礼物到主应用 =====
 function syncGiftToMainApp(role, product, qty, note, totalPrice) {
     try {
@@ -1386,7 +1384,6 @@ function syncGiftToMainApp(role, product, qty, note, totalPrice) {
         
         if (!Array.isArray(targetRole.messages)) targetRole.messages = [];
         
-        // ===== 检查是否已存在相同礼物（防止重复） =====
         var exists = targetRole.messages.some(function(m) {
             return m.type === 'gift' && 
                    m.giftData && 
@@ -1400,27 +1397,27 @@ function syncGiftToMainApp(role, product, qty, note, totalPrice) {
         }
         
         var giftMessage = {
-    id: 'gift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-    role: 'user',
-    content: '💝 送了「' + product.name + '」给 ' + role.name + (note ? '（附言：' + note + '）' : ''),
-    type: 'gift',
-    time: new Date().toISOString(),
-    giftData: {
-        productName: product.name,
-        price: product.price,
-        qty: qty || 1,
-        note: note || '',
-        fromName: '你',
-        toName: role.name,
-        fromId: 'user',
-        toId: role.id,
-        totalPrice: totalPrice || product.price * (qty || 1)
-    },
-    hasAudio: false,
-    audioUrl: null,
-    audioDuration: 0,
-    voiceRequested: false
-};
+            id: 'gift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            role: 'user',
+            content: '💝 送了「' + product.name + '」给 ' + role.name + (note ? '（附言：' + note + '）' : ''),
+            type: 'gift',
+            time: new Date().toISOString(),
+            giftData: {
+                productName: product.name,
+                price: product.price,
+                qty: qty || 1,
+                note: note || '',
+                fromName: '你',
+                toName: role.name,
+                fromId: 'user',
+                toId: role.id,
+                totalPrice: totalPrice || product.price * (qty || 1)
+            },
+            hasAudio: false,
+            audioUrl: null,
+            audioDuration: 0,
+            voiceRequested: false
+        };
         targetRole.messages.push(giftMessage);
         
         if (!data.config) data.config = {};
@@ -1443,13 +1440,11 @@ function selectTargetRoleForGift(callback) {
         return;
     }
     
-    // 如果只有一个角色，直接选择
     if (roles.length === 1) {
         callback(roles[0]);
         return;
     }
     
-    // 多个角色：弹窗选择
     var overlay = document.getElementById('mallRoleSelectOverlay');
     var list = document.getElementById('mallRoleSelectList');
     
@@ -1478,7 +1473,6 @@ function selectTargetRoleForGift(callback) {
         };
     });
     
-    // 取消按钮
     var cancelBtn = document.getElementById('mallRoleSelectCancel');
     if (cancelBtn) {
         cancelBtn.onclick = function() {
@@ -1511,28 +1505,86 @@ function addGiftToMemory(role, product, from, note) {
     addMemoryToMain(role.id, giftText);
 }
 
+// ===== 根据角色人设生成符合性格的回复 =====
+function getPersonalityFallback(role) {
+    var persona = (role.persona || '').toLowerCase();
+    var style = (role.style || '').toLowerCase();
+    var name = role.name || 'TA';
+    
+    if (persona.indexOf('高冷') !== -1 || persona.indexOf('冷淡') !== -1 || style.indexOf('冷淡') !== -1) {
+        return [
+            '嗯，收到了。',
+            '...还不错。',
+            '你有心了。',
+            '我收下了。'
+        ];
+    } else if (persona.indexOf('可爱') !== -1 || persona.indexOf('活泼') !== -1 || style.indexOf('可爱') !== -1) {
+        return [
+            '这个我超喜欢的！你真好 💕',
+            '你怎么知道我想要这个！太开心了！',
+            '哇！是我喜欢的！你好懂我！',
+            '好喜欢这个！谢谢你陪我挑 ✨'
+        ];
+    } else if (persona.indexOf('温柔') !== -1 || persona.indexOf('体贴') !== -1 || style.indexOf('温柔') !== -1) {
+        return [
+            '你总是这么细心，我很喜欢 💕',
+            '这个很适合我，你真的很懂我',
+            '谢谢你记得我喜欢什么',
+            '有你在真好，总是知道我想要什么'
+        ];
+    } else if (persona.indexOf('腹黑') !== -1 || persona.indexOf('调皮') !== -1 || persona.indexOf('傲娇') !== -1) {
+        return [
+            '哼哼，算你有眼光～',
+            '这还差不多，我收下了',
+            '不错不错，有进步 😏',
+            '你终于知道送我什么了'
+        ];
+    } else {
+        return [
+            '我很喜欢这个 💕 你总是知道我想要什么',
+            '这个好适合我，谢谢你',
+            '你眼光真好，我好喜欢',
+            '收到这个好开心，你真好 💕'
+        ];
+    }
+}
+
+// ===== 礼物回复（AI 生成，符合人设） =====
 function triggerGiftChatReply(role, product, note) {
     var apiKey = getApiKeyFromMain();
     if (!apiKey) {
-        var fallbackReplies = ['哇！谢谢你送的礼物！我太开心了 💕', '你真好，这个礼物我好喜欢！', '天哪，你居然送我这个！我好感动 😭', '谢谢你的心意，我会好好珍惜的 💝'];
+        var fallbackReplies = getPersonalityFallback(role);
         var reply = fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)];
         showToast('💬 ' + role.name + '：' + reply);
-        // ===== 把回复也存入主应用 =====
         saveReplyToMainApp(role, reply);
         return;
     }
+    
     var model = getModelFromMain();
-    var systemPrompt = '你正在扮演「' + role.name + '」。用户刚刚送了你一份礼物，请根据你的性格回应。\n角色人设：' + (role.persona || '温柔体贴') + '\n说话风格：' + (role.style || '温柔细腻') + '\n要求：用第一人称「我」说话，表达真实感受，控制在2-4句话。';
+    var systemPrompt = '你正在扮演「' + role.name + '」。用户刚刚送了你一份礼物。\n' +
+        '角色人设：' + (role.persona || '一个温柔体贴的人') + '\n' +
+        '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n\n' +
+        '要求：\n' +
+        '1. 用第一人称「我」说话，完全代入角色\n' +
+        '2. 根据你的性格和与用户的关系自然回应\n' +
+        '3. 不要用"哇""天哪"这种夸张的词（除非你人设就是这样）\n' +
+        '4. 控制在 2-3 句话，口语化，像真人聊天\n' +
+        '5. 不要说"谢谢你"这种生硬的词，换成更自然的表达';
+    
     var giftMessage = '用户送给你：' + product.name + (note ? '（附言：' + note + '）' : '');
+    
     fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
         body: JSON.stringify({
             model: model,
-            messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: giftMessage }],
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: giftMessage }
+            ],
             temperature: 0.85,
-            max_tokens: 200,
-        }),
+            max_tokens: 150,
+        })
     }).then(function(resp) {
         if (!resp.ok) throw new Error('API 错误');
         return resp.json();
@@ -1540,15 +1592,18 @@ function triggerGiftChatReply(role, product, note) {
         var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
         if (reply) {
             showToast('💬 ' + role.name + '：' + reply.substring(0, 50) + (reply.length > 50 ? '...' : ''));
-            // ===== 把回复作为独立消息存入主应用 =====
             saveReplyToMainApp(role, reply);
         }
     }).catch(function(e) {
         console.log('送礼回复失败:', e);
+        var fallback = getPersonalityFallback(role);
+        var reply = fallback[Math.floor(Math.random() * fallback.length)];
+        showToast('💬 ' + role.name + '：' + reply);
+        saveReplyToMainApp(role, reply);
     });
 }
 
-// ===== 新增：保存AI回复到主应用（作为独立消息） =====
+// ===== 保存AI回复到主应用 =====
 function saveReplyToMainApp(role, reply) {
     try {
         var raw = localStorage.getItem('ds_multirole_v2');
@@ -1560,7 +1615,6 @@ function saveReplyToMainApp(role, reply) {
         
         if (!Array.isArray(targetRole.messages)) targetRole.messages = [];
         
-        // ===== 检查是否已存在相同回复（防止重复） =====
         var exists = targetRole.messages.some(function(m) {
             return m.role === 'assistant' && m.content === reply;
         });
@@ -1583,7 +1637,6 @@ function saveReplyToMainApp(role, reply) {
         };
         targetRole.messages.push(replyMessage);
         
-        // 更新未读计数
         if (!data.config) data.config = {};
         if (!data.config.unreadCount) data.config.unreadCount = {};
         data.config.unreadCount[role.id] = (data.config.unreadCount[role.id] || 0) + 1;
@@ -1703,7 +1756,6 @@ function closeRecharge() {
 }
 
 // ===== 订单列表 =====
-
 function showOrderList() {
     var body = document.getElementById('mallBody');
     if (!body) {
@@ -1711,7 +1763,6 @@ function showOrderList() {
         return;
     }
     
-    // ===== 构建 HTML =====
     var html = '';
     html += '<div style="margin-bottom:12px;padding:8px 4px;">';
     html += '<button id="orderBackBtn" style="background:none;border:none;color:#576b95;font-size:14px;cursor:pointer;padding:8px 12px;display:flex;align-items:center;gap:6px;width:100%;">';
@@ -1741,46 +1792,27 @@ function showOrderList() {
     
     body.innerHTML = html;
     
-    // ===== 绑定返回按钮 =====
     var backBtn = document.getElementById('orderBackBtn');
-    console.log('🔍 查找返回按钮:', backBtn);
-    
     if (backBtn) {
         backBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('✅ 返回商城按钮被点击');
-            
-            // ===== 方法1：直接重建商城界面 =====
             var bodyEl = document.getElementById('mallBody');
             if (bodyEl) {
-                // 清空
                 bodyEl.innerHTML = '';
-                // 重新创建商品网格
                 var grid = document.createElement('div');
                 grid.className = 'mall-product-grid';
                 grid.id = 'mallProductGrid';
                 bodyEl.appendChild(grid);
-                
-                // 重新渲染
                 renderMallProducts();
                 updateOrderCount();
-                
-                // 显示订单入口
                 var entry = document.getElementById('mallOrderEntry');
                 if (entry) entry.style.display = 'flex';
-                
                 bodyEl.scrollTop = 0;
-                
-                console.log('✅ 商城已恢复');
             }
-            
-            // ===== 方法2：备用方案（直接调用） =====
-            // 如果方法1失败，直接调用
             setTimeout(function() {
                 var gridCheck = document.getElementById('mallProductGrid');
                 if (!gridCheck || gridCheck.children.length === 0) {
-                    console.log('⚠️ 方法1可能失败，使用备用方案');
                     renderMallProducts();
                     updateOrderCount();
                     var entry2 = document.getElementById('mallOrderEntry');
@@ -1788,11 +1820,8 @@ function showOrderList() {
                 }
             }, 100);
         });
-    } else {
-        console.error('❌ 找不到返回按钮');
     }
 
-    // ===== 绑定订单操作按钮 =====
     body.querySelectorAll('.btn-refund').forEach(function(btn) {
         btn.onclick = function() { cancelOrderAndRefund(btn.dataset.id); };
     });
@@ -1850,15 +1879,65 @@ function updateMallUI() {
 }
 
 // ============================================================
-//  💬 商城陪逛聊天系统
+//  💬 商城陪逛聊天系统（人设驱动版）
 // ============================================================
 
+// ===== 生成符合人设的开场白 =====
+function generateShoppingGreeting(role) {
+    var apiKey = getApiKeyFromMain();
+    if (!apiKey) {
+        var fallbacks = [
+            '今天想和你一起逛逛 💕',
+            '好久没逛街了，和你一起真好',
+            '你最近有想要的东西吗？我们一起看看吧',
+            '走，我们去看看有什么好玩的'
+        ];
+        return Promise.resolve(fallbacks[Math.floor(Math.random() * fallbacks.length)]);
+    }
+    
+    var model = getModelFromMain();
+    var systemPrompt = '你正在扮演「' + role.name + '」。用户邀请你一起逛商城。\n' +
+        '角色人设：' + (role.persona || '一个温柔体贴的人') + '\n' +
+        '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n\n' +
+        '要求：\n' +
+        '1. 用第一人称「我」说话，完全代入角色\n' +
+        '2. 说一句自然的口语化开场白，表达你愿意一起逛\n' +
+        '3. 不要说"你好""很高兴"这种生硬的话\n' +
+        '4. 控制在 1-2 句话，像真人一样自然';
+    
+    return fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({
+            model: model,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: '我们一起去逛商城吧' }
+            ],
+            temperature: 0.85,
+            max_tokens: 80,
+        })
+    }).then(function(resp) {
+        if (!resp.ok) throw new Error('API 错误');
+        return resp.json();
+    }).then(function(data) {
+        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        return reply ? reply.trim() : null;
+    }).catch(function(e) {
+        console.log('生成开场白失败:', e);
+        return null;
+    });
+}
+
+// ===== 打开陪逛聊天 =====
 function openShoppingChat(role) {
     scCurrentRole = role;
     scMessages = [];
     document.getElementById('scRoleName').textContent = role.name;
     
-    addScMessage('assistant', '和你一起逛好开心 💕 看到喜欢的告诉我～');
+    generateShoppingGreeting(role).then(function(greeting) {
+        addScMessage('assistant', greeting || '我们今天一起逛逛吧 💕');
+    });
     
     document.getElementById('shoppingChatOverlay').classList.add('active');
     document.getElementById('scInput').focus();
@@ -1948,43 +2027,11 @@ function renderScMessages() {
     });
 }
 
-function sendScMessage(text) {
-    if (!text || !text.trim()) return;
-    if (!scCurrentRole) return;
-    if (scIsProcessing) return;
-    
-    addScMessage('user', text.trim());
-    document.getElementById('scInput').value = '';
-    
-    var mentionedProduct = null;
-    var productNames = mallProducts.map(function(p) { return p.name; });
-    for (var i = 0; i < productNames.length; i++) {
-        if (text.indexOf(productNames[i]) !== -1) {
-            mentionedProduct = mallProducts.find(function(p) { return p.name === productNames[i]; });
-            break;
-        }
-    }
-    
-    scIsProcessing = true;
-    
-    generateScReply(text, mentionedProduct).then(function(reply) {
-        if (reply.product) {
-            addScMessage('assistant', reply.text, reply.product);
-        } else {
-            addScMessage('assistant', reply.text);
-        }
-        scIsProcessing = false;
-    }).catch(function(e) {
-        console.error('生成回复失败:', e);
-        addScMessage('assistant', '嗯...让我想想 💭');
-        scIsProcessing = false;
-    });
-}
-
+// ===== 生成陪逛回复（含商品列表 + 人设） =====
 function generateScReply(userMessage, mentionedProduct) {
     var role = scCurrentRole;
     var apiKey = getApiKeyFromMain();
-      // ===== 新增：构建商品列表文本 =====
+    
     var productListText = '';
     if (mallProducts.length > 0) {
         productListText = '\n【商城商品列表】\n';
@@ -1994,43 +2041,7 @@ function generateScReply(userMessage, mentionedProduct) {
         productListText += '\n你可以根据你的性格，从这些商品中选一件你喜欢的推荐给用户。';
         productListText += '如果你特别喜欢某件商品，可以告诉用户你想要它。\n';
     }
-    // ===== 新增结束 =====
-
-// ===== 新增：检测用户是否在问"你喜欢什么" =====
-var askKeywords = ['喜欢什么', '想要什么', '推荐', '有什么喜欢', '你想要', '你喜欢', '你的喜好', '挑一个'];
-var isAsking = false;
-for (var i = 0; i < askKeywords.length; i++) {
-    if (userMessage.indexOf(askKeywords[i]) !== -1) {
-        isAsking = true;
-        break;
-    }
-}
-
-if (isAsking && mallProducts.length > 0) {
-    // 从商品列表中随机选1-2件推荐
-    var shuffled = mallProducts.slice().sort(function() { return 0.5 - Math.random(); });
-    var selected = shuffled.slice(0, 2);
-    var productNames = selected.map(function(p) { return '「' + p.name + '」¥' + p.price; }).join('、');
-    var randomReply = [
-        '我看到那个' + selected[0].name + '好心动 💕 感觉很适合你！',
-        '我特别喜欢那个' + selected[0].name + '，你觉得呢？',
-        '要不要看看这个' + selected[0].name + '？我觉得超好看的！',
-        '我最喜欢那个' + selected[0].name + '了 💕 好想要...',
-        '这个' + selected[0].name + '看起来好适合你，你喜欢吗？',
-        '我最近好想要一个' + selected[0].name + '，你陪我一起挑好不好？',
-        '那个' + selected[0].name + '好适合我们 💕 你觉得呢？'
-    ];
-    var reply = randomReply[Math.floor(Math.random() * randomReply.length)];
-    // 如果有第二件，可以加一句
-    if (selected.length > 1 && Math.random() > 0.5) {
-        reply += ' 还有那个' + selected[1].name + '也好心动！';
-    }
-    addScMessage('assistant', reply, selected[0]);
-    scIsProcessing = false;
-    return Promise.resolve();
-}
-// ===== 新增结束 =====
-
+    
     if (!apiKey) {
         return new Promise(function(resolve) {
             var fallbacks = [
@@ -2045,6 +2056,10 @@ if (isAsking && mallProducts.length > 0) {
                     text: likePhrases[Math.floor(Math.random() * likePhrases.length)],
                     product: mentionedProduct
                 });
+            } else if (userMessage.indexOf('喜欢什么') !== -1 || userMessage.indexOf('想要什么') !== -1 || userMessage.indexOf('推荐') !== -1) {
+                var randomProduct = mallProducts[Math.floor(Math.random() * mallProducts.length)];
+                var reply = '我觉得那个' + randomProduct.name + '不错，你觉得呢？';
+                resolve({ text: reply, product: randomProduct });
             } else {
                 resolve(fallbacks[Math.floor(Math.random() * fallbacks.length)]);
             }
@@ -2055,14 +2070,15 @@ if (isAsking && mallProducts.length > 0) {
     var systemPrompt = '你正在扮演「' + role.name + '」，和用户一起逛商城。\n' +
         '角色人设：' + (role.persona || '一个温柔体贴的人') + '\n' +
         '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n' +
-        '你们正在逛商城，用户可以随时和你聊天。\n' +
-        '要求：\n' +
-        '1. 用第一人称「我」说话\n' +
-        '2. 根据你的性格自然回应\n' +
-        '3. 如果用户提到了某件商品，可以表达你的看法\n' +
-        '4. 控制在2-3句话，口语化\n' +
-        '5. 如果你特别喜欢某件商品，可以暗示想要\n' +
-        (mentionedProduct ? '\n用户提到了商品：「' + mentionedProduct.name + '」¥' + mentionedProduct.price + '\n你可以表达你对这件商品的看法。' : '');
+        '其他设定：' + (role.extra || '') + '\n\n' +
+        '【当前场景】你们正在逛商城，用户可以随时和你聊天。\n' +
+        '【重要】\n' +
+        '1. 用第一人称「我」说话，完全代入角色\n' +
+        '2. 根据你的性格自然回应，不要说模板话\n' +
+        '3. 如果用户问你喜欢什么，从商品列表里选一件表达你的喜好\n' +
+        '4. 控制在一段话左右，口语化，像真人聊天\n' +
+        productListText +
+        (mentionedProduct ? '\n用户提到了商品：「' + mentionedProduct.name + '」\n你可以表达你对这件商品的真实看法，根据你的性格来。' : '');
     
     return fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
@@ -2112,6 +2128,39 @@ if (isAsking && mallProducts.length > 0) {
     });
 }
 
+function sendScMessage(text) {
+    if (!text || !text.trim()) return;
+    if (!scCurrentRole) return;
+    if (scIsProcessing) return;
+    
+    addScMessage('user', text.trim());
+    document.getElementById('scInput').value = '';
+    
+    var mentionedProduct = null;
+    var productNames = mallProducts.map(function(p) { return p.name; });
+    for (var i = 0; i < productNames.length; i++) {
+        if (text.indexOf(productNames[i]) !== -1) {
+            mentionedProduct = mallProducts.find(function(p) { return p.name === productNames[i]; });
+            break;
+        }
+    }
+    
+    scIsProcessing = true;
+    
+    generateScReply(text, mentionedProduct).then(function(reply) {
+        if (reply.product) {
+            addScMessage('assistant', reply.text, reply.product);
+        } else {
+            addScMessage('assistant', reply.text);
+        }
+        scIsProcessing = false;
+    }).catch(function(e) {
+        console.error('生成回复失败:', e);
+        addScMessage('assistant', '嗯...让我想想 💭');
+        scIsProcessing = false;
+    });
+}
+
 function handleBuyForHim(product) {
     if (!scCurrentRole) return;
     if (mallBalance < product.price) {
@@ -2144,7 +2193,8 @@ function handleBuyForHim(product) {
         triggerHeartSpikeForGift(scCurrentRole, product, 'gift');
         addGiftToMemory(scCurrentRole, product, 'user', '陪逛时买的');
         
-        addScMessage('assistant', '哇！你真的送给我了！我好开心！谢谢你 💕 我一定会好好珍惜的！');
+        var reply = getPersonalityFallback(scCurrentRole)[0];
+        addScMessage('assistant', reply);
         
         showToast('🎁 已送给 ' + scCurrentRole.name + '！');
     }
@@ -2177,7 +2227,9 @@ function handleAiGift(product) {
         triggerHeartSpikeForGift(scCurrentRole, product, 'ai_gift');
         addGiftToMemory(scCurrentRole, product, 'ai', '陪逛时送的');
         
-        addScMessage('assistant', '我送给你了！希望你每天都能看到它，然后想起我 💕');
+        var reply = getPersonalityFallback(scCurrentRole);
+        var msg = reply[Math.floor(Math.random() * reply.length)];
+        addScMessage('assistant', msg);
         
         showToast('🎁 ' + scCurrentRole.name + ' 送了「' + product.name + '」给你！');
     }
@@ -2294,10 +2346,8 @@ function startShoppingTogether(roleId) {
     inviteBtn.textContent = '💕 ' + role.name + ' 同游中';
     inviteBtn.classList.add('inviting');
 
-    // ===== 打开陪逛聊天窗口 =====
     openShoppingChat(role);
     
-    document.getElementById('mallAiSpotOverlay').classList.remove('active');
     showToast('💕 已邀请 ' + role.name + ' 一起逛商城～');
 }
 
@@ -2312,45 +2362,8 @@ function endShoppingTogether() {
     document.getElementById('mallInviteBtn').textContent = '与TA同游';
     document.getElementById('mallInviteBtn').classList.remove('inviting');
     
-    // ===== 关闭陪逛聊天窗口 =====
     closeShoppingChat();
-    
-    document.getElementById('mallAiSpotOverlay').classList.remove('active');
     showToast('👋 已结束和 ' + roleName + ' 的同游');
-}
-
-function generateTogetherGreeting(role) {
-    var apiKey = getApiKeyFromMain();
-    if (!apiKey) {
-        var defaults = ['和你一起逛，好开心 💕', '今天想和你一起挑点好东西', '我好喜欢和你一起逛街～', '走，我们去看看有什么好玩的'];
-        return Promise.resolve(defaults[Math.floor(Math.random() * defaults.length)]);
-    }
-    
-    var model = getModelFromMain();
-    var systemPrompt = '你正在扮演「' + role.name + '」。用户邀请你一起逛商城，请用你的性格说一句自然的开场白。\n' +
-        '角色人设：' + (role.persona || '一个温柔体贴的人') + '\n' +
-        '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n' +
-        '要求：用第一人称「我」说话，1-2句话，口语化，不要用"你好"这种生硬的开场。';
-    
-    return fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({
-            model: model,
-            messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: '我们一起去逛商城吧！' }],
-            temperature: 0.85,
-            max_tokens: 80,
-        }),
-    }).then(function(resp) {
-        if (!resp.ok) throw new Error('API 错误');
-        return resp.json();
-    }).then(function(data) {
-        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        return reply ? reply.trim() : null;
-    }).catch(function(e) {
-        console.log('生成开场白失败:', e);
-        return null;
-    });
 }
 
 // ============================================================
@@ -2374,8 +2387,6 @@ function init() {
             var inviteBtn = document.getElementById('mallInviteBtn');
             inviteBtn.textContent = '💕 ' + role.name + ' 同游中';
             inviteBtn.classList.add('inviting');
-            
-            // 恢复聊天窗口
             openShoppingChat(role);
         } else {
             mallShoppingTogether.isActive = false;
