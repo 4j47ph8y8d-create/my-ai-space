@@ -1344,6 +1344,7 @@ function purchaseProduct(product, qty, note, mode) {
 }
 
 // ===== 执行购买 =====
+
 function executePurchase(product, qty, note, mode, targetRole, totalPrice) {
     mallBalance -= totalPrice;
     var order = {
@@ -1362,6 +1363,7 @@ function executePurchase(product, qty, note, mode, targetRole, totalPrice) {
     showToast('✅ ' + (mode === 'gift' ? '🎁 已送给 ' + targetRole.name : '购买成功'));
 
     if (mode === 'gift') {
+        syncGiftToMainApp(targetRole, product, qty, note, totalPrice);  // ← 新增
         triggerHeartSpikeForGift(targetRole, product, 'gift');
         addGiftToMemory(targetRole, product, 'user', note);
         triggerGiftChatReply(targetRole, product, note);
@@ -1443,6 +1445,56 @@ function addGiftToMemory(role, product, from, note) {
         ? '💝 我送了「' + product.name + '」给 ' + role.name + (note ? '（附言：' + note + '）' : '')
         : '🎁 ' + role.name + ' 送了我「' + product.name + '」' + (note ? '（附言：' + note + '）' : '');
     addMemoryToMain(role.id, giftText);
+}
+
+// ===== 同步礼物到主应用 =====
+function syncGiftToMainApp(role, product, qty, note, totalPrice) {
+    try {
+        var raw = localStorage.getItem('ds_multirole_v2');
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        
+        var targetRole = data.roles.find(function(r) { return r.id === role.id; });
+        if (!targetRole) {
+            console.warn('⚠️ 主应用中未找到角色:', role.name);
+            return;
+        }
+        
+        if (!Array.isArray(targetRole.messages)) targetRole.messages = [];
+        
+        var giftMessage = {
+            id: 'gift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            role: 'user',
+            content: '💝 送了「' + product.name + '」给 ' + role.name + (note ? '（附言：' + note + '）' : ''),
+            type: 'gift',
+            time: new Date().toISOString(),
+            giftData: {
+                productName: product.name,
+                price: product.price,
+                qty: qty,
+                note: note || '',
+                fromName: '你',
+                toName: role.name,
+                fromId: 'user',
+                toId: role.id,
+                totalPrice: totalPrice
+            },
+            hasAudio: false,
+            audioUrl: null,
+            audioDuration: 0,
+            voiceRequested: false
+        };
+        targetRole.messages.push(giftMessage);
+        
+        if (!data.config) data.config = {};
+        if (!data.config.unreadCount) data.config.unreadCount = {};
+        data.config.unreadCount[role.id] = (data.config.unreadCount[role.id] || 0) + 1;
+        
+        localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+        console.log('✅ 礼物已同步到主应用:', product.name, '→', role.name);
+    } catch (e) {
+        console.error('同步礼物到主应用失败:', e);
+    }
 }
 
 function triggerGiftChatReply(role, product, note) {
