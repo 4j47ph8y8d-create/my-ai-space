@@ -486,42 +486,6 @@
             cursor: pointer; margin-top: 8px; font-family: inherit; 
         }
 
-        .mall-ai-spot-overlay { 
-            position: absolute; inset: 0; z-index: 35; background: rgba(0,0,0,0.12); 
-            backdrop-filter: blur(2px); display: none; justify-content: center; 
-            align-items: center; border-radius: 28px; overflow: hidden; 
-        }
-        .mall-ai-spot-overlay.active { display: flex; }
-        .mall-ai-spot-panel { 
-            background: var(--bg); border-radius: 20px; padding: 20px 20px 24px; 
-            max-width: 320px; width: 92%; animation: fadeInUp 0.3s ease; text-align: center; 
-        }
-        .mall-ai-spot-panel .spot-product .spot-img { 
-            width: 64px; height: 64px; border-radius: 12px; background: var(--bg-input); 
-            border: 1px solid var(--border); overflow: hidden; display: flex; 
-            align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 6px; 
-        }
-        .mall-ai-spot-panel .spot-product .spot-img img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.5); }
-        .mall-ai-spot-panel .spot-product .spot-name { font-size: 13px; font-weight: 300; color: var(--text-primary); }
-        .mall-ai-spot-panel .spot-product .spot-price { font-size: 12px; font-weight: 300; color: var(--text-secondary); }
-        .mall-ai-spot-panel .spot-ai-words { 
-            font-size: 13px; color: var(--text-primary); padding: 10px 0; line-height: 1.8; 
-            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); 
-            margin-bottom: 14px; font-weight: 300; 
-        }
-        .mall-ai-spot-panel .spot-ai-words .ai-name-tag { color: var(--text-secondary); font-weight: 400; }
-        .mall-ai-spot-panel .spot-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-        .mall-ai-spot-panel .spot-buttons button { 
-            flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 20px; 
-            font-size: 10px; font-weight: 300; cursor: pointer; transition: 0.15s; 
-            font-family: inherit; background: var(--bg-card); color: var(--text-secondary); 
-            letter-spacing: 0.5px; min-width: 60px; 
-        }
-        .mall-ai-spot-panel .spot-buttons button:active { transform: scale(0.95); background: var(--bg-input); }
-        .mall-ai-spot-panel .spot-buttons .btn-buy-for-him { background: var(--bg-input); color: var(--text-primary); }
-        .mall-ai-spot-panel .spot-buttons .btn-ai-gift:disabled { opacity: 0.3; cursor: not-allowed; }
-        .mall-ai-spot-panel .spot-buttons .btn-reject { color: var(--text-light); }
-
         .mall-role-select-overlay { 
             position: absolute; inset: 0; z-index: 36; background: rgba(0,0,0,0.12); 
             backdrop-filter: blur(2px); display: none; justify-content: center; 
@@ -541,7 +505,6 @@
             cursor: pointer; font-family: inherit; width: 100%; text-align: left; 
             transition: 0.15s; 
         }
-        .mall-role-select-panel .role-select-btn:active { transform: scale(0.97); }
         .mall-role-select-panel .role-select-btn .rs-avatar { 
             width: 32px; height: 32px; border-radius: 50%; background-color: var(--bg-input); 
             background-size: cover; background-position: center; flex-shrink: 0; 
@@ -557,60 +520,314 @@
             cursor: pointer; font-family: inherit; 
         }
 
-        .gift-receive-overlay { 
-            position: absolute; inset: 0; z-index: 37; background: rgba(0,0,0,0.12); 
-            backdrop-filter: blur(2px); display: none; justify-content: center; 
-            align-items: center; border-radius: 28px; overflow: hidden; 
+        /* ===== 商城陪逛聊天窗口 ===== */
+        .shopping-chat-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.04);
+            border-radius: 20px 20px 0 0;
+            max-height: 50%;
+            display: none;
+            flex-direction: column;
+            animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            box-shadow: 0 -4px 30px rgba(0,0,0,0.03);
         }
-        .gift-receive-overlay.active { display: flex; }
-        .gift-receive-panel { 
-            background: var(--bg); border-radius: 20px; padding: 20px 20px 24px; 
-            max-width: 320px; width: 92%; animation: fadeInUp 0.3s ease; text-align: center; 
-        }
-        .gift-receive-panel .gift-icon { font-size: 40px; margin-bottom: 4px; opacity: 0.5; }
-        .gift-receive-panel .gift-title { font-size: 15px; font-weight: 300; color: var(--text-primary); letter-spacing: 2px; }
-        .gift-receive-panel .gift-from { font-size: 11px; color: var(--text-light); margin-bottom: 2px; }
-        .gift-receive-panel .gift-product { font-size: 13px; font-weight: 300; color: var(--text-secondary); }
-        .gift-receive-panel .gift-note { font-size: 11px; color: var(--text-light); margin-bottom: 12px; font-style: italic; }
-        .gift-receive-panel .gift-ai-words { 
-            font-size: 13px; color: var(--text-primary); padding: 10px 0; line-height: 1.8; 
-            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); 
-            margin-bottom: 14px; font-weight: 300; 
-        }
-        .gift-receive-panel .gift-ai-words .ai-name-tag { color: var(--text-secondary); font-weight: 400; }
-        .gift-receive-panel .gift-buttons { display: flex; gap: 10px; }
-        .gift-receive-panel .gift-buttons button { 
-            flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 20px; 
-            font-size: 11px; font-weight: 300; cursor: pointer; transition: 0.15s; 
-            font-family: inherit; background: var(--bg-card); color: var(--text-secondary); 
-            letter-spacing: 1px; 
-        }
-        .gift-receive-panel .gift-buttons button:active { transform: scale(0.95); background: var(--bg-input); }
-        .gift-receive-panel .gift-buttons .btn-receive { background: var(--bg-input); color: var(--text-primary); }
-        .gift-receive-panel .gift-buttons .btn-receive:disabled { opacity: 0.3; cursor: not-allowed; }
-        .gift-receive-panel .gift-buttons .btn-reject-gift { color: var(--text-light); }
 
-        .mall-ai-bubble { 
-            position: absolute; bottom: 70px; left: 14px; z-index: 25; background: var(--bg); 
-            border-radius: 20px; padding: 8px 14px 8px 10px; 
-            box-shadow: 0 2px 16px rgba(0,0,0,0.02); display: none; align-items: center; 
-            gap: 10px; border: 1px solid var(--border); animation: fadeInUp 0.3s ease; 
-            max-width: 75%; 
+        .shopping-chat-overlay.active {
+            display: flex;
         }
-        .mall-ai-bubble.active { display: flex; }
-        .mall-ai-bubble .ai-avatar { 
-            width: 28px; height: 28px; border-radius: 50%; background-size: cover; 
-            background-position: center; background-color: var(--bg-input); 
-            flex-shrink: 0; border: 1px solid var(--border); 
+
+        .shopping-chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px 8px;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            flex-shrink: 0;
         }
-        .mall-ai-bubble .ai-text { 
-            font-size: 11px; color: var(--text-secondary); line-height: 1.4; 
-            flex: 1; font-weight: 300; letter-spacing: 0.3px; 
+
+        .shopping-chat-header .chat-title {
+            font-size: 13px;
+            font-weight: 400;
+            color: #6b6864;
+            letter-spacing: 1px;
         }
-        .mall-ai-bubble .ai-text .ai-name { color: var(--text-primary); font-weight: 400; }
-        .mall-ai-bubble .ai-end-btn { 
-            background: none; border: none; color: var(--text-light); font-size: 14px; 
-            cursor: pointer; padding: 0 2px; 
+
+        .shopping-chat-header .chat-title .role-name {
+            color: #4a3a2a;
+            font-weight: 500;
+        }
+
+        .shopping-chat-header .chat-close-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #c5c0b8;
+            cursor: pointer;
+            padding: 0 4px;
+        }
+
+        .shopping-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 14px 6px;
+            min-height: 60px;
+            max-height: 200px;
+        }
+
+        .shopping-chat-messages .sc-msg {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 8px;
+            animation: fadeInUp 0.25s ease;
+        }
+
+        .shopping-chat-messages .sc-msg .sc-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background-color: #d6d0c8;
+            background-size: cover;
+            background-position: center;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .shopping-chat-messages .sc-msg .sc-bubble {
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(8px);
+            padding: 6px 12px;
+            border-radius: 12px 12px 12px 4px;
+            font-size: 12px;
+            color: #4a3a2a;
+            line-height: 1.5;
+            max-width: 80%;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .shopping-chat-messages .sc-msg.self {
+            flex-direction: row-reverse;
+        }
+
+        .shopping-chat-messages .sc-msg.self .sc-bubble {
+            background: rgba(240, 245, 235, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 12px 12px 4px 12px;
+        }
+
+        .shopping-chat-messages .sc-msg .sc-product-tag {
+            display: inline-block;
+            background: rgba(0,0,0,0.04);
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 10px;
+            color: #8a8580;
+            margin-top: 2px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .shopping-chat-messages .sc-msg .sc-product-tag:hover {
+            background: rgba(0,0,0,0.08);
+        }
+
+        .shopping-chat-messages .sc-msg .sc-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .shopping-chat-messages .sc-msg .sc-actions button {
+            padding: 2px 12px;
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.4);
+            backdrop-filter: blur(8px);
+            font-size: 10px;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #6b6864;
+            font-family: inherit;
+        }
+
+        .shopping-chat-messages .sc-msg .sc-actions button:active {
+            transform: scale(0.95);
+        }
+
+        .shopping-chat-messages .sc-msg .sc-actions .btn-buy-for-him {
+            background: rgba(46,213,115,0.12);
+            color: #2ed573;
+            border-color: rgba(46,213,115,0.15);
+        }
+
+        .shopping-chat-messages .sc-msg .sc-actions .btn-ai-gift {
+            background: rgba(162,155,254,0.12);
+            color: #6c5ce7;
+            border-color: rgba(162,155,254,0.15);
+        }
+
+        .shopping-chat-input {
+            display: flex;
+            gap: 8px;
+            padding: 6px 14px 12px;
+            border-top: 1px solid rgba(0,0,0,0.04);
+            flex-shrink: 0;
+        }
+
+        .shopping-chat-input input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: rgba(0,0,0,0.02);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #4a3a2a;
+            font-family: inherit;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+
+        .shopping-chat-input input:focus {
+            border-color: rgba(0,0,0,0.08);
+        }
+
+        .shopping-chat-input .sc-send-btn {
+            background: none;
+            border: none;
+            color: #b5aea6;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0 4px;
+        }
+
+        .shopping-chat-input .sc-send-btn:active {
+            transform: scale(0.9);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .gift-card-snapshot {
+            background: #f7f5f2;
+            border-radius: 8px;
+            padding: 14px 16px 12px 16px;
+            margin: 2px 0;
+            border: 1px solid rgba(0,0,0,0.04);
+            box-shadow: 0 1px 6px rgba(0,0,0,0.02);
+            max-width: 280px;
+            position: relative;
+        }
+
+        .message-row.self .gift-card-snapshot {
+            background: #f5f3ee;
+            border-color: rgba(0,0,0,0.03);
+        }
+
+        .gift-card-snapshot-body {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .gift-card-snapshot-recipient {
+            font-size: 10px;
+            font-weight: 300;
+            color: #b5aea6;
+            letter-spacing: 2px;
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        .gift-card-snapshot-recipient .gift-card-snapshot-role {
+            color: #8a8580;
+            font-weight: 400;
+        }
+
+        .gift-card-snapshot-message {
+            font-size: 13px;
+            font-weight: 300;
+            color: #6b6864;
+            line-height: 1.6;
+            letter-spacing: 0.3px;
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        .gift-card-snapshot-message .gift-card-snapshot-quote {
+            color: #d6d0c8;
+            font-size: 11px;
+            font-weight: 300;
+        }
+
+        .gift-card-snapshot-product {
+            font-size: 12px;
+            font-weight: 300;
+            color: #a8a39c;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .gift-card-snapshot-product .gift-card-snapshot-icon {
+            opacity: 0.3;
+            font-size: 9px;
+        }
+
+        .gift-card-snapshot-product .gift-card-snapshot-name {
+            color: #8a8580;
+        }
+
+        .gift-card-snapshot-product .gift-card-snapshot-price {
+            font-size: 10px;
+            color: #b5aea6;
+            background: rgba(0,0,0,0.03);
+            padding: 0 10px;
+            border-radius: 10px;
+        }
+
+        .gift-card-snapshot-footer {
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(0,0,0,0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .gift-card-snapshot-footer .gift-card-snapshot-time {
+            font-size: 8px;
+            color: #c5c0b8;
+            letter-spacing: 1px;
+            font-weight: 300;
+        }
+
+        .gift-card-snapshot-footer .gift-card-snapshot-status {
+            font-size: 8px;
+            color: #c5c0b8;
+            letter-spacing: 0.5px;
+            font-weight: 300;
+        }
+
+        @media (max-width: 460px) {
+            .gift-card-snapshot {
+                max-width: 260px;
+                padding: 12px 14px 10px 14px;
+            }
+            .gift-card-snapshot-message {
+                font-size: 12px;
+            }
+            .gift-card-snapshot-product {
+                font-size: 11px;
+            }
         }
 
         .custom-toast { 
@@ -660,8 +877,6 @@
             .mall-product-card .product-price { font-size: 12px; }
             .mall-detail-body .detail-name { font-size: 14px; }
             .mall-detail-body .detail-price { font-size: 16px; }
-            .mall-ai-spot-panel .spot-product .spot-img { width: 56px; height: 56px; font-size: 20px; }
-            .mall-ai-spot-panel .spot-ai-words { font-size: 12px; }
         }
     </style>
 </head>
@@ -751,22 +966,6 @@
         </div>
     </div>
 
-    <div class="mall-ai-spot-overlay" id="mallAiSpotOverlay">
-        <div class="mall-ai-spot-panel">
-            <div class="spot-product">
-                <div class="spot-img" id="spotProductImg">☕</div>
-                <div class="spot-name" id="spotProductName">商品</div>
-                <div class="spot-price" id="spotProductPrice">¥0</div>
-            </div>
-            <div class="spot-ai-words" id="spotAiWords"><span class="ai-name-tag" id="spotAiName">TA</span>：...</div>
-            <div class="spot-buttons">
-                <button class="btn-buy-for-him" id="spotBuyForHimBtn">💝 送TA</button>
-                <button class="btn-ai-gift" id="spotAiGiftBtn">🎁 让TA送</button>
-                <button class="btn-reject" id="spotRejectBtn">再看看</button>
-            </div>
-        </div>
-    </div>
-
     <div class="mall-role-select-overlay" id="mallRoleSelectOverlay">
         <div class="mall-role-select-panel">
             <h3>选择 TA</h3>
@@ -776,31 +975,23 @@
         </div>
     </div>
 
-    <div class="gift-receive-overlay" id="giftReceiveOverlay">
-        <div class="gift-receive-panel">
-            <div class="gift-icon">🎁</div>
-            <div class="gift-title">收到礼物</div>
-            <div class="gift-from">来自 <span id="giftReceiveFromName">TA</span></div>
-            <div class="gift-product" id="giftReceiveProduct">商品</div>
-            <div class="gift-note" id="giftReceiveNote">附言</div>
-            <div class="gift-ai-words" id="giftReceiveWords"><span class="ai-name-tag" id="giftReceiveAiName">TA</span>：...</div>
-            <div class="gift-buttons">
-                <button class="btn-receive" id="giftReceiveBtn">确认</button>
-                <button class="btn-reject-gift" id="giftRejectBtn">拒绝</button>
-            </div>
+    <!-- ===== 商城陪逛聊天窗口 ===== -->
+    <div class="shopping-chat-overlay" id="shoppingChatOverlay">
+        <div class="shopping-chat-header">
+            <span class="chat-title">💬 和 <span class="role-name" id="scRoleName">TA</span> 一起逛</span>
+            <button class="chat-close-btn" id="scCloseBtn">✕</button>
         </div>
-    </div>
-
-    <div class="mall-ai-bubble" id="mallAiBubble">
-        <div class="ai-avatar" id="mallAiAvatar"></div>
-        <div class="ai-text" id="mallAiBubbleText"><span class="ai-name" id="mallAiBubbleName">TA</span>：...</div>
-        <button class="ai-end-btn" id="mallAiEndBtn"><i class="fas fa-times"></i></button>
+        <div class="shopping-chat-messages" id="scMessages"></div>
+        <div class="shopping-chat-input">
+            <input type="text" id="scInput" placeholder="和 TA 说点什么..." />
+            <button class="sc-send-btn" id="scSendBtn"><i class="fas fa-paper-plane"></i></button>
+        </div>
     </div>
 </div>
 
 <script>
 // ============================================================
-//  🛍️ 街角商店 · 完整版（与主应用联动）
+//  🛍️ 街角商店 · 完整版（含陪逛聊天）
 // ============================================================
 
 // ===== 配置 =====
@@ -823,7 +1014,7 @@ var mallAiGiftReceived = [];
 var mallShoppingTogether = {
     roleId: null,
     roleName: '',
-    roleData: null,        // ← 存完整角色数据
+    roleData: null,
     rejectCount: 0,
     totalTriggers: 0,
     cooldownUntil: null,
@@ -836,6 +1027,12 @@ var lastTriggeredProductId = null;
 var pendingAiGiftOrder = null;
 var currentCategory = 'all';
 var searchQuery = '';
+
+// ===== 陪逛聊天变量 =====
+var scMessages = [];
+var scCurrentRole = null;
+var scPendingProduct = null;
+var scIsProcessing = false;
 
 // ===== 工具函数 =====
 function generateId() {
@@ -920,7 +1117,6 @@ function loadMallData() {
                 mallAiGiftReceived = data.mall.aiGiftReceived || [];
                 if (data.mall.shoppingTogether) {
                     Object.assign(mallShoppingTogether, data.mall.shoppingTogether);
-                    // 恢复时重新加载完整角色数据
                     if (mallShoppingTogether.roleId) {
                         var roles = loadRolesFromMain();
                         var role = roles.find(function(r) { return r.id === mallShoppingTogether.roleId; });
@@ -928,7 +1124,6 @@ function loadMallData() {
                             mallShoppingTogether.roleData = role;
                             mallShoppingTogether.roleName = role.name;
                         } else {
-                            // 角色已被删除，重置状态
                             mallShoppingTogether.isActive = false;
                             mallShoppingTogether.roleId = null;
                             mallShoppingTogether.roleName = '';
@@ -940,7 +1135,6 @@ function loadMallData() {
             }
         }
     } catch (_) {}
-    // 默认值
     mallBalance = MALL_CONFIG.initialBalance;
     mallCart = [];
     mallOrders = [];
@@ -1345,34 +1539,11 @@ function showOrderList() {
     body.innerHTML = html;
 
     document.getElementById('orderBackBtn').addEventListener('click', function() {
-    // 1. 重新渲染商品列表
-    renderMallProducts();
-    updateOrderCount();
-    
-    // 2. 恢复商品网格显示，隐藏订单列表
-    var grid = document.getElementById('mallProductGrid');
-    var entry = document.getElementById('mallOrderEntry');
-    if (grid) grid.style.display = 'grid';
-    if (entry) entry.style.display = 'flex';
-    
-    // 3. 重置 body 内容为商品网格（防止之前的订单列表残留）
-    var body = document.getElementById('mallBody');
-    // 清空 body，重新放入商品网格和订单入口
-    body.innerHTML = '<div class="mall-product-grid" id="mallProductGrid"></div>' +
-        '<div class="mall-order-entry" id="mallOrderEntry">' +
-        '<span><i class="fas fa-box"></i> 我的订单 <span class="order-count" id="orderCountBadge">(0)</span></span>' +
-        '<span style="font-size:10px;color:var(--text-light);">查看 →</span>' +
-        '</div>';
-    
-    // 重新绑定商品点击事件
-    renderMallProducts();
-    updateOrderCount();
-    
-    // 重新绑定订单入口事件
-    document.getElementById('mallOrderEntry').addEventListener('click', showOrderList);
-    
-    showToast('📦 已返回商城');
-});
+        renderMallProducts();
+        updateOrderCount();
+        var entry = document.getElementById('mallOrderEntry');
+        if (entry) entry.style.display = 'flex';
+    });
 
     body.querySelectorAll('.btn-refund').forEach(function(btn) {
         btn.onclick = function() { cancelOrderAndRefund(btn.dataset.id); };
@@ -1428,6 +1599,321 @@ function updateMallUI() {
     }
     updateOrderCount();
     saveMallData();
+}
+
+// ============================================================
+//  💬 商城陪逛聊天系统
+// ============================================================
+
+function openShoppingChat(role) {
+    scCurrentRole = role;
+    scMessages = [];
+    document.getElementById('scRoleName').textContent = role.name;
+    
+    addScMessage('assistant', '和你一起逛好开心 💕 看到喜欢的告诉我～');
+    
+    document.getElementById('shoppingChatOverlay').classList.add('active');
+    document.getElementById('scInput').focus();
+}
+
+function closeShoppingChat() {
+    document.getElementById('shoppingChatOverlay').classList.remove('active');
+}
+
+function addScMessage(role, content, product) {
+    var msg = {
+        role: role,
+        content: content,
+        product: product || null,
+        time: new Date().toISOString()
+    };
+    scMessages.push(msg);
+    renderScMessages();
+}
+
+function renderScMessages() {
+    var container = document.getElementById('scMessages');
+    if (!container) return;
+    
+    var html = '';
+    scMessages.forEach(function(msg) {
+        var isSelf = msg.role === 'user';
+        var avatarStyle = '';
+        
+        if (isSelf) {
+            try {
+                var raw = localStorage.getItem('ds_multirole_v2');
+                if (raw) {
+                    var data = JSON.parse(raw);
+                    if (data.config && data.config.userAvatar) {
+                        avatarStyle = 'background-image:url(' + data.config.userAvatar + ');background-size:cover;background-position:center;';
+                    }
+                }
+            } catch (_) {}
+        } else {
+            if (scCurrentRole && scCurrentRole.avatar) {
+                avatarStyle = 'background-image:url(' + scCurrentRole.avatar + ');background-size:cover;background-position:center;';
+            }
+        }
+        
+        html += '<div class="sc-msg ' + (isSelf ? 'self' : '') + '">';
+        html += '<div class="sc-avatar" style="' + avatarStyle + '"></div>';
+        html += '<div class="sc-bubble">';
+        html += msg.content;
+        
+        if (msg.product && !isSelf) {
+            var product = msg.product;
+            html += '<div class="sc-product-tag">✦ ' + product.name + ' ¥' + product.price + '</div>';
+            html += '<div class="sc-actions">';
+            html += '<button class="btn-buy-for-him" data-product-id="' + product.id + '">💝 买给他</button>';
+            html += '<button class="btn-ai-gift" data-product-id="' + product.id + '">🎁 让TA买</button>';
+            html += '</div>';
+        }
+        
+        html += '</div>';
+        html += '</div>';
+    });
+    
+    container.innerHTML = html;
+    container.scrollTop = container.scrollHeight;
+    
+    container.querySelectorAll('.btn-buy-for-him').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var productId = this.dataset.productId;
+            var product = mallProducts.find(function(p) { return p.id === productId; });
+            if (product && scCurrentRole) {
+                handleBuyForHim(product);
+            }
+        });
+    });
+    
+    container.querySelectorAll('.btn-ai-gift').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var productId = this.dataset.productId;
+            var product = mallProducts.find(function(p) { return p.id === productId; });
+            if (product && scCurrentRole) {
+                handleAiGift(product);
+            }
+        });
+    });
+}
+
+function sendScMessage(text) {
+    if (!text || !text.trim()) return;
+    if (!scCurrentRole) return;
+    if (scIsProcessing) return;
+    
+    addScMessage('user', text.trim());
+    document.getElementById('scInput').value = '';
+    
+    var mentionedProduct = null;
+    var productNames = mallProducts.map(function(p) { return p.name; });
+    for (var i = 0; i < productNames.length; i++) {
+        if (text.indexOf(productNames[i]) !== -1) {
+            mentionedProduct = mallProducts.find(function(p) { return p.name === productNames[i]; });
+            break;
+        }
+    }
+    
+    scIsProcessing = true;
+    
+    generateScReply(text, mentionedProduct).then(function(reply) {
+        if (reply.product) {
+            addScMessage('assistant', reply.text, reply.product);
+        } else {
+            addScMessage('assistant', reply.text);
+        }
+        scIsProcessing = false;
+    }).catch(function(e) {
+        console.error('生成回复失败:', e);
+        addScMessage('assistant', '嗯...让我想想 💭');
+        scIsProcessing = false;
+    });
+}
+
+function generateScReply(userMessage, mentionedProduct) {
+    var role = scCurrentRole;
+    var apiKey = getApiKeyFromMain();
+    
+    if (!apiKey) {
+        return new Promise(function(resolve) {
+            var fallbacks = [
+                { text: '嗯嗯，我在听你说 💕', product: mentionedProduct || null },
+                { text: '真的吗？好有意思！', product: mentionedProduct || null },
+                { text: '我也有同感！', product: mentionedProduct || null },
+                { text: '你觉得这个怎么样？', product: mentionedProduct || null }
+            ];
+            if (mentionedProduct && Math.random() > 0.5) {
+                var likePhrases = ['这个好适合你！💕', '我也觉得这个好好看！', '你眼光真好！'];
+                resolve({
+                    text: likePhrases[Math.floor(Math.random() * likePhrases.length)],
+                    product: mentionedProduct
+                });
+            } else {
+                resolve(fallbacks[Math.floor(Math.random() * fallbacks.length)]);
+            }
+        });
+    }
+    
+    var model = getModelFromMain();
+    var systemPrompt = '你正在扮演「' + role.name + '」，和用户一起逛商城。\n' +
+        '角色人设：' + (role.persona || '一个温柔体贴的人') + '\n' +
+        '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n' +
+        '你们正在逛商城，用户可以随时和你聊天。\n' +
+        '要求：\n' +
+        '1. 用第一人称「我」说话\n' +
+        '2. 根据你的性格自然回应\n' +
+        '3. 如果用户提到了某件商品，可以表达你的看法\n' +
+        '4. 控制在2-3句话，口语化\n' +
+        '5. 如果你特别喜欢某件商品，可以暗示想要\n' +
+        (mentionedProduct ? '\n用户提到了商品：「' + mentionedProduct.name + '」¥' + mentionedProduct.price + '\n你可以表达你对这件商品的看法。' : '');
+    
+    return fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({
+            model: model,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userMessage || '我们正在逛商城呢' }
+            ],
+            temperature: 0.85,
+            max_tokens: 150,
+        }),
+    }).then(function(resp) {
+        if (!resp.ok) throw new Error('API 错误');
+        return resp.json();
+    }).then(function(data) {
+        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (reply) {
+            var product = mentionedProduct;
+            if (!product) {
+                var productNames2 = mallProducts.map(function(p) { return p.name; });
+                for (var j = 0; j < productNames2.length; j++) {
+                    if (reply.indexOf(productNames2[j]) !== -1) {
+                        product = mallProducts.find(function(p) { return p.name === productNames2[j]; });
+                        break;
+                    }
+                }
+            }
+            var likeKeywords = ['好喜欢', '想要', '适合', '好看', '漂亮', '心动', '好想', '这个好'];
+            var hasLike = false;
+            for (var k = 0; k < likeKeywords.length; k++) {
+                if (reply.indexOf(likeKeywords[k]) !== -1) {
+                    hasLike = true;
+                    break;
+                }
+            }
+            if (hasLike && !product && mallProducts.length > 0 && Math.random() > 0.6) {
+                product = mallProducts[Math.floor(Math.random() * mallProducts.length)];
+            }
+            return { text: reply, product: product };
+        }
+        throw new Error('未获取到回复');
+    }).catch(function(e) {
+        console.error('生成回复失败:', e);
+        return { text: '嗯...我在想 💕', product: null };
+    });
+}
+
+function handleBuyForHim(product) {
+    if (!scCurrentRole) return;
+    if (mallBalance < product.price) {
+        showToast('💰 余额不足，去充值吧～');
+        return;
+    }
+    if (confirm('💝 买「' + product.name + '」送给 ' + scCurrentRole.name + ' 吗？花费 ¥' + product.price)) {
+        var order = {
+            id: 'ORD_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            productId: product.id,
+            productName: product.name,
+            productImage: product.image,
+            price: product.price,
+            qty: 1,
+            total: product.price,
+            mode: 'gift',
+            roleName: scCurrentRole.name,
+            roleId: scCurrentRole.id,
+            status: 'pending',
+            giftFromAi: false,
+            note: '陪逛时买的',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+        mallOrders.push(order);
+        mallBalance -= product.price;
+        saveMallData();
+        updateMallUI();
+        
+        triggerHeartSpikeForGift(scCurrentRole, product, 'gift');
+        addGiftToMemory(scCurrentRole, product, 'user', '陪逛时买的');
+        
+        addScMessage('assistant', '哇！你真的送给我了！我好开心！谢谢你 💕 我一定会好好珍惜的！');
+        
+        showToast('🎁 已送给 ' + scCurrentRole.name + '！');
+    }
+}
+
+function handleAiGift(product) {
+    if (!scCurrentRole) return;
+    if (confirm('🎁 让 ' + scCurrentRole.name + ' 买「' + product.name + '」给你吗？')) {
+        var order = {
+            id: 'ORD_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            productId: product.id,
+            productName: product.name,
+            productImage: product.image,
+            price: product.price,
+            qty: 1,
+            total: 0,
+            mode: 'ai_gift',
+            roleName: scCurrentRole.name,
+            roleId: scCurrentRole.id,
+            status: 'done',
+            giftFromAi: true,
+            note: scCurrentRole.name + ' 送你的礼物 ✨',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+        mallOrders.push(order);
+        saveMallData();
+        updateMallUI();
+        
+        triggerHeartSpikeForGift(scCurrentRole, product, 'ai_gift');
+        addGiftToMemory(scCurrentRole, product, 'ai', '陪逛时送的');
+        
+        addScMessage('assistant', '我送给你了！希望你每天都能看到它，然后想起我 💕');
+        
+        showToast('🎁 ' + scCurrentRole.name + ' 送了「' + product.name + '」给你！');
+    }
+}
+
+function initShoppingChat() {
+    var closeBtn = document.getElementById('scCloseBtn');
+    var input = document.getElementById('scInput');
+    var sendBtn = document.getElementById('scSendBtn');
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeShoppingChat);
+    }
+    
+    if (sendBtn) {
+        sendBtn.addEventListener('click', function() {
+            var text = document.getElementById('scInput').value;
+            sendScMessage(text);
+        });
+    }
+    
+    if (input) {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                var text = this.value;
+                sendScMessage(text);
+            }
+        });
+    }
 }
 
 // ============================================================
@@ -1500,7 +1986,6 @@ function startShoppingTogether(roleId) {
         return;
     }
 
-    // 保存完整角色数据
     mallShoppingTogether.roleId = role.id;
     mallShoppingTogether.roleName = role.name;
     mallShoppingTogether.roleData = role;
@@ -1511,36 +1996,12 @@ function startShoppingTogether(roleId) {
     mallShoppingTogether.pendingProduct = null;
     saveMallData();
 
-    // UI 更新
     var inviteBtn = document.getElementById('mallInviteBtn');
     inviteBtn.textContent = '💕 ' + role.name + ' 同游中';
     inviteBtn.classList.add('inviting');
 
-    var bubble = document.getElementById('mallAiBubble');
-    var avatar = document.getElementById('mallAiAvatar');
-    var nameEl = document.getElementById('mallAiBubbleName');
-    
-    if (role.avatar && role.avatar.startsWith('data:')) {
-        avatar.style.backgroundImage = 'url(' + role.avatar + ')';
-        avatar.style.backgroundSize = 'cover';
-        avatar.style.backgroundPosition = 'center';
-        avatar.style.backgroundColor = 'transparent';
-    } else {
-        avatar.style.backgroundImage = '';
-        avatar.style.backgroundColor = '#d6d0c8';
-    }
-    nameEl.textContent = role.name;
-    bubble.classList.add('active');
-    
-    // 生成开场白
-    generateTogetherGreeting(role).then(function(greeting) {
-        var textEl = document.getElementById('mallAiBubbleText');
-        if (greeting) {
-            textEl.innerHTML = '<span class="ai-name">' + role.name + '</span>：' + greeting;
-        } else {
-            textEl.innerHTML = '<span class="ai-name">' + role.name + '</span>：和你一起逛，好开心 💕';
-        }
-    });
+    // ===== 打开陪逛聊天窗口 =====
+    openShoppingChat(role);
     
     document.getElementById('mallAiSpotOverlay').classList.remove('active');
     showToast('💕 已邀请 ' + role.name + ' 一起逛商城～');
@@ -1556,7 +2017,10 @@ function endShoppingTogether() {
 
     document.getElementById('mallInviteBtn').textContent = '与TA同游';
     document.getElementById('mallInviteBtn').classList.remove('inviting');
-    document.getElementById('mallAiBubble').classList.remove('active');
+    
+    // ===== 关闭陪逛聊天窗口 =====
+    closeShoppingChat();
+    
     document.getElementById('mallAiSpotOverlay').classList.remove('active');
     showToast('👋 已结束和 ' + roleName + ' 的同游');
 }
@@ -1595,280 +2059,18 @@ function generateTogetherGreeting(role) {
     });
 }
 
-function generateAiSpotWords(role, product) {
-    var apiKey = getApiKeyFromMain();
-    if (!apiKey) {
-        var defaults = ['这个好好看！我一眼就喜欢上了 💕', '哇…这个好适合我，你觉得呢？', '我好喜欢这个！', '这个太合我心意了！', '你看这个，是不是很适合我？'];
-        return Promise.resolve(defaults[Math.floor(Math.random() * defaults.length)]);
-    }
-    
-    var model = getModelFromMain();
-    var systemPrompt = '你正在扮演「' + role.name + '」。你在商城看到了一件商品。\n' +
-        '角色人设：' + (role.persona || '一个温柔体贴的人') + '\n' +
-        '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n' +
-        '商品名：' + product.name + '\n' +
-        '价格：' + product.price + ' 虚拟币\n' +
-        '描述：' + (product.description || '') + '\n\n' +
-        '请用你的性格表达你看到这件商品时的真实感受。要求：用第一人称「我」说话，表达你的喜欢程度，控制在1-2句话。';
-    
-    return fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({
-            model: model,
-            messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: '我看到了一件好喜欢的商品！' }],
-            temperature: 0.9,
-            max_tokens: 100,
-        }),
-    }).then(function(resp) {
-        if (!resp.ok) throw new Error('API 请求失败');
-        return resp.json();
-    }).then(function(data) {
-        return data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content 
-            ? data.choices[0].message.content.trim() 
-            : '这个好适合我！你觉得呢？💕';
-    }).catch(function(e) {
-        return '这个好适合我！你觉得呢？💕';
-    });
-}
-
-function tryTriggerAiSpot(product) {
-    if (!mallShoppingTogether.isActive) return false;
-    if (mallShoppingTogether.rejectCount >= MALL_CONFIG.maxRejectCount) return false;
-    if (Math.random() > MALL_CONFIG.spotProbability) return false;
-
-    var role = mallShoppingTogether.roleData;
-    if (!role) {
-        // 尝试从主应用重新加载
-        var roles = loadRolesFromMain();
-        role = roles.find(function(r) { return r.id === mallShoppingTogether.roleId; });
-        if (role) mallShoppingTogether.roleData = role;
-    }
-    if (!role) return false;
-
-    mallShoppingTogether.pendingProduct = product;
-    showAiSpotDialog(product, role);
-    return true;
-}
-
-function showAiSpotDialog(product, role) {
-    var overlay = document.getElementById('mallAiSpotOverlay');
-    var imgEl = document.getElementById('spotProductImg');
-    var nameEl = document.getElementById('spotProductName');
-    var priceEl = document.getElementById('spotProductPrice');
-    var wordsEl = document.getElementById('spotAiWords');
-    var nameTag = document.getElementById('spotAiName');
-
-    nameEl.textContent = product.name;
-    priceEl.textContent = '¥' + product.price;
-    if (product.image) {
-        imgEl.innerHTML = '<img src="' + product.image + '" alt="' + product.name + '" style="width:100%;height:100%;object-fit:cover;filter:saturate(0.5);" />';
-    } else {
-        imgEl.innerHTML = '☕';
-        imgEl.style.display = 'flex';
-        imgEl.style.alignItems = 'center';
-        imgEl.style.justifyContent = 'center';
-        imgEl.style.fontSize = '28px';
-    }
-    nameTag.textContent = role.name;
-
-    generateAiSpotWords(role, product).then(function(words) {
-        wordsEl.innerHTML = '<span class="ai-name-tag">' + role.name + '</span>：' + words;
-    });
-
-    document.getElementById('spotBuyForHimBtn').onclick = function() {
-        overlay.classList.remove('active');
-        var totalPrice = product.price;
-        if (mallBalance < totalPrice) { showToast('余额不足，去充值吧～'); return; }
-        if (confirm('💝 送给 ' + role.name + '「' + product.name + '」吗？花费 ¥' + totalPrice)) {
-            mallBalance -= totalPrice;
-            var order = {
-                id: 'ORD_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                productId: product.id, productName: product.name, productImage: product.image,
-                price: product.price, qty: 1, total: totalPrice, mode: 'gift',
-                roleName: role.name, roleId: role.id, status: 'pending', giftFromAi: false,
-                note: 'AI 看中后购买',
-                createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-            };
-            mallOrders.push(order);
-            saveMallData();
-            updateMallUI();
-            showToast('🎁 已送给 ' + role.name + '！');
-            triggerHeartSpikeForGift(role, product, 'gift');
-            addGiftToMemory(role, product, 'user', 'AI看中后购买');
-            triggerGiftChatReply(role, product, 'AI 看中后你送给了我 ❤️');
-            mallShoppingTogether.rejectCount = 0;
-            saveMallData();
-        }
-    };
-
-    document.getElementById('spotAiGiftBtn').onclick = function() {
-        overlay.classList.remove('active');
-        var order = {
-            id: 'ORD_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            productId: product.id, productName: product.name, productImage: product.image,
-            price: product.price, qty: 1, total: 0, mode: 'ai_gift',
-            roleName: role.name, roleId: role.id, status: 'done', giftFromAi: true,
-            note: role.name + ' 送给你的礼物 ✨',
-            createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-        };
-        mallOrders.push(order);
-        mallAiGiftReceived.push({ productId: product.id, productName: product.name, productImage: product.image, from: role.name, time: new Date().toISOString() });
-        pendingAiGiftOrder = order;
-        showGiftReceiveDialog(order, role);
-        mallShoppingTogether.rejectCount = 0;
-        saveMallData();
-    };
-
-    document.getElementById('spotRejectBtn').onclick = function() {
-        overlay.classList.remove('active');
-        mallShoppingTogether.rejectCount++;
-        saveMallData();
-
-        if (mallShoppingTogether.rejectCount >= MALL_CONFIG.maxRejectCount) {
-            var name = mallShoppingTogether.roleName || 'TA';
-            showToast('💔 ' + name + ' 好像有点失落... 结束逛街了');
-            var role2 = mallShoppingTogether.roleData;
-            if (role2) {
-                var endWords = ['好吧…我知道你是为我好，听你的。', '嗯…没事的，我们随便逛逛吧。', '我懂的，不勉强你。', '好…那就看看吧。'];
-                var word = endWords[Math.floor(Math.random() * endWords.length)];
-                showToast('💭 ' + role2.name + '：' + word);
-            }
-            endShoppingTogether();
-        } else {
-            var remain = MALL_CONFIG.maxRejectCount - mallShoppingTogether.rejectCount;
-            showToast('👀 还剩 ' + remain + ' 次机会哦');
-        }
-    };
-    overlay.classList.add('active');
-}
-
-function showGiftReceiveDialog(order, role) {
-    var overlay = document.getElementById('giftReceiveOverlay');
-    document.getElementById('giftReceiveFromName').textContent = role.name;
-    document.getElementById('giftReceiveProduct').textContent = '🎁 ' + order.productName;
-    document.getElementById('giftReceiveNote').textContent = order.note || '✨ 一份心意，请查收';
-    document.getElementById('giftReceiveAiName').textContent = role.name;
-
-    var apiKey = getApiKeyFromMain();
-    if (apiKey) {
-        var model = getModelFromMain();
-        var msg = '你刚刚送了一份礼物给用户：\n商品名：' + order.productName + '\n\n请用你的性格说一句附赠的话，表达你的心意。控制在1-2句话。';
-        fetch('https://api.deepseek.com/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-            body: JSON.stringify({
-                model: model,
-                messages: [{ role: 'system', content: '你是一个温柔体贴的角色，请用你的性格说话。' }, { role: 'user', content: msg }],
-                temperature: 0.85,
-                max_tokens: 80,
-            }),
-        }).then(function(resp) {
-            if (!resp.ok) throw new Error('API 错误');
-            return resp.json();
-        }).then(function(data) {
-            var words = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-            if (words) {
-                document.getElementById('giftReceiveWords').innerHTML = '<span class="ai-name-tag">' + role.name + '</span>：' + words;
-            }
-        }).catch(function(e) {
-            var fallback = ['希望你喜欢这份礼物 💕', '这是我的心意，收下吧～', '我挑了好久，希望你会喜欢 😊'];
-            document.getElementById('giftReceiveWords').innerHTML = '<span class="ai-name-tag">' + role.name + '</span>：' + fallback[Math.floor(Math.random() * fallback.length)];
-        });
-    } else {
-        var fallback2 = ['希望你喜欢这份礼物 💕', '这是我的心意，收下吧～', '我挑了好久，希望你会喜欢 😊'];
-        document.getElementById('giftReceiveWords').innerHTML = '<span class="ai-name-tag">' + role.name + '</span>：' + fallback2[Math.floor(Math.random() * fallback2.length)];
-    }
-
-    document.getElementById('giftReceiveBtn').onclick = function() {
-        overlay.classList.remove('active');
-        if (pendingAiGiftOrder) {
-            var orderRef = mallOrders.find(function(o) { return o.id === pendingAiGiftOrder.id; });
-            if (orderRef) {
-                orderRef.status = 'done';
-                orderRef.updatedAt = new Date().toISOString();
-                saveMallData();
-                updateMallUI();
-            }
-            var roleRef = mallShoppingTogether.roleData || getRoleById(pendingAiGiftOrder.roleId);
-            if (roleRef) {
-                triggerHeartSpikeForGift(roleRef, { name: pendingAiGiftOrder.productName }, 'ai_gift');
-                addGiftToMemory(roleRef, { name: pendingAiGiftOrder.productName }, 'ai', pendingAiGiftOrder.note);
-                triggerGiftChatReply(roleRef, { name: pendingAiGiftOrder.productName, price: 0 }, pendingAiGiftOrder.note);
-            }
-            showToast('💝 已确认收货！');
-            pendingAiGiftOrder = null;
-        }
-    };
-
-    document.getElementById('giftRejectBtn').onclick = function() {
-        overlay.classList.remove('active');
-        if (pendingAiGiftOrder) {
-            mallOrders = mallOrders.filter(function(o) { return o.id !== pendingAiGiftOrder.id; });
-            saveMallData();
-            updateMallUI();
-            showToast('🙅 已拒绝这份礼物');
-            pendingAiGiftOrder = null;
-        }
-    };
-    overlay.classList.add('active');
-}
-
-// ===== 滚动触发 AI 看中商品 =====
-function initMallScrollTrigger() {
-    var body = document.getElementById('mallBody');
-    if (!body) return;
-    var scrollPending = false;
-    body.addEventListener('scroll', function() {
-        if (!mallShoppingTogether.isActive) return;
-        if (mallShoppingTogether.rejectCount >= MALL_CONFIG.maxRejectCount) return;
-        if (scrollPending) return;
-        scrollPending = true;
-        clearTimeout(mallScrollTimeout);
-        mallScrollTimeout = setTimeout(function() {
-            scrollPending = false;
-            var cards = body.querySelectorAll('.mall-product-card');
-            var targetCard = null;
-            var viewportTop = body.scrollTop;
-            var viewportBottom = viewportTop + body.clientHeight;
-            for (var i = 0; i < cards.length; i++) {
-                var card = cards[i];
-                var rect = card.getBoundingClientRect();
-                var cardTop = rect.top + body.scrollTop - body.getBoundingClientRect().top;
-                var cardBottom = cardTop + rect.height;
-                var center = (cardTop + cardBottom) / 2;
-                if (center > viewportTop + 100 && center < viewportBottom - 100) {
-                    targetCard = card;
-                    break;
-                }
-            }
-            if (targetCard) {
-                var id = targetCard.dataset.id;
-                if (id !== lastTriggeredProductId) {
-                    lastTriggeredProductId = id;
-                    var product = mallProducts.find(function(p) { return p.id === id; });
-                    if (product) tryTriggerAiSpot(product);
-                }
-            }
-        }, 800);
-    });
-}
-
 // ============================================================
 //  🏁 初始化
 // ============================================================
 
 function init() {
-    // 加载数据
     loadMallData();
     loadRolesFromMain();
     loadMallProducts();
     updateMallUI();
 
-    // 初始化滚动触发
-    initMallScrollTrigger();
+    initShoppingChat();
 
-    // 恢复 AI 一起逛状态
     if (mallShoppingTogether.isActive && mallShoppingTogether.roleId) {
         var roles = loadRolesFromMain();
         var role = roles.find(function(r) { return r.id === mallShoppingTogether.roleId; });
@@ -1878,18 +2080,9 @@ function init() {
             var inviteBtn = document.getElementById('mallInviteBtn');
             inviteBtn.textContent = '💕 ' + role.name + ' 同游中';
             inviteBtn.classList.add('inviting');
-
-            var bubble = document.getElementById('mallAiBubble');
-            var avatar = document.getElementById('mallAiAvatar');
-            var nameEl = document.getElementById('mallAiBubbleName');
-            if (role.avatar && role.avatar.startsWith('data:')) {
-                avatar.style.backgroundImage = 'url(' + role.avatar + ')';
-                avatar.style.backgroundSize = 'cover';
-                avatar.style.backgroundPosition = 'center';
-                avatar.style.backgroundColor = 'transparent';
-            }
-            nameEl.textContent = role.name;
-            bubble.classList.add('active');
+            
+            // 恢复聊天窗口
+            openShoppingChat(role);
         } else {
             mallShoppingTogether.isActive = false;
             saveMallData();
@@ -1897,13 +2090,11 @@ function init() {
     }
 
     // ===== 事件绑定 =====
-    // 退出
     document.getElementById('exitMallBtn').addEventListener('click', function() {
         if (mallShoppingTogether.isActive) endShoppingTogether();
         window.location.href = 'index.html';
     });
 
-    // 购物车
     document.getElementById('mallCartBtn').addEventListener('click', openCart);
     document.getElementById('mallCartBtn2').addEventListener('click', openCart);
     document.getElementById('cartCloseBtn').addEventListener('click', closeCart);
@@ -1911,7 +2102,6 @@ function init() {
         if (e.target === this) closeCart();
     });
 
-    // 充值
     document.getElementById('mallBalanceDisplay').addEventListener('click', openRecharge);
     document.getElementById('rechargeConfirmBtn').addEventListener('click', function() {
         var amount = parseInt(document.getElementById('rechargeInput').value);
@@ -1928,22 +2118,17 @@ function init() {
         btn.onclick = function() { document.getElementById('rechargeInput').value = btn.dataset.amount; };
     });
 
-    // AI 一起逛
     document.getElementById('mallInviteBtn').addEventListener('click', openRoleSelectDialog);
     document.getElementById('mallRoleSelectCancel').addEventListener('click', function() {
         document.getElementById('mallRoleSelectOverlay').classList.remove('active');
     });
-    document.getElementById('mallAiEndBtn').addEventListener('click', endShoppingTogether);
 
-    // 商品详情返回
     document.getElementById('mallDetailBack').addEventListener('click', function() {
         document.getElementById('mallDetailOverlay').classList.remove('active');
     });
 
-    // 我的订单
     document.getElementById('mallOrderEntry').addEventListener('click', showOrderList);
 
-    // 分类切换
     document.querySelectorAll('.cat-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.cat-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -1953,13 +2138,11 @@ function init() {
         });
     });
 
-    // 搜索
     document.getElementById('mallSearchInput').addEventListener('input', function() {
         searchQuery = this.value.trim();
         renderMallProducts();
     });
 
-    // 底部 Tab
     document.querySelectorAll('.nav-item').forEach(function(item) {
         item.addEventListener('click', function() {
             document.querySelectorAll('.nav-item').forEach(function(el) { el.classList.remove('active'); });
