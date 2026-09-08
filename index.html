@@ -3174,30 +3174,15 @@ function createMessageRow(msg, role) {
 
     var footerHtml = '';
 
-    // ========== 构建最终 HTML ==========
-// 判断是否为礼物消息（不包裹气泡）
-var isGiftMessage = msg.type === 'gift';
-
-// 礼物消息：不包裹气泡，直接显示卡片
-if (isGiftMessage) {
-    row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div><div class="bubble-container" style="max-width:100%;">' +
-        (timeStr ? '<div class="msg-time">' + timeStr + '</div>' : '') +
-        '<div class="bubble-row" style="width:100%;">' +
-        contentHtml +
-        actionsHtml +
-        '</div>' +
-        footerHtml +
-        '</div>';
-} else {
-    // 普通消息：包裹在气泡里
-    row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div><div class="bubble-container">' +
-        (timeStr ? '<div class="msg-time">' + timeStr + '</div>' : '') +
-        '<div class="bubble-row"><div class="bubble" style="padding:' + (isVoiceBubble ? '0' : '') + ';background:' + (isVoiceBubble ? 'transparent' : '') + ';box-shadow:' + (isVoiceBubble ? 'none' : '') + ';">' +
-        quoteHtml + contentHtml +
-        '</div>' + actionsHtml + '</div>' +
-        footerHtml +
-        '</div>';
-}
+   // ========== 构建最终 HTML ==========
+// 普通消息：包裹在气泡里
+row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div><div class="bubble-container">' +
+    (timeStr ? '<div class="msg-time">' + timeStr + '</div>' : '') +
+    '<div class="bubble-row"><div class="bubble" style="padding:' + (isVoiceBubble ? '0' : '') + ';background:' + (isVoiceBubble ? 'transparent' : '') + ';box-shadow:' + (isVoiceBubble ? 'none' : '') + ';">' +
+    quoteHtml + contentHtml +
+    '</div>' + actionsHtml + '</div>' +
+    footerHtml +
+    '</div>';
 
     return row;
 }
