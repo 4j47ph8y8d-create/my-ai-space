@@ -1400,27 +1400,27 @@ function syncGiftToMainApp(role, product, qty, note, totalPrice) {
         }
         
         var giftMessage = {
-            id: 'gift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            role: 'user',
-            content: '💝 送了「' + product.name + '」给 ' + role.name + (note ? '（附言：' + note + '）' : ''),
-            type: 'gift',
-            time: new Date().toISOString(),
-            giftData: {
-                productName: product.name,
-                price: product.price,
-                qty: qty || 1,
-                note: note || '',
-                fromName: '你',
-                toName: role.name,
-                fromId: 'user',
-                toId: role.id,
-                totalPrice: totalPrice || product.price * (qty || 1)
-            },
-            hasAudio: false,
-            audioUrl: null,
-            audioDuration: 0,
-            voiceRequested: false
-        };
+    id: 'gift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+    role: 'user',
+    content: '💝 送了「' + product.name + '」给 ' + role.name + (note ? '（附言：' + note + '）' : ''),
+    type: 'gift',
+    time: new Date().toISOString(),
+    giftData: {
+        productName: product.name,
+        price: product.price,
+        qty: qty || 1,
+        note: note || '',
+        fromName: '你',
+        toName: role.name,
+        fromId: 'user',
+        toId: role.id,
+        totalPrice: totalPrice || product.price * (qty || 1)
+    },
+    hasAudio: false,
+    audioUrl: null,
+    audioDuration: 0,
+    voiceRequested: false
+};
         targetRole.messages.push(giftMessage);
         
         if (!data.config) data.config = {};
