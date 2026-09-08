@@ -1984,7 +1984,53 @@ function sendScMessage(text) {
 function generateScReply(userMessage, mentionedProduct) {
     var role = scCurrentRole;
     var apiKey = getApiKeyFromMain();
-    
+      // ===== 新增：构建商品列表文本 =====
+    var productListText = '';
+    if (mallProducts.length > 0) {
+        productListText = '\n【商城商品列表】\n';
+        mallProducts.forEach(function(p) {
+            productListText += '• "' + p.name + '" ¥' + p.price + '（' + (p.description || '') + '）\n';
+        });
+        productListText += '\n你可以根据你的性格，从这些商品中选一件你喜欢的推荐给用户。';
+        productListText += '如果你特别喜欢某件商品，可以告诉用户你想要它。\n';
+    }
+    // ===== 新增结束 =====
+
+// ===== 新增：检测用户是否在问"你喜欢什么" =====
+var askKeywords = ['喜欢什么', '想要什么', '推荐', '有什么喜欢', '你想要', '你喜欢', '你的喜好', '挑一个'];
+var isAsking = false;
+for (var i = 0; i < askKeywords.length; i++) {
+    if (userMessage.indexOf(askKeywords[i]) !== -1) {
+        isAsking = true;
+        break;
+    }
+}
+
+if (isAsking && mallProducts.length > 0) {
+    // 从商品列表中随机选1-2件推荐
+    var shuffled = mallProducts.slice().sort(function() { return 0.5 - Math.random(); });
+    var selected = shuffled.slice(0, 2);
+    var productNames = selected.map(function(p) { return '「' + p.name + '」¥' + p.price; }).join('、');
+    var randomReply = [
+        '我看到那个' + selected[0].name + '好心动 💕 感觉很适合你！',
+        '我特别喜欢那个' + selected[0].name + '，你觉得呢？',
+        '要不要看看这个' + selected[0].name + '？我觉得超好看的！',
+        '我最喜欢那个' + selected[0].name + '了 💕 好想要...',
+        '这个' + selected[0].name + '看起来好适合你，你喜欢吗？',
+        '我最近好想要一个' + selected[0].name + '，你陪我一起挑好不好？',
+        '那个' + selected[0].name + '好适合我们 💕 你觉得呢？'
+    ];
+    var reply = randomReply[Math.floor(Math.random() * randomReply.length)];
+    // 如果有第二件，可以加一句
+    if (selected.length > 1 && Math.random() > 0.5) {
+        reply += ' 还有那个' + selected[1].name + '也好心动！';
+    }
+    addScMessage('assistant', reply, selected[0]);
+    scIsProcessing = false;
+    return Promise.resolve();
+}
+// ===== 新增结束 =====
+
     if (!apiKey) {
         return new Promise(function(resolve) {
             var fallbacks = [
