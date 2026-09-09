@@ -2108,7 +2108,8 @@ if (registerBtn) {
         var password = document.getElementById('regPassword').value.trim();
         var confirm = document.getElementById('regConfirmPassword').value.trim();
 
-var inviteCode = document.getElementById('regInviteCode').value.trim();
+var inviteCodeInput = document.getElementById('regInviteCode');
+var inviteCode = inviteCodeInput ? inviteCodeInput.value.trim() : '';
 
         if (!email || !password || !confirm) {
             alert('请完整填写所有字段');
@@ -2123,6 +2124,7 @@ var inviteCode = document.getElementById('regInviteCode').value.trim();
             return;
         }
 
+        try {
         var res = await fetch(API_BASE + '/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
