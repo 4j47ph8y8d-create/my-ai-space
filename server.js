@@ -7,12 +7,10 @@ require('dotenv').config();
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-me';
 
-// ===== 中间件 =====
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
 
-// ===== 连接 MongoDB =====
 const MONGODB_URI = process.env.MONGODB_URI;
 mongoose.connect(MONGODB_URI || 'mongodb://localhost:27017/dream_app', {
     useNewUrlParser: true,
@@ -46,7 +44,7 @@ UserSchema.methods.comparePassword = async function(password) {
 
 const User = mongoose.model('User', UserSchema);
 
-// ===== 用户数据模型 =====
+// ===== 用户数据模型（禁用乐观锁版本控制） =====
 const UserDataSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     config: { type: mongoose.Schema.Types.Mixed, default: {} },
@@ -54,7 +52,7 @@ const UserDataSchema = new mongoose.Schema({
     diaries: { type: mongoose.Schema.Types.Mixed, default: [] },
     version: { type: Number, default: 1 },
     updatedAt: { type: Date, default: Date.now }
-});
+}, { versionKey: false });  // ← 关键修复：禁用 __v
 
 const UserData = mongoose.model('UserData', UserDataSchema);
 
@@ -106,7 +104,6 @@ app.get('/', (req, res) => {
 //  🔑 邀请码系统
 // ============================================================
 
-// ===== 生成邀请码（仅管理员） =====
 app.post('/api/invite/generate', authenticate, async (req, res) => {
     try {
         const userId = req.userId;
@@ -115,13 +112,11 @@ app.post('/api/invite/generate', authenticate, async (req, res) => {
             return res.status(401).json({ success: false, error: '用户不存在' });
         }
 
-        // ===== 硬编码管理员邮箱（已改成你的） =====
         const ADMIN_EMAIL = '2277205709@qq.com';
         if (user.email !== ADMIN_EMAIL) {
             return res.status(403).json({ success: false, error: '只有管理员可以生成邀请码' });
         }
 
-        // ===== 验证管理员密码 =====
         const { password } = req.body;
         const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
         if (!ADMIN_PASSWORD) {
@@ -131,7 +126,6 @@ app.post('/api/invite/generate', authenticate, async (req, res) => {
             return res.status(403).json({ success: false, error: '管理员密码错误' });
         }
 
-        // ===== 生成邀请码 =====
         function generateCode() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
             let code = '';
@@ -148,11 +142,10 @@ app.post('/api/invite/generate', authenticate, async (req, res) => {
             exists = await InviteCode.findOne({ code });
         }
 
-        // ===== 保存邀请码 =====
         const inviteCode = new InviteCode({
             code: code,
             createdBy: userId,
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7天后过期
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         });
         await inviteCode.save();
 
@@ -168,7 +161,6 @@ app.post('/api/invite/generate', authenticate, async (req, res) => {
     }
 });
 
-// ===== 验证邀请码（注册前检查） =====
 app.post('/api/invite/verify', async (req, res) => {
     try {
         const { code } = req.body;
@@ -195,7 +187,7 @@ app.post('/api/invite/verify', async (req, res) => {
     }
 });
 
-// ===== 注册 =====
+// ===== 注册（修复版） =====
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { email, password, nickname, inviteCode } = req.body;
@@ -207,32 +199,26 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ error: '密码至少 6 位' });
         }
 
-        // ===== 硬编码管理员邮箱（已改成你的） =====
         const ADMIN_EMAIL = '2277205709@qq.com';
         const isAdmin = email === ADMIN_EMAIL;
 
-        // ===== 如果是普通用户，验证邀请码 =====
+        // ===== 如果是普通用户，先验证邀请码（但不消耗） =====
+        let usedCode = null;
         if (!isAdmin) {
             if (!inviteCode) {
                 return res.status(400).json({ error: '🔑 请输入邀请码' });
             }
 
-            const existingCode = await InviteCode.findOne({ code: inviteCode });
-            if (!existingCode) {
+            usedCode = await InviteCode.findOne({ code: inviteCode });
+            if (!usedCode) {
                 return res.status(400).json({ error: '邀请码不存在' });
             }
-            if (existingCode.used) {
+            if (usedCode.used) {
                 return res.status(400).json({ error: '该邀请码已被使用' });
             }
-            if (existingCode.expiresAt && new Date() > existingCode.expiresAt) {
+            if (usedCode.expiresAt && new Date() > usedCode.expiresAt) {
                 return res.status(400).json({ error: '邀请码已过期' });
             }
-
-            // 标记邀请码为已使用
-            existingCode.used = true;
-            existingCode.usedBy = user._id; // 注意：此时 user 还没创建，后面再补上
-            existingCode.usedAt = new Date();
-            await existingCode.save();
         }
 
         // ===== 检查邮箱是否已注册 =====
@@ -241,17 +227,16 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ error: '该邮箱已注册' });
         }
 
-        // ===== 创建用户 =====
+        // ===== 创建用户（先创建，拿到 _id） =====
         const user = new User({ email, password, nickname });
         await user.save();
 
-        // ===== 如果是普通用户，补上邀请码的使用者 =====
-        if (!isAdmin && inviteCode) {
-            const usedCode = await InviteCode.findOne({ code: inviteCode });
-            if (usedCode) {
-                usedCode.usedBy = user._id;
-                await usedCode.save();
-            }
+        // ===== 如果是普通用户，标记邀请码为已使用（此时 user._id 已存在） =====
+        if (!isAdmin && usedCode) {
+            usedCode.used = true;
+            usedCode.usedBy = user._id;
+            usedCode.usedAt = new Date();
+            await usedCode.save();
         }
 
         // ===== 创建用户数据 =====
@@ -290,7 +275,6 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: '账号或密码错误' });
         }
 
-        // ===== 硬编码管理员邮箱（已改成你的） =====
         const ADMIN_EMAIL = '2277205709@qq.com';
         const role = (email === ADMIN_EMAIL) ? 'admin' : 'user';
 
@@ -307,7 +291,7 @@ app.post('/api/auth/login', async (req, res) => {
                 id: user._id,
                 email: user.email,
                 nickname: user.nickname || email.split('@')[0],
-                role: role  // ← 关键：返回管理员角色
+                role: role
             }
         });
 
@@ -317,11 +301,29 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// ===== 保存数据 =====
+// ===== 保存数据（修复版） =====
 app.post('/api/data/save', authenticate, async (req, res) => {
     try {
         const userId = req.userId;
-        const { config, roles, diaries } = req.body;
+        let { config, roles, diaries } = req.body;
+
+        // 清理可能携带的 __v 字段
+        if (config && typeof config === 'object') {
+            delete config.__v;
+        }
+        if (roles && Array.isArray(roles)) {
+            roles = roles.map(r => {
+                if (r && typeof r === 'object') delete r.__v;
+                return r;
+            });
+        }
+        if (diaries && Array.isArray(diaries)) {
+            diaries = diaries.map(d => {
+                if (d && typeof d === 'object') delete d.__v;
+                return d;
+            });
+        }
+
         let userData = await UserData.findOne({ userId });
         if (userData) {
             userData.config = config || userData.config;
@@ -336,7 +338,7 @@ app.post('/api/data/save', authenticate, async (req, res) => {
         res.json({ success: true, version: userData.version || 1 });
     } catch (error) {
         console.error('保存数据错误:', error);
-        res.status(500).json({ error: '数据保存失败' });
+        res.status(500).json({ error: '数据保存失败: ' + error.message });
     }
 });
 
@@ -351,11 +353,11 @@ app.get('/api/data/load', authenticate, async (req, res) => {
         res.json({
             success: true,
             data: {
-                config: userData.config,
-                roles: userData.roles,
-                diaries: userData.diaries
+                config: userData.config || {},
+                roles: userData.roles || [],
+                diaries: userData.diaries || []
             },
-            version: userData.version
+            version: userData.version || 1
         });
     } catch (error) {
         console.error('加载数据错误:', error);
@@ -363,12 +365,10 @@ app.get('/api/data/load', authenticate, async (req, res) => {
     }
 });
 
-// ===== 测试 =====
 app.get('/api/test', (req, res) => {
     res.json({ message: '后端连接成功！' });
 });
 
-// ===== 启动 =====
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ 服务器运行在端口 ${PORT}`);
