@@ -58,6 +58,19 @@ const UserDataSchema = new mongoose.Schema({
 
 const UserData = mongoose.model('UserData', UserDataSchema);
 
+// ===== 邀请码模型 =====
+const InviteCodeSchema = new mongoose.Schema({
+    code: { type: String, required: true, unique: true },
+    used: { type: Boolean, default: false },
+    usedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    usedAt: { type: Date, default: null },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    createdAt: { type: Date, default: Date.now },
+    expiresAt: { type: Date, default: null }
+});
+
+const InviteCode = mongoose.model('InviteCode', InviteCodeSchema);
+
 // ===== 身份验证中间件 =====
 function authenticate(req, res, next) {
     const authHeader = req.headers.authorization;
@@ -90,28 +103,169 @@ app.get('/', (req, res) => {
 });
 
 // ===== 注册 =====
+
+// ============================================================
+//  🔑 邀请码系统
+// ============================================================
+
+// ===== 生成邀请码（仅管理员） =====
+app.post('/api/invite/generate', authenticate, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(401).json({ success: false, error: '用户不存在' });
+        }
+
+        // ===== 验证是否是管理员 =====
+        const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+        if (!ADMIN_EMAIL) {
+            return res.status(500).json({ success: false, error: '管理员未配置' });
+        }
+        if (user.email !== ADMIN_EMAIL) {
+            return res.status(403).json({ success: false, error: '只有管理员可以生成邀请码' });
+        }
+
+        // ===== 验证管理员密码 =====
+        const { password } = req.body;
+        const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+        if (!ADMIN_PASSWORD) {
+            return res.status(500).json({ success: false, error: '管理员密码未配置' });
+        }
+        if (password !== ADMIN_PASSWORD) {
+            return res.status(403).json({ success: false, error: '管理员密码错误' });
+        }
+
+        // ===== 生成邀请码 =====
+        function generateCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 8; i++) {
+                code += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return code.slice(0, 4) + '-' + code.slice(4, 8);
+        }
+
+        let code = generateCode();
+        let exists = await InviteCode.findOne({ code });
+        while (exists) {
+            code = generateCode();
+            exists = await InviteCode.findOne({ code });
+        }
+
+        // ===== 保存邀请码 =====
+        const inviteCode = new InviteCode({
+            code: code,
+            createdBy: userId,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7天后过期
+        });
+        await inviteCode.save();
+
+        res.json({
+            success: true,
+            code: code,
+            expiresAt: inviteCode.expiresAt
+        });
+
+    } catch (error) {
+        console.error('生成邀请码错误:', error);
+        res.status(500).json({ success: false, error: '生成失败，请重试' });
+    }
+});
+
+// ===== 验证邀请码（注册前检查） =====
+app.post('/api/invite/verify', async (req, res) => {
+    try {
+        const { code } = req.body;
+        if (!code) {
+            return res.json({ valid: false, error: '请输入邀请码' });
+        }
+
+        const inviteCode = await InviteCode.findOne({ code });
+        if (!inviteCode) {
+            return res.json({ valid: false, error: '邀请码不存在' });
+        }
+        if (inviteCode.used) {
+            return res.json({ valid: false, error: '该邀请码已被使用' });
+        }
+        if (inviteCode.expiresAt && new Date() > inviteCode.expiresAt) {
+            return res.json({ valid: false, error: '邀请码已过期' });
+        }
+
+        res.json({ valid: true, message: '邀请码有效' });
+
+    } catch (error) {
+        console.error('验证邀请码错误:', error);
+        res.status(500).json({ valid: false, error: '验证失败' });
+    }
+});
+
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { email, password, nickname } = req.body;
+        const { email, password, nickname, inviteCode } = req.body;
+
+        // ===== 新增：验证邮箱格式 =====
         if (!email || !password) {
             return res.status(400).json({ error: '请填写完整信息' });
         }
         if (password.length < 6) {
             return res.status(400).json({ error: '密码至少 6 位' });
         }
+
+        // ===== 新增：验证邀请码（普通用户注册需要） =====
+        // 如果是管理员注册，跳过邀请码验证
+        const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+        const isAdmin = email === ADMIN_EMAIL;
+
+        if (!isAdmin) {
+            if (!inviteCode) {
+                return res.status(400).json({ error: '🔑 请输入邀请码' });
+            }
+
+            const existingCode = await InviteCode.findOne({ code: inviteCode });
+            if (!existingCode) {
+                return res.status(400).json({ error: '邀请码不存在' });
+            }
+            if (existingCode.used) {
+                return res.status(400).json({ error: '该邀请码已被使用' });
+            }
+            if (existingCode.expiresAt && new Date() > existingCode.expiresAt) {
+                return res.status(400).json({ error: '邀请码已过期' });
+            }
+        }
+
+        // ===== 原有：检查邮箱是否已注册 =====
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ error: '该邮箱已注册' });
         }
+
+        // ===== 原有：创建用户 =====
         const user = new User({ email, password, nickname });
         await user.save();
+
+        // ===== 新增：如果不是管理员，标记邀请码为已使用 =====
+        if (!isAdmin) {
+            const usedCode = await InviteCode.findOne({ code: inviteCode });
+            usedCode.used = true;
+            usedCode.usedBy = user._id;
+            usedCode.usedAt = new Date();
+            await usedCode.save();
+        }
+
+        // ===== 原有：创建用户数据 =====
         const userData = new UserData({ userId: user._id });
         await userData.save();
+
+        // ===== 新增：如果是管理员，设置角色标记 =====
+        const role = isAdmin ? 'admin' : 'user';
+
         res.json({
             success: true,
-            message: '注册成功！',
-            user: { id: user._id, email: user.email, nickname: user.nickname }
+            message: isAdmin ? '✅ 管理员注册成功！' : '✅ 注册成功！',
+            user: { id: user._id, email: user.email, nickname: user.nickname, role: role }
         });
+
     } catch (error) {
         console.error('注册错误:', error);
         res.status(500).json({ error: '注册失败，请稍后重试' });
@@ -119,30 +273,44 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // ===== 登录 =====
-app.post('/api/auth/login', async (req, res) => {
+app app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         if (!email || !password) {
             return res.status(400).json({ error: '请填写完整信息' });
         }
+
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(401).json({ error: '账号或密码错误' });
         }
+
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             return res.status(401).json({ error: '账号或密码错误' });
         }
+
+        // ===== 新增：判断是否是管理员 =====
+        const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+        const role = (email === ADMIN_EMAIL) ? 'admin' : 'user';
+
         const token = jwt.sign(
-            { userId: user._id.toString(), email: user.email },
+            { userId: user._id.toString(), email: user.email, role: role },
             JWT_SECRET,
             { expiresIn: '7d' }
         );
+
         res.json({
             success: true,
             token: token,
-            user: { id: user._id, email: user.email, nickname: user.nickname || email.split('@')[0] }
+            user: {
+                id: user._id,
+                email: user.email,
+                nickname: user.nickname || email.split('@')[0],
+                role: role  // ← 新增
+            }
         });
+
     } catch (error) {
         console.error('登录错误:', error);
         res.status(500).json({ error: '登录失败，请稍后重试' });
