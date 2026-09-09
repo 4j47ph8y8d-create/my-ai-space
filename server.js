@@ -102,8 +102,6 @@ app.get('/', (req, res) => {
     res.redirect('/index.html');
 });
 
-// ===== 注册 =====
-
 // ============================================================
 //  🔑 邀请码系统
 // ============================================================
@@ -117,11 +115,8 @@ app.post('/api/invite/generate', authenticate, async (req, res) => {
             return res.status(401).json({ success: false, error: '用户不存在' });
         }
 
-        // ===== 验证是否是管理员 =====
-        const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-        if (!ADMIN_EMAIL) {
-            return res.status(500).json({ success: false, error: '管理员未配置' });
-        }
+        // ===== 硬编码管理员邮箱（已改成你的） =====
+        const ADMIN_EMAIL = '2277205709@qq.com';
         if (user.email !== ADMIN_EMAIL) {
             return res.status(403).json({ success: false, error: '只有管理员可以生成邀请码' });
         }
@@ -200,11 +195,11 @@ app.post('/api/invite/verify', async (req, res) => {
     }
 });
 
+// ===== 注册 =====
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { email, password, nickname, inviteCode } = req.body;
 
-        // ===== 新增：验证邮箱格式 =====
         if (!email || !password) {
             return res.status(400).json({ error: '请填写完整信息' });
         }
@@ -212,11 +207,11 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ error: '密码至少 6 位' });
         }
 
-        // ===== 新增：验证邀请码（普通用户注册需要） =====
-        // 如果是管理员注册，跳过邀请码验证
-        const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+        // ===== 硬编码管理员邮箱（已改成你的） =====
+        const ADMIN_EMAIL = '2277205709@qq.com';
         const isAdmin = email === ADMIN_EMAIL;
 
+        // ===== 如果是普通用户，验证邀请码 =====
         if (!isAdmin) {
             if (!inviteCode) {
                 return res.status(400).json({ error: '🔑 请输入邀请码' });
@@ -232,32 +227,37 @@ app.post('/api/auth/register', async (req, res) => {
             if (existingCode.expiresAt && new Date() > existingCode.expiresAt) {
                 return res.status(400).json({ error: '邀请码已过期' });
             }
+
+            // 标记邀请码为已使用
+            existingCode.used = true;
+            existingCode.usedBy = user._id; // 注意：此时 user 还没创建，后面再补上
+            existingCode.usedAt = new Date();
+            await existingCode.save();
         }
 
-        // ===== 原有：检查邮箱是否已注册 =====
+        // ===== 检查邮箱是否已注册 =====
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ error: '该邮箱已注册' });
         }
 
-        // ===== 原有：创建用户 =====
+        // ===== 创建用户 =====
         const user = new User({ email, password, nickname });
         await user.save();
 
-        // ===== 新增：如果不是管理员，标记邀请码为已使用 =====
-        if (!isAdmin) {
+        // ===== 如果是普通用户，补上邀请码的使用者 =====
+        if (!isAdmin && inviteCode) {
             const usedCode = await InviteCode.findOne({ code: inviteCode });
-            usedCode.used = true;
-            usedCode.usedBy = user._id;
-            usedCode.usedAt = new Date();
-            await usedCode.save();
+            if (usedCode) {
+                usedCode.usedBy = user._id;
+                await usedCode.save();
+            }
         }
 
-        // ===== 原有：创建用户数据 =====
+        // ===== 创建用户数据 =====
         const userData = new UserData({ userId: user._id });
         await userData.save();
 
-        // ===== 新增：如果是管理员，设置角色标记 =====
         const role = isAdmin ? 'admin' : 'user';
 
         res.json({
@@ -290,8 +290,8 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: '账号或密码错误' });
         }
 
-        // ===== 新增：判断是否是管理员 =====
-        const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+        // ===== 硬编码管理员邮箱（已改成你的） =====
+        const ADMIN_EMAIL = '2277205709@qq.com';
         const role = (email === ADMIN_EMAIL) ? 'admin' : 'user';
 
         const token = jwt.sign(
@@ -307,7 +307,7 @@ app.post('/api/auth/login', async (req, res) => {
                 id: user._id,
                 email: user.email,
                 nickname: user.nickname || email.split('@')[0],
-                role: role  // ← 新增
+                role: role  // ← 关键：返回管理员角色
             }
         });
 
