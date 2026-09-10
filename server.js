@@ -8,7 +8,7 @@ const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-me';
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static(__dirname));
 
 const MONGODB_URI = process.env.MONGODB_URI;
