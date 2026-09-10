@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>他的手机</title>
+<script src="https://cdn.jsdelivr.net/npm/vconsole@latest/dist/vconsole.min.js"></script>
+<script>
+    var vConsole = new window.VConsole();
+</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -1902,9 +1906,15 @@ async function openMoments() {
     body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在加载朋友圈...</span></div>';
     var lastGen = phoneData.lastGenerated.moments;
     var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 3 * 24 * 60 * 60 * 1000);
-    if (needsGen) { try { await generateMoments(currentRole, phoneData); } catch(e) {} }
-    renderMoments();
-}
+    if (needsGen) {
+        try { 
+            await generateMoments(currentRole, phoneData); 
+        } catch(e) { 
+            console.error('❌❌❌ 生成朋友圈失败：', e.message || e);
+            console.error('完整错误：', e);
+        }
+    }
+    renderMomentsInBody();
 function renderMoments() {
     var body = document.getElementById('momentsBody');
     var moments = (phoneData.moments || []).slice().sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
