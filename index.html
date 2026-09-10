@@ -8827,7 +8827,7 @@ initCallFloatingDrag();
                     var localRoles = roles || [];
                     
                     // 如果云端有数据，且比本地多，或本地为空，则使用云端数据
-                    if (cloudRoles.length > localRoles.length || localRoles.length === 0) {
+                    if (false && (cloudRoles.length > localRoles.length || localRoles.length === 0)) {
                         console.log('☁️ 检测到云端有更新的数据，正在同步...');
                         roles = cloudRoles;
                         CONFIG = result.data.config || CONFIG;
