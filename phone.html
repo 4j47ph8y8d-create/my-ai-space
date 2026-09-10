@@ -4,10 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>他的手机</title>
-<script src="https://cdn.jsdelivr.net/npm/vconsole@latest/dist/vconsole.min.js"></script>
-<script>
-    var vConsole = new window.VConsole();
-</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -1791,15 +1787,51 @@ function openContactDialog(contactId) {
 async function loadMomentsTab() {
     var body = document.getElementById('wechatBody');
     body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在加载朋友圈...</span></div>';
+
     var lastGen = phoneData.lastGenerated.moments;
     var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 3 * 24 * 60 * 60 * 1000);
+
     if (needsGen) {
-        try { await generateMoments(currentRole, phoneData); } catch(e) {}
+        try {
+            await generateMoments(currentRole, phoneData);
+        } catch(e) {
+            // ⚠️ 关键：把错误信息显示在页面上
+            console.error('生成朋友圈失败:', e);
+            var errMsg = e && e.message ? e.message : String(e);
+            body.innerHTML = '<div class="empty-state" style="padding:30px 20px;">' +
+                '<i class="fas fa-exclamation-triangle" style="color:#ff6b81;"></i>' +
+                '<p style="color:#ff6b81;font-weight:600;">生成失败</p>' +
+                '<p style="font-size:12px;margin-top:10px;color:rgba(255,255,255,0.7);word-break:break-all;text-align:left;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;">' +
+                '错误：' + escapeHtml(errMsg) +
+                '</p>' +
+                '<p style="font-size:11px;margin-top:12px;color:rgba(255,255,255,0.4);">' +
+                'API Key 前几位：' + escapeHtml((getAIConfig().apiKey || '').substring(0, 10)) + '...' +
+                '</p>' +
+                '</div>';
+            return;
+        }
     }
+
+    // 检查一下是不是真的生成出了内容
+    if ((phoneData.moments || []).length === 0) {
+        body.innerHTML = '<div class="empty-state" style="padding:30px 20px;">' +
+            '<i class="fas fa-camera-retro"></i>' +
+            '<p>AI 没有返回朋友圈内容</p>' +
+            '<p style="font-size:12px;margin-top:10px;color:rgba(255,255,255,0.5);">可能原因：</p>' +
+            '<p style="font-size:11px;color:rgba(255,255,255,0.4);text-align:left;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;">' +
+            '1. AI 返回的 JSON 格式不对<br>' +
+            '2. API 调用成功但没返回 moments 字段<br>' +
+            '3. 生成的动态都是空的' +
+            '</p>' +
+            '<p style="font-size:11px;margin-top:10px;color:rgba(255,255,255,0.4);">可以打开 vConsole 查看 Log 详细信息</p>' +
+            '</div>';
+        return;
+    }
+
     renderMomentsInBody();
-    // 渲染后，后台自动生成图片（不阻塞界面）
+
+    // 后台自动生成图片
     autoGeneratePendingImages(currentRole).then(function() {
-        // 图片生成完后刷新界面
         if (wechatTab === 'moments') renderMomentsInBody();
     }).catch(function(e) { console.error('自动生图失败:', e); });
 }
@@ -1906,15 +1938,9 @@ async function openMoments() {
     body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在加载朋友圈...</span></div>';
     var lastGen = phoneData.lastGenerated.moments;
     var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 3 * 24 * 60 * 60 * 1000);
-    if (needsGen) {
-        try { 
-            await generateMoments(currentRole, phoneData); 
-        } catch(e) { 
-            console.error('❌❌❌ 生成朋友圈失败：', e.message || e);
-            console.error('完整错误：', e);
-        }
-    }
-    renderMomentsInBody();
+    if (needsGen) { try { await generateMoments(currentRole, phoneData); } catch(e) {} }
+    renderMoments();
+}
 function renderMoments() {
     var body = document.getElementById('momentsBody');
     var moments = (phoneData.moments || []).slice().sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
