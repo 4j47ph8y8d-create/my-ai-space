@@ -1287,11 +1287,36 @@ async function openWeChat() {
     openApp('wechatApp');
     var body = document.getElementById('wechatBody');
     body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在加载微信...</span></div>';
-    // 先加载用户昵称
+
+    // ===== 关键修复：确保当前角色有效 =====
+    if (!currentRole || !currentRoleId) {
+        body.innerHTML = '<div class="empty-state"><p>请先选择角色</p></div>';
+        return;
+    }
+
+    // ===== 关键修复：每次都重新读取当前角色的 phoneData =====
+    // 防止全局 phoneData 被上一个角色的异步操作污染
+    var freshData = getPhoneData(currentRoleId);
+    // 保留内存里可能刚修改但还没保存的字段（比如 contacts）
+    // 但优先用 freshData（因为 savePhoneData 已经写入 localStorage）
+    phoneData = freshData;
+
+    // ===== 关键修复：先等聊天记录从 IndexedDB 加载完成 =====
+    try {
+        await ensureChatsLoaded(currentRoleId, phoneData);
+    } catch(e) {
+        console.error('加载聊天记录失败:', e);
+    }
+
+    // 加载用户昵称
     try { await getUserNickname(currentRole, phoneData); } catch(e) {}
+
+    // 生成缺失的聊天（此时 chats 已经是从 IndexedDB 加载的完整数据）
     try { await generateWeChatChats(currentRole, phoneData); } catch(e) {}
+
     renderWeChatList();
 }
+
 function renderWeChatList() {
     var body = document.getElementById('wechatBody');
     var html = '<div class="wechat-list">';
