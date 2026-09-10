@@ -539,17 +539,26 @@ function saveMainData(data) {
 }
 
 // ========== 手机数据 ==========
+
 function getPhoneData(roleId) {
     var key = 'phone_data_' + roleId;
     var raw = localStorage.getItem(key);
-    if (raw) { try { return JSON.parse(raw); } catch(e) {} }
-    return {
-        password: '0000', passwordChanged: false, passwordReason: '',
-        userBirthday: '', _birthdayChecked: false, _passwordChangeChecked: false, userNickname: '',
-        wallpaper: '',
-        browser: { history: [] }, memos: [], contacts: [], chats: {},
-        moments: [], songs: [], trajectory: [], lastGenerated: {}
-    };
+    var data = null;
+    if (raw) { try { data = JSON.parse(raw); } catch(e) {} }
+    if (!data) {
+        data = {
+            password: '0000', passwordChanged: false, passwordReason: '',
+            userBirthday: '', _birthdayChecked: false, _passwordChangeChecked: false, userNickname: '',
+            wallpaper: '',
+            browser: { history: [] }, memos: [], contacts: [],
+            moments: [], songs: [], trajectory: [], lastGenerated: {}
+        };
+    }
+    // chats 不放在 localStorage 里（体积太大），单独存 IndexedDB
+    // 但先保留老的 localStorage 里的 chats 用于迁移
+    data._legacyChats = data.chats || null;
+    data.chats = {};
+    return data;
 }
 
 // ===== 壁纸 IndexedDB 存储 =====
@@ -607,8 +616,79 @@ function deleteWallpaperFromDB(roleId) {
 }
 // ===== 结束 =====
 
+// ===== 微信聊天记录 IndexedDB 存储 =====
+function openChatDB() {
+    return new Promise(function(resolve, reject) {
+        var request = indexedDB.open('PhoneChatDB', 1);
+        request.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('chats')) {
+                db.createObjectStore('chats', { keyPath: 'roleId' });
+            }
+        };
+        request.onsuccess = function(e) { resolve(e.target.result); };
+        request.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+function saveChatsToDB(roleId, chats) {
+    return openChatDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('chats', 'readwrite');
+            var store = tx.objectStore('chats');
+            var req = store.put({ roleId: roleId, chats: chats || {}, updatedAt: Date.now() });
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    });
+}
+
+function loadChatsFromDB(roleId) {
+    return openChatDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('chats', 'readonly');
+            var store = tx.objectStore('chats');
+            var req = store.get(roleId);
+            req.onsuccess = function() {
+                db.close();
+                resolve(req.result ? req.result.chats : null);
+            };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    }).catch(function() { return null; });
+}
+
+function deleteChatsFromDB(roleId) {
+    return openChatDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('chats', 'readwrite');
+            var store = tx.objectStore('chats');
+            var req = store.delete(roleId);
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    });
+}
+// ===== 结束 =====
+
 function savePhoneData(roleId, data) {
-    try { localStorage.setItem('phone_data_' + roleId, JSON.stringify(data)); } catch(e) {}
+    try {
+        // 剥离 chats（体积大）和临时字段，不存入 localStorage
+        var dataForLocal = {};
+        Object.keys(data).forEach(function(k) {
+            if (k === 'chats' || k === '_legacyChats') return;
+            dataForLocal[k] = data[k];
+        });
+        localStorage.setItem('phone_data_' + roleId, JSON.stringify(dataForLocal));
+        // 聊天记录单独存 IndexedDB
+        if (data.chats) {
+            saveChatsToDB(roleId, data.chats).catch(function(e) {
+                console.error('聊天记录保存失败:', e);
+            });
+        }
+    } catch(e) {
+        console.error('保存手机数据失败:', e);
+    }
 }
 
 // ========== AI 调用 ==========
@@ -937,6 +1017,32 @@ function renderRoleSelect() {
     });
 }
 
+// ===== 从 IndexedDB 加载聊天记录，并迁移老数据 =====
+function ensureChatsLoaded(roleId, pd) {
+    return loadChatsFromDB(roleId).then(function(dbChats) {
+        if (dbChats && Object.keys(dbChats).length > 0) {
+            // IndexedDB 里有数据 → 用 DB 的
+            pd.chats = dbChats;
+            console.log('💬 已从 IndexedDB 加载 ' + Object.keys(dbChats).length + ' 个会话');
+        } else if (pd._legacyChats && Object.keys(pd._legacyChats).length > 0) {
+            // IndexedDB 没有，但 localStorage 老数据里有 → 迁移
+            pd.chats = pd._legacyChats;
+            console.log('🔄 检测到老数据，正在迁移到 IndexedDB...');
+            return saveChatsToDB(roleId, pd._legacyChats).then(function() {
+                delete pd._legacyChats;
+                savePhoneData(roleId, pd);
+                console.log('✅ 老数据已迁移到 IndexedDB');
+            });
+        } else {
+            pd.chats = {};
+        }
+    }).catch(function(e) {
+        console.error('加载聊天记录失败:', e);
+        pd.chats = pd._legacyChats || {};
+    });
+}
+// ===== 结束 =====
+
 function enterRole(roleId) {
     var main = getMainData();
     var role = main.roles.find(function(r) { return r.id === roleId; });
@@ -949,6 +1055,9 @@ function enterRole(roleId) {
     document.getElementById('lockScreen').classList.add('active');
     updateLockScreen();
     updatePasswordDots();
+
+    // 异步加载聊天记录
+    ensureChatsLoaded(roleId, phoneData).catch(function(e) { console.error(e); });
 
     tryExtractBirthday(currentRole, phoneData).catch(function() {});
     tryChangePasswordByAI(currentRole, phoneData).catch(function() {});
@@ -1531,6 +1640,7 @@ function openRolePicker() {
     document.getElementById('rolePickerOverlay').classList.add('active');
 }
 function closeRolePicker() { document.getElementById('rolePickerOverlay').classList.remove('active'); }
+
 function switchRole(roleId) {
     var main = getMainData();
     var role = main.roles.find(function(r) { return r.id === roleId; });
@@ -1544,6 +1654,8 @@ function switchRole(roleId) {
     document.getElementById('lockScreen').classList.add('active');
     updateLockScreen();
     updatePasswordDots();
+    // 异步加载聊天记录
+    ensureChatsLoaded(roleId, phoneData).catch(function(e) { console.error(e); });
     tryExtractBirthday(currentRole, phoneData).catch(function() {});
     tryChangePasswordByAI(currentRole, phoneData).catch(function() {});
     toast('已切换到 ' + role.name);
