@@ -1648,6 +1648,7 @@ function sortContactsByPinyin(contacts) {
 }
 
 function renderWeChatList() {
+    if (wechatTab !== 'chats') return;
     var body = document.getElementById('wechatBody');
     var html = '<div class="wechat-list">';
 
@@ -1707,6 +1708,7 @@ function renderWeChatList() {
 }
 
 function renderContactsList() {
+    if (wechatTab !== 'contacts') return;
     var body = document.getElementById('wechatBody');
     var contacts = sortContactsByPinyin(phoneData.contacts || []);
     if (contacts.length === 0) {
@@ -1786,6 +1788,7 @@ async function loadMomentsTab() {
 }
 
 function renderMomentsInBody() {
+    if (wechatTab !== 'moments') return;
     var body = document.getElementById('wechatBody');
     var moments = (phoneData.moments || []).slice().sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
     if (moments.length === 0) {
