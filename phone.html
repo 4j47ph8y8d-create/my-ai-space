@@ -2063,7 +2063,7 @@ function openSettingsApp() {
         var el = document.getElementById('imageApiKeyStatus');
         if (el) el.textContent = key ? '已配置' : '未配置';
     });
-    loadImageConfig('refImage').then(function(img) {
+    loadImageConfig('refImage_' + currentRoleId).then(function(img) {
         var el = document.getElementById('refImageStatus');
         if (el) el.textContent = img ? '已上传' : '未上传';
     });
@@ -2209,7 +2209,7 @@ async function generateImageForMoment(moment, role) {
 
         var imageUrl;
         if (moment.useRefImage) {
-            var refImage = await loadImageConfig('refImage');
+            var refImage = await loadImageConfig('refImage_' + role.id);
             if (!refImage) throw new Error('未上传参考照片');
             imageUrl = await callImageEditAPI(apiKey, refImage, moment.imagePrompt);
         } else {
@@ -2261,7 +2261,8 @@ function openImageApiKeyDialog() {
 }
 
 function openRefImageDialog() {
-    loadImageConfig('refImage').then(function(img) {
+    loadImageConfig('refImage_' + currentRoleId).then(function(img) {
+
         var box = document.getElementById('refImagePreviewBox');
         if (img) {
             box.style.backgroundImage = 'url(' + img + ')';
@@ -2300,7 +2301,7 @@ function pickRefImage() {
                 ctx.drawImage(img, 0, 0, w, h);
                 var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
 
-                saveImageConfig('refImage', dataUrl).then(function() {
+                saveImageConfig('refImage_' + currentRoleId, dataUrl).then(function() {
                     var box = document.getElementById('refImagePreviewBox');
                     box.style.backgroundImage = 'url(' + dataUrl + ')';
                     box.style.backgroundSize = 'cover';
