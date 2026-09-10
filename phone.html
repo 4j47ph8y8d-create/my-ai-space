@@ -16,55 +16,74 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 .app-screen.open { transform: translateX(0); }
 .app-screen:not(.open) { pointer-events: none; }
 
-/* 锁屏 */
-#lockScreen { background: linear-gradient(180deg, #1a1a2e 0%, #000 100%); justify-content: space-between; padding: 60px 24px 40px; align-items: center; }
-.lock-time { font-size: 72px; font-weight: 200; letter-spacing: -2px; color: #fff; line-height: 1; }
-.lock-date { font-size: 16px; color: rgba(255,255,255,0.6); margin-top: 8px; }
-.lock-avatar { width: 72px; height: 72px; border-radius: 50%; background-size: cover; background-position: center; background-color: #07c160; margin: 20px auto 10px; border: 2px solid rgba(255,255,255,0.1); }
-.lock-name { font-size: 16px; color: #fff; font-weight: 500; text-align: center; }
+/* ========== 角色选择界面 ========== */
+#roleSelectScreen { background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%); padding: calc(60px + env(safe-area-inset-top, 0px)) 24px 40px; }
+.role-select-title { text-align: center; font-size: 22px; font-weight: 600; color: #fff; margin-bottom: 8px; }
+.role-select-sub { text-align: center; font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 28px; letter-spacing: 1px; }
+.role-select-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.role-select-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; cursor: pointer; transition: 0.15s; }
+.role-select-item:active { transform: scale(0.98); background: rgba(255,255,255,0.08); }
+.role-select-item .rs-avatar { width: 48px; height: 48px; border-radius: 50%; background-size: cover; background-position: center; background-color: #07c160; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; }
+.role-select-item .rs-info { flex: 1; min-width: 0; }
+.role-select-item .rs-name { font-size: 16px; color: #fff; font-weight: 500; }
+.role-select-item .rs-desc { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.role-select-item .rs-arrow { color: rgba(255,255,255,0.3); font-size: 14px; }
+
+/* ========== 锁屏（不全屏，上下留白） ========== */
+#lockScreen { background: transparent; justify-content: center; align-items: center; padding: calc(80px + env(safe-area-inset-top, 0px)) 24px calc(40px + env(safe-area-inset-bottom, 0px)); }
+.lock-content { width: 100%; max-width: 340px; display: flex; flex-direction: column; align-items: center; }
+.lock-time { font-size: 68px; font-weight: 200; letter-spacing: -2px; color: #fff; line-height: 1; text-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+.lock-date { font-size: 15px; color: rgba(255,255,255,0.55); margin-top: 8px; text-shadow: 0 2px 10px rgba(0,0,0,0.6); }
+.lock-avatar { width: 68px; height: 68px; border-radius: 50%; background-size: cover; background-position: center; background-color: #07c160; margin: 24px auto 10px; border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+.lock-name { font-size: 16px; color: #fff; font-weight: 500; text-align: center; text-shadow: 0 2px 10px rgba(0,0,0,0.6); }
 .lock-hint { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 4px; }
-.password-dots { display: flex; gap: 18px; justify-content: center; margin: 24px 0 30px; }
+.password-dots { display: flex; gap: 18px; justify-content: center; margin: 24px 0 20px; }
 .password-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.6); transition: 0.15s; }
 .password-dot.filled { background: #fff; }
 .password-error { animation: shake 0.4s; }
 @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
 
-.num-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 22px; width: 100%; max-width: 300px; margin: 0 auto; }
-.num-btn { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.12); border: none; color: #fff; font-size: 30px; font-weight: 300; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0 auto; transition: 0.1s; }
+.num-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 20px; width: 100%; max-width: 280px; margin: 0 auto; }
+.num-btn { width: 68px; height: 68px; border-radius: 50%; background: rgba(255,255,255,0.14); border: none; color: #fff; font-size: 28px; font-weight: 300; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0 auto; transition: 0.1s; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .num-btn:active { background: rgba(255,255,255,0.3); transform: scale(0.95); }
 .num-btn.empty { background: transparent; pointer-events: none; }
 .num-btn.del { background: transparent; font-size: 20px; }
 
-/* 桌面 */
-#homeScreen { background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 50%, #000 100%); }
-.home-status { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px 8px; font-size: 13px; color: #fff; font-weight: 500; }
-.home-status .left { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 8px 4px 0; border-radius: 20px; }
-.home-status .left:active { background: rgba(255,255,255,0.06); }
-.home-status .role-mini-avatar { width: 28px; height: 28px; border-radius: 50%; background-size: cover; background-position: center; background-color: #07c160; border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+/* ========== 桌面 ========== */
+#homeScreen { background: #0a0a0f; background-size: cover; background-position: center; }
+.home-status { display: flex; justify-content: space-between; align-items: center; padding: calc(14px + env(safe-area-inset-top, 0px)) 20px 8px; font-size: 13px; color: #fff; font-weight: 500; }
+.home-status .left { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 10px 4px 4px; border-radius: 20px; background: rgba(0,0,0,0.25); backdrop-filter: blur(10px); }
+.home-status .role-mini-avatar { width: 28px; height: 28px; border-radius: 50%; background-size: cover; background-position: center; background-color: #07c160; border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; }
+.home-status .role-mini-name { font-size: 13px; color: #fff; }
 .home-status .right { display: flex; gap: 6px; align-items: center; font-size: 12px; }
 
-.home-title { text-align: center; padding: 0 0 16px; font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 4px; }
+.home-title { text-align: center; padding: 32px 0 24px; font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 4px; }
 
-.app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px 12px; padding: 16px 20px; }
-.app-icon { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
-.app-icon .icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: 0.15s; }
+.app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px 16px; padding: 16px 30px; }
+.app-icon { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
+.app-icon .icon { width: 58px; height: 58px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.35); transition: 0.15s; }
 .app-icon:active .icon { transform: scale(0.9); }
-.app-icon .label { font-size: 10px; color: rgba(255,255,255,0.8); text-align: center; }
+.app-icon .label { font-size: 11px; color: rgba(255,255,255,0.85); text-align: center; text-shadow: 0 2px 6px rgba(0,0,0,0.6); }
 
 .icon-browser { background: linear-gradient(135deg, #74b9ff, #0984e3); }
 .icon-memo { background: linear-gradient(135deg, #fdcb6e, #f39c12); }
 .icon-wechat { background: linear-gradient(135deg, #2ecc71, #27ae60); }
 .icon-music { background: linear-gradient(135deg, #ff6b81, #e84393); }
 .icon-track { background: linear-gradient(135deg, #a29bfe, #6c5ce7); }
-.icon-moments { background: linear-gradient(135deg, #fd79a8, #e84393); }
+.icon-settings { background: linear-gradient(135deg, #b2bec3, #636e72); }
 
-/* 应用通用顶栏 */
-.app-topbar { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; background: rgba(20,20,30,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+/* Dock 栏 */
+.dock { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 340px; background: rgba(255,255,255,0.1); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.08); border-radius: 26px; padding: 12px 16px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+.dock .app-icon .icon { width: 52px; height: 52px; border-radius: 13px; font-size: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+.dock .app-icon .label { font-size: 10px; }
+
+/* ========== 应用通用顶栏 ========== */
+.app-topbar { display: flex; align-items: center; gap: 12px; padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; background: rgba(20,20,30,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: relative; z-index: 5; }
 .app-back { background: none; border: none; color: #74b9ff; font-size: 20px; cursor: pointer; padding: 4px 8px; }
 .app-title { font-size: 17px; font-weight: 600; color: #fff; flex: 1; }
 .app-action { background: none; border: none; color: #74b9ff; font-size: 18px; cursor: pointer; padding: 4px 8px; }
 
-.app-body { flex: 1; overflow-y: auto; padding: 12px 16px 20px; -webkit-overflow-scrolling: touch; }
+.app-body { flex: 1; overflow-y: auto; padding: 12px 16px calc(20px + env(safe-area-inset-bottom, 0px)); -webkit-overflow-scrolling: touch; }
 
 /* 浏览器 */
 .browser-item { padding: 12px 14px; background: rgba(255,255,255,0.04); border-radius: 10px; margin-bottom: 8px; }
@@ -83,13 +102,15 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 
 /* 微信 */
 .wechat-list { display: flex; flex-direction: column; }
-.wechat-contact { display: flex; align-items: center; gap: 12px; padding: 12px 4px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); position: relative; }
+.wechat-contact { display: flex; align-items: center; gap: 12px; padding: 12px 4px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .wechat-contact:active { background: rgba(255,255,255,0.03); }
 .wechat-avatar { width: 44px; height: 44px; border-radius: 8px; background-size: cover; background-position: center; background-color: #2ecc71; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; font-weight: 500; }
 .wechat-info { flex: 1; min-width: 0; }
 .wechat-name { font-size: 15px; color: #fff; font-weight: 500; margin-bottom: 2px; }
 .wechat-preview { font-size: 12px; color: rgba(255,255,255,0.4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wechat-del { background: none; border: none; color: rgba(255,107,129,0.6); font-size: 13px; padding: 6px; cursor: pointer; }
+
+.wechat-edit { background: none; border: none; color: rgba(116,185,255,0.7); font-size: 13px; padding: 6px; cursor: pointer; }
 
 /* 聊天窗口 */
 .chat-msgs { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: #111118; }
@@ -109,8 +130,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 
 /* 音乐 */
 .music-container { display: flex; flex-direction: column; height: 100%; padding: 20px 24px; position: relative; }
-.music-playlist-btn { position: absolute; top: 8px; left: 8px; background: rgba(255,255,255,0.08); border: none; color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; z-index: 10; }
-.music-cover { width: 220px; height: 220px; border-radius: 50%; background: linear-gradient(135deg, #ff6b81, #a29bfe); margin: 40px auto 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 20px 60px rgba(255,107,129,0.3); position: relative; }
+.music-playlist-btn { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 8px; background: rgba(255,255,255,0.08); border: none; color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; z-index: 10; }
+.music-cover { width: 220px; height: 220px; border-radius: 50%; background: linear-gradient(135deg, #ff6b81, #a29bfe); margin: 60px auto 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 20px 60px rgba(255,107,129,0.3); position: relative; }
 .music-cover i { font-size: 70px; color: rgba(255,255,255,0.9); }
 .music-cover.playing { animation: rotate 12s linear infinite; }
 .music-cover.playing::after { content: ''; position: absolute; top: 50%; left: 50%; width: 30px; height: 30px; border-radius: 50%; background: #0a0a0f; transform: translate(-50%,-50%); }
@@ -128,7 +149,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 .music-btn.main { font-size: 46px; color: #fff; }
 .music-btn:active { transform: scale(0.9); }
 
-/* 歌单 */
 .playlist-item { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; }
 .playlist-item:active { background: rgba(255,255,255,0.03); }
 .playlist-item.active { background: rgba(255,107,129,0.1); }
@@ -151,6 +171,19 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 .track-location { font-size: 14px; color: #fff; font-weight: 500; }
 .track-event { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 3px; line-height: 1.4; }
 
+/* 设置 */
+.settings-group { margin-bottom: 20px; }
+.settings-group-title { font-size: 12px; color: rgba(255,255,255,0.4); letter-spacing: 1px; margin-bottom: 8px; padding-left: 4px; }
+.settings-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(255,255,255,0.04); border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: 0.15s; }
+.settings-item:active { background: rgba(255,255,255,0.08); }
+.settings-item .si-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; flex-shrink: 0; }
+.settings-item .si-icon.wallpaper { background: linear-gradient(135deg, #fd79a8, #e84393); }
+.settings-item .si-icon.switch { background: linear-gradient(135deg, #74b9ff, #0984e3); }
+.settings-item .si-icon.password { background: linear-gradient(135deg, #fdcb6e, #f39c12); }
+.settings-item .si-label { flex: 1; font-size: 15px; color: #fff; }
+.settings-item .si-value { font-size: 12px; color: rgba(255,255,255,0.4); margin-right: 4px; }
+.settings-item .si-arrow { color: rgba(255,255,255,0.3); font-size: 13px; }
+
 /* 加载动画 */
 .loading { text-align: center; padding: 50px 20px; color: rgba(255,255,255,0.4); font-size: 13px; }
 .loading .spinner { display: inline-block; width: 22px; height: 22px; border: 2px solid rgba(255,255,255,0.1); border-top-color: #a29bfe; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
@@ -161,36 +194,43 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 .empty-state i { font-size: 42px; opacity: 0.4; margin-bottom: 14px; display: block; }
 .empty-state p { font-size: 13px; line-height: 1.6; }
 
-/* 角色选择弹窗 */
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+/* 弹窗 */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .overlay.active { display: flex; }
-.modal { background: #1a1a2e; border-radius: 20px; padding: 20px; max-width: 340px; width: 100%; max-height: 80vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-.modal h3 { font-size: 16px; color: #fff; margin-bottom: 14px; text-align: center; }
+.modal { background: #1a1a2e; border-radius: 20px; padding: 22px 20px; max-width: 340px; width: 100%; max-height: 80vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.modal h3 { font-size: 16px; color: #fff; margin-bottom: 16px; text-align: center; }
 .role-picker-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; cursor: pointer; margin-bottom: 6px; }
 .role-picker-item:active { background: rgba(255,255,255,0.06); }
 .role-picker-item.active { background: rgba(162,155,254,0.15); border: 1px solid rgba(162,155,254,0.3); }
 .role-picker-avatar { width: 40px; height: 40px; border-radius: 50%; background-size: cover; background-position: center; background-color: #07c160; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; }
 .role-picker-name { color: #fff; font-size: 14px; }
 
-/* 表单 */
 .form-group { margin-bottom: 12px; }
 .form-group label { display: block; font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 5px; }
 .form-group input, .form-group textarea { width: 100%; padding: 10px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #fff; font-size: 14px; outline: none; font-family: inherit; }
 .form-group input:focus, .form-group textarea:focus { border-color: #a29bfe; }
 .form-group textarea { resize: vertical; min-height: 60px; }
-.btn-primary { width: 100%; padding: 12px; background: #a29bfe; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.btn-primary { width: 100%; padding: 12px; background: #a29bfe; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; margin-top: 4px; }
 .btn-primary:active { transform: scale(0.98); }
 .btn-secondary { width: 100%; padding: 10px; background: rgba(255,255,255,0.06); color: #fff; border: none; border-radius: 12px; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 8px; }
 
-.hidden { display: none !important; }
+/* Toast */
+.toast { position: fixed; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 9999; backdrop-filter: blur(10px); }
 </style>
 </head>
 <body>
 <div id="phoneApp">
 
-    <!-- ========== 锁屏 ========== -->
-    <div id="lockScreen" class="screen active">
-        <div style="text-align:center;width:100%;">
+    <!-- ========== 1. 角色选择 ========== -->
+    <div id="roleSelectScreen" class="screen active">
+        <div class="role-select-title">✦ 选择角色 ✦</div>
+        <div class="role-select-sub">进入谁的手机？</div>
+        <div class="role-select-list" id="roleSelectList"></div>
+    </div>
+
+    <!-- ========== 2. 锁屏 ========== -->
+    <div id="lockScreen" class="screen">
+        <div class="lock-content">
             <div class="lock-time" id="lockTime">21:00</div>
             <div class="lock-date" id="lockDate">2026年9月10日 星期四</div>
             <div class="lock-avatar" id="lockAvatar"></div>
@@ -221,13 +261,13 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
         </div>
     </div>
 
-    <!-- ========== 桌面 ========== -->
+    <!-- ========== 3. 桌面 ========== -->
     <div id="homeScreen" class="screen">
         <div class="home-status">
             <div class="left" id="roleSwitchBtn">
                 <div class="role-mini-avatar" id="homeAvatar"></div>
                 <div class="role-mini-name" id="homeName">角色</div>
-                <i class="fas fa-chevron-down" style="font-size:10px;color:rgba(255,255,255,0.4);"></i>
+                <i class="fas fa-chevron-down" style="font-size:10px;color:rgba(255,255,255,0.5);"></i>
             </div>
             <div class="right">
                 <i class="fas fa-signal"></i>
@@ -238,18 +278,11 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 
         <div class="home-title">✦ HIS PHONE ✦</div>
 
+        <!-- 主界面：备忘录、音乐、行动轨迹 -->
         <div class="app-grid">
-            <div class="app-icon" data-app="browser">
-                <div class="icon icon-browser"><i class="fas fa-globe"></i></div>
-                <div class="label">浏览器</div>
-            </div>
             <div class="app-icon" data-app="memo">
                 <div class="icon icon-memo"><i class="fas fa-sticky-note"></i></div>
                 <div class="label">备忘录</div>
-            </div>
-            <div class="app-icon" data-app="wechat">
-                <div class="icon icon-wechat"><i class="fab fa-weixin"></i></div>
-                <div class="label">微信</div>
             </div>
             <div class="app-icon" data-app="music">
                 <div class="icon icon-music"><i class="fas fa-music"></i></div>
@@ -259,9 +292,21 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
                 <div class="icon icon-track"><i class="fas fa-map-marked-alt"></i></div>
                 <div class="label">行动轨迹</div>
             </div>
-            <div class="app-icon" data-app="moments">
-                <div class="icon icon-moments"><i class="fas fa-camera-retro"></i></div>
-                <div class="label">朋友圈</div>
+        </div>
+
+        <!-- Dock 栏：微信、设置、浏览器 -->
+        <div class="dock">
+            <div class="app-icon" data-app="wechat">
+                <div class="icon icon-wechat"><i class="fab fa-weixin"></i></div>
+                <div class="label">微信</div>
+            </div>
+            <div class="app-icon" data-app="settings">
+                <div class="icon icon-settings"><i class="fas fa-cog"></i></div>
+                <div class="label">设置</div>
+            </div>
+            <div class="app-icon" data-app="browser">
+                <div class="icon icon-browser"><i class="fas fa-globe"></i></div>
+                <div class="label">浏览器</div>
             </div>
         </div>
     </div>
@@ -286,7 +331,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
         <div class="app-body" id="memoBody"></div>
     </div>
 
-    <!-- ========== 微信（联系人列表） ========== -->
+    <!-- ========== 微信 ========== -->
     <div id="wechatApp" class="screen app-screen">
         <div class="app-topbar">
             <button class="app-back" data-close="wechatApp"><i class="fas fa-chevron-left"></i></button>
@@ -305,7 +350,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
         <div class="chat-msgs" id="chatBody"></div>
     </div>
 
-    <!-- ========== 朋友圈 ========== -->
+    <!-- ========== 朋友圈（作为微信二级页保留，但入口暂未放） ========== -->
     <div id="momentsApp" class="screen app-screen">
         <div class="app-topbar">
             <button class="app-back" data-close="momentsApp"><i class="fas fa-chevron-left"></i></button>
@@ -344,7 +389,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
         </div>
     </div>
 
-    <!-- ========== 歌单 ========== -->
     <div id="playlistApp" class="screen app-screen">
         <div class="app-topbar">
             <button class="app-back" data-close="playlistApp"><i class="fas fa-chevron-left"></i></button>
@@ -364,10 +408,44 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
         <div class="app-body" id="trackBody"></div>
     </div>
 
+    <!-- ========== 设置 ========== -->
+    <div id="settingsApp" class="screen app-screen">
+        <div class="app-topbar">
+            <button class="app-back" data-close="settingsApp"><i class="fas fa-chevron-left"></i></button>
+            <div class="app-title">设置</div>
+        </div>
+        <div class="app-body">
+            <div class="settings-group">
+                <div class="settings-group-title">个性化</div>
+                <div class="settings-item" id="setWallpaperBtn">
+                    <div class="si-icon wallpaper"><i class="fas fa-image"></i></div>
+                    <div class="si-label">壁纸设置</div>
+                    <div class="si-value" id="wallpaperStatus">默认</div>
+                    <div class="si-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
+            </div>
+            <div class="settings-group">
+                <div class="settings-group-title">账号</div>
+                <div class="settings-item" id="setSwitchRoleBtn">
+                    <div class="si-icon switch"><i class="fas fa-user-friends"></i></div>
+                    <div class="si-label">切换角色</div>
+                    <div class="si-value" id="currentRoleName">—</div>
+                    <div class="si-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
+                <div class="settings-item" id="setPasswordBtn">
+                    <div class="si-icon password"><i class="fas fa-lock"></i></div>
+                    <div class="si-label">密码设置</div>
+                    <div class="si-value">修改手机密码</div>
+                    <div class="si-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ========== 角色切换弹窗 ========== -->
     <div class="overlay" id="rolePickerOverlay">
         <div class="modal">
-            <h3>选择角色</h3>
+            <h3>切换角色</h3>
             <div id="rolePickerList"></div>
             <button class="btn-secondary" id="closeRolePicker">取消</button>
         </div>
@@ -382,15 +460,28 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
                 <input type="text" id="contactName" placeholder="例如：小林" />
             </div>
             <div class="form-group">
-                <label>关系（如：同事、朋友、家人）</label>
+                <label>关系</label>
                 <input type="text" id="contactRelation" placeholder="例如：大学同学" />
             </div>
             <div class="form-group">
-                <label>介绍（帮助 AI 识别此人与 ta 的关系）</label>
-                <textarea id="contactDesc" placeholder="例如：和 ta 是从小一起长大的朋友，性格开朗，喜欢打篮球"></textarea>
+                <label>介绍（帮助 AI 理解关系）</label>
+                <textarea id="contactDesc" placeholder="例如：和 ta 从小一起长大，性格开朗"></textarea>
             </div>
             <button class="btn-primary" id="saveContactBtn">保存</button>
             <button class="btn-secondary" id="cancelContactBtn">取消</button>
+        </div>
+    </div>
+
+    <!-- ========== 密码修改弹窗 ========== -->
+    <div class="overlay" id="passwordChangeOverlay">
+        <div class="modal">
+            <h3>修改手机密码</h3>
+            <div class="form-group">
+                <label>新密码（4位数字）</label>
+                <input type="text" id="newPasswordInput" maxlength="4" inputmode="numeric" placeholder="例如：0520" />
+            </div>
+            <button class="btn-primary" id="savePasswordBtn">保存</button>
+            <button class="btn-secondary" id="cancelPasswordBtn">取消</button>
         </div>
     </div>
 
@@ -400,7 +491,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 // ============================================================
 //  他的手机 - 完整逻辑
 // ============================================================
-
 var currentRoleId = null;
 var currentRole = null;
 var phoneData = null;
@@ -409,9 +499,7 @@ var passwordLength = 4;
 var musicState = { playing: false, currentIndex: 0, currentTime: 0, timer: null };
 var currentChatContactId = null;
 
-// ============================================================
-//  主应用数据读写
-// ============================================================
+// ========== 主应用数据 ==========
 function getMainData() {
     try {
         var raw = localStorage.getItem('ds_multirole_v2');
@@ -420,77 +508,46 @@ function getMainData() {
         return { roles: [], config: {}, currentRoleId: null };
     }
 }
-
 function saveMainData(data) {
-    try {
-        localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
-    } catch(e) {
-        console.error('保存主应用数据失败:', e);
-    }
+    try { localStorage.setItem('ds_multirole_v2', JSON.stringify(data)); } catch(e) {}
 }
 
-// ============================================================
-//  手机数据读写
-// ============================================================
+// ========== 手机数据 ==========
 function getPhoneData(roleId) {
     var key = 'phone_data_' + roleId;
     var raw = localStorage.getItem(key);
-    if (raw) {
-        try { return JSON.parse(raw); } catch(e) {}
-    }
+    if (raw) { try { return JSON.parse(raw); } catch(e) {} }
     return {
-        password: '0000',
-        passwordChanged: false,
-        passwordReason: '',
-        userBirthday: '',
-        _birthdayChecked: false,
-        _passwordChangeChecked: false,
-        browser: { history: [] },
-        memos: [],
-        contacts: [],
-        chats: {},
-        moments: [],
-        songs: [],
-        trajectory: [],
-        lastGenerated: {}
+        password: '0000', passwordChanged: false, passwordReason: '',
+        userBirthday: '', _birthdayChecked: false, _passwordChangeChecked: false, userNickname: '',
+        wallpaper: '',
+        browser: { history: [] }, memos: [], contacts: [], chats: {},
+        moments: [], songs: [], trajectory: [], lastGenerated: {}
     };
 }
-
 function savePhoneData(roleId, data) {
-    try {
-        localStorage.setItem('phone_data_' + roleId, JSON.stringify(data));
-    } catch(e) {
-        console.error('保存手机数据失败:', e);
-    }
+    try { localStorage.setItem('phone_data_' + roleId, JSON.stringify(data)); } catch(e) {}
 }
 
-// ============================================================
-//  AI 调用
-// ============================================================
+// ========== AI 调用 ==========
 function getAIConfig() {
     var main = getMainData();
     return main.config || {};
 }
-
 function parseJSON(text) {
     if (!text) return null;
     text = String(text).replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
     try { return JSON.parse(text); } catch(e) {}
     var match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-    if (match) {
-        try { return JSON.parse(match[0]); } catch(e2) {}
-    }
+    if (match) { try { return JSON.parse(match[0]); } catch(e2) {} }
     return null;
 }
-
 async function callAI(systemPrompt, userPrompt, maxTokens) {
     var config = getAIConfig();
     var mode = config.accessMode || 'direct';
     var apiKey, endpoint, model;
-
     if (mode === 'direct') {
-        apiKey = config.apiKey;
-        endpoint = 'https://api.deepseek.com/v1';
+        apiKey = config.apiKey; endpoint = 'https://api.deepseek.com/v1';
         model = config.model || 'deepseek-v4-pro';
     } else if (mode === 'relay') {
         apiKey = config.relayApiKey || config.apiKey;
@@ -501,73 +558,43 @@ async function callAI(systemPrompt, userPrompt, maxTokens) {
         endpoint = config.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
         model = config.websearchModel || 'qwen-plus';
     }
-
-    if (!apiKey || !endpoint) {
-        throw new Error('请先在主应用配置 API');
-    }
-
+    if (!apiKey || !endpoint) throw new Error('请先在主应用配置 API');
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, 40000);
-
     try {
         var resp = await fetch(endpoint + '/chat/completions', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + apiKey
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
             body: JSON.stringify({
                 model: model,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt }
-                ],
-                temperature: 0.9,
-                max_tokens: maxTokens || 800
+                messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+                temperature: 0.9, max_tokens: maxTokens || 800
             }),
             signal: controller.signal
         });
         clearTimeout(timeoutId);
-
-        if (!resp.ok) {
-            var errText = await resp.text();
-            throw new Error('API 错误 (' + resp.status + '): ' + errText.slice(0, 100));
-        }
+        if (!resp.ok) { var errText = await resp.text(); throw new Error('API 错误 (' + resp.status + '): ' + errText.slice(0, 100)); }
         var data = await resp.json();
-        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            throw new Error('API 返回格式异常');
-        }
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) throw new Error('API 返回格式异常');
         return data.choices[0].message.content;
-    } catch(e) {
-        clearTimeout(timeoutId);
-        throw e;
-    }
+    } catch(e) { clearTimeout(timeoutId); throw e; }
 }
 
-// ============================================================
-//  各种生成函数
-// ============================================================
+// ========== 生成函数 ==========
 async function generateBrowserHistory(role, pd) {
     var recent = (role.messages || []).slice(-20).map(function(m) {
         return (m.role === 'user' ? '用户' : role.name) + '：' + (m.content || '').substring(0, 100);
     }).join('\n');
-
-    var sys = '你是' + role.name + '，一个真实的人。请根据你和用户的最近对话，想象你可能会"偷偷搜索"的浏览器记录。搜索词要符合你的人设，也要与最近对话内容相关。不要预设，根据对话自行判断。';
-    var prompt = '你的人设：' + (role.persona || '') + '\n你的背景：' + (role.background || '') +
-        '\n最近对话：\n' + recent +
-        '\n\n请生成3-5条浏览器搜索记录，返回JSON：{"history": [{"keyword": "搜索词", "reason": "搜索原因（第一人称）"}]}';
-
+    var sys = '你是' + role.name + '，一个真实的人。请根据你和用户的最近对话，想象你可能会"偷偷搜索"的浏览器记录。搜索词要符合你的人设，也要与最近对话内容相关。';
+    var prompt = '人设：' + (role.persona || '') + '\n背景：' + (role.background || '') + '\n最近对话：\n' + recent +
+        '\n\n返回JSON：{"history": [{"keyword": "搜索词", "reason": "搜索原因（第一人称）"}]}，3-5条。';
     var result = await callAI(sys, prompt, 600);
     var json = parseJSON(result);
     var history = [];
     if (json && json.history && Array.isArray(json.history)) {
         var now = Date.now();
         history = json.history.map(function(h, i) {
-            return {
-                keyword: h.keyword || '',
-                reason: h.reason || '',
-                time: new Date(now - i * 3600 * 1000 * (1 + Math.random() * 3)).toISOString()
-            };
+            return { keyword: h.keyword || '', reason: h.reason || '', time: new Date(now - i * 3600 * 1000 * (1 + Math.random() * 3)).toISOString() };
         });
     }
     pd.browser = { history: history };
@@ -583,15 +610,11 @@ async function generateMemos(role, pd) {
         var exp = m.expiresAt ? new Date(m.expiresAt).getTime() : 0;
         return exp > now;
     });
-
     var recent = (role.messages || []).slice(-15).map(function(m) {
         return (m.role === 'user' ? '用户' : role.name) + '：' + (m.content || '').substring(0, 100);
     }).join('\n');
-
-    var sys = '你是' + role.name + '。请根据你和用户的最近对话，生成2-3条"备忘录"。要求：1. 有活人感，不要只是复述对话；2. 可以包含日常要做的事、突然的感悟、关于用户的记录等；3. 如果提到用户生日、纪念日、重要约定，important设为true（永久保留），其他为false（3天后清理）。';
-    var prompt = '你的人设：' + (role.persona || '') + '\n最近对话：\n' + recent +
-        '\n\n返回JSON：{"memos": [{"title": "标题", "content": "内容", "important": false}]}';
-
+    var sys = '你是' + role.name + '。根据对话生成2-3条备忘录。要有人味，可以是日常要做的事、感悟、关于用户的记录。提到用户生日/纪念日/重要约定时 important=true（永久保留），其余 false（3天后清理）。';
+    var prompt = '人设：' + (role.persona || '') + '\n对话：\n' + recent + '\n\n返回JSON：{"memos": [{"title": "", "content": "", "important": false}]}';
     var result = await callAI(sys, prompt, 600);
     var json = parseJSON(result);
     var newMemos = [];
@@ -599,9 +622,7 @@ async function generateMemos(role, pd) {
         newMemos = json.memos.map(function(m) {
             return {
                 id: 'memo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                title: m.title || '无标题',
-                content: m.content || '',
-                important: !!m.important,
+                title: m.title || '无标题', content: m.content || '', important: !!m.important,
                 createdAt: new Date().toISOString(),
                 expiresAt: m.important ? null : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
             };
@@ -617,27 +638,18 @@ async function generateWeChatChats(role, pd) {
     var contacts = pd.contacts || [];
     if (!pd.chats) pd.chats = {};
     if (!pd.lastGenerated.chats) pd.lastGenerated.chats = {};
-
     for (var i = 0; i < contacts.length; i++) {
         var contact = contacts[i];
         var lastGen = pd.lastGenerated.chats[contact.id];
-        if (lastGen && Date.now() - new Date(lastGen).getTime() < 24 * 60 * 60 * 1000) {
-            continue;
-        }
-
+        if (lastGen && Date.now() - new Date(lastGen).getTime() < 24 * 60 * 60 * 1000) continue;
         var existing = pd.chats[contact.id] || [];
         if (existing.length > 50) existing = existing.slice(-40);
-
         var historyText = existing.slice(-6).map(function(m) {
             return (m.role === 'me' ? role.name : contact.name) + '：' + m.content;
         }).join('\n');
-
-        var sys = '你正在模拟' + role.name + '的微信聊天记录。' + role.name + '的人设：' + (role.persona || '') + '。背景：' + (role.background || '') +
-            '。对话对象：' + contact.name + '（' + (contact.relation || '朋友') + '，' + (contact.description || '') + '）。' +
-            '请生成5-8条自然日常的微信对话，要符合两个人的人设和关系。';
-        var prompt = (historyText ? '之前聊过：\n' + historyText + '\n\n' : '') +
-            '请继续生成新对话，返回JSON：{"messages": [{"role": "me|them", "content": "对话内容"}]}';
-
+        var sys = '你正在模拟' + role.name + '的微信聊天。' + role.name + '人设：' + (role.persona || '') + '。背景：' + (role.background || '') +
+            '。对话对象：' + contact.name + '（' + (contact.relation || '朋友') + '，' + (contact.description || '') + '）。生成5-8条自然日常对话。';
+        var prompt = (historyText ? '之前聊过：\n' + historyText + '\n\n' : '') + '返回JSON：{"messages": [{"role": "me|them", "content": ""}]}';
         try {
             var result = await callAI(sys, prompt, 800);
             var json = parseJSON(result);
@@ -653,9 +665,7 @@ async function generateWeChatChats(role, pd) {
                 pd.chats[contact.id] = existing.concat(newMsgs).slice(-50);
                 pd.lastGenerated.chats[contact.id] = new Date().toISOString();
             }
-        } catch(e) {
-            console.error('生成 ' + contact.name + ' 的聊天失败:', e);
-        }
+        } catch(e) { console.error('生成聊天失败:', e); }
     }
     savePhoneData(role.id, pd);
     return pd.chats;
@@ -663,24 +673,15 @@ async function generateWeChatChats(role, pd) {
 
 async function generateSongs(role, pd) {
     var lastGen = pd.lastGenerated.songs;
-    if (lastGen && Date.now() - new Date(lastGen).getTime() < 24 * 60 * 60 * 1000) {
-        return pd.songs || [];
-    }
-
-    var sys = '你是' + role.name + '。根据你的人设，生成你今天在听的10首歌曲。歌曲可以是虚构的，但要符合你的品味和心情。';
-    var prompt = '人设：' + (role.persona || '') + '\n背景：' + (role.background || '') +
-        '\n\n返回JSON：{"songs": [{"name": "歌名", "artist": "歌手", "reason": "为什么喜欢（第一人称一句话）"}]}';
-
+    if (lastGen && Date.now() - new Date(lastGen).getTime() < 24 * 60 * 60 * 1000) return pd.songs || [];
+    var sys = '你是' + role.name + '。根据你的人设，生成你今天在听的10首歌曲。歌曲可以是虚构的，但要符合你的品味。';
+    var prompt = '人设：' + (role.persona || '') + '\n背景：' + (role.background || '') + '\n\n返回JSON：{"songs": [{"name": "", "artist": "", "reason": "为什么喜欢"}]}';
     var result = await callAI(sys, prompt, 900);
     var json = parseJSON(result);
     var songs = [];
     if (json && json.songs && Array.isArray(json.songs)) {
         songs = json.songs.slice(0, 10).map(function(s) {
-            return {
-                name: s.name || '未知歌曲',
-                artist: s.artist || '未知歌手',
-                reason: s.reason || ''
-            };
+            return { name: s.name || '未知歌曲', artist: s.artist || '未知歌手', reason: s.reason || '' };
         });
     }
     pd.songs = songs;
@@ -695,22 +696,15 @@ async function generateMoments(role, pd) {
         var t = new Date(m.time).getTime();
         return now - t < 15 * 24 * 60 * 60 * 1000;
     });
-
     var lastGen = pd.lastGenerated.moments;
     if (lastGen && Date.now() - new Date(lastGen).getTime() < 3 * 24 * 60 * 60 * 1000) {
-        pd.moments = kept;
-        savePhoneData(role.id, pd);
-        return kept;
+        pd.moments = kept; savePhoneData(role.id, pd); return kept;
     }
-
     var recent = (role.messages || []).slice(-15).map(function(m) {
         return (m.role === 'user' ? '用户' : role.name) + '：' + (m.content || '').substring(0, 80);
     }).join('\n');
-
-    var sys = '你是' + role.name + '。请生成2-3条符合你人设的朋友圈动态。可以包含对用户的思念、日常感悟、心情分享等。有些可以是"仅自己可见"（更私密的心事）。';
-    var prompt = '人设：' + (role.persona || '') + '\n最近对话：\n' + recent +
-        '\n\n返回JSON：{"moments": [{"content": "动态内容", "visibility": "public 或 private"}]}';
-
+    var sys = '你是' + role.name + '。生成2-3条符合你人设的朋友圈动态。可以包含思念、日常、心情，有些可以是"仅自己可见"。';
+    var prompt = '人设：' + (role.persona || '') + '\n对话：\n' + recent + '\n\n返回JSON：{"moments": [{"content": "", "visibility": "public 或 private"}]}';
     var result = await callAI(sys, prompt, 700);
     var json = parseJSON(result);
     var newMoments = [];
@@ -732,29 +726,19 @@ async function generateMoments(role, pd) {
 
 async function generateTrajectory(role, pd) {
     var lastGen = pd.lastGenerated.trajectory;
-    if (lastGen && Date.now() - new Date(lastGen).getTime() < 24 * 60 * 60 * 1000) {
-        return pd.trajectory || [];
-    }
-
+    if (lastGen && Date.now() - new Date(lastGen).getTime() < 24 * 60 * 60 * 1000) return pd.trajectory || [];
     var recent = (role.messages || []).slice(-15).map(function(m) {
         return (m.role === 'user' ? '用户' : role.name) + '：' + (m.content || '').substring(0, 80);
     }).join('\n');
-
-    var sys = '你是' + role.name + '。请根据你的人设背景和最近的对话，生成你今天一天的行动轨迹。地点要符合你的人设。';
-    var prompt = '人设：' + (role.persona || '') + '\n背景：' + (role.background || '') +
-        '\n最近对话：' + recent +
-        '\n\n返回JSON：{"trajectory": [{"time": "08:00", "location": "地点名", "event": "在做什么"}]}，需要5-7个时间点，时间从早到晚。';
-
+    var sys = '你是' + role.name + '。根据你的人设背景和最近对话，生成你今天一天的行动轨迹。地点要符合人设。';
+    var prompt = '人设：' + (role.persona || '') + '\n背景：' + (role.background || '') + '\n对话：' + recent +
+        '\n\n返回JSON：{"trajectory": [{"time": "08:00", "location": "", "event": ""}]}，5-7个时间点。';
     var result = await callAI(sys, prompt, 700);
     var json = parseJSON(result);
     var trajectory = [];
     if (json && json.trajectory && Array.isArray(json.trajectory)) {
         trajectory = json.trajectory.map(function(t) {
-            return {
-                time: t.time || '',
-                location: t.location || '',
-                event: t.event || ''
-            };
+            return { time: t.time || '', location: t.location || '', event: t.event || '' };
         });
     }
     pd.trajectory = trajectory;
@@ -763,9 +747,7 @@ async function generateTrajectory(role, pd) {
     return trajectory;
 }
 
-// ============================================================
-//  密码逻辑
-// ============================================================
+// ========== 密码 ==========
 function computePassword(roleId, pd) {
     if (pd.passwordChanged && pd.password) return pd.password;
     if (pd.userBirthday && /^\d{4}$/.test(pd.userBirthday)) return pd.userBirthday;
@@ -775,24 +757,16 @@ function computePassword(roleId, pd) {
 async function tryExtractBirthday(role, pd) {
     if (pd._birthdayChecked) return;
     var memories = (role.memory || []).map(function(m) { return (typeof m === 'string' ? m : m.text) || ''; }).filter(Boolean).join('\n');
-    if (!memories) {
-        pd._birthdayChecked = true;
-        savePhoneData(role.id, pd);
-        return;
-    }
-
-    var sys = '请从下面的用户记忆中，提取用户的生日信息。要求：返回4位数字（月+日，如5月20日返回0520）。如果没有找到或不确定，返回null。';
+    if (!memories) { pd._birthdayChecked = true; savePhoneData(role.id, pd); return; }
+    var sys = '从下面的用户记忆中提取生日。返回4位数字（月+日，如5月20日返回0520）。没有就返回null。';
     var prompt = memories + '\n\n返回JSON：{"birthday": "MMDD", "found": true/false}';
-
     try {
         var result = await callAI(sys, prompt, 100);
         var json = parseJSON(result);
         if (json && json.found && json.birthday && /^\d{4}$/.test(json.birthday)) {
             pd.userBirthday = json.birthday;
         }
-    } catch(e) {
-        console.error('提取生日失败:', e);
-    }
+    } catch(e) {}
     pd._birthdayChecked = true;
     savePhoneData(role.id, pd);
 }
@@ -800,21 +774,11 @@ async function tryExtractBirthday(role, pd) {
 async function tryChangePasswordByAI(role, pd) {
     if (pd.passwordChanged || pd._passwordChangeChecked) return;
     pd._passwordChangeChecked = true;
-
     var intimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
-    if (intimacy < 50) {
-        savePhoneData(role.id, pd);
-        return;
-    }
-    if (Math.random() > 0.15) {
-        savePhoneData(role.id, pd);
-        return;
-    }
-
-    var sys = '你是' + role.name + '。你想给自己的手机换一个新密码。要求：4位数字，和你们的特殊回忆有关（比如纪念日、特殊数字）。';
-    var prompt = '人设：' + (role.persona || '') + '\n背景：' + (role.background || '') +
-        '\n\n返回JSON：{"password": "4位数字", "reason": "改密码的原因（第一人称）"}';
-
+    if (intimacy < 50) { savePhoneData(role.id, pd); return; }
+    if (Math.random() > 0.15) { savePhoneData(role.id, pd); return; }
+    var sys = '你是' + role.name + '。想给自己手机换一个新密码，4位数字，和你们的特殊回忆有关。';
+    var prompt = '人设：' + (role.persona || '') + '\n\n返回JSON：{"password": "4位数字", "reason": "改密码的原因"}';
     try {
         var result = await callAI(sys, prompt, 200);
         var json = parseJSON(result);
@@ -823,28 +787,21 @@ async function tryChangePasswordByAI(role, pd) {
             pd.passwordChanged = true;
             pd.passwordReason = json.reason || '';
             savePhoneData(role.id, pd);
-
-            // 写入主应用深层记忆
             var main = getMainData();
             var targetRole = main.roles.find(function(r) { return r.id === role.id; });
             if (targetRole) {
                 if (!Array.isArray(targetRole.memory)) targetRole.memory = [];
                 targetRole.memory.push({
                     text: '🔐 我把手机密码改成了 ' + json.password + '（' + (json.reason || '') + '）',
-                    level: 'core',
-                    timestamp: Date.now()
+                    level: 'core', timestamp: Date.now()
                 });
                 saveMainData(main);
             }
         }
-    } catch(e) {
-        console.error('AI 改密码失败:', e);
-    }
+    } catch(e) {}
 }
 
-// ============================================================
-//  密码输入
-// ============================================================
+// ========== 密码输入 ==========
 function updatePasswordDots() {
     var dots = document.querySelectorAll('#passwordDots .password-dot');
     dots.forEach(function(d, i) {
@@ -852,51 +809,79 @@ function updatePasswordDots() {
         else d.classList.remove('filled');
     });
 }
-
 function checkPasswordInput() {
     if (currentPassword.length !== passwordLength) return;
     var expected = computePassword(currentRoleId, phoneData);
     if (currentPassword === expected) {
-        // 解锁
         document.getElementById('lockScreen').classList.remove('active');
         document.getElementById('homeScreen').classList.add('active');
         currentPassword = '';
         updatePasswordDots();
+        applyWallpaper();
         renderHome();
     } else {
-        // 密码错误
         var dots = document.getElementById('passwordDots');
         dots.classList.add('password-error');
-        setTimeout(function() {
-            dots.classList.remove('password-error');
-            currentPassword = '';
-            updatePasswordDots();
-        }, 400);
+        setTimeout(function() { dots.classList.remove('password-error'); currentPassword = ''; updatePasswordDots(); }, 400);
     }
 }
 
-// ============================================================
-//  页面渲染
-// ============================================================
+// ========== 界面渲染 ==========
+function renderRoleSelect() {
+    var list = document.getElementById('roleSelectList');
+    var main = getMainData();
+    var roles = main.roles || [];
+    if (roles.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.4);">还没有角色<br>请先在主应用创建角色</div>';
+        return;
+    }
+    var html = '';
+    roles.forEach(function(r) {
+        var avatarStyle = r.avatar ? 'background-image:url(' + r.avatar + ');background-size:cover;' : 'background-color:#07c160;';
+        var avatarContent = r.avatar ? '' : escapeHtml((r.name || '?').charAt(0));
+        var desc = r.persona ? r.persona.substring(0, 30) : '一个真实的角色';
+        html += '<div class="role-select-item" data-roleid="' + r.id + '">' +
+            '<div class="rs-avatar" style="' + avatarStyle + '">' + avatarContent + '</div>' +
+            '<div class="rs-info"><div class="rs-name">' + escapeHtml(r.name) + '</div><div class="rs-desc">' + escapeHtml(desc) + '</div></div>' +
+            '<div class="rs-arrow"><i class="fas fa-chevron-right"></i></div>' +
+            '</div>';
+    });
+    list.innerHTML = html;
+    list.querySelectorAll('.role-select-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var rid = this.dataset.roleid;
+            enterRole(rid);
+        });
+    });
+}
+
+function enterRole(roleId) {
+    var main = getMainData();
+    var role = main.roles.find(function(r) { return r.id === roleId; });
+    if (!role) return;
+    currentRoleId = roleId;
+    currentRole = role;
+    phoneData = getPhoneData(roleId);
+
+    document.getElementById('roleSelectScreen').classList.remove('active');
+    document.getElementById('lockScreen').classList.add('active');
+    updateLockScreen();
+    updatePasswordDots();
+
+    tryExtractBirthday(currentRole, phoneData).catch(function() {});
+    tryChangePasswordByAI(currentRole, phoneData).catch(function() {});
+}
+
 function updateLockScreen() {
     var now = new Date();
-    document.getElementById('lockTime').textContent =
-        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('lockTime').textContent = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     var days = ['日','一','二','三','四','五','六'];
-    document.getElementById('lockDate').textContent =
-        now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日 星期' + days[now.getDay()];
-
+    document.getElementById('lockDate').textContent = now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日 星期' + days[now.getDay()];
     if (currentRole) {
         var avatarEl = document.getElementById('lockAvatar');
-        if (currentRole.avatar) {
-            avatarEl.style.backgroundImage = 'url(' + currentRole.avatar + ')';
-        } else {
-            avatarEl.style.backgroundImage = '';
-            avatarEl.style.backgroundColor = '#07c160';
-        }
+        if (currentRole.avatar) avatarEl.style.backgroundImage = 'url(' + currentRole.avatar + ')';
+        else { avatarEl.style.backgroundImage = ''; avatarEl.style.backgroundColor = '#07c160'; }
         document.getElementById('lockName').textContent = currentRole.name || '角色';
-    } else {
-        document.getElementById('lockName').textContent = '无角色';
     }
     currentPassword = '';
     updatePasswordDots();
@@ -912,87 +897,74 @@ function renderHome() {
         avatarEl.textContent = (currentRole.name || '?').charAt(0);
     }
     document.getElementById('homeName').textContent = currentRole.name || '角色';
+    // 设置里显示当前角色名
+    document.getElementById('currentRoleName').textContent = currentRole.name || '—';
+    applyWallpaper();
 }
 
-// ============================================================
-//  应用打开/关闭
-// ============================================================
+function applyWallpaper() {
+    var home = document.getElementById('homeScreen');
+    if (phoneData && phoneData.wallpaper) {
+        home.style.backgroundImage = 'url(' + phoneData.wallpaper + ')';
+        home.style.backgroundSize = 'cover';
+        home.style.backgroundPosition = 'center';
+        var wpStatus = document.getElementById('wallpaperStatus');
+        if (wpStatus) wpStatus.textContent = '自定义';
+    } else {
+        home.style.backgroundImage = 'linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 50%, #000 100%)';
+        var wpStatus2 = document.getElementById('wallpaperStatus');
+        if (wpStatus2) wpStatus2.textContent = '默认';
+    }
+}
+
+// ========== 应用打开/关闭 ==========
 function openApp(appId) {
     var el = document.getElementById(appId);
-    if (!el) return;
-    el.classList.add('open');
+    if (el) el.classList.add('open');
 }
-
 function closeApp(appId) {
     var el = document.getElementById(appId);
     if (el) el.classList.remove('open');
 }
 
-// ============================================================
-//  浏览器
-// ============================================================
+// ========== 浏览器 ==========
 async function openBrowser() {
     openApp('browserApp');
     var body = document.getElementById('browserBody');
     body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在加载浏览记录...</span></div>';
-
     var lastGen = phoneData.lastGenerated.browser;
     var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 6 * 60 * 60 * 1000);
-
-    if (needsGen) {
-        try {
-            await generateBrowserHistory(currentRole, phoneData);
-        } catch(e) {
-            console.error('生成浏览记录失败:', e);
-        }
-    }
-
+    if (needsGen) { try { await generateBrowserHistory(currentRole, phoneData); } catch(e) {} }
     renderBrowser();
 }
-
 function renderBrowser() {
     var body = document.getElementById('browserBody');
     var history = (phoneData.browser && phoneData.browser.history) || [];
     if (history.length === 0) {
-        body.innerHTML = '<div class="empty-state"><i class="fas fa-globe"></i><p>还没有浏览记录<br>和 ta 多聊聊，这里就会有内容了</p></div>';
+        body.innerHTML = '<div class="empty-state"><i class="fas fa-globe"></i><p>还没有浏览记录<br>和 ta 多聊聊，这里就会有内容</p></div>';
         return;
     }
     var html = '';
     history.forEach(function(h) {
         var domain = 'www.google.com/search?q=' + encodeURIComponent(h.keyword || '');
         var timeStr = h.time ? new Date(h.time).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-        html += '<div class="browser-item">' +
-            '<div class="url">🌐 ' + escapeHtml(domain) + '</div>' +
-            '<div class="keyword">' + escapeHtml(h.keyword || '') + '</div>' +
+        html += '<div class="browser-item"><div class="url">🌐 ' + escapeHtml(domain) + '</div><div class="keyword">' + escapeHtml(h.keyword || '') + '</div>' +
             (h.reason ? '<div class="reason">"' + escapeHtml(h.reason) + '"</div>' : '') +
-            '<div class="time">' + timeStr + '</div>' +
-            '</div>';
+            '<div class="time">' + timeStr + '</div></div>';
     });
     body.innerHTML = html;
 }
 
-// ============================================================
-//  备忘录
-// ============================================================
+// ========== 备忘录 ==========
 async function openMemo() {
     openApp('memoApp');
     var body = document.getElementById('memoBody');
     body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在整理备忘录...</span></div>';
-
     var lastGen = phoneData.lastGenerated.memo;
     var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 6 * 60 * 60 * 1000);
-
-    if (needsGen) {
-        try {
-            await generateMemos(currentRole, phoneData);
-        } catch(e) {
-            console.error('生成备忘录失败:', e);
-        }
-    }
-
+    if (needsGen) { try { await generateMemos(currentRole, phoneData); } catch(e) {} }
     renderMemo();
 }
-
 function renderMemo() {
     var body = document.getElementById('memoBody');
     var memos = (phoneData.memos || []).slice().sort(function(a, b) {
@@ -1001,78 +973,174 @@ function renderMemo() {
         return new Date(b.createdAt) - new Date(a.createdAt);
     });
     if (memos.length === 0) {
-        body.innerHTML = '<div class="empty-state"><i class="fas fa-sticky-note"></i><p>还没有备忘录<br>ta 会在和你聊天后记下重要的事</p></div>';
+        body.innerHTML = '<div class="empty-state"><i class="fas fa-sticky-note"></i><p>还没有备忘录<br>ta 会记下重要的事</p></div>';
         return;
     }
     var html = '';
     memos.forEach(function(m) {
         var timeStr = m.createdAt ? new Date(m.createdAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-        html += '<div class="memo-item' + (m.important ? ' important' : '') + '">' +
-            '<div class="memo-title">' + (m.important ? '<i class="fas fa-star star"></i>' : '') + escapeHtml(m.title) + '</div>' +
+        html += '<div class="memo-item' + (m.important ? ' important' : '') + '"><div class="memo-title">' +
+            (m.important ? '<i class="fas fa-star star"></i>' : '') + escapeHtml(m.title) + '</div>' +
             '<div class="memo-content">' + escapeHtml(m.content) + '</div>' +
-            '<div class="memo-time">' + timeStr + (m.important ? ' · 永久保留' : ' · 3天后清理') + '</div>' +
-            '</div>';
+            '<div class="memo-time">' + timeStr + (m.important ? ' · 永久保留' : ' · 3天后清理') + '</div></div>';
     });
     body.innerHTML = html;
 }
 
-// ============================================================
-//  微信
-// ============================================================
+// ===== 获取用户昵称（AI 对用户的称呼） =====
+async function getUserNickname(role, pd) {
+    // 1. 缓存优先
+    if (pd.userNickname && pd.userNickname.trim()) return pd.userNickname;
+
+    // 2. 从用户说过的话 + 记忆库里搜索
+    var userMsgs = (role.messages || []).filter(function(m) { return m.role === 'user'; }).slice(-50);
+    var userText = userMsgs.map(function(m) { return m.content || ''; }).join('\n');
+    var memories = (role.memory || []).map(function(m) { return (typeof m === 'string' ? m : m.text) || ''; }).join('\n');
+    var searchText = userText + '\n' + memories;
+
+   // ===== 分段匹配，越明确的优先级越高 =====
+    var lastNick = null;
+
+    // 【最高优先】"你叫我X"、"你可以叫我X"、"你能叫我X" —— 明确是 AI 称呼用户
+    var pattern1 = /你(?:以后|可以|能)?(?:叫我|喊我|称呼我)([^\s，。！？、,\.!\?]{1,8})/g;
+    var m1;
+    while ((m1 = pattern1.exec(searchText)) !== null) {
+        if (m1[1]) lastNick = m1[1];
+    }
+
+    // 【次优先】"以后叫我X" —— 常见的约定表达
+    if (!lastNick) {
+        var pattern2 = /以后(?:叫我|喊我|称呼我)([^\s，。！？、,\.!\?]{1,8})/g;
+        var m2;
+        while ((m2 = pattern2.exec(searchText)) !== null) {
+            if (m2[1]) lastNick = m2[1];
+        }
+    }
+
+    // 【再次】"我的昵称是X"、"我的昵称叫X"
+    if (!lastNick) {
+        var pattern3 = /我的昵称(?:是|叫)([^\s，。！？、,\.!\?]{1,8})/g;
+        var m3;
+        while ((m3 = pattern3.exec(searchText)) !== null) {
+            if (m3[1]) lastNick = m3[1];
+        }
+    }
+
+    // 【补充】角色设定里的"称呼'X'"、"称呼"X"
+    if (!lastNick) {
+        var pattern3b = /称呼[\s"'「『]([^\s，。！？、,\.!\?'"」』]{1,8})["'」』]/g;
+        var m3b;
+        while ((m3b = pattern3b.exec(searchText)) !== null) {
+            if (m3b[1]) lastNick = m3b[1];
+        }
+    }
+
+    // 【兜底】"叫我X" / "喊我X"，但必须排除主语是"我、用户、她、他、它、ta、你们"等
+    // lookbehind 检查紧邻的前缀，防止"用户喊我Daddy"、"我叫Daddy"这类被误匹配
+    if (!lastNick) {
+        var pattern4 = /(?<!我|用户|她|他|它|ta|Ta|TA|你们|对方|她叫|他叫)(?:叫我|喊我)([^\s，。！？、,\.!\?]{1,8})/g;
+        var m4;
+        while ((m4 = pattern4.exec(searchText)) !== null) {
+            if (m4[1]) lastNick = m4[1];
+        }
+    }
+
+    if (lastNick && lastNick.length >= 1 && lastNick.length <= 8) {
+        pd.userNickname = lastNick;
+        savePhoneData(role.id, pd);
+        console.log('💕 从聊天中找到昵称:', pd.userNickname);
+        return pd.userNickname;
+    }
+
+    // 3. 让 AI 根据角色人设生成一个昵称
+    try {
+        var sys = '你是' + role.name + '。请给用户起一个亲昵的昵称（称呼）。要求：' +
+            '1. 必须符合你的人设和你们的亲密关系；' +
+            '2. 简短，2-4个字；' +
+            '3. 比如「宝贝」「小乖」「阿絮」等有特色的称呼；' +
+            '4. 不要用"亲爱的""用户"这种通用称呼；' +
+            '5. 只输出昵称本身，不要解释。';
+        var prompt = '你的人设：' + (role.persona || '') + '\n你们的背景：' + (role.background || '') +
+            '\n你们最近聊过：' + (userText || '').substring(0, 400) +
+            '\n\n返回JSON：{"nickname": "你给用户起的昵称"}';
+        var result = await callAI(sys, prompt, 100);
+        var json = parseJSON(result);
+        if (json && json.nickname && json.nickname.trim()) {
+            pd.userNickname = json.nickname.trim().substring(0, 6);
+            savePhoneData(role.id, pd);
+            console.log('💕 AI 生成昵称:', pd.userNickname);
+            return pd.userNickname;
+        }
+    } catch(e) {
+        console.error('AI 生成昵称失败:', e);
+    }
+
+    // 4. 兜底
+    pd.userNickname = '宝贝';
+    savePhoneData(role.id, pd);
+    return '宝贝';
+}
+// ===== 结束 =====
+
+// ========== 微信 ==========
+
 async function openWeChat() {
     openApp('wechatApp');
     var body = document.getElementById('wechatBody');
     body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在加载微信...</span></div>';
-
-    try {
-        await generateWeChatChats(currentRole, phoneData);
-    } catch(e) {
-        console.error('生成微信聊天失败:', e);
-    }
-
+    // 先加载用户昵称
+    try { await getUserNickname(currentRole, phoneData); } catch(e) {}
+    try { await generateWeChatChats(currentRole, phoneData); } catch(e) {}
     renderWeChatList();
 }
-
 function renderWeChatList() {
     var body = document.getElementById('wechatBody');
     var html = '<div class="wechat-list">';
-
-    // 用户（置顶）
     var userMsgs = currentRole.messages || [];
     var lastUserMsg = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1] : null;
     var userPreview = lastUserMsg ? (lastUserMsg.content || '暂无消息').substring(0, 30) : '开始和 ta 聊天吧';
-    html += '<div class="wechat-contact" data-contact="__user__">' +
-        '<div class="wechat-avatar" style="background-image:url(' + (getAIConfig().userAvatar || '') + ');background-size:cover;background-position:center;">' + (getAIConfig().userAvatar ? '' : '💕') + '</div>' +
-        '<div class="wechat-info">' +
-        '<div class="wechat-name">用户（你）</div>' +
-        '<div class="wechat-preview">' + escapeHtml(userPreview) + '</div>' +
-        '</div>' +
-        '</div>';
-
-    // 其他联系人
+    var userAvatar = getAIConfig().userAvatar || '';
+    var userNickname = phoneData.userNickname || '用户';
+    html += '<div class="wechat-contact" data-contact="__user__"><div class="wechat-avatar" style="' +
+        (userAvatar ? 'background-image:url(' + userAvatar + ');background-size:cover;' : '') + '">' +
+        (userAvatar ? '' : '💕') + '</div><div class="wechat-info"><div class="wechat-name">' + escapeHtml(userNickname) + '</div>' +
+        '<div class="wechat-preview">' + escapeHtml(userPreview) + '</div></div>' +
+        '<button class="wechat-edit" data-editnick="__user__"><i class="fas fa-pen"></i></button></div>';
     var contacts = phoneData.contacts || [];
     contacts.forEach(function(c) {
         var chat = (phoneData.chats && phoneData.chats[c.id]) || [];
         var lastMsg = chat.length > 0 ? chat[chat.length - 1] : null;
         var preview = lastMsg ? lastMsg.content.substring(0, 30) : '开始聊天吧';
         html += '<div class="wechat-contact" data-contact="' + c.id + '">' +
-            '<div class="wechat-avatar" style="' + (c.avatar ? 'background-image:url(' + c.avatar + ');background-size:cover;' : '') + '">' + (c.avatar ? '' : escapeHtml(c.name.charAt(0))) + '</div>' +
-            '<div class="wechat-info">' +
-            '<div class="wechat-name">' + escapeHtml(c.name) + ' <span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:400;">· ' + escapeHtml(c.relation || '') + '</span></div>' +
-            '<div class="wechat-preview">' + escapeHtml(preview) + '</div>' +
-            '</div>' +
-            '<button class="wechat-del" data-del="' + c.id + '"><i class="fas fa-times"></i></button>' +
-            '</div>';
+            '<div class="wechat-avatar" style="' + (c.avatar ? 'background-image:url(' + c.avatar + ');background-size:cover;' : '') + '">' +
+            (c.avatar ? '' : escapeHtml(c.name.charAt(0))) + '</div>' +
+            '<div class="wechat-info"><div class="wechat-name">' + escapeHtml(c.name) +
+            ' <span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:400;">· ' + escapeHtml(c.relation || '') + '</span></div>' +
+            '<div class="wechat-preview">' + escapeHtml(preview) + '</div></div>' +
+            '<button class="wechat-del" data-del="' + c.id + '"><i class="fas fa-times"></i></button></div>';
     });
-
     html += '</div>';
     body.innerHTML = html;
 
     body.querySelectorAll('.wechat-contact').forEach(function(el) {
         el.addEventListener('click', function(e) {
             if (e.target.closest('.wechat-del')) return;
-            var cid = this.dataset.contact;
-            openChatWindow(cid);
+            openChatWindow(this.dataset.contact);
+        });
+    });
+
+// 编辑用户昵称
+    body.querySelectorAll('[data-editnick]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var current = phoneData.userNickname || '';
+            var newNick = prompt('修改 ta 对你的称呼：', current);
+            if (newNick !== null && newNick.trim()) {
+                phoneData.userNickname = newNick.trim().substring(0, 12);
+                savePhoneData(currentRoleId, phoneData);
+                toast('✅ 昵称已更新为「' + phoneData.userNickname + '」');
+                renderWeChatList();
+            }
         });
     });
 
@@ -1094,7 +1162,7 @@ function renderWeChatList() {
 function openChatWindow(contactId) {
     currentChatContactId = contactId;
     var contact = contactId === '__user__' ? null : (phoneData.contacts || []).find(function(c) { return c.id === contactId; });
-    document.getElementById('chatTitle').textContent = contactId === '__user__' ? '你和 ' + (currentRole.name || '') : (contact ? contact.name : '聊天');
+    document.getElementById('chatTitle').textContent = contactId === '__user__' ? (phoneData.userNickname || '用户') : (contact ? contact.name : '聊天');
     openApp('chatApp');
     renderChatWindow();
 }
@@ -1102,19 +1170,25 @@ function openChatWindow(contactId) {
 function renderChatWindow() {
     var body = document.getElementById('chatBody');
     if (currentChatContactId === '__user__') {
+        // ===== 与用户的聊天：反转视角 =====
+        // 在主应用里，用户自己说的话在右侧（绿色），AI在左侧（灰色）
+        // 但在他的手机里，要反过来：AI说的话在右侧，用户说的话在左侧
         var msgs = (currentRole.messages || []).slice(-50);
         var html = '';
         msgs.forEach(function(m) {
-            var cls = m.role === 'user' ? 'me' : 'them';
+            // 反转：用户的话在左侧（them），AI的话在右侧（me）
+            var cls = m.role === 'user' ? 'them' : 'me';
             html += '<div class="chat-bubble ' + cls + '">' + escapeHtml(m.content || '') + '</div>';
         });
         body.innerHTML = html || '<div class="empty-state" style="color:rgba(255,255,255,0.3);text-align:center;padding:40px;">还没有聊天记录</div>';
     } else {
+        // ===== 与其他联系人的聊天：AI自己的话在右侧 =====
         var chat = (phoneData.chats && phoneData.chats[currentChatContactId]) || [];
         var html2 = '';
         chat.forEach(function(m) {
-            // role: 'me' 是角色（当前角色），'them' 是联系人
-            var cls = m.role === 'me' ? 'them' : 'me';
+            // role: 'me' 表示当前角色（AI）说的话 → 右侧
+            // role: 'them' 表示联系人说的话 → 左侧
+            var cls = m.role === 'me' ? 'me' : 'them';
             html2 += '<div class="chat-bubble ' + cls + '">' + escapeHtml(m.content || '') + '</div>';
         });
         body.innerHTML = html2 || '<div class="empty-state" style="color:rgba(255,255,255,0.3);text-align:center;padding:40px;">还没有聊天记录</div>';
@@ -1122,33 +1196,19 @@ function renderChatWindow() {
     body.scrollTop = body.scrollHeight;
 }
 
-// ============================================================
-//  朋友圈
-// ============================================================
+// ========== 朋友圈 ==========
 async function openMoments() {
     openApp('momentsApp');
     var body = document.getElementById('momentsBody');
     body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在加载朋友圈...</span></div>';
-
     var lastGen = phoneData.lastGenerated.moments;
     var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 3 * 24 * 60 * 60 * 1000);
-
-    if (needsGen) {
-        try {
-            await generateMoments(currentRole, phoneData);
-        } catch(e) {
-            console.error('生成朋友圈失败:', e);
-        }
-    }
-
+    if (needsGen) { try { await generateMoments(currentRole, phoneData); } catch(e) {} }
     renderMoments();
 }
-
 function renderMoments() {
     var body = document.getElementById('momentsBody');
-    var moments = (phoneData.moments || []).slice().sort(function(a, b) {
-        return new Date(b.time) - new Date(a.time);
-    });
+    var moments = (phoneData.moments || []).slice().sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
     if (moments.length === 0) {
         body.innerHTML = '<div class="empty-state"><i class="fas fa-camera-retro"></i><p>还没有朋友圈<br>ta 会分享日常心情</p></div>';
         return;
@@ -1160,22 +1220,17 @@ function renderMoments() {
         var visClass = m.visibility === 'private' ? 'private' : '';
         var avatarStyle = currentRole.avatar ? 'background-image:url(' + currentRole.avatar + ');background-size:cover;' : '';
         var avatarContent = currentRole.avatar ? '' : escapeHtml((currentRole.name || '?').charAt(0));
-        html += '<div class="moment-item">' +
-            '<div class="moment-header">' +
+        html += '<div class="moment-item"><div class="moment-header">' +
             '<div class="moment-avatar" style="' + avatarStyle + '">' + avatarContent + '</div>' +
             '<div class="moment-name">' + escapeHtml(currentRole.name || '') + '</div>' +
-            '<div class="moment-vis ' + visClass + '">' + visLabel + '</div>' +
-            '</div>' +
+            '<div class="moment-vis ' + visClass + '">' + visLabel + '</div></div>' +
             '<div class="moment-content">' + escapeHtml(m.content || '') + '</div>' +
-            '<div class="moment-time">' + timeStr + '</div>' +
-            '</div>';
+            '<div class="moment-time">' + timeStr + '</div></div>';
     });
     body.innerHTML = html;
 }
 
-// ============================================================
-//  音乐
-// ============================================================
+// ========== 音乐 ==========
 async function openMusic() {
     openApp('musicApp');
     var lastGen = phoneData.lastGenerated.songs;
@@ -1183,18 +1238,11 @@ async function openMusic() {
     if (needsGen) {
         document.getElementById('musicTitle').textContent = '加载中...';
         document.getElementById('musicArtist').textContent = '正在生成歌单';
-        try {
-            await generateSongs(currentRole, phoneData);
-        } catch(e) {
-            console.error('生成歌曲失败:', e);
-        }
+        try { await generateSongs(currentRole, phoneData); } catch(e) {}
     }
-    if ((phoneData.songs || []).length > 0 && musicState.currentIndex === 0 && !musicState.playing) {
-        loadSong(0);
-    }
+    if ((phoneData.songs || []).length > 0 && musicState.currentIndex === 0 && !musicState.playing) loadSong(0);
     renderMusicUI();
 }
-
 function loadSong(index) {
     var songs = phoneData.songs || [];
     if (songs.length === 0) return;
@@ -1207,9 +1255,8 @@ function loadSong(index) {
     document.getElementById('musicDuration').textContent = '03:30';
     document.getElementById('musicBarFill').style.width = '0%';
     document.getElementById('musicCurrentTime').textContent = '00:00';
-    musicState.totalTime = 210; // 3:30 秒
+    musicState.totalTime = 210;
 }
-
 function renderMusicUI() {
     var playing = musicState.playing;
     document.getElementById('musicPlayBtn').innerHTML = playing ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
@@ -1217,13 +1264,9 @@ function renderMusicUI() {
     if (playing) cover.classList.add('playing');
     else cover.classList.remove('playing');
 }
-
 function toggleMusicPlay() {
     var songs = phoneData.songs || [];
-    if (songs.length === 0) {
-        alert('歌单为空，请先刷新');
-        return;
-    }
+    if (songs.length === 0) { alert('歌单为空，请先刷新'); return; }
     musicState.playing = !musicState.playing;
     if (musicState.playing) {
         if (musicState.timer) clearInterval(musicState.timer);
@@ -1241,36 +1284,21 @@ function toggleMusicPlay() {
             document.getElementById('musicCurrentTime').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
         }, 500);
     } else {
-        if (musicState.timer) {
-            clearInterval(musicState.timer);
-            musicState.timer = null;
-        }
+        if (musicState.timer) { clearInterval(musicState.timer); musicState.timer = null; }
     }
     renderMusicUI();
 }
-
-function openPlaylist() {
-    openApp('playlistApp');
-    renderPlaylist();
-}
-
+function openPlaylist() { openApp('playlistApp'); renderPlaylist(); }
 function renderPlaylist() {
     var body = document.getElementById('playlistBody');
     var songs = phoneData.songs || [];
-    if (songs.length === 0) {
-        body.innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>歌单为空</p></div>';
-        return;
-    }
+    if (songs.length === 0) { body.innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>歌单为空</p></div>'; return; }
     var html = '';
     songs.forEach(function(s, i) {
         var active = i === musicState.currentIndex ? ' active' : '';
-        html += '<div class="playlist-item' + active + '" data-index="' + i + '">' +
-            '<div class="playlist-index">' + (i + 1) + '</div>' +
-            '<div class="playlist-info">' +
-            '<div class="playlist-name">' + escapeHtml(s.name) + '</div>' +
-            '<div class="playlist-artist">' + escapeHtml(s.artist) + '</div>' +
-            '</div>' +
-            '</div>';
+        html += '<div class="playlist-item' + active + '" data-index="' + i + '"><div class="playlist-index">' + (i + 1) + '</div>' +
+            '<div class="playlist-info"><div class="playlist-name">' + escapeHtml(s.name) + '</div>' +
+            '<div class="playlist-artist">' + escapeHtml(s.artist) + '</div></div></div>';
     });
     body.innerHTML = html;
     body.querySelectorAll('.playlist-item').forEach(function(el) {
@@ -1285,101 +1313,107 @@ function renderPlaylist() {
     });
 }
 
-// ============================================================
-//  行动轨迹
-// ============================================================
+// ========== 行动轨迹 ==========
 async function openTrack() {
     openApp('trackApp');
     var body = document.getElementById('trackBody');
     body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在追踪今日行程...</span></div>';
-
     var lastGen = phoneData.lastGenerated.trajectory;
     var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 24 * 60 * 60 * 1000);
-
-    if (needsGen) {
-        try {
-            await generateTrajectory(currentRole, phoneData);
-        } catch(e) {
-            console.error('生成轨迹失败:', e);
-        }
-    }
-
+    if (needsGen) { try { await generateTrajectory(currentRole, phoneData); } catch(e) {} }
     renderTrack();
 }
-
 function renderTrack() {
     var body = document.getElementById('trackBody');
     var track = phoneData.trajectory || [];
     if (track.length === 0) {
-        body.innerHTML = '<div class="empty-state"><i class="fas fa-map-marked-alt"></i><p>还没有轨迹<br>ta 一天的生活还没有生成</p></div>';
+        body.innerHTML = '<div class="empty-state"><i class="fas fa-map-marked-alt"></i><p>还没有轨迹<br>ta 的一天还没有生成</p></div>';
         return;
     }
-
-    // 生成模拟地图 SVG
     var svgHtml = '<svg viewBox="0 0 400 320" preserveAspectRatio="xMidYMid meet">';
-    // 背景网格
-    for (var i = 0; i < 8; i++) {
-        svgHtml += '<line x1="0" y1="' + (i * 40) + '" x2="400" y2="' + (i * 40) + '" stroke="rgba(162,155,254,0.06)" stroke-width="1"/>';
-    }
-    for (var j = 0; j < 10; j++) {
-        svgHtml += '<line x1="' + (j * 40) + '" y1="0" x2="' + (j * 40) + '" y2="320" stroke="rgba(162,155,254,0.06)" stroke-width="1"/>';
-    }
-
-    // 生成节点坐标（螺旋或随机）
+    for (var i = 0; i < 8; i++) svgHtml += '<line x1="0" y1="' + (i * 40) + '" x2="400" y2="' + (i * 40) + '" stroke="rgba(162,155,254,0.06)" stroke-width="1"/>';
+    for (var j = 0; j < 10; j++) svgHtml += '<line x1="' + (j * 40) + '" y1="0" x2="' + (j * 40) + '" y2="320" stroke="rgba(162,155,254,0.06)" stroke-width="1"/>';
     var nodes = [];
     var n = track.length;
-    var centerX = 200, centerY = 160;
     for (var k = 0; k < n; k++) {
         var angle = (k / n) * Math.PI * 2 - Math.PI / 2;
         var radius = 80 + (k % 3) * 30;
-        var x = centerX + Math.cos(angle) * radius + (Math.random() - 0.5) * 30;
-        var y = centerY + Math.sin(angle) * radius + (Math.random() - 0.5) * 30;
+        var x = 200 + Math.cos(angle) * radius + (Math.random() - 0.5) * 30;
+        var y = 160 + Math.sin(angle) * radius + (Math.random() - 0.5) * 30;
         nodes.push({ x: Math.max(30, Math.min(370, x)), y: Math.max(30, Math.min(290, y)), data: track[k] });
     }
-
-    // 绘制连线
     for (var m = 0; m < nodes.length - 1; m++) {
         var p1 = nodes[m], p2 = nodes[m + 1];
-        var mx = (p1.x + p2.x) / 2;
-        var my = (p1.y + p2.y) / 2 - 15;
+        var mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2 - 15;
         svgHtml += '<path d="M ' + p1.x + ' ' + p1.y + ' Q ' + mx + ' ' + my + ' ' + p2.x + ' ' + p2.y + '" stroke="rgba(162,155,254,0.5)" stroke-width="2" fill="none" stroke-dasharray="4,3"/>';
     }
-
-    // 绘制节点
-    nodes.forEach(function(node, idx) {
+    nodes.forEach(function(node) {
         svgHtml += '<circle cx="' + node.x + '" cy="' + node.y + '" r="14" fill="rgba(162,155,254,0.2)"/>';
         svgHtml += '<circle cx="' + node.x + '" cy="' + node.y + '" r="6" fill="#a29bfe"/>';
         svgHtml += '<text x="' + node.x + '" y="' + (node.y - 20) + '" text-anchor="middle" fill="#fff" font-size="10" font-family="PingFang SC,sans-serif">' + escapeHtml((node.data.location || '').substring(0, 6)) + '</text>';
     });
-
     svgHtml += '</svg>';
-
-    // 时间线
     var timelineHtml = '<div class="track-timeline">';
     track.forEach(function(t) {
-        timelineHtml += '<div class="track-item">' +
-            '<div class="track-time">' + escapeHtml(t.time || '') + '</div>' +
+        timelineHtml += '<div class="track-item"><div class="track-time">' + escapeHtml(t.time || '') + '</div>' +
             '<div class="track-dot-wrap"><div class="track-dot"></div><div class="track-line"></div></div>' +
-            '<div class="track-content">' +
-            '<div class="track-location">' + escapeHtml(t.location || '') + '</div>' +
-            '<div class="track-event">' + escapeHtml(t.event || '') + '</div>' +
-            '</div>' +
-            '</div>';
+            '<div class="track-content"><div class="track-location">' + escapeHtml(t.location || '') + '</div>' +
+            '<div class="track-event">' + escapeHtml(t.event || '') + '</div></div></div>';
     });
     timelineHtml += '</div>';
-
     body.innerHTML = '<div class="track-map">' + svgHtml + '</div>' + timelineHtml;
 }
 
-// ============================================================
-//  角色切换
-// ============================================================
+// ========== 设置 ==========
+function openSettingsApp() {
+    openApp('settingsApp');
+    if (currentRole) document.getElementById('currentRoleName').textContent = currentRole.name || '—';
+    var wpStatus = document.getElementById('wallpaperStatus');
+    if (wpStatus) wpStatus.textContent = phoneData.wallpaper ? '自定义' : '默认';
+}
+function openWallpaperPicker() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            var img = new Image();
+            img.onload = function() {
+                var canvas = document.createElement('canvas');
+                var maxDim = 1080;
+                var w = img.width, h = img.height;
+                if (w > maxDim || h > maxDim) {
+                    var ratio = Math.min(maxDim / w, maxDim / h);
+                    w = Math.round(w * ratio); h = Math.round(h * ratio);
+                }
+                canvas.width = w; canvas.height = h;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                phoneData.wallpaper = dataUrl;
+                savePhoneData(currentRoleId, phoneData);
+                applyWallpaper();
+                var wpStatus = document.getElementById('wallpaperStatus');
+                if (wpStatus) wpStatus.textContent = '自定义';
+                toast('✅ 壁纸已更新');
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
+// ========== 角色切换 ==========
 function openRolePicker() {
     var list = document.getElementById('rolePickerList');
     var main = getMainData();
     var roles = main.roles || [];
     if (roles.length === 0) {
-        list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:20px;">暂无角色，请先在主应用创建</div>';
+        list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:20px;">暂无角色</div>';
     } else {
         var html = '';
         roles.forEach(function(r) {
@@ -1388,8 +1422,7 @@ function openRolePicker() {
             var avatarContent = r.avatar ? '' : escapeHtml((r.name || '?').charAt(0));
             html += '<div class="role-picker-item' + active + '" data-roleid="' + r.id + '">' +
                 '<div class="role-picker-avatar" style="' + avatarStyle + '">' + avatarContent + '</div>' +
-                '<div class="role-picker-name">' + escapeHtml(r.name) + '</div>' +
-                '</div>';
+                '<div class="role-picker-name">' + escapeHtml(r.name) + '</div></div>';
         });
         list.innerHTML = html;
         list.querySelectorAll('.role-picker-item').forEach(function(el) {
@@ -1401,11 +1434,7 @@ function openRolePicker() {
     }
     document.getElementById('rolePickerOverlay').classList.add('active');
 }
-
-function closeRolePicker() {
-    document.getElementById('rolePickerOverlay').classList.remove('active');
-}
-
+function closeRolePicker() { document.getElementById('rolePickerOverlay').classList.remove('active'); }
 function switchRole(roleId) {
     var main = getMainData();
     var role = main.roles.find(function(r) { return r.id === roleId; });
@@ -1413,74 +1442,52 @@ function switchRole(roleId) {
     currentRoleId = roleId;
     currentRole = role;
     phoneData = getPhoneData(roleId);
-
-    // 回到锁屏
+    // 关闭所有应用
+    document.querySelectorAll('.app-screen').forEach(function(el) { el.classList.remove('open'); });
     document.getElementById('homeScreen').classList.remove('active');
     document.getElementById('lockScreen').classList.add('active');
     updateLockScreen();
-
-    // 后台尝试更新生日和密码
-    tryExtractBirthday(currentRole, phoneData).catch(function(e) { console.error(e); });
-    tryChangePasswordByAI(currentRole, phoneData).catch(function(e) { console.error(e); });
+    updatePasswordDots();
+    tryExtractBirthday(currentRole, phoneData).catch(function() {});
+    tryChangePasswordByAI(currentRole, phoneData).catch(function() {});
+    toast('已切换到 ' + role.name);
 }
 
-// ============================================================
-//  工具函数
-// ============================================================
+// ========== 工具函数 ==========
 function escapeHtml(text) {
     if (text === null || text === undefined) return '';
     return String(text).replace(/[&<>"']/g, function(m) {
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
     });
 }
-
 function toast(msg) {
     var el = document.createElement('div');
-    el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:9999;';
+    el.className = 'toast';
     el.textContent = msg;
     document.body.appendChild(el);
     setTimeout(function() { el.remove(); }, 2500);
 }
 
-// ============================================================
-//  事件绑定
-// ============================================================
+// ========== 事件绑定 ==========
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化角色
-    var main = getMainData();
-    if (main.roles && main.roles.length > 0) {
-        var initRoleId = main.currentRoleId || main.roles[0].id;
-        var initRole = main.roles.find(function(r) { return r.id === initRoleId; }) || main.roles[0];
-        currentRoleId = initRole.id;
-        currentRole = initRole;
-        phoneData = getPhoneData(currentRoleId);
-    } else {
-        document.getElementById('lockName').textContent = '请先在主应用创建角色';
-    }
-
-    updateLockScreen();
+    // 角色选择
+    renderRoleSelect();
 
     // 数字键盘
     document.querySelectorAll('.num-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var num = this.dataset.num;
             var action = this.dataset.action;
-            if (action === 'del') {
-                currentPassword = currentPassword.slice(0, -1);
-                updatePasswordDots();
-                return;
-            }
+            if (action === 'del') { currentPassword = currentPassword.slice(0, -1); updatePasswordDots(); return; }
             if (num && currentPassword.length < passwordLength) {
                 currentPassword += num;
                 updatePasswordDots();
-                if (currentPassword.length === passwordLength) {
-                    setTimeout(checkPasswordInput, 150);
-                }
+                if (currentPassword.length === passwordLength) setTimeout(checkPasswordInput, 150);
             }
         });
     });
 
-    // 应用图标
+    // 应用图标（主界面 + dock）
     document.querySelectorAll('.app-icon').forEach(function(icon) {
         icon.addEventListener('click', function() {
             var app = this.dataset.app;
@@ -1489,49 +1496,57 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (app === 'wechat') openWeChat();
             else if (app === 'music') openMusic();
             else if (app === 'track') openTrack();
-            else if (app === 'moments') openMoments();
+            else if (app === 'settings') openSettingsApp();
         });
     });
 
     // 关闭应用
     document.querySelectorAll('[data-close]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            closeApp(this.dataset.close);
-        });
+        btn.addEventListener('click', function() { closeApp(this.dataset.close); });
     });
 
-    // 刷新按钮
+    // 刷新
     document.getElementById('refreshBrowser').addEventListener('click', function() {
-        phoneData.lastGenerated.browser = null;
-        savePhoneData(currentRoleId, phoneData);
-        openBrowser();
+        phoneData.lastGenerated.browser = null; savePhoneData(currentRoleId, phoneData); openBrowser();
     });
     document.getElementById('refreshMemo').addEventListener('click', function() {
-        phoneData.lastGenerated.memo = null;
-        savePhoneData(currentRoleId, phoneData);
-        openMemo();
+        phoneData.lastGenerated.memo = null; savePhoneData(currentRoleId, phoneData); openMemo();
     });
     document.getElementById('refreshMoments').addEventListener('click', function() {
-        phoneData.lastGenerated.moments = null;
-        savePhoneData(currentRoleId, phoneData);
-        openMoments();
+        phoneData.lastGenerated.moments = null; savePhoneData(currentRoleId, phoneData); openMoments();
     });
     document.getElementById('refreshSongs').addEventListener('click', function() {
-        phoneData.lastGenerated.songs = null;
-        savePhoneData(currentRoleId, phoneData);
-        openMusic();
+        phoneData.lastGenerated.songs = null; savePhoneData(currentRoleId, phoneData); openMusic();
     });
     document.getElementById('refreshTrack').addEventListener('click', function() {
-        phoneData.lastGenerated.trajectory = null;
-        savePhoneData(currentRoleId, phoneData);
-        openTrack();
+        phoneData.lastGenerated.trajectory = null; savePhoneData(currentRoleId, phoneData); openTrack();
     });
 
-    // 角色切换
+    // 角色切换（顶部）
     document.getElementById('roleSwitchBtn').addEventListener('click', openRolePicker);
     document.getElementById('closeRolePicker').addEventListener('click', closeRolePicker);
     document.getElementById('rolePickerOverlay').addEventListener('click', function(e) {
         if (e.target === this) closeRolePicker();
+    });
+
+    // 设置项
+    document.getElementById('setWallpaperBtn').addEventListener('click', openWallpaperPicker);
+    document.getElementById('setSwitchRoleBtn').addEventListener('click', openRolePicker);
+    document.getElementById('setPasswordBtn').addEventListener('click', function() {
+        document.getElementById('newPasswordInput').value = '';
+        document.getElementById('passwordChangeOverlay').classList.add('active');
+    });
+    document.getElementById('cancelPasswordBtn').addEventListener('click', function() {
+        document.getElementById('passwordChangeOverlay').classList.remove('active');
+    });
+    document.getElementById('savePasswordBtn').addEventListener('click', function() {
+        var np = document.getElementById('newPasswordInput').value.trim();
+        if (!/^\d{4}$/.test(np)) { alert('请输入 4 位数字密码'); return; }
+        phoneData.password = np;
+        phoneData.passwordChanged = true;
+        savePhoneData(currentRoleId, phoneData);
+        document.getElementById('passwordChangeOverlay').classList.remove('active');
+        toast('✅ 密码已更新为 ' + np);
     });
 
     // 添加联系人
@@ -1553,23 +1568,15 @@ document.addEventListener('DOMContentLoaded', function() {
         var desc = document.getElementById('contactDesc').value.trim();
         if (!name) { alert('请输入姓名'); return; }
         if (!desc) { alert('请输入介绍（AI 需要知道此人是谁）'); return; }
-
         if (!phoneData.contacts) phoneData.contacts = [];
-        var newContact = {
+        phoneData.contacts.push({
             id: 'contact_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            name: name,
-            relation: relation || '朋友',
-            description: desc,
-            avatar: ''
-        };
-        phoneData.contacts.push(newContact);
+            name: name, relation: relation || '朋友', description: desc, avatar: ''
+        });
         savePhoneData(currentRoleId, phoneData);
         document.getElementById('addContactOverlay').classList.remove('active');
         toast('✅ 已添加联系人');
-        // 后台生成聊天
-        try {
-            await generateWeChatChats(currentRole, phoneData);
-        } catch(e) {}
+        try { await generateWeChatChats(currentRole, phoneData); } catch(e) {}
         renderWeChatList();
     });
 
@@ -1577,27 +1584,22 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('musicPlayBtn').addEventListener('click', toggleMusicPlay);
     document.getElementById('musicPrev').addEventListener('click', function() {
         loadSong(musicState.currentIndex - 1);
-        if (musicState.playing) toggleMusicPlay(), toggleMusicPlay();
+        if (musicState.playing) { toggleMusicPlay(); toggleMusicPlay(); }
         renderMusicUI();
     });
     document.getElementById('musicNext').addEventListener('click', function() {
         loadSong(musicState.currentIndex + 1);
-        if (musicState.playing) toggleMusicPlay(), toggleMusicPlay();
+        if (musicState.playing) { toggleMusicPlay(); toggleMusicPlay(); }
         renderMusicUI();
     });
     document.getElementById('musicPlaylistBtn').addEventListener('click', openPlaylist);
-    document.getElementById('musicCloseBtn').addEventListener('click', function() {
-        closeApp('musicApp');
-    });
+    document.getElementById('musicCloseBtn').addEventListener('click', function() { closeApp('musicApp'); });
 
     // 时钟
     setInterval(function() {
-        if (document.getElementById('lockScreen').classList.contains('active')) {
-            updateLockScreen();
-        }
+        if (document.getElementById('lockScreen').classList.contains('active')) updateLockScreen();
     }, 30000);
 });
-
 </script>
 </body>
 </html>
