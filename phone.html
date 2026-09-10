@@ -136,6 +136,85 @@ body {
 .wechat-preview { font-size: 12px; color: rgba(255,255,255,0.4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wechat-del { background: none; border: none; color: rgba(255,107,129,0.6); font-size: 13px; padding: 6px; cursor: pointer; }
 
+/* 微信底部 tab */
+.wechat-tabbar {
+    display: flex;
+    background: rgba(20,20,30,0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 4px 0 calc(4px + env(safe-area-inset-bottom, 0px));
+    flex-shrink: 0;
+    position: relative;
+    z-index: 5;
+}
+.wechat-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 0 6px;
+    color: rgba(255,255,255,0.4);
+    font-size: 10px;
+    cursor: pointer;
+    transition: color 0.15s;
+    position: relative;
+    letter-spacing: 0.5px;
+}
+.wechat-tab.active { color: #ffffff; }
+.wechat-tab .tab-icon { display: block; }
+.wechat-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 2px;
+    background: #2ecc71;
+    border-radius: 2px;
+}
+
+/* 联系人列表（"联系人" tab） */
+.contact-list { padding: 4px 0; }
+.contact-list-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    cursor: pointer;
+}
+.contact-list-item:active { background: rgba(255,255,255,0.03); }
+.contact-list-item .cl-avatar {
+    width: 44px; height: 44px;
+    border-radius: 8px;
+    background: #2ecc71;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    flex-shrink: 0;
+    margin-right: 12px;
+}
+.contact-list-item .cl-info { flex: 1; min-width: 0; }
+.contact-list-item .cl-name { font-size: 15px; color: #fff; }
+.contact-list-item .cl-relation { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.contact-list-item .cl-delete-btn {
+    background: none;
+    border: none;
+    color: rgba(255,107,129,0.7);
+    font-size: 14px;
+    padding: 8px 10px;
+    cursor: pointer;
+}
+.contact-list-item .cl-delete-btn:active { color: #ff6b81; }
+
 .wechat-edit { background: none; border: none; color: rgba(116,185,255,0.7); font-size: 13px; padding: 6px; cursor: pointer; }
 
 /* 聊天窗口 */
@@ -153,6 +232,45 @@ body {
 .moment-vis.private { background: rgba(253,203,110,0.2); color: #fdcb6e; }
 .moment-content { font-size: 14px; color: rgba(255,255,255,0.85); line-height: 1.6; white-space: pre-wrap; }
 .moment-time { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 6px; }
+
+.moment-image {
+    margin-top: 8px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.03);
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.3);
+    font-size: 12px;
+}
+.moment-image img {
+    width: 100%;
+    display: block;
+    border-radius: 10px;
+}
+.moment-image .img-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 30px 0;
+}
+.moment-image .img-spinner .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: #a29bfe;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+.moment-image .img-error {
+    padding: 20px;
+    font-size: 11px;
+    color: rgba(255,107,129,0.6);
+    text-align: center;
+    line-height: 1.5;
+}
 
 /* 音乐 */
 .music-container { display: flex; flex-direction: column; height: 100%; padding: 20px 24px; position: relative; }
@@ -357,14 +475,36 @@ body {
         <div class="app-body" id="memoBody"></div>
     </div>
 
-    <!-- ========== 微信 ========== -->
+    <!-- ========== 微信（含底部 tab） ========== -->
     <div id="wechatApp" class="screen app-screen">
         <div class="app-topbar">
             <button class="app-back" data-close="wechatApp"><i class="fas fa-chevron-left"></i></button>
-            <div class="app-title">微信</div>
-            <button class="app-action" id="addContactBtn"><i class="fas fa-plus"></i></button>
+            <div class="app-title" id="wechatTitle">微信</div>
+            <button class="app-action" id="wechatTopActionBtn"><i class="fas fa-plus"></i></button>
         </div>
         <div class="app-body" id="wechatBody"></div>
+        <div class="wechat-tabbar">
+            <div class="wechat-tab active" data-tab="chats">
+                <svg class="tab-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a8 8 0 0 1-11.4 7.2L4 21l1.8-5.6A8 8 0 1 1 21 12z"/>
+                </svg>
+                <span>微信</span>
+            </div>
+            <div class="wechat-tab" data-tab="contacts">
+                <svg class="tab-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="3.5"/>
+                    <path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6"/>
+                </svg>
+                <span>联系人</span>
+            </div>
+            <div class="wechat-tab" data-tab="moments">
+                <svg class="tab-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="8.5"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span>朋友圈</span>
+            </div>
+        </div>
     </div>
 
     <!-- ========== 聊天窗口 ========== -->
@@ -449,6 +589,20 @@ body {
                     <div class="si-value" id="wallpaperStatus">默认</div>
                     <div class="si-arrow"><i class="fas fa-chevron-right"></i></div>
                 </div>
+            </div> <div class="settings-group">
+                <div class="settings-group-title">朋友圈生图</div>
+                <div class="settings-item" id="setImageApiKeyBtn">
+                    <div class="si-icon" style="background:linear-gradient(135deg,#a29bfe,#6c5ce7);"><i class="fas fa-key"></i></div>
+                    <div class="si-label">百炼图片 API Key</div>
+                    <div class="si-value" id="imageApiKeyStatus">未配置</div>
+                    <div class="si-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
+                <div class="settings-item" id="setRefImageBtn">
+                    <div class="si-icon" style="background:linear-gradient(135deg,#fd79a8,#e84393);"><i class="fas fa-user-circle"></i></div>
+                    <div class="si-label">我的参考照片</div>
+                    <div class="si-value" id="refImageStatus">未上传</div>
+                    <div class="si-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
             </div>
             <div class="settings-group">
                 <div class="settings-group-title">账号</div>
@@ -498,6 +652,35 @@ body {
         </div>
     </div>
 
+<!-- ========== 图片 API Key 弹窗 ========== -->
+    <div class="overlay" id="imageApiKeyOverlay">
+        <div class="modal">
+            <h3>百炼图片 API Key</h3>
+            <div class="form-group">
+                <label>API Key（用于调用图片生成模型）</label>
+                <input type="text" id="imageApiKeyInput" placeholder="sk-..." />
+            </div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.4);line-height:1.5;margin-bottom:8px;">
+                请前往阿里云百炼控制台获取，并确保已开通「图片生成」服务。
+            </div>
+            <button class="btn-primary" id="saveImageApiKeyBtn">保存</button>
+            <button class="btn-secondary" id="cancelImageApiKeyBtn">取消</button>
+        </div>
+    </div>
+
+    <!-- ========== 参考照片上传弹窗 ========== -->
+    <div class="overlay" id="refImageOverlay">
+        <div class="modal">
+            <h3>我的参考照片</h3>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:12px;line-height:1.5;">
+                上传一张清晰的正面照片。AI 会用这张照片作为人物参考，生成"自拍"类朋友圈。
+            </div>
+            <div id="refImagePreviewBox" style="width:100%;height:180px;border-radius:12px;background:rgba(255,255,255,0.05);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:12px;margin-bottom:12px;">未上传</div>
+            <button class="btn-primary" id="uploadRefImageBtn">选择照片</button>
+            <button class="btn-secondary" id="cancelRefImageBtn">关闭</button>
+        </div>
+    </div>
+
     <!-- ========== 密码修改弹窗 ========== -->
     <div class="overlay" id="passwordChangeOverlay">
         <div class="modal">
@@ -523,7 +706,11 @@ var phoneData = null;
 var currentPassword = '';
 var passwordLength = 4;
 var musicState = { playing: false, currentIndex: 0, currentTime: 0, timer: null };
+
 var currentChatContactId = null;
+var wechatTab = 'chats';
+var editingContactId = null;
+var wechatTabsBound = false;
 
 // ========== 主应用数据 ==========
 function getMainData() {
@@ -664,6 +851,61 @@ function deleteChatsFromDB(roleId) {
             var tx = db.transaction('chats', 'readwrite');
             var store = tx.objectStore('chats');
             var req = store.delete(roleId);
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    });
+}
+// ===== 结束 =====
+
+// ===== 图片配置 IndexedDB 存储（全局，不分角色） =====
+function openImageConfigDB() {
+    return new Promise(function(resolve, reject) {
+        var request = indexedDB.open('PhoneImageConfigDB', 1);
+        request.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('config')) {
+                db.createObjectStore('config', { keyPath: 'key' });
+            }
+        };
+        request.onsuccess = function(e) { resolve(e.target.result); };
+        request.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+function saveImageConfig(key, value) {
+    return openImageConfigDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('config', 'readwrite');
+            var store = tx.objectStore('config');
+            var req = store.put({ key: key, value: value, updatedAt: Date.now() });
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    });
+}
+
+function loadImageConfig(key) {
+    return openImageConfigDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('config', 'readonly');
+            var store = tx.objectStore('config');
+            var req = store.get(key);
+            req.onsuccess = function() {
+                db.close();
+                resolve(req.result ? req.result.value : null);
+            };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    }).catch(function() { return null; });
+}
+
+function deleteImageConfig(key) {
+    return openImageConfigDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('config', 'readwrite');
+            var store = tx.objectStore('config');
+            var req = store.delete(key);
             req.onsuccess = function() { db.close(); resolve(); };
             req.onerror = function() { db.close(); reject(req.error); };
         });
@@ -865,18 +1107,56 @@ async function generateMoments(role, pd) {
     var recent = (role.messages || []).slice(-15).map(function(m) {
         return (m.role === 'user' ? '用户' : role.name) + '：' + (m.content || '').substring(0, 80);
     }).join('\n');
-    var sys = '你是' + role.name + '。生成2-3条符合你人设的朋友圈动态。可以包含思念、日常、心情，有些可以是"仅自己可见"。';
-    var prompt = '人设：' + (role.persona || '') + '\n对话：\n' + recent + '\n\n返回JSON：{"moments": [{"content": "", "visibility": "public 或 private"}]}';
-    var result = await callAI(sys, prompt, 700);
+
+    var sys = '你是' + role.name + '。请生成 2-3 条符合你人设的朋友圈动态，可以包含思念、日常、心情。有些可以是"仅自己可见"。\n\n' +
+        '【配图决策规则 - 非常重要】\n' +
+        '你需要为每条动态判断是否需要配图：\n' +
+        '1. 如果内容适合用图片表达（分享风景、食物、宠物、自拍、物品、日常片段、街景、天空等），设 needImage=true\n' +
+        '2. 如果是纯粹的心情抒发、思念、感慨、文字游戏，设 needImage=false\n' +
+        '3. 3 条动态里最多 1-2 条配图，不要每条都配\n' +
+        '4. 配图应该非常自然，符合真实生活场景（比如"做了顿好吃的"配一张菜肴图，"今天散步"配一张街景）\n\n' +
+        '【如果需要配图，还要提供】\n' +
+        '- imageType：图片类型，只能从这几个里选一个：selfie(自拍，人物正面出镜)、scene(风景/场景/街景)、food(食物/饮品)、item(物品/书本/礼物)、pet(宠物)、other(其他)\n' +
+        '- imagePrompt：图片的详细描述。要具体、有画面感，包含：主体、场景、氛围、光线、构图。例如："A young man taking a selfie while fishing by the seaside, sunny day, wearing a bucket hat, blue ocean in background, bright natural lighting, casual vibe"\n\n' +
+        '【关键】\n' +
+        '- imageType=selfie 时，系统会用你上传的参考照片生成"你本人出镜"的图片\n' +
+        '- 其他类型（scene/food/item/pet/other）只根据文字描述生成，不含人物\n' +
+        '- 所以如果是"自拍"或"我"出镜，一定要用 selfie；如果只是拍风景/食物/物品，用对应的类型';
+
+    var prompt = '人设：' + (role.persona || '') + '\n背景：' + (role.background || '') +
+        '\n最近对话：\n' + recent +
+        '\n\n返回JSON（严格按格式）：\n' +
+        '{\n' +
+        '  "moments": [\n' +
+        '    {\n' +
+        '      "content": "动态文字内容",\n' +
+        '      "visibility": "public 或 private",\n' +
+        '      "needImage": true 或 false,\n' +
+        '      "imageType": "selfie/scene/food/item/pet/other",\n' +
+        '      "imagePrompt": "英文或中文的图片详细描述（needImage 为 true 时必填）"\n' +
+        '    }\n' +
+        '  ]\n' +
+        '}';
+
+    var result = await callAI(sys, prompt, 1000);
     var json = parseJSON(result);
     var newMoments = [];
     if (json && json.moments && Array.isArray(json.moments)) {
         newMoments = json.moments.map(function(m) {
+            var needImg = !!m.needImage;
+            var validTypes = ['selfie', 'scene', 'food', 'item', 'pet', 'other'];
+            var imgType = validTypes.indexOf(m.imageType) !== -1 ? m.imageType : 'scene';
             return {
                 id: 'moment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
                 content: m.content || '',
                 visibility: m.visibility === 'private' ? 'private' : 'public',
-                time: new Date(Date.now() - Math.random() * 2 * 24 * 3600 * 1000).toISOString()
+                time: new Date(Date.now() - Math.random() * 2 * 24 * 3600 * 1000).toISOString(),
+                needImage: needImg,
+                imageType: needImg ? imgType : null,
+                imagePrompt: needImg ? (m.imagePrompt || '') : '',
+                useRefImage: needImg && imgType === 'selfie',
+                imageUrl: null,
+                imageStatus: needImg ? 'pending' : 'none'
             };
         });
     }
@@ -1285,52 +1565,105 @@ async function getUserNickname(role, pd) {
 
 async function openWeChat() {
     openApp('wechatApp');
-    var body = document.getElementById('wechatBody');
-    body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在加载微信...</span></div>';
+    wechatTab = 'chats';
 
-    // ===== 关键修复：确保当前角色有效 =====
-    if (!currentRole || !currentRoleId) {
-        body.innerHTML = '<div class="empty-state"><p>请先选择角色</p></div>';
-        return;
-    }
+    if (!currentRole || !currentRoleId) return;
 
-    // ===== 关键修复：每次都重新读取当前角色的 phoneData =====
-    // 防止全局 phoneData 被上一个角色的异步操作污染
     var freshData = getPhoneData(currentRoleId);
-    // 保留内存里可能刚修改但还没保存的字段（比如 contacts）
-    // 但优先用 freshData（因为 savePhoneData 已经写入 localStorage）
     phoneData = freshData;
 
-    // ===== 关键修复：先等聊天记录从 IndexedDB 加载完成 =====
-    try {
-        await ensureChatsLoaded(currentRoleId, phoneData);
-    } catch(e) {
-        console.error('加载聊天记录失败:', e);
-    }
-
-    // 加载用户昵称
+    try { await ensureChatsLoaded(currentRoleId, phoneData); } catch(e) {}
     try { await getUserNickname(currentRole, phoneData); } catch(e) {}
 
-    // 生成缺失的聊天（此时 chats 已经是从 IndexedDB 加载的完整数据）
-    try { await generateWeChatChats(currentRole, phoneData); } catch(e) {}
+    bindWechatTabs();
+    updateWechatTabUI();
+    await loadWechatTabContent();
+}
 
-    renderWeChatList();
+function bindWechatTabs() {
+    if (wechatTabsBound) return;
+    wechatTabsBound = true;
+    document.querySelectorAll('.wechat-tab').forEach(function(tabEl) {
+        tabEl.addEventListener('click', function() {
+            var newTab = this.dataset.tab;
+            if (newTab === wechatTab) return;
+            wechatTab = newTab;
+            updateWechatTabUI();
+            loadWechatTabContent();
+        });
+    });
+}
+
+function updateWechatTabUI() {
+    document.querySelectorAll('.wechat-tab').forEach(function(el) {
+        if (el.dataset.tab === wechatTab) el.classList.add('active');
+        else el.classList.remove('active');
+    });
+    var title = document.getElementById('wechatTitle');
+    var topBtn = document.getElementById('wechatTopActionBtn');
+    if (wechatTab === 'chats') {
+        title.textContent = '微信';
+        topBtn.style.display = '';
+        topBtn.innerHTML = '<i class="fas fa-plus"></i>';
+        topBtn.onclick = function() { openContactDialog(null); };
+    } else if (wechatTab === 'contacts') {
+        title.textContent = '联系人';
+        topBtn.style.display = '';
+        topBtn.innerHTML = '<i class="fas fa-plus"></i>';
+        topBtn.onclick = function() { openContactDialog(null); };
+    } else if (wechatTab === 'moments') {
+        title.textContent = '朋友圈';
+        topBtn.style.display = '';
+        topBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        topBtn.onclick = function() {
+            phoneData.lastGenerated.moments = null;
+            savePhoneData(currentRoleId, phoneData);
+            loadWechatTabContent();
+        };
+    }
+}
+
+async function loadWechatTabContent() {
+    if (wechatTab === 'chats') {
+        var body = document.getElementById('wechatBody');
+        body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">加载中...</span></div>';
+        try { await generateWeChatChats(currentRole, phoneData); } catch(e) {}
+        renderWeChatList();
+    } else if (wechatTab === 'contacts') {
+        renderContactsList();
+    } else if (wechatTab === 'moments') {
+        await loadMomentsTab();
+    }
+}
+
+function sortContactsByPinyin(contacts) {
+    try {
+        var collator = new Intl.Collator('zh-Hans-CN', { sensitivity: 'base' });
+        return contacts.slice().sort(function(a, b) {
+            return collator.compare(a.name || '', b.name || '');
+        });
+    } catch(e) {
+        return contacts.slice();
+    }
 }
 
 function renderWeChatList() {
     var body = document.getElementById('wechatBody');
     var html = '<div class="wechat-list">';
+
+    // 用户（置顶）
     var userMsgs = currentRole.messages || [];
     var lastUserMsg = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1] : null;
     var userPreview = lastUserMsg ? (lastUserMsg.content || '暂无消息').substring(0, 30) : '开始和 ta 聊天吧';
     var userAvatar = getAIConfig().userAvatar || '';
     var userNickname = phoneData.userNickname || '用户';
     html += '<div class="wechat-contact" data-contact="__user__"><div class="wechat-avatar" style="' +
-        (userAvatar ? 'background-image:url(' + userAvatar + ');background-size:cover;' : '') + '">' +
+        (userAvatar ? 'background-image:url(' + userAvatar + ');background-size:cover;background-position:center;' : '') + '">' +
         (userAvatar ? '' : '💕') + '</div><div class="wechat-info"><div class="wechat-name">' + escapeHtml(userNickname) + '</div>' +
-        '<div class="wechat-preview">' + escapeHtml(userPreview) + '</div></div>' +
-        '<button class="wechat-edit" data-editnick="__user__"><i class="fas fa-pen"></i></button></div>';
-    var contacts = phoneData.contacts || [];
+        '<div class="wechat-preview">' + escapeHtml(userPreview) + '</div></div></div>';
+
+    // 其他联系人（按拼音排序）
+    var contacts = sortContactsByPinyin(phoneData.contacts || []);
     contacts.forEach(function(c) {
         var chat = (phoneData.chats && phoneData.chats[c.id]) || [];
         var lastMsg = chat.length > 0 ? chat[chat.length - 1] : null;
@@ -1340,22 +1673,25 @@ function renderWeChatList() {
             (c.avatar ? '' : escapeHtml(c.name.charAt(0))) + '</div>' +
             '<div class="wechat-info"><div class="wechat-name">' + escapeHtml(c.name) +
             ' <span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:400;">· ' + escapeHtml(c.relation || '') + '</span></div>' +
-            '<div class="wechat-preview">' + escapeHtml(preview) + '</div></div>' +
-            '<button class="wechat-del" data-del="' + c.id + '"><i class="fas fa-times"></i></button></div>';
+            '<div class="wechat-preview">' + escapeHtml(preview) + '</div></div></div>';
     });
+
     html += '</div>';
     body.innerHTML = html;
 
     body.querySelectorAll('.wechat-contact').forEach(function(el) {
-        el.addEventListener('click', function(e) {
-            if (e.target.closest('.wechat-del')) return;
+        el.addEventListener('click', function() {
             openChatWindow(this.dataset.contact);
         });
     });
 
-// 编辑用户昵称
-    body.querySelectorAll('[data-editnick]').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
+    // 编辑用户昵称（长按用户那一行）
+    var userRow = body.querySelector('.wechat-contact[data-contact="__user__"]');
+    if (userRow) {
+        var editBtn = document.createElement('button');
+        editBtn.className = 'wechat-edit';
+        editBtn.innerHTML = '<i class="fas fa-pen"></i>';
+        editBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             var current = phoneData.userNickname || '';
             var newNick = prompt('修改 ta 对你的称呼：', current);
@@ -1366,19 +1702,142 @@ function renderWeChatList() {
                 renderWeChatList();
             }
         });
-    });
+        userRow.appendChild(editBtn);
+    }
+}
 
-    body.querySelectorAll('.wechat-del').forEach(function(btn) {
+function renderContactsList() {
+    var body = document.getElementById('wechatBody');
+    var contacts = sortContactsByPinyin(phoneData.contacts || []);
+    if (contacts.length === 0) {
+        body.innerHTML = '<div class="empty-state"><i class="fas fa-user-friends"></i><p>还没有联系人</p><p style="font-size:12px;margin-top:8px;opacity:0.6;">点击右上角 + 添加</p></div>';
+        return;
+    }
+    var html = '<div class="contact-list">';
+    contacts.forEach(function(c) {
+        html += '<div class="contact-list-item">' +
+            '<div class="cl-avatar" style="' + (c.avatar ? 'background-image:url(' + c.avatar + ');background-size:cover;' : '') + '">' +
+            (c.avatar ? '' : escapeHtml((c.name || '?').charAt(0))) + '</div>' +
+            '<div class="cl-info" data-edit="' + c.id + '">' +
+            '<div class="cl-name">' + escapeHtml(c.name) + '</div>' +
+            '<div class="cl-relation">' + escapeHtml(c.relation || '朋友') + '</div>' +
+            '</div>' +
+            '<button class="cl-delete-btn" data-del="' + c.id + '"><i class="fas fa-times"></i></button>' +
+            '</div>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+
+    body.querySelectorAll('[data-edit]').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.stopPropagation();
+            openContactDialog(this.dataset.edit);
+        });
+    });
+    body.querySelectorAll('.cl-delete-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
             var cid = this.dataset.del;
             if (confirm('删除这个联系人？聊天记录也会删除。')) {
                 phoneData.contacts = (phoneData.contacts || []).filter(function(c) { return c.id !== cid; });
                 if (phoneData.chats) delete phoneData.chats[cid];
-                if (phoneData.lastGenerated.chats) delete phoneData.lastGenerated.chats[cid];
+                if (phoneData.lastGenerated && phoneData.lastGenerated.chats) delete phoneData.lastGenerated.chats[cid];
                 savePhoneData(currentRoleId, phoneData);
-                renderWeChatList();
+                renderContactsList();
             }
+        });
+    });
+}
+
+function openContactDialog(contactId) {
+    editingContactId = contactId || null;
+    var titleEl = document.querySelector('#addContactOverlay h3');
+    if (contactId) {
+        var c = (phoneData.contacts || []).find(function(x) { return x.id === contactId; });
+        if (c) {
+            document.getElementById('contactName').value = c.name || '';
+            document.getElementById('contactRelation').value = c.relation || '';
+            document.getElementById('contactDesc').value = c.description || '';
+            if (titleEl) titleEl.textContent = '编辑联系人';
+        }
+    } else {
+        document.getElementById('contactName').value = '';
+        document.getElementById('contactRelation').value = '';
+        document.getElementById('contactDesc').value = '';
+        if (titleEl) titleEl.textContent = '添加微信联系人';
+    }
+    document.getElementById('addContactOverlay').classList.add('active');
+}
+
+async function loadMomentsTab() {
+    var body = document.getElementById('wechatBody');
+    body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在加载朋友圈...</span></div>';
+    var lastGen = phoneData.lastGenerated.moments;
+    var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 3 * 24 * 60 * 60 * 1000);
+    if (needsGen) {
+        try { await generateMoments(currentRole, phoneData); } catch(e) {}
+    }
+    renderMomentsInBody();
+    // 渲染后，后台自动生成图片（不阻塞界面）
+    autoGeneratePendingImages(currentRole).then(function() {
+        // 图片生成完后刷新界面
+        if (wechatTab === 'moments') renderMomentsInBody();
+    }).catch(function(e) { console.error('自动生图失败:', e); });
+}
+
+function renderMomentsInBody() {
+    var body = document.getElementById('wechatBody');
+    var moments = (phoneData.moments || []).slice().sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
+    if (moments.length === 0) {
+        body.innerHTML = '<div class="empty-state"><i class="fas fa-camera-retro"></i><p>还没有朋友圈</p><p style="font-size:12px;margin-top:8px;opacity:0.6;">ta 会分享日常心情</p></div>';
+        return;
+    }
+    var html = '';
+    moments.forEach(function(m) {
+        var timeStr = m.time ? new Date(m.time).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+        var visLabel = m.visibility === 'private' ? '仅自己可见' : '公开';
+        var visClass = m.visibility === 'private' ? 'private' : '';
+        var avatarStyle = currentRole.avatar ? 'background-image:url(' + currentRole.avatar + ');background-size:cover;' : '';
+        var avatarContent = currentRole.avatar ? '' : escapeHtml((currentRole.name || '?').charAt(0));
+
+        var imageHtml = '';
+        if (m.needImage) {
+            if (m.imageStatus === 'done' && m.imageUrl) {
+                if (m.imageUrl === 'saved') {
+                    imageHtml = '<div class="moment-image" data-img-id="' + m.id + '"><div class="img-spinner"><div class="spinner"></div><div>加载图片...</div></div></div>';
+                } else {
+                    imageHtml = '<div class="moment-image"><img src="' + m.imageUrl + '" alt="配图" onerror="this.parentNode.innerHTML=\'<div class=img-error>图片加载失败</div>\'" /></div>';
+                }
+            } else if (m.imageStatus === 'generating') {
+                imageHtml = '<div class="moment-image"><div class="img-spinner"><div class="spinner"></div><div>ta 正在生成图片...</div></div></div>';
+            } else if (m.imageStatus === 'failed') {
+                imageHtml = '<div class="moment-image"><div class="img-error">图片生成失败' + (m.imageError ? '<br>' + escapeHtml(m.imageError.substring(0, 50)) : '') + '</div></div>';
+            } else {
+                imageHtml = '<div class="moment-image"><div class="img-spinner"><div class="spinner"></div><div>准备生成...</div></div></div>';
+            }
+        }
+
+        html += '<div class="moment-item"><div class="moment-header">' +
+            '<div class="moment-avatar" style="' + avatarStyle + '">' + avatarContent + '</div>' +
+            '<div class="moment-name">' + escapeHtml(currentRole.name || '') + '</div>' +
+            '<div class="moment-vis ' + visClass + '">' + visLabel + '</div></div>' +
+            '<div class="moment-content">' + escapeHtml(m.content || '') + '</div>' +
+            imageHtml +
+            '<div class="moment-time">' + timeStr + '</div></div>';
+    });
+    body.innerHTML = html;
+
+    // 异步从 IndexedDB 加载"已保存"的图片
+    body.querySelectorAll('[data-img-id]').forEach(function(el) {
+        var mid = el.dataset.imgId;
+        loadImageConfig('moment_image_' + mid).then(function(base64) {
+            if (base64) {
+                el.innerHTML = '<img src="' + base64 + '" alt="配图" />';
+            } else {
+                el.innerHTML = '<div class="img-error">图片已过期</div>';
+            }
+        }).catch(function() {
+            el.innerHTML = '<div class="img-error">加载失败</div>';
         });
     });
 }
@@ -1589,11 +2048,22 @@ function renderTrack() {
 }
 
 // ========== 设置 ==========
+
 function openSettingsApp() {
     openApp('settingsApp');
     if (currentRole) document.getElementById('currentRoleName').textContent = currentRole.name || '—';
     var wpStatus = document.getElementById('wallpaperStatus');
     if (wpStatus) wpStatus.textContent = phoneData.wallpaper ? '自定义' : '默认';
+
+    // 加载图片配置状态
+    loadImageConfig('imageApiKey').then(function(key) {
+        var el = document.getElementById('imageApiKeyStatus');
+        if (el) el.textContent = key ? '已配置' : '未配置';
+    });
+    loadImageConfig('refImage').then(function(img) {
+        var el = document.getElementById('refImageStatus');
+        if (el) el.textContent = img ? '已上传' : '未上传';
+    });
 }
 
 function openWallpaperPicker() {
@@ -1628,6 +2098,217 @@ function openWallpaperPicker() {
                 }).catch(function(err) {
                     console.error('壁纸保存失败:', err);
                     toast('⚠️ 壁纸保存失败: ' + err.message);
+                });
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
+// ========== 图片生成 ==========
+
+function blobToBase64(blob) {
+    return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onloadend = function() { resolve(reader.result); };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+// 文生图（wanx2.1-t2i-turbo，异步轮询）
+async function callTextToImageAPI(apiKey, prompt) {
+    var submitResp = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey,
+            'X-DashScope-Async': 'enable'
+        },
+        body: JSON.stringify({
+            model: 'wanx2.1-t2i-turbo',
+            input: { prompt: prompt },
+            parameters: { size: '1024*1024', n: 1 }
+        })
+    });
+    var submitData = await submitResp.json();
+    if (!submitData.output || !submitData.output.task_id) {
+        throw new Error('提交任务失败: ' + JSON.stringify(submitData).slice(0, 200));
+    }
+    var taskId = submitData.output.task_id;
+
+    for (var i = 0; i < 60; i++) {
+        await new Promise(function(r) { setTimeout(r, 3000); });
+        var pollResp = await fetch('https://dashscope.aliyuncs.com/api/v1/tasks/' + taskId, {
+            headers: { 'Authorization': 'Bearer ' + apiKey }
+        });
+        var pollData = await pollResp.json();
+        var status = pollData.output && pollData.output.task_status;
+        if (status === 'SUCCEEDED') {
+            var results = (pollData.output.results) || [];
+            if (results.length > 0 && results[0].url) return results[0].url;
+            throw new Error('未获取到图片 URL');
+        } else if (status === 'FAILED') {
+            throw new Error('生成失败: ' + ((pollData.output && pollData.output.message) || '未知错误'));
+        }
+    }
+    throw new Error('生成超时');
+}
+
+// 图生图（qwen-image-edit，同步）
+async function callImageEditAPI(apiKey, refImageDataUrl, prompt) {
+    var resp = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+            model: 'qwen-image-edit',
+            input: {
+                messages: [
+                    {
+                        role: 'user',
+                        content: [
+                            { image: refImageDataUrl },
+                            { text: '保持人物面部特征不变，' + prompt }
+                        ]
+                    }
+                ]
+            },
+            parameters: { negative_prompt: '', watermark: false }
+        })
+    });
+    var data = await resp.json();
+    if (data.code) throw new Error('接口错误: ' + (data.message || data.code));
+    var choices = data.output && data.output.choices;
+    if (choices && choices[0] && choices[0].message && choices[0].message.content) {
+        var content = choices[0].message.content;
+        if (Array.isArray(content)) {
+            for (var i = 0; i < content.length; i++) {
+                if (content[i].image) return content[i].image;
+            }
+        }
+    }
+    throw new Error('未获取到图片');
+}
+
+// 为单条朋友圈生成图片
+async function generateImageForMoment(moment, role) {
+    try {
+        moment.imageStatus = 'generating';
+        savePhoneData(role.id, phoneData);
+
+        var apiKey = await loadImageConfig('imageApiKey');
+        if (!apiKey) throw new Error('未配置图片 API Key');
+
+        var imageUrl;
+        if (moment.useRefImage) {
+            var refImage = await loadImageConfig('refImage');
+            if (!refImage) throw new Error('未上传参考照片');
+            imageUrl = await callImageEditAPI(apiKey, refImage, moment.imagePrompt);
+        } else {
+            imageUrl = await callTextToImageAPI(apiKey, moment.imagePrompt);
+        }
+
+        // 下载图片转 base64 存 IndexedDB
+        try {
+            var imgResp = await fetch(imageUrl);
+            var imgBlob = await imgResp.blob();
+            var base64 = await blobToBase64(imgBlob);
+            await saveImageConfig('moment_image_' + moment.id, base64);
+            moment.imageUrl = 'saved';
+            moment.imageStatus = 'done';
+        } catch(e) {
+            console.warn('图片下载失败，直接用原 URL', e);
+            moment.imageUrl = imageUrl;
+            moment.imageStatus = 'done';
+        }
+
+        savePhoneData(role.id, phoneData);
+        console.log('✅ 朋友圈图片生成完成:', moment.id);
+    } catch(e) {
+        moment.imageStatus = 'failed';
+        moment.imageError = e.message || '生成失败';
+        savePhoneData(role.id, phoneData);
+        console.error('生成图片失败:', e);
+    }
+}
+
+// 自动生成所有 pending 的图片（串行）
+async function autoGeneratePendingImages(role) {
+    var moments = phoneData.moments || [];
+    for (var i = 0; i < moments.length; i++) {
+        var m = moments[i];
+        if (m.needImage && m.imageStatus === 'pending') {
+            await generateImageForMoment(m, role);
+        }
+    }
+}
+
+// ========== 图片配置（API Key + 参考图） ==========
+
+function openImageApiKeyDialog() {
+    loadImageConfig('imageApiKey').then(function(key) {
+        document.getElementById('imageApiKeyInput').value = key || '';
+        document.getElementById('imageApiKeyOverlay').classList.add('active');
+    });
+}
+
+function openRefImageDialog() {
+    loadImageConfig('refImage').then(function(img) {
+        var box = document.getElementById('refImagePreviewBox');
+        if (img) {
+            box.style.backgroundImage = 'url(' + img + ')';
+            box.style.backgroundSize = 'cover';
+            box.style.backgroundPosition = 'center';
+            box.textContent = '';
+        } else {
+            box.style.backgroundImage = '';
+            box.textContent = '未上传';
+        }
+        document.getElementById('refImageOverlay').classList.add('active');
+    });
+}
+
+function pickRefImage() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            var img = new Image();
+            img.onload = function() {
+                var canvas = document.createElement('canvas');
+                // 参考图压缩到 512px 以内，太大没必要（生图模型一般接收 1024 以内）
+                var maxDim = 512;
+                var w = img.width, h = img.height;
+                if (w > maxDim || h > maxDim) {
+                    var ratio = Math.min(maxDim / w, maxDim / h);
+                    w = Math.round(w * ratio); h = Math.round(h * ratio);
+                }
+                canvas.width = w; canvas.height = h;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+                saveImageConfig('refImage', dataUrl).then(function() {
+                    var box = document.getElementById('refImagePreviewBox');
+                    box.style.backgroundImage = 'url(' + dataUrl + ')';
+                    box.style.backgroundSize = 'cover';
+                    box.style.backgroundPosition = 'center';
+                    box.textContent = '';
+                    var status = document.getElementById('refImageStatus');
+                    if (status) status.textContent = '已上传';
+                    toast('✅ 参考照片已保存');
+                }).catch(function(err) {
+                    console.error('保存参考图失败:', err);
+                    toast('⚠️ 保存失败: ' + err.message);
                 });
             };
             img.src = ev.target.result;
@@ -1765,7 +2446,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // 设置项
     document.getElementById('setWallpaperBtn').addEventListener('click', openWallpaperPicker);
     document.getElementById('setSwitchRoleBtn').addEventListener('click', openRolePicker);
-    document.getElementById('setPasswordBtn').addEventListener('click', function() {
+    document.getElementById('setImageApiKeyBtn').addEventListener('click', openImageApiKeyDialog);
+    document.getElementById('setRefImageBtn').addEventListener('click', openRefImageDialog);
+    document.getElementById('saveImageApiKeyBtn').addEventListener('click', function() {
+        var val = document.getElementById('imageApiKeyInput').value.trim();
+        saveImageConfig('imageApiKey', val).then(function() {
+            document.getElementById('imageApiKeyOverlay').classList.remove('active');
+            document.getElementById('imageApiKeyStatus').textContent = val ? '已配置' : '未配置';
+            toast(val ? '✅ API Key 已保存' : '🗑️ API Key 已清空');
+        }).catch(function(err) {
+            toast('⚠️ 保存失败: ' + err.message);
+        });
+    });
+    document.getElementById('cancelImageApiKeyBtn').addEventListener('click', function() {
+        document.getElementById('imageApiKeyOverlay').classList.remove('active');
+    });
+    document.getElementById('uploadRefImageBtn').addEventListener('click', pickRefImage);
+    document.getElementById('cancelRefImageBtn').addEventListener('click', function() {
+        document.getElementById('refImageOverlay').classList.remove('active');
+    });
+    document.getElementById('imageApiKeyOverlay').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('active');
+    });
+    document.getElementById('refImageOverlay').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('active');
+    }); document.getElementById('setPasswordBtn').addEventListener('click', function() {
         document.getElementById('newPasswordInput').value = '';
         document.getElementById('passwordChangeOverlay').classList.add('active');
     });
@@ -1782,13 +2487,7 @@ document.addEventListener('DOMContentLoaded', function() {
         toast('✅ 密码已更新为 ' + np);
     });
 
-    // 添加联系人
-    document.getElementById('addContactBtn').addEventListener('click', function() {
-        document.getElementById('contactName').value = '';
-        document.getElementById('contactRelation').value = '';
-        document.getElementById('contactDesc').value = '';
-        document.getElementById('addContactOverlay').classList.add('active');
-    });
+   
     document.getElementById('cancelContactBtn').addEventListener('click', function() {
         document.getElementById('addContactOverlay').classList.remove('active');
     });
@@ -1801,16 +2500,35 @@ document.addEventListener('DOMContentLoaded', function() {
         var desc = document.getElementById('contactDesc').value.trim();
         if (!name) { alert('请输入姓名'); return; }
         if (!desc) { alert('请输入介绍（AI 需要知道此人是谁）'); return; }
-        if (!phoneData.contacts) phoneData.contacts = [];
-        phoneData.contacts.push({
-            id: 'contact_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            name: name, relation: relation || '朋友', description: desc, avatar: ''
-        });
+
+        var isEdit = !!editingContactId;
+
+        if (isEdit) {
+            var c = (phoneData.contacts || []).find(function(x) { return x.id === editingContactId; });
+            if (c) {
+                c.name = name;
+                c.relation = relation || '朋友';
+                c.description = desc;
+            }
+        } else {
+            if (!phoneData.contacts) phoneData.contacts = [];
+            phoneData.contacts.push({
+                id: 'contact_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                name: name, relation: relation || '朋友', description: desc, avatar: ''
+            });
+        }
+
         savePhoneData(currentRoleId, phoneData);
         document.getElementById('addContactOverlay').classList.remove('active');
-        toast('✅ 已添加联系人');
-        try { await generateWeChatChats(currentRole, phoneData); } catch(e) {}
-        renderWeChatList();
+        toast(isEdit ? '✅ 联系人已更新' : '✅ 已添加联系人');
+
+        if (!isEdit) {
+            try { await generateWeChatChats(currentRole, phoneData); } catch(e) {}
+        }
+        editingContactId = null;
+
+        if (wechatTab === 'chats') renderWeChatList();
+        else if (wechatTab === 'contacts') renderContactsList();
     });
 
     // 音乐
