@@ -551,6 +551,62 @@ function getPhoneData(roleId) {
         moments: [], songs: [], trajectory: [], lastGenerated: {}
     };
 }
+
+// ===== 壁纸 IndexedDB 存储 =====
+function openWallpaperDB() {
+    return new Promise(function(resolve, reject) {
+        var request = indexedDB.open('PhoneWallpaperDB', 1);
+        request.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('wallpapers')) {
+                db.createObjectStore('wallpapers', { keyPath: 'roleId' });
+            }
+        };
+        request.onsuccess = function(e) { resolve(e.target.result); };
+        request.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+function saveWallpaperToDB(roleId, dataUrl) {
+    return openWallpaperDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('wallpapers', 'readwrite');
+            var store = tx.objectStore('wallpapers');
+            var req = store.put({ roleId: roleId, data: dataUrl, updatedAt: Date.now() });
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    });
+}
+
+function loadWallpaperFromDB(roleId) {
+    return openWallpaperDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('wallpapers', 'readonly');
+            var store = tx.objectStore('wallpapers');
+            var req = store.get(roleId);
+            req.onsuccess = function() {
+                db.close();
+                resolve(req.result ? req.result.data : null);
+            };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    }).catch(function() { return null; });
+}
+
+function deleteWallpaperFromDB(roleId) {
+    return openWallpaperDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('wallpapers', 'readwrite');
+            var store = tx.objectStore('wallpapers');
+            var req = store.delete(roleId);
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    });
+}
+// ===== 结束 =====
+
 function savePhoneData(roleId, data) {
     try { localStorage.setItem('phone_data_' + roleId, JSON.stringify(data)); } catch(e) {}
 }
@@ -930,17 +986,25 @@ function renderHome() {
 
 function applyWallpaper() {
     var home = document.getElementById('homeScreen');
-    if (phoneData && phoneData.wallpaper) {
-        home.style.backgroundImage = 'url(' + phoneData.wallpaper + ')';
-        home.style.backgroundSize = 'cover';
-        home.style.backgroundPosition = 'center';
-        var wpStatus = document.getElementById('wallpaperStatus');
-        if (wpStatus) wpStatus.textContent = '自定义';
-    } else {
+    var wpStatus = document.getElementById('wallpaperStatus');
+    // 先从 IndexedDB 异步读取
+    loadWallpaperFromDB(currentRoleId).then(function(dataUrl) {
+        if (dataUrl) {
+            home.style.backgroundImage = 'url(' + dataUrl + ')';
+            home.style.backgroundSize = 'cover';
+            home.style.backgroundPosition = 'center';
+            if (wpStatus) wpStatus.textContent = '自定义';
+            // 顺便同步到 phoneData 内存，方便后续判断
+            phoneData.wallpaper = dataUrl;
+        } else {
+            home.style.backgroundImage = 'linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 50%, #000 100%)';
+            if (wpStatus) wpStatus.textContent = '默认';
+            phoneData.wallpaper = '';
+        }
+    }).catch(function() {
         home.style.backgroundImage = 'linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 50%, #000 100%)';
-        var wpStatus2 = document.getElementById('wallpaperStatus');
-        if (wpStatus2) wpStatus2.textContent = '默认';
-    }
+        if (wpStatus) wpStatus.textContent = '默认';
+    });
 }
 
 // ========== 应用打开/关闭 ==========
@@ -1397,6 +1461,7 @@ function openSettingsApp() {
     var wpStatus = document.getElementById('wallpaperStatus');
     if (wpStatus) wpStatus.textContent = phoneData.wallpaper ? '自定义' : '默认';
 }
+
 function openWallpaperPicker() {
     var input = document.createElement('input');
     input.type = 'file';
@@ -1409,7 +1474,8 @@ function openWallpaperPicker() {
             var img = new Image();
             img.onload = function() {
                 var canvas = document.createElement('canvas');
-                var maxDim = 1080;
+                // 压缩到 800px 以内，JPEG 质量 0.75，控制在 300KB 左右
+                var maxDim = 800;
                 var w = img.width, h = img.height;
                 if (w > maxDim || h > maxDim) {
                     var ratio = Math.min(maxDim / w, maxDim / h);
@@ -1418,13 +1484,17 @@ function openWallpaperPicker() {
                 canvas.width = w; canvas.height = h;
                 var ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, w, h);
-                var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                phoneData.wallpaper = dataUrl;
-                savePhoneData(currentRoleId, phoneData);
-                applyWallpaper();
-                var wpStatus = document.getElementById('wallpaperStatus');
-                if (wpStatus) wpStatus.textContent = '自定义';
-                toast('✅ 壁纸已更新');
+                var dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                // 保存到 IndexedDB（大容量，不怕 5MB 限制）
+                saveWallpaperToDB(currentRoleId, dataUrl).then(function() {
+                    phoneData.wallpaper = 'saved';
+                    savePhoneData(currentRoleId, phoneData);
+                    applyWallpaper();
+                    toast('✅ 壁纸已保存');
+                }).catch(function(err) {
+                    console.error('壁纸保存失败:', err);
+                    toast('⚠️ 壁纸保存失败: ' + err.message);
+                });
             };
             img.src = ev.target.result;
         };
