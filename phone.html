@@ -1793,63 +1793,60 @@ async function loadMomentsTab() {
     var lastGen = phoneData.lastGenerated.moments;
     var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 3 * 24 * 60 * 60 * 1000);
 
+    var debug = [];
+    debug.push('📋 执行诊断');
+    debug.push('lastGen: ' + (lastGen || 'null'));
+    debug.push('needsGen: ' + needsGen);
+    debug.push('现有 moments: ' + (phoneData.moments || []).length);
+    debug.push('API Key: ' + (getAIConfig().apiKey || '').substring(0, 15) + '...');
+    debug.push('当前角色: ' + (currentRole ? currentRole.name : '无'));
+
     if (needsGen) {
+        debug.push('🚀 开始调用 generateMoments...');
+        window._lastMomentRawReply = null;
         try {
             await generateMoments(currentRole, phoneData);
+            debug.push('✅ generateMoments 完成');
+            var raw = window._lastMomentRawReply;
+            debug.push('原始返回长度: ' + (raw ? raw.length : 0));
+            if (raw) {
+                debug.push('原始返回前 300 字:');
+                debug.push(raw.substring(0, 300));
+            }
+            debug.push('生成后 moments 数量: ' + (phoneData.moments || []).length);
         } catch(e) {
-            // ⚠️ 关键：把错误信息显示在页面上
-            console.error('生成朋友圈失败:', e);
-            var errMsg = e && e.message ? e.message : String(e);
-            body.innerHTML = '<div class="empty-state" style="padding:30px 20px;">' +
-                '<i class="fas fa-exclamation-triangle" style="color:#ff6b81;"></i>' +
-                '<p style="color:#ff6b81;font-weight:600;">生成失败</p>' +
-                '<p style="font-size:12px;margin-top:10px;color:rgba(255,255,255,0.7);word-break:break-all;text-align:left;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;">' +
-                '错误：' + escapeHtml(errMsg) +
-                '</p>' +
-                '<p style="font-size:11px;margin-top:12px;color:rgba(255,255,255,0.4);">' +
-                'API Key 前几位：' + escapeHtml((getAIConfig().apiKey || '').substring(0, 10)) + '...' +
-                '</p>' +
-                '</div>';
-            return;
+            debug.push('❌ 抛出错误: ' + (e.message || String(e)));
         }
+    } else {
+        debug.push('⏭️ 跳过生成（3 天缓存命中）');
     }
 
-// ⚠️ 调试：如果没生成内容，把 AI 原始返回显示出来
-    if ((phoneData.moments || []).length === 0) {
-        var rawReply = window._lastMomentRawReply || '(无返回)';
-        body.innerHTML = '<div style="padding:16px;color:#fff;font-size:12px;line-height:1.6;">' +
-            '<p style="color:#ff6b81;font-weight:600;margin-bottom:10px;">AI 返回内容（调试）：</p>' +
-            '<div style="background:rgba(0,0,0,0.5);padding:12px;border-radius:8px;word-break:break-all;white-space:pre-wrap;font-family:monospace;font-size:11px;max-height:400px;overflow-y:auto;">' +
-            escapeHtml(rawReply.substring(0, 2000)) +
-            '</div>' +
-            '<p style="margin-top:12px;color:rgba(255,255,255,0.5);font-size:11px;">请把上面这段内容截图发给 D 老师 👆</p>' +
-            '</div>';
-        return;
-    }
+    // 显示调试信息
+    var debugHtml = '<div style="padding:16px;font-size:11px;line-height:1.8;color:rgba(255,255,255,0.8);font-family:monospace;word-break:break-all;max-height:80vh;overflow-y:auto;">' +
+        debug.map(function(line) {
+            var color = line.indexOf('❌') === 0 ? '#ff6b81' : line.indexOf('✅') === 0 ? '#2ecc71' : line.indexOf('🚀') === 0 ? '#fdcb6e' : 'rgba(255,255,255,0.8)';
+            return '<div style="color:' + color + ';">' + escapeHtml(line) + '</div>';
+        }).join('') +
+        '<button id="forceRegenBtn" style="margin-top:14px;padding:10px 20px;background:#a29bfe;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">🔁 强制重新生成</button>' +
+        '</div>';
 
-    // 检查一下是不是真的生成出了内容
     if ((phoneData.moments || []).length === 0) {
-        body.innerHTML = '<div class="empty-state" style="padding:30px 20px;">' +
-            '<i class="fas fa-camera-retro"></i>' +
-            '<p>AI 没有返回朋友圈内容</p>' +
-            '<p style="font-size:12px;margin-top:10px;color:rgba(255,255,255,0.5);">可能原因：</p>' +
-            '<p style="font-size:11px;color:rgba(255,255,255,0.4);text-align:left;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;">' +
-            '1. AI 返回的 JSON 格式不对<br>' +
-            '2. API 调用成功但没返回 moments 字段<br>' +
-            '3. 生成的动态都是空的' +
-            '</p>' +
-            '<p style="font-size:11px;margin-top:10px;color:rgba(255,255,255,0.4);">可以打开 vConsole 查看 Log 详细信息</p>' +
-            '</div>';
+        body.innerHTML = debugHtml;
+        document.getElementById('forceRegenBtn').onclick = function() {
+            phoneData.lastGenerated.moments = null;
+            savePhoneData(currentRoleId, phoneData);
+            loadWechatTabContent();
+        };
         return;
     }
 
     renderMomentsInBody();
-
-    // 后台自动生成图片
     autoGeneratePendingImages(currentRole).then(function() {
         if (wechatTab === 'moments') renderMomentsInBody();
     }).catch(function(e) { console.error('自动生图失败:', e); });
 }
+
+   
 
 function renderMomentsInBody() {
     if (wechatTab !== 'moments') return;
