@@ -1139,6 +1139,8 @@ async function generateMoments(role, pd) {
         '}';
 
     var result = await callAI(sys, prompt, 1000);
+    window._lastMomentRawReply = result;  // 保存原始返回
+    console.log('📥 AI 原始返回:', result);
     var json = parseJSON(result);
     var newMoments = [];
     if (json && json.moments && Array.isArray(json.moments)) {
@@ -1810,6 +1812,19 @@ async function loadMomentsTab() {
                 '</div>';
             return;
         }
+    }
+
+// ⚠️ 调试：如果没生成内容，把 AI 原始返回显示出来
+    if ((phoneData.moments || []).length === 0) {
+        var rawReply = window._lastMomentRawReply || '(无返回)';
+        body.innerHTML = '<div style="padding:16px;color:#fff;font-size:12px;line-height:1.6;">' +
+            '<p style="color:#ff6b81;font-weight:600;margin-bottom:10px;">AI 返回内容（调试）：</p>' +
+            '<div style="background:rgba(0,0,0,0.5);padding:12px;border-radius:8px;word-break:break-all;white-space:pre-wrap;font-family:monospace;font-size:11px;max-height:400px;overflow-y:auto;">' +
+            escapeHtml(rawReply.substring(0, 2000)) +
+            '</div>' +
+            '<p style="margin-top:12px;color:rgba(255,255,255,0.5);font-size:11px;">请把上面这段内容截图发给 D 老师 👆</p>' +
+            '</div>';
+        return;
     }
 
     // 检查一下是不是真的生成出了内容
