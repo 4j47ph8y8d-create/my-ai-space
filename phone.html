@@ -980,7 +980,18 @@ async function callAI(systemPrompt, userPrompt, maxTokens) {
         if (!resp.ok) { var errText = await resp.text(); throw new Error('API 错误 (' + resp.status + '): ' + errText.slice(0, 100)); }
         var data = await resp.json();
         if (!data.choices || !data.choices[0] || !data.choices[0].message) throw new Error('API 返回格式异常');
-        return data.choices[0].message.content;
+        var msgObj = data.choices[0].message;
+        var content = msgObj.content || '';
+        // 兼容推理模型：content 为空时抛出明确错误
+        if (!content.trim()) {
+            var reason = data.choices[0].finish_reason || 'unknown';
+            var rc = msgObj.reasoning_content || '';
+            if (reason === 'length') {
+                throw new Error('token 不足被截断（思考过程用了 ' + rc.length + ' 字），请重试或增加 max_tokens');
+            }
+            throw new Error('AI 返回内容为空（finish_reason: ' + reason + '）');
+        }
+        return content;
     } catch(e) { clearTimeout(timeoutId); throw e; }
 }
 
@@ -992,7 +1003,7 @@ async function generateBrowserHistory(role, pd) {
     var sys = '你是' + role.name + '，一个真实的人。请根据你和用户的最近对话，想象你可能会"偷偷搜索"的浏览器记录。搜索词要符合你的人设，也要与最近对话内容相关。';
     var prompt = '人设：' + (role.persona || '') + '\n背景：' + (role.background || '') + '\n最近对话：\n' + recent +
         '\n\n返回JSON：{"history": [{"keyword": "搜索词", "reason": "搜索原因（第一人称）"}]}，3-5条。';
-    var result = await callAI(sys, prompt, 600);
+   var result = await callAI(sys, prompt, 2000);
     var json = parseJSON(result);
     var history = [];
     if (json && json.history && Array.isArray(json.history)) {
@@ -1019,7 +1030,7 @@ async function generateMemos(role, pd) {
     }).join('\n');
     var sys = '你是' + role.name + '。根据对话生成2-3条备忘录。要有人味，可以是日常要做的事、感悟、关于用户的记录。提到用户生日/纪念日/重要约定时 important=true（永久保留），其余 false（3天后清理）。';
     var prompt = '人设：' + (role.persona || '') + '\n对话：\n' + recent + '\n\n返回JSON：{"memos": [{"title": "", "content": "", "important": false}]}';
-    var result = await callAI(sys, prompt, 600);
+    var result = await callAI(sys, prompt, 2000);
     var json = parseJSON(result);
     var newMemos = [];
     if (json && json.memos && Array.isArray(json.memos)) {
@@ -1055,7 +1066,7 @@ async function generateWeChatChats(role, pd) {
             '。对话对象：' + contact.name + '（' + (contact.relation || '朋友') + '，' + (contact.description || '') + '）。生成5-8条自然日常对话。';
         var prompt = (historyText ? '之前聊过：\n' + historyText + '\n\n' : '') + '返回JSON：{"messages": [{"role": "me|them", "content": ""}]}';
         try {
-            var result = await callAI(sys, prompt, 800);
+            var result = await callAI(sys, prompt, 3000);
             var json = parseJSON(result);
             if (json && json.messages && Array.isArray(json.messages)) {
                 var newMsgs = json.messages.map(function(m) {
@@ -1080,7 +1091,7 @@ async function generateSongs(role, pd) {
     if (lastGen && Date.now() - new Date(lastGen).getTime() < 24 * 60 * 60 * 1000) return pd.songs || [];
     var sys = '你是' + role.name + '。根据你的人设，生成你今天在听的10首歌曲。歌曲可以是虚构的，但要符合你的品味。';
     var prompt = '人设：' + (role.persona || '') + '\n背景：' + (role.background || '') + '\n\n返回JSON：{"songs": [{"name": "", "artist": "", "reason": "为什么喜欢"}]}';
-    var result = await callAI(sys, prompt, 900);
+    var result = await callAI(sys, prompt, 3000);
     var json = parseJSON(result);
     var songs = [];
     if (json && json.songs && Array.isArray(json.songs)) {
@@ -1138,7 +1149,7 @@ async function generateMoments(role, pd) {
         '  ]\n' +
         '}';
 
-    var result = await callAI(sys, prompt, 1000);
+    var result = await callAI(sys, prompt, 4000);
     window._lastMomentRawReply = result;  // 保存原始返回
     console.log('📥 AI 原始返回:', result);
     var json = parseJSON(result);
@@ -1182,7 +1193,7 @@ async function generateTrajectory(role, pd) {
     var sys = '你是' + role.name + '。根据你的人设背景和最近对话，生成你今天一天的行动轨迹。地点要符合人设。';
     var prompt = '人设：' + (role.persona || '') + '\n背景：' + (role.background || '') + '\n对话：' + recent +
         '\n\n返回JSON：{"trajectory": [{"time": "08:00", "location": "", "event": ""}]}，5-7个时间点。';
-    var result = await callAI(sys, prompt, 700);
+    var result = await callAI(sys, prompt, 2500);
     var json = parseJSON(result);
     var trajectory = [];
     if (json && json.trajectory && Array.isArray(json.trajectory)) {
@@ -1789,71 +1800,22 @@ function openContactDialog(contactId) {
 async function loadMomentsTab() {
     var body = document.getElementById('wechatBody');
     body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在加载朋友圈...</span></div>';
-
-    var debug = [];
-    debug.push('📋 执行诊断');
-    debug.push('当前角色: ' + (currentRole ? currentRole.name : '无'));
-    debug.push('API Key: ' + (getAIConfig().apiKey || '').substring(0, 15) + '...');
-    debug.push('模型: ' + (getAIConfig().model || '无'));
-
-    // ===== 直接测试 callAI =====
-    debug.push('');
-    debug.push('🧪 直接测试 callAI...');
-    try {
-        var testResp = await callAI(
-            '你是一个测试助手。',
-            '请只返回这段 JSON，不要加任何解释：{"test": "ok", "value": 123}',
-            50
-        );
-        debug.push('测试返回类型: ' + typeof testResp);
-        debug.push('测试返回长度: ' + (testResp ? testResp.length : 0));
-        debug.push('测试返回内容:');
-        debug.push(testResp ? testResp.substring(0, 300) : '(空)');
-    } catch(e) {
-        debug.push('❌ callAI 抛出错误: ' + (e.message || String(e)));
-    }
-
-    // ===== 直接测试 generateMoments =====
-    debug.push('');
-    debug.push('🧪 直接测试 generateMoments...');
-    window._lastMomentRawReply = null;
-    try {
-        await generateMoments(currentRole, phoneData);
-        debug.push('完成');
-        var raw = window._lastMomentRawReply;
-        debug.push('_lastMomentRawReply 长度: ' + (raw ? raw.length : 0));
-        if (raw) {
-            debug.push('原始内容前 500 字:');
-            debug.push(raw.substring(0, 500));
-        } else {
-            debug.push('⚠️ 说明代码没走到 callAI 那里，或者调用时抛异常被吞了');
+    var lastGen = phoneData.lastGenerated.moments;
+    var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 3 * 24 * 60 * 60 * 1000);
+    if (needsGen) {
+        try {
+            await generateMoments(currentRole, phoneData);
+        } catch(e) {
+            console.error('❌ 生成朋友圈失败:', e);
+            body.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle" style="color:#ff6b81;"></i><p style="color:#ff6b81;">生成失败</p><p style="font-size:11px;margin-top:10px;color:rgba(255,255,255,0.6);padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;word-break:break-all;">' + escapeHtml(e.message || String(e)) + '</p></div>';
+            return;
         }
-        debug.push('生成后 moments 数量: ' + (phoneData.moments || []).length);
-    } catch(e) {
-        debug.push('❌ generateMoments 抛出错误: ' + (e.message || String(e)));
     }
-
-    // 显示调试信息
-    var debugHtml = '<div style="padding:16px;font-size:11px;line-height:1.8;color:rgba(255,255,255,0.85);font-family:monospace;word-break:break-all;max-height:80vh;overflow-y:auto;">' +
-        debug.map(function(line) {
-            var color = 'rgba(255,255,255,0.85)';
-            if (line.indexOf('❌') === 0) color = '#ff6b81';
-            else if (line.indexOf('✅') === 0 || line.indexOf('完成') === 0) color = '#2ecc71';
-            else if (line.indexOf('🧪') === 0) color = '#fdcb6e';
-            else if (line.indexOf('⚠️') === 0) color = '#fdcb6e';
-            else if (line.indexOf('测试返回内容') === 0 || line.indexOf('原始内容') === 0) color = '#74b9ff';
-            return '<div style="color:' + color + ';">' + escapeHtml(line) + '</div>';
-        }).join('') +
-        '</div>';
-
-    body.innerHTML = debugHtml;
-
-    // 如果成功生成了，1 秒后显示正常朋友圈
-    if ((phoneData.moments || []).length > 0) {
-        setTimeout(function() {
-            if (wechatTab === 'moments') renderMomentsInBody();
-        }, 1500);
-    }
+    renderMomentsInBody();
+    // 后台自动生成图片
+    autoGeneratePendingImages(currentRole).then(function() {
+        if (wechatTab === 'moments') renderMomentsInBody();
+    }).catch(function(e) { console.error('自动生图失败:', e); });
 }
 
    
