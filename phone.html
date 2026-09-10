@@ -1161,7 +1161,12 @@ async function generateMoments(role, pd) {
         });
     }
     pd.moments = kept.concat(newMoments);
-    pd.lastGenerated.moments = new Date().toISOString();
+    // 只有真正生成了内容，才标记"已生成"（否则下次还能重试）
+    if (newMoments.length > 0) {
+        pd.lastGenerated.moments = new Date().toISOString();
+    } else {
+        console.warn('⚠️ AI 没有返回有效的朋友圈内容');
+    }
     savePhoneData(role.id, pd);
     return pd.moments;
 }
@@ -1441,7 +1446,15 @@ async function openMemo() {
     body.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">正在整理备忘录...</span></div>';
     var lastGen = phoneData.lastGenerated.memo;
     var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 6 * 60 * 60 * 1000);
-    if (needsGen) { try { await generateMemos(currentRole, phoneData); } catch(e) {} }
+    if (needsGen) {
+        try { 
+            await generateMoments(currentRole, phoneData); 
+        } catch(e) { 
+            console.error('❌ 生成朋友圈失败:', e);
+            body.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>生成失败</p><p style="font-size:11px;margin-top:8px;opacity:0.6;">' + escapeHtml(e.message || '未知错误') + '</p></div>';
+            return;
+        }
+    }
     renderMemo();
 }
 function renderMemo() {
