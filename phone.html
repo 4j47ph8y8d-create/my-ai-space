@@ -358,6 +358,76 @@ body {
 .btn-primary:active { transform: scale(0.98); }
 .btn-secondary { width: 100%; padding: 10px; background: rgba(255,255,255,0.06); color: #fff; border: none; border-radius: 12px; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 8px; }
 
+/* ===== 参考照片上传格子 ===== */
+.ref-image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.ref-image-slot {
+    aspect-ratio: 3/4;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px dashed rgba(255,255,255,0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255,255,255,0.4);
+    font-size: 11px;
+    text-align: center;
+    padding: 6px;
+    transition: 0.15s;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: hidden;
+    min-height: 100px;
+}
+.ref-image-slot:active { transform: scale(0.97); }
+.ref-image-slot.filled {
+    border-style: solid;
+    border-color: rgba(253,121,168,0.4);
+}
+.ref-image-slot .slot-label {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    right: 4px;
+    background: rgba(0,0,0,0.65);
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 10px;
+    color: #fff;
+    text-align: center;
+}
+.ref-image-slot .slot-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255,59,48,0.9);
+    border: none;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+}
+.ref-image-slot.filled .slot-delete { display: flex; }
+.ref-image-slot .slot-plus {
+    font-size: 22px;
+    margin-bottom: 4px;
+    color: rgba(255,255,255,0.5);
+}
+
 /* Toast */
 .toast { position: fixed; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 9999; backdrop-filter: blur(10px); }
 </style>
@@ -668,15 +738,18 @@ body {
         </div>
     </div>
 
-    <!-- ========== 参考照片上传弹窗 ========== -->
+    <!-- ========== 参考照片上传弹窗（多图版） ========== -->
     <div class="overlay" id="refImageOverlay">
         <div class="modal">
             <h3>我的参考照片</h3>
             <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:12px;line-height:1.5;">
-                上传一张清晰的正面照片。AI 会用这张照片作为人物参考，生成"自拍"类朋友圈。
+                至少上传 1 张<span style="color:#fd79a8;">正面照</span>（必填）。<br>
+                可选上传全身、侧面、背面，越多角度 AI 生成越准。
             </div>
-            <div id="refImagePreviewBox" style="width:100%;height:180px;border-radius:12px;background:rgba(255,255,255,0.05);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:12px;margin-bottom:12px;">未上传</div>
-            <button class="btn-primary" id="uploadRefImageBtn">选择照片</button>
+            <div class="ref-image-grid" id="refImageGrid"></div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.35);text-align:center;margin-bottom:12px;">
+                💡 建议单人清晰照片，避免多人合影
+            </div>
             <button class="btn-secondary" id="cancelRefImageBtn">关闭</button>
         </div>
     </div>
@@ -1130,9 +1203,11 @@ async function generateMoments(role, pd) {
         '- imageType：图片类型，只能从这几个里选一个：selfie(自拍，人物正面出镜)、scene(风景/场景/街景)、food(食物/饮品)、item(物品/书本/礼物)、pet(宠物)、other(其他)\n' +
         '- imagePrompt：图片的详细描述。要具体、有画面感，包含：主体、场景、氛围、光线、构图。例如："A young man taking a selfie while fishing by the seaside, sunny day, wearing a bucket hat, blue ocean in background, bright natural lighting, casual vibe"\n\n' +
         '【关键】\n' +
-        '- imageType=selfie 时，系统会用你上传的参考照片生成"你本人出镜"的图片\n' +
+        '- imageType=selfie 时，系统会使用用户上传的照片作为角色面部参考，生成"你本人出镜"的图片\n' +
+        '- imagePrompt 请描述场景（如"在海边钓鱼的自拍"），但【不要】描述人物长相（系统会自动参考用户上传的照片）\n' +
+        '- 例如：imagePrompt 应该是 "A young man taking a selfie while fishing by the seaside, sunny day"，而不是描述"白发的男人"\n' +
         '- 其他类型（scene/food/item/pet/other）只根据文字描述生成，不含人物\n' +
-        '- 所以如果是"自拍"或"我"出镜，一定要用 selfie；如果只是拍风景/食物/物品，用对应的类型';
+        '- 如果是"自拍"或"我"出镜，一定要用 selfie；如果只是拍风景/食物/物品，用对应的类型';
 
     var prompt = '人设：' + (role.persona || '') + '\n背景：' + (role.background || '') +
         '\n最近对话：\n' + recent +
@@ -1461,9 +1536,9 @@ async function openMemo() {
     var needsGen = !lastGen || (Date.now() - new Date(lastGen).getTime() > 6 * 60 * 60 * 1000);
     if (needsGen) {
         try { 
-            await generateMoments(currentRole, phoneData); 
+            await generateMemos(currentRole, phoneData); 
         } catch(e) { 
-            console.error('❌ 生成朋友圈失败:', e);
+            console.error('❌ 生成备忘录失败:', e);
             body.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>生成失败</p><p style="font-size:11px;margin-top:8px;opacity:0.6;">' + escapeHtml(e.message || '未知错误') + '</p></div>';
             return;
         }
@@ -2096,9 +2171,12 @@ function openSettingsApp() {
         var el = document.getElementById('imageApiKeyStatus');
         if (el) el.textContent = key ? '已配置' : '未配置';
     });
-    loadImageConfig('refImage_' + currentRoleId).then(function(img) {
+    loadImageConfig('refImages_' + currentRoleId).then(function(images) {
         var el = document.getElementById('refImageStatus');
-        if (el) el.textContent = img ? '已上传' : '未上传';
+        if (el) {
+            var count = (images || []).filter(function(x) { return x; }).length;
+            el.textContent = count > 0 ? ('已上传 ' + count + ' 张') : '未上传';
+        }
     });
 }
 
@@ -2193,8 +2271,16 @@ async function callTextToImageAPI(apiKey, prompt) {
     throw new Error('生成超时');
 }
 
-// 图生图（qwen-image-edit，同步）
-async function callImageEditAPI(apiKey, refImageDataUrl, prompt) {
+// 图生图（wan2.7-image-pro，同步，支持多图参考）
+async function callWanImageAPI(apiKey, refImages, prompt) {
+    // refImages: 参考图数组（Base64 字符串数组），prompt: 图片描述
+    var contentArray = [{ text: prompt }];
+    if (refImages && refImages.length > 0) {
+        refImages.slice(0, 9).forEach(function(img) {
+            if (img) contentArray.push({ image: img });
+        });
+    }
+
     var resp = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
         method: 'POST',
         headers: {
@@ -2202,20 +2288,20 @@ async function callImageEditAPI(apiKey, refImageDataUrl, prompt) {
             'Authorization': 'Bearer ' + apiKey
         },
         body: JSON.stringify({
-            model: 'qwen-image-edit',
+            model: 'wan2.7-image-pro',
             input: {
-                messages: [
-                    {
-                        role: 'user',
-                        content: [
-                            { image: refImageDataUrl },
-                            { text: '保持人物面部特征不变，' + prompt }
-                        ]
-                    }
-                ]
+                messages: [{
+                    role: 'user',
+                    content: contentArray
+                }]
             },
-            parameters: { negative_prompt: '', watermark: false }
-        })
+            parameters: {
+                n: 1,
+                size: '2K',
+                watermark: false
+            }
+        }),
+        cache: 'no-store'
     });
     var data = await resp.json();
     if (data.code) throw new Error('接口错误: ' + (data.message || data.code));
@@ -2242,9 +2328,17 @@ async function generateImageForMoment(moment, role) {
 
         var imageUrl;
         if (moment.useRefImage) {
-            var refImage = await loadImageConfig('refImage_' + role.id);
-            if (!refImage) throw new Error('未上传参考照片');
-            imageUrl = await callImageEditAPI(apiKey, refImage, moment.imagePrompt);
+            // 读取该角色的所有参考图（新的多图 key）
+            var refImages = await loadImageConfig('refImages_' + role.id);
+            // 兼容旧单图数据
+            if (!refImages || !Array.isArray(refImages) || refImages.filter(function(x){return x;}).length === 0) {
+                var single = await loadImageConfig('refImage_' + role.id);
+                if (single) refImages = [single];
+            }
+            var validImages = (refImages || []).filter(function(x) { return x; });
+            if (validImages.length === 0) throw new Error('未上传参考照片');
+            // 使用新的 Wan API 进行图生图（多图参考）
+            imageUrl = await callWanImageAPI(apiKey, validImages, moment.imagePrompt);
         } else {
             imageUrl = await callTextToImageAPI(apiKey, moment.imagePrompt);
         }
@@ -2293,24 +2387,66 @@ function openImageApiKeyDialog() {
     });
 }
 
-function openRefImageDialog() {
-    loadImageConfig('refImage_' + currentRoleId).then(function(img) {
+var REF_IMAGE_LABELS = ['正面（必填）', '全身', '侧面', '背面', '其他'];
+var REF_IMAGE_SLOTS = 5;
 
-        var box = document.getElementById('refImagePreviewBox');
-        if (img) {
-            box.style.backgroundImage = 'url(' + img + ')';
-            box.style.backgroundSize = 'cover';
-            box.style.backgroundPosition = 'center';
-            box.textContent = '';
-        } else {
-            box.style.backgroundImage = '';
-            box.textContent = '未上传';
+function openRefImageDialog() {
+    loadImageConfig('refImages_' + currentRoleId).then(function(images) {
+        // 兼容旧单图数据
+        if (!images) {
+            return loadImageConfig('refImage_' + currentRoleId).then(function(oldImg) {
+                var arr = new Array(REF_IMAGE_SLOTS).fill(null);
+                if (oldImg) arr[0] = oldImg;
+                return arr;
+            });
         }
+        if (!Array.isArray(images)) images = new Array(REF_IMAGE_SLOTS).fill(null);
+        while (images.length < REF_IMAGE_SLOTS) images.push(null);
+        return images;
+    }).then(function(images) {
+        renderRefImageGrid(images);
+        document.getElementById('refImageOverlay').classList.add('active');
+    }).catch(function(err) {
+        console.error('加载参考图失败:', err);
+        renderRefImageGrid(new Array(REF_IMAGE_SLOTS).fill(null));
         document.getElementById('refImageOverlay').classList.add('active');
     });
 }
 
-function pickRefImage() {
+function renderRefImageGrid(images) {
+    var grid = document.getElementById('refImageGrid');
+    if (!grid) return;
+    var html = '';
+    for (var i = 0; i < REF_IMAGE_SLOTS; i++) {
+        var img = images[i];
+        var filled = img ? 'filled' : '';
+        var bgStyle = img ? 'background-image:url(' + img + ');background-size:cover;background-position:center;' : '';
+        html += '<div class="ref-image-slot ' + filled + '" data-slot="' + i + '" style="' + bgStyle + '">' +
+            (img ? '' : '<div class="slot-plus">+</div><div>' + (i === 0 ? '必填' : '可选') + '</div>') +
+            '<div class="slot-label">' + REF_IMAGE_LABELS[i] + '</div>' +
+            (img ? '<button class="slot-delete" data-del-slot="' + i + '">×</button>' : '') +
+            '</div>';
+    }
+    grid.innerHTML = html;
+
+    grid.querySelectorAll('.ref-image-slot').forEach(function(slot) {
+        slot.addEventListener('click', function(e) {
+            if (e.target.closest('.slot-delete')) return;
+            var idx = parseInt(this.dataset.slot);
+            pickRefImageAt(idx);
+        });
+    });
+
+    grid.querySelectorAll('.slot-delete').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var idx = parseInt(this.dataset.delSlot);
+            deleteRefImageAt(idx);
+        });
+    });
+}
+
+function pickRefImageAt(slotIndex) {
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -2322,29 +2458,42 @@ function pickRefImage() {
             var img = new Image();
             img.onload = function() {
                 var canvas = document.createElement('canvas');
-                // 参考图压缩到 512px 以内，太大没必要（生图模型一般接收 1024 以内）
-                var maxDim = 512;
+                // ⭐ 关键修复：短边 ≥ 512，长边 ≤ 1024，避免 236x512 之类的过小尺寸
+                var MIN_SIDE = 512, MAX_SIDE = 1024;
                 var w = img.width, h = img.height;
-                if (w > maxDim || h > maxDim) {
-                    var ratio = Math.min(maxDim / w, maxDim / h);
-                    w = Math.round(w * ratio); h = Math.round(h * ratio);
+                var shortSide = Math.min(w, h);
+                var longSide = Math.max(w, h);
+                if (shortSide < MIN_SIDE) {
+                    var r1 = MIN_SIDE / shortSide;
+                    w = Math.round(w * r1); h = Math.round(h * r1);
+                    longSide = Math.max(w, h);
+                }
+                if (longSide > MAX_SIDE) {
+                    var r2 = MAX_SIDE / longSide;
+                    w = Math.round(w * r2); h = Math.round(h * r2);
                 }
                 canvas.width = w; canvas.height = h;
                 var ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, w, h);
-                var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
-                saveImageConfig('refImage_' + currentRoleId, dataUrl).then(function() {
-                    var box = document.getElementById('refImagePreviewBox');
-                    box.style.backgroundImage = 'url(' + dataUrl + ')';
-                    box.style.backgroundSize = 'cover';
-                    box.style.backgroundPosition = 'center';
-                    box.textContent = '';
+                loadImageConfig('refImages_' + currentRoleId).then(function(images) {
+                    if (!Array.isArray(images)) images = new Array(REF_IMAGE_SLOTS).fill(null);
+                    while (images.length < REF_IMAGE_SLOTS) images.push(null);
+                    images[slotIndex] = dataUrl;
+                    return saveImageConfig('refImages_' + currentRoleId, images);
+                }).then(function() {
+                    return loadImageConfig('refImages_' + currentRoleId);
+                }).then(function(images) {
+                    renderRefImageGrid(images);
                     var status = document.getElementById('refImageStatus');
-                    if (status) status.textContent = '已上传';
-                    toast('✅ 参考照片已保存');
+                    if (status) {
+                        var count = (images || []).filter(function(x) { return x; }).length;
+                        status.textContent = count > 0 ? ('已上传 ' + count + ' 张') : '未上传';
+                    }
+                    toast('✅ 已保存「' + REF_IMAGE_LABELS[slotIndex] + '」');
                 }).catch(function(err) {
-                    console.error('保存参考图失败:', err);
+                    console.error('保存失败:', err);
                     toast('⚠️ 保存失败: ' + err.message);
                 });
             };
@@ -2353,6 +2502,25 @@ function pickRefImage() {
         reader.readAsDataURL(file);
     };
     input.click();
+}
+
+function deleteRefImageAt(slotIndex) {
+    if (!confirm('删除这张参考照片？')) return;
+    loadImageConfig('refImages_' + currentRoleId).then(function(images) {
+        if (!Array.isArray(images)) return;
+        images[slotIndex] = null;
+        return saveImageConfig('refImages_' + currentRoleId, images);
+    }).then(function() {
+        return loadImageConfig('refImages_' + currentRoleId);
+    }).then(function(images) {
+        renderRefImageGrid(images);
+        var status = document.getElementById('refImageStatus');
+        if (status) {
+            var count = (images || []).filter(function(x) { return x; }).length;
+            status.textContent = count > 0 ? ('已上传 ' + count + ' 张') : '未上传';
+        }
+        toast('🗑️ 已删除');
+    });
 }
 
 // ========== 角色切换 ==========
@@ -2498,7 +2666,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('cancelImageApiKeyBtn').addEventListener('click', function() {
         document.getElementById('imageApiKeyOverlay').classList.remove('active');
     });
-    document.getElementById('uploadRefImageBtn').addEventListener('click', pickRefImage);
+   
     document.getElementById('cancelRefImageBtn').addEventListener('click', function() {
         document.getElementById('refImageOverlay').classList.remove('active');
     });
