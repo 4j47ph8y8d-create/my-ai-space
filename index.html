@@ -132,7 +132,24 @@
         .contacts-header { background: var(--header-bg); backdrop-filter: blur(10px); padding: calc(12px + var(--safe-top, 0px)) 16px 12px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-height: 52px; }
         .contacts-header .back-btn { font-size: 20px; color: #576b95; cursor: pointer; border: none; background: none; padding: 4px; }
         .contacts-header .title { font-size: 17px; font-weight: 600; color: var(--text-primary); flex: 1; }
-        .contacts-header .actions { font-size: 18px; color: #576b95; cursor: pointer; }
+        .contacts-header .actions {
+    font-size: 18px;
+    color: #576b95;
+    cursor: pointer;
+    padding: 8px 10px;
+    margin-right: -10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s;
+    min-width: 36px;
+    min-height: 36px;
+    -webkit-tap-highlight-color: transparent;
+}
+.contacts-header .actions:active {
+    background: var(--bg-secondary);
+}
         .contacts-list { flex: 1; overflow-y: auto; padding: 8px 0; }
         .contact-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--bg-card); margin: 4px 12px; border-radius: 12px; cursor: pointer; transition: 0.15s; box-shadow: 0 1px 4px var(--shadow-color); }
         .contact-item:active { transform: scale(0.97); background: var(--bg-secondary); }
@@ -144,6 +161,572 @@
         .contact-item .unread-dot { background: #ff3b30; color: #fff; font-size: 10px; font-weight: 600; min-width: 18px; height: 18px; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 0 6px; flex-shrink: 0; margin-left: auto; }
         .contact-item .unread-dot.empty { display: none; }
         .empty-contacts { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+
+/* 主应用朋友圈 */
+.main-moments-empty { text-align: center; padding: 80px 20px; color: var(--text-secondary); }
+.main-moments-empty .empty-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 14px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 50%;
+    position: relative;
+}
+.main-moments-empty .empty-icon::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 20px; height: 20px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+.main-moments-empty p { font-size: 13px; line-height: 1.6; }
+.main-moments-empty .sub { font-size: 11px; opacity: 0.6; margin-top: 4px; }
+
+.main-moment-item {
+    padding: 14px;
+    margin: 8px 12px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    box-shadow: 0 1px 4px var(--shadow-color);
+}
+.main-moment-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.main-moment-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    background-color: #07c160;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+.main-moment-name {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.main-moment-content {
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.main-moment-image {
+    margin-top: 8px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-secondary);
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.main-moment-image img {
+    width: 100%;
+    display: block;
+    border-radius: 8px;
+}
+.main-moment-img-loading {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 30px 0;
+}
+.main-moment-img-error {
+    font-size: 11px;
+    color: #e74c3c;
+    padding: 20px;
+    text-align: center;
+}
+
+.main-moment-delete {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 6px;
+    opacity: 0.5;
+    transition: 0.15s;
+}
+.main-moment-delete:active {
+    opacity: 1;
+    background: var(--bg-secondary);
+}
+
+/* 发朋友圈 - 选择弹窗 */
+.sheet {
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 8px;
+    width: 90%;
+    max-width: 340px;
+    animation: fadeInUp 0.25s ease;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.sheet-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-family: inherit;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: 0.15s;
+}
+.sheet-btn:active { background: var(--bg-secondary); }
+.sheet-btn i {
+    width: 20px;
+    text-align: center;
+    color: #07c160;
+    font-size: 17px;
+}
+.sheet-cancel {
+    width: 100%;
+    margin-top: 4px;
+    padding: 14px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    border-radius: 12px;
+    border-top: 1px solid var(--border-color);
+}
+.sheet-cancel:active { background: var(--bg-secondary); }
+
+/* 发朋友圈 - 编辑弹窗 */
+.new-moment-modal { max-width: 400px; }
+.new-moment-modal h3 { text-align: left; margin-bottom: 12px; }
+#newMomentContent {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: none;
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
+    box-sizing: border-box;
+}
+.new-moment-image-picker {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.new-moment-image-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 22px;
+    cursor: pointer;
+    background-size: cover;
+    background-position: center;
+    border: 1px dashed var(--border-color);
+    transition: 0.15s;
+}
+.new-moment-image-preview:active { transform: scale(0.96); }
+.new-moment-image-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.new-moment-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+.new-moment-actions .btn-primary,
+.new-moment-actions .btn-secondary { margin-top: 0; }
+
+/* ===== 通用弹窗遮罩 ===== */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 999999;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    -webkit-tap-highlight-color: transparent;
+}
+.overlay.active {
+    display: flex;
+}
+.overlay .modal {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 22px 20px;
+    max-width: 340px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    position: relative;
+    z-index: 1000000;
+    animation: fadeInUp 0.25s ease;
+}
+.overlay .modal h3 {
+    font-size: 16px;
+    color: #1a1a1a;
+    margin-bottom: 14px;
+    text-align: left;
+    font-weight: 600;
+}
+[data-theme="light"] .overlay .modal,
+[data-theme="light"] .overlay .modal h3 {
+    background: #ffffff;
+    color: #1a1a1a;
+}
+
+/* ===== 朋友圈评论 ===== */
+.main-moment-actions-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+}
+.moment-action-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 6px;
+    transition: 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+.moment-action-btn:active {
+    background: var(--bg-secondary);
+    opacity: 0.85;
+}
+.moment-action-btn i { font-size: 14px; }
+
+.comment-reply-btn {
+    background: none;
+    border: none;
+    color: #576b95;
+    font-size: 12px;
+    padding: 2px ;
+    margin-left: 6px;
+    cursor: pointer;
+    border-radius: 4px;
+    -webkit-tap-highlight-color: transparent;
+}
+.comment-reply-btn:active {
+    background: var(--bg-card);
+    opacity: 0.8;
+}
+.comment-reply-input {
+    margin-top: 6px;
+    display: flex;
+    gap: 6px;
+    animation: fadeInUp 0.2s ease;
+}
+.comment-reply-input input {
+    flex: 1;
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+}
+.comment-reply-input input:focus {
+    border-color: #07c160;
+}
+.comment-reply-input button {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 14px;
+    background: #07c160;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+.comment-reply-input button:active {
+    transform: scale(0.95);
+}
+
+.moment-badge {
+    position: absolute;
+    top: 2px;
+    right: calc(50% - 22px);
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    background: #ff3b30;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    line-height: 1;
+    box-shadow: 0 1px 4px rgba(255,59,48,0.4);
+    z-index: 2;
+}
+
+.main-moment-comments {
+    margin-top: 10px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+.moment-comment {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-primary);
+    padding: 4px 0;
+    word-break: break-word;
+}
+.moment-comment + .moment-comment {
+    border-top: 1px solid var(--border-color);
+    margin-top: 2px;
+    padding-top: 6px;
+}
+.moment-comment .comment-name {
+    font-weight: 600;
+    color: #576b95;
+    margin-right: 6px;
+}
+.moment-comment .comment-content {
+    color: var(--text-primary);
+}
+
+.main-moment-input-area {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    animation: fadeInUp 0.2s ease;
+}
+.main-moment-input-area input {
+    flex: 1;
+    padding: 9px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+    transition: 0.15s;
+}
+.main-moment-input-area input:focus {
+    border-color: #07c160;
+    background: var(--bg-card);
+}
+.main-moment-input-area button {
+    padding: 9px 18px;
+    border: none;
+    border-radius: 20px;
+    background: #07c160;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.15s;
+    white-space: nowrap;
+}
+.main-moment-input-area button:active {
+    transform: scale(0.96);
+    background: #06b355;
+}
+
+/* ===== 朋友圈顶部消息条 ===== */
+.moment-notif-bar {
+    margin: 8px 12px 0;
+    background: linear-gradient(135deg, #fff5f5, #fff0f0);
+    border: 1px solid rgba(255,107,129,0.25);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: 0.15s;
+    animation: notifSlideIn 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255,107,129,0.08);
+}
+[data-theme="dark"] .moment-notif-bar {
+    background: linear-gradient(135deg, #2a1a1f, #251a1e);
+    border-color: rgba(255,107,129,0.3);
+}
+.moment-notif-bar:active {
+    transform: scale(0.99);
+    background: linear-gradient(135deg, #ffe8e8, #ffe0e0);
+}
+[data-theme="dark"] .moment-notif-bar:active {
+    background: linear-gradient(135deg, #352025, #2d1f23);
+}
+.notif-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    background-color: #07c160;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+}
+.notif-body {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+.notif-body .notif-name {
+    color: #ff6b81;
+    font-weight: 600;
+    margin-right: 2px;
+}
+.notif-body .notif-content {
+    color: var(--text-primary);
+    opacity: 0.85;
+    display: block;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+}
+.notif-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 15px;
+    padding: 6px;
+    cursor: pointer;
+    opacity: 0.5;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+.notif-close:active { opacity: 1; }
+
+/* 高亮跳转的目标动态 */
+.main-moment-item.highlight-flash {
+    animation: highlightFlash 1.5s ease;
+}
+@keyframes highlightFlash {
+    0%, 100% { box-shadow: 0 1px 4px var(--shadow-color); }
+    30% { box-shadow: 0 0 0 3px rgba(255,107,129,0.5), 0 1px 4px var(--shadow-color); }
+}
+
+@keyframes notifSlideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.main-moment-time {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    opacity: 0.7;
+}
+
+/* 联系人页面底部 tabbar */
+.contacts-tabbar {
+    display: flex;
+    background: var(--header-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-color);
+    padding: 4px 0 calc(4px + env(safe-area-inset-bottom, 0px));
+    flex-shrink: 0;
+    position: relative;
+    z-index: 5;
+}
+.contacts-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 0 6px;
+    color: var(--text-secondary);
+    font-size: 10px;
+    cursor: pointer;
+    transition: color 0.15s;
+    position: relative;
+    letter-spacing: 0.5px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.contacts-tab.active { color: var(--text-primary); }
+.contacts-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 2px;
+    background: #07c160;
+    border-radius: 2px;
+}
+.contacts-tab .tab-icon {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+.contacts-moments-view {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
         .empty-contacts i { font-size: 48px; color: var(--text-secondary); opacity: 0.3; display: block; margin-bottom: 16px; }
         .screen-chat { width: 100%; height: 100%; background: var(--bg-secondary); display: flex; flex-direction: column; position: absolute; top: 0; left: 0; z-index: 20; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); }
         .screen-chat.open { transform: translateX(0); }
@@ -1793,7 +2376,35 @@
             <button class="app-icon" data-app="settings"><div class="icon-wrap settings"><i class="fas fa-cog"></i></div><span class="app-name">设置</span></button>
         </div>
     </div>
-    <div class="screen-contacts" id="contactsScreen"><div class="contacts-header"><button class="back-btn" id="backFromContacts"><i class="fas fa-chevron-left"></i></button><div class="title">联系人</div><div class="actions"><i class="fas fa-ellipsis-v"></i></div></div><div class="contacts-list" id="contactsList"></div></div>
+    <div class="screen-contacts" id="contactsScreen">
+        <div class="contacts-header">
+            <button class="back-btn" id="backFromContacts"><i class="fas fa-chevron-left"></i></button>
+            <div class="title" id="contactsTitle">联系人</div>
+            <div class="actions" id="contactsActions"><i class="fas fa-ellipsis-v"></i></div>
+        </div>
+        <div class="contacts-list" id="contactsList"></div>
+        <div class="contacts-moments-view" id="contactsMomentsView" style="display:none;">
+            <div class="moment-notif-bar" id="momentNotifBar" style="display:none;"></div>
+            <div id="momentListContainer"></div>
+        </div>
+        <div class="contacts-tabbar">
+            <div class="contacts-tab active" data-tab="contacts">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="3.5"/>
+                    <path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6"/>
+                </svg>
+                <span>联系人</span>
+            </div>
+            <div class="contacts-tab" data-tab="moments" style="position:relative;">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="8.5"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span>朋友圈</span>
+                <span id="momentBadge" class="moment-badge" style="display:none;"></span>
+            </div>
+        </div>
+    </div>
     <div class="screen-chat" id="chatScreen"><div class="chat-bg-layer" id="chatBgLayer"></div><div class="chat-header"><button class="back-btn" id="backFromChat"><i class="fas fa-chevron-left"></i></button><div class="title"><span class="chat-role-name" id="chatRoleName">DeepSeek</span></div><div class="actions"><i class="fas fa-trash-alt" id="clearChatBtn" style="color:#e74c3c;cursor:pointer;font-size:16px;" title="清空聊天记录"></i></div></div><div class="chat-messages" id="messageContainer"></div><div class="chat-input-area"><div class="quote-bar" id="quoteBar"><i class="fas fa-quote-left" style="color:#07c160;font-size:11px;"></i><span class="quote-text" id="quoteText">引用内容</span><button class="quote-cancel" id="quoteCancelBtn"><i class="fas fa-times"></i></button></div><div class="input-row"><button class="meme-btn" id="memeBtn" title="选择表情包"><i class="fas fa-face-smile"></i></button><button class="plus-btn" id="plusBtn"><i class="fas fa-plus-circle"></i></button><input type="text" id="messageInput" placeholder="输入消息..." /><button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></button></div></div></div>
     <div class="screen-meme" id="memeScreen"><div class="meme-header-bar"><button class="back-btn" id="backFromMeme"><i class="fas fa-chevron-left"></i></button><div class="title" id="memeTitle">📚 表情包</div><div class="meme-actions" style="display:flex;gap:8px;"><button class="meme-action-btn" id="memeExportBtn" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:var(--text-secondary);" title="导出表情包"><i class="fas fa-download"></i></button><button class="meme-action-btn" id="memeImportBtn" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:var(--text-secondary);" title="导入表情包"><i class="fas fa-upload"></i></button></div></div><div class="meme-body-scroll" id="memeBodyScroll"></div></div>
     <div class="screen-diary" id="diaryScreen"><div class="diary-header"><button class="back-btn" id="backFromDiary"><i class="fas fa-chevron-left"></i></button><div class="title"><i class="fas fa-book-open"></i> 他的日记</div><div class="diary-actions"><select class="role-selector" id="diaryRoleSelector"></select><button class="write-btn" id="writeDiaryBtn"><i class="fas fa-feather-alt"></i> 写今日</button></div></div><div class="calendar-toggle-outside" id="calendarToggle"><span class="toggle-label"><i class="fas fa-calendar-alt"></i> 日历</span><span class="toggle-icon" id="toggleIcon"><i class="fas fa-chevron-up"></i></span></div><div class="diary-calendar-nav" id="diaryCalendarNav"><div class="month-nav"><button class="month-btn" id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button><span class="month-label" id="monthLabel">2026年6月</span><button class="month-btn" id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button></div><div class="weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="days-grid" id="daysGrid"></div></div><div class="diary-body" id="diaryBody"></div><div class="diary-page-nav" id="diaryPageNav"><button class="page-btn" id="prevDayBtn"><i class="fas fa-chevron-left"></i> 上一篇</button><span class="page-indicator" id="pageIndicator">今天</span><button class="page-btn" id="nextDayBtn">下一篇 <i class="fas fa-chevron-right"></i></button></div></div>
@@ -1996,6 +2607,40 @@
         <div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><span style="font-size:13px;color:var(--text-primary);"><i class="fas fa-database" style="color:#6c5ce7;"></i> 数据管理</span><span style="font-size:10px;color:var(--text-secondary);">导入/导出</span></div><button id="dataManageBtn" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:12px;cursor:pointer;transition:0.15s;display:flex;align-items:center;justify-content:center;gap:6px;"><i class="fas fa-arrow-right"></i> 打开数据管理</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">备份或恢复所有数据，支持分类导出</div></div>
         <div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><button id="clearAllChatsBtn" style="width:100%;padding:8px;border:1px solid #e74c3c;border-radius:8px;background:var(--bg-card);color:#e74c3c;font-size:12px;cursor:pointer;transition:0.15s;display:flex;align-items:center;justify-content:center;gap:6px;"><i class="fas fa-trash-alt"></i> 清空所有角色的聊天记录</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">此操作将删除所有角色的聊天记录，不可恢复</div></div>
         <button class="save-btn" id="saveSettingsBtn"><i class="fas fa-save"></i> 保存设置</button><div style="margin-top:8px;font-size:10px;color:var(--text-secondary);text-align:center;line-height:1.5;"><i class="fas fa-database"></i> 所有数据仅保存在本地浏览器</div></div></div>
+
+<!-- 发朋友圈 - 第一层：选择类型 -->
+    <div class="overlay" id="newMomentSheet">
+        <div class="sheet">
+            <button class="sheet-btn" id="newMomentTextBtn">
+                <i class="fas fa-align-left"></i>
+                <span>发文字</span>
+            </button>
+            <button class="sheet-btn" id="newMomentImageBtn">
+                <i class="fas fa-image"></i>
+                <span>发图文</span>
+            </button>
+            <button class="sheet-cancel" id="newMomentCancelBtn">取消</button>
+        </div>
+    </div>
+
+    <!-- 发朋友圈 - 第二层：编辑 -->
+    <div class="overlay" id="newMomentEditor">
+        <div class="modal new-moment-modal">
+            <h3>发朋友圈</h3>
+            <textarea id="newMomentContent" placeholder="这一刻的想法..."></textarea>
+            <div class="new-moment-image-picker" id="newMomentImagePicker" style="display:none;">
+                <div class="new-moment-image-preview" id="newMomentImagePreview">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="new-moment-image-hint">点击添加图片</div>
+            </div>
+            <div class="new-moment-actions">
+                <button class="btn-primary" id="newMomentPublishBtn">发布</button>
+                <button class="btn-secondary" id="newMomentEditorCancelBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
     <div class="permission-overlay" id="permissionOverlay"><div class="permission-dialog"><div class="icon">📸</div><h3>访问相册</h3><p>为了更换头像、壁纸和发送图片，需要访问你的相册。<br />拒绝后仍可正常聊天，仅无法使用图片相关功能。</p><div class="btn-group"><button class="btn-allow-all" id="permAllowAll">✅ 允许访问</button><button class="btn-deny" id="permDeny">🚫 不允许</button><button class="btn-cancel-perm" id="permCancel">取消</button></div></div></div>
     <div class="style-picker-overlay" id="stylePickerOverlay"><div class="style-picker-panel"><div class="panel-header"><h3>✨ 个性化</h3><button class="close-btn" id="closeStylePicker">&times;</button></div><div class="style-category-title">📱 桌面图标</div><div class="style-option-grid" id="styleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🫧 对话框气泡</div><div class="style-option-grid" id="bubbleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🕒 时间显示</div><div class="style-option-grid" id="timeModeGrid"></div><div class="style-category-title" style="margin-top:14px;">💕 心跳悬浮窗</div><div class="style-option-grid" id="floatingSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🎨 心跳颜色</div><div class="style-option-grid" id="heartColorGrid"></div><div class="style-category-title" style="margin-top:14px;">🤖 AI 表情包</div><div class="style-option-grid" id="aiMemeSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🌓 深色/浅色模式</div><div class="style-option-grid" id="themeModeGrid"></div></div></div>
     <div class="data-modal-overlay" id="dataModalOverlay"><div class="data-modal"><button class="modal-close" id="dataModalClose">&times;</button><div class="modal-title">💾 数据管理</div><div class="modal-subtitle">选择要导出或导入的数据类型</div><div id="dataModalOptions"><div class="export-option" data-value="all"><input type="checkbox" checked /><span class="opt-label">全部数据 <span class="opt-badge">推荐</span></span><span class="opt-desc">角色 + 聊天 + 记忆 + 日记 + 设置</span></div><div class="export-option" data-value="settings"><input type="checkbox" /><span class="opt-label">仅美化设置</span><span class="opt-desc">壁纸、头像、风格</span></div><div class="export-option" data-value="roles"><input type="checkbox" /><span class="opt-label">仅角色设定</span><span class="opt-desc">不含聊天记录、记忆和日记</span></div><div class="export-option" data-value="chats"><input type="checkbox" /><span class="opt-label">仅聊天记录 + 记忆</span><span class="opt-desc">不含角色设定和日记</span></div><div class="export-option" data-value="diaries"><input type="checkbox" /><span class="opt-label">仅日记数据</span><span class="opt-desc">所有角色的日记</span></div><div class="export-option" data-value="selected"><input type="checkbox" /><span class="opt-label">按角色选择导出</span><span class="opt-desc">选中的角色完整数据（含日记）</span></div><div class="role-select-list" id="roleSelectList" style="display:none;"></div></div><div class="modal-actions"><button class="btn-import" id="dataImportBtn"><i class="fas fa-upload"></i> 导入</button><button class="btn-export" id="dataExportBtn"><i class="fas fa-download"></i> 导出</button><button class="btn-cancel" id="dataModalCancel">取消</button></div><div style="font-size:10px;color:var(--text-secondary);text-align:center;margin-top:8px;"><i class="fas fa-shield-alt"></i> 数据仅保存在本地，不上传任何服务器</div></div></div>
@@ -5503,6 +6148,1422 @@ function toggleTheme() {
     showToast('🌓 已切换至 ' + (next === 'dark' ? '深色' : '浅色') + ' 模式');
 }
 
+// ============================================================
+//  主应用朋友圈 - 读取手机端数据
+// ============================================================
+
+// 打开手机的图片配置 DB（只读）
+function openPhoneImageConfigDB_Main() {
+    return new Promise(function(resolve, reject) {
+        var request = indexedDB.open('PhoneImageConfigDB', 1);
+        request.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('config')) {
+                db.createObjectStore('config', { keyPath: 'key' });
+            }
+        };
+        request.onsuccess = function(e) { resolve(e.target.result); };
+        request.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+// 读取某条朋友圈动态的图片（Base64）
+function loadPhoneMomentImage(momentId) {
+    return openPhoneImageConfigDB_Main().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('config', 'readonly');
+            var store = tx.objectStore('config');
+            var req = store.get('moment_image_' + momentId);
+            req.onsuccess = function() {
+                db.close();
+                resolve(req.result ? req.result.value : null);
+            };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    }).catch(function() { return null; });
+}
+
+// 读取某角色的所有朋友圈
+function getRoleMomentsForMainApp(roleId) {
+    try {
+        var raw = localStorage.getItem('phone_data_' + roleId);
+        if (!raw) return [];
+        var d = JSON.parse(raw);
+        return d.moments || [];
+    } catch(e) { return []; }
+}
+
+// 时间友好显示
+function formatMomentTime(timeStr) {
+    if (!timeStr) return '';
+    var date = new Date(timeStr);
+    if (isNaN(date.getTime())) return '';
+    var now = new Date();
+    var diff = now - date;
+    var min = Math.floor(diff / 60000);
+    var hour = Math.floor(diff / 3600000);
+    var day = Math.floor(diff / 86400000);
+    if (min < 1) return '刚刚';
+    if (min < 60) return min + '分钟前';
+    if (hour < 24) return hour + '小时前';
+    if (day < 7) return day + '天前';
+    return (date.getMonth() + 1) + '月' + date.getDate() + '日';
+}
+
+// ===== 提交评论到手机端数据 =====
+function submitMomentComment(roleId, momentId, content) {
+    var key = 'phone_data_' + roleId;
+    var raw = localStorage.getItem(key);
+    if (!raw) {
+        console.warn('找不到角色手机数据:', roleId);
+        return null;
+    }
+    var data;
+    try {
+        data = JSON.parse(raw);
+    } catch(e) {
+        console.error('解析手机数据失败:', e);
+        return null;
+    }
+    var moments = data.moments || [];
+    var moment = moments.find(function(m) { return m.id === momentId; });
+    if (!moment) {
+        console.warn('找不到对应的动态:', momentId);
+        return null;
+    }
+
+    if (!moment.comments) moment.comments = [];
+
+    var comment = {
+        id: 'comment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        author: 'user',
+        authorName: '我',
+        content: content,
+        time: new Date().toISOString(),
+        pendingReply: true
+    };
+    moment.comments.push(comment);
+
+    try {
+        localStorage.setItem(key, JSON.stringify(data));
+    } catch(e) {
+        console.error('保存评论失败:', e);
+        return null;
+    }
+    return comment;
+}
+
+// ===== 主应用版：读取手机端配置（只读） =====
+function loadImageConfigForMain(key) {
+    return openPhoneImageConfigDB_Main().then(function(db) {
+        return new Promise(function(resolve) {
+            var tx = db.transaction('config', 'readonly');
+            var store = tx.objectStore('config');
+            var req = store.get(key);
+            req.onsuccess = function() {
+                db.close();
+                resolve(req.result ? req.result.value : null);
+            };
+            req.onerror = function() { db.close(); resolve(null); };
+        });
+    }).catch(function() { return null; });
+}
+
+// ===== 读取用户动态图片的 Base64 =====
+function loadUserMomentImageBase64(momentId) {
+    return openPhoneImageConfigDB_Main().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('config', 'readonly');
+            var store = tx.objectStore('config');
+            var req = store.get('user_moment_image_' + momentId);
+            req.onsuccess = function() {
+                db.close();
+                resolve(req.result ? req.result.value : null);
+            };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    }).catch(function() { return null; });
+}
+
+// ===== 读取已缓存的图片描述 =====
+function loadCachedImageDescription(momentId) {
+    return openPhoneImageConfigDB_Main().then(function(db) {
+        return new Promise(function(resolve) {
+            var tx = db.transaction('config', 'readonly');
+            var store = tx.objectStore('config');
+            var req = store.get('vl_cache_' + momentId);
+            req.onsuccess = function() {
+                db.close();
+                resolve(req.result ? req.result.value : null);
+            };
+            req.onerror = function() { db.close(); resolve(null); };
+        });
+    }).catch(function() { return null; });
+}
+
+// ===== 缓存图片描述 =====
+function saveCachedImageDescription(momentId, description) {
+    return openPhoneImageConfigDB_Main().then(function(db) {
+        return new Promise(function(resolve) {
+            var tx = db.transaction('config', 'readwrite');
+            var store = tx.objectStore('config');
+            store.put({ key: 'vl_cache_' + momentId, value: description, updatedAt: Date.now() });
+            tx.oncomplete = function() { db.close(); resolve(); };
+            tx.onerror = function() { db.close(); resolve(); };
+        });
+    }).catch(function() {});
+}
+
+// ===== 调用 qwen-vl-plus 识别图片 =====
+
+async function analyzeImageWithVL(base64Image, userText) {
+    var apiKey = await loadImageConfigForMain('imageApiKey');
+    if (!apiKey) throw new Error('未配置百炼 API Key，请先在「他的手机 → 设置 → 百炼图片 API Key」配置');
+
+    var promptText = '请用 2-3 句话详细描述这张图片的内容：主体、场景、氛围、色调、细节。';
+    if (userText) {
+        promptText += '（发布者配文是："' + userText + '"）';
+    }
+    promptText += ' 只输出描述，不要加任何前缀或解释。';
+
+    var resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+            model: 'qwen-vl-plus',
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'image_url', image_url: { url: base64Image } },
+                    { type: 'text', text: promptText }
+                ]
+            }],
+            max_tokens: 300
+        }),
+        cache: 'no-store'
+    });
+
+    if (!resp.ok) {
+        var errText = await resp.text();
+        throw new Error('qwen-vl 错误 (' + resp.status + '): ' + errText.slice(0, 150));
+    }
+    var data = await resp.json();
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+        return (data.choices[0].message.content || '').trim();
+    }
+    throw new Error('qwen-vl 返回格式异常');
+}
+
+// ===== 获取动态的图片描述（带缓存） =====
+async function getImageDescriptionForMoment(moment) {
+    if (!moment.hasImage) return '';
+    // 先查缓存
+    var cached = await loadCachedImageDescription(moment.id);
+    if (cached) {
+        console.log('📦 使用缓存的图片描述:', cached.substring(0, 60) + '...');
+        return cached;
+    }
+    // 没缓存，识别
+    var base64 = await loadUserMomentImageBase64(moment.id);
+    if (!base64) {
+        console.warn('图片读取失败:', moment.id);
+        return '';
+    }
+    console.log('🔍 正在识别图片...');
+    var desc = await analyzeImageWithVL(base64, moment.content);
+    if (desc) {
+        await saveCachedImageDescription(moment.id, desc);
+        console.log('✅ 图片识别完成:', desc.substring(0, 80) + '...');
+    }
+    return desc;
+}
+
+// ===== AI 主动评论用户动态 =====
+
+async function generateAICommentForUserMoment(role, moment) {
+    // ⭐ 关键：如果有图片，先识别
+    var imageDescription = '';
+    if (moment.hasImage) {
+        try {
+            imageDescription = await getImageDescriptionForMoment(moment);
+        } catch(e) {
+            console.warn('图片识别失败，降级为纯文字评论:', e && e.message ? e.message : e);
+            imageDescription = '';
+        }
+    }
+
+    var sys = '你是' + role.name + '。你刚刷到了好友发的朋友圈，请以你的身份评论。\n\n' +
+        '【你的人设】\n' +
+        '人设：' + (role.persona || '一个真实的人') + '\n' +
+        '背景：' + (role.background || '') + '\n' +
+        '说话风格：' + (role.style || '像真人一样自然') + '\n\n' +
+        '【评论要求】\n' +
+        '1. 必须符合你的人设和你们的关系\n' +
+        '2. 自然、口语化，像真实刷朋友圈时的评论一样简短（1-2句话）\n' +
+        '3. 可以表达情绪、关心、调侃、共鸣\n' +
+        '4. 如果好友发了图片，你可以自然引用图片里的细节（说明你真的"看到"了）\n' +
+        '5. 不要说「感谢分享」「写得真好」这种敷衍话\n' +
+        '6. 直接输出评论内容，不要加任何前缀\n' +
+        '7. 不要用 emoji';
+
+    var prompt = '【好友发的朋友圈】\n' +
+        '文字：' + (moment.content || '（无文字）') + '\n' +
+        (imageDescription ? '图片内容：' + imageDescription + '\n' : (moment.hasImage ? '（他/她还配了一张图，但暂时看不清）' : '')) + '\n' +
+        '请直接评论：';
+
+    try {
+        var reply = await callAIForMomentReply(sys, prompt, 2000);
+        if (!reply || !reply.trim()) return null;
+        return reply.trim().replace(/^["「『]|["」』]$/g, '').trim();
+    } catch(e) {
+        console.error('AI 生成评论失败:', e && e.message ? e.message : e);
+        return null;
+    }
+}
+
+// ===== 检查并处理用户动态的待评论（每 2 分钟跑一次） =====
+var _userMomentProcessing = false;
+async function processUserMomentPendingComments() {
+    if (_userMomentProcessing) return;
+    _userMomentProcessing = true;
+    try {
+        var moments = loadUserMoments();
+        var now = Date.now();
+        var changed = false;
+
+        // 找出所有待 AI 评论的动态
+        var pendingMoments = moments.filter(function(m) {
+            return m.aiPendingComment && m.aiCommentDelay && !m.aiCommented;
+        });
+
+        if (pendingMoments.length === 0) {
+            _userMomentProcessing = false;
+            return;
+        }
+
+        // 遍历所有角色（每个角色独立判断要不要评）
+        for (var ri = 0; ri < roles.length; ri++) {
+            var role = roles[ri];
+
+            for (var mi = 0; mi < pendingMoments.length; mi++) {
+                var moment = pendingMoments[mi];
+
+                // 判断是否已到延迟时间
+                var publishTime = new Date(moment.time).getTime();
+                var dueTime = publishTime + moment.aiCommentDelay;
+                if (now < dueTime) continue;
+
+                // 每个角色对同一条动态只评论一次
+                if (!moment.aiCommentedBy) moment.aiCommentedBy = {};
+                if (moment.aiCommentedBy[role.id]) continue;
+
+                // 每个角色最多主动评论前 2 条（避免每条都来）
+                var roleCommentCount = moments.filter(function(m) {
+                    return m.aiCommentedBy && m.aiCommentedBy[role.id];
+                }).length;
+                if (roleCommentCount >= 2) continue;
+
+                // 30% 概率跳过（不是每条都评，更像真人）
+                if (Math.random() < 0.3) {
+                    moment.aiCommentedBy[role.id] = 'skipped';
+                    changed = true;
+                    continue;
+                }
+
+                var replyText = await generateAICommentForUserMoment(role, moment);
+                if (replyText) {
+                    if (!moment.comments) moment.comments = [];
+                    moment.comments.push({
+                        id: 'comment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                        author: 'ai',
+                        authorName: role.name || '他',
+                        roleId: role.id,
+                        content: replyText,
+                        time: new Date().toISOString(),
+                        pendingReply: false
+                    });
+                    moment.aiCommentedBy[role.id] = true;
+                    moment.aiCommented = true;
+                    changed = true;
+
+                    // 触发通知（走和 3.1 一样的机制）
+                    addMomentNotificationForUserMoment(role, moment, replyText);
+                }
+
+                // 延迟 1 秒避免并发
+                await new Promise(function(r) { setTimeout(r, 1000); });
+            }
+        }
+
+        if (changed) {
+            saveUserMoments(moments);
+            updateMomentBadge();
+            // 如果用户正在看朋友圈，自动刷新
+            if (document.getElementById('contactsMomentsView')?.style.display === 'block') {
+                setTimeout(function() { renderMainAppMoments(); }, 300);
+            }
+        }
+    } catch(e) {
+        console.error('处理用户动态待评论出错:', e);
+    } finally {
+        _userMomentProcessing = false;
+    }
+}
+
+// ===== 用户动态被评论时的通知（独立存储，因为用户动态不在 phone_data 里） =====
+function addMomentNotificationForUserMoment(role, moment, commentText) {
+    var list = loadNotifications();
+    var notif = {
+        id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        roleId: role.id,
+        roleName: role.name || '他',
+        roleAvatar: role.avatar || '',
+        momentId: moment.id,
+        momentContent: moment.content || '（图片动态）',
+        commentContent: commentText,
+        time: new Date().toISOString(),
+        read: false,
+        dismissed: false,
+        isUserMoment: true     // 标记：这是评论"用户动态"的通知
+    };
+    list.push(notif);
+    if (list.length > 50) list = list.slice(-50);
+    saveNotifications(list);
+    updateMomentBadge();
+}
+
+// ===== 提交用户对 AI 评论的回复 =====
+function submitUserMomentReply(momentId, aiCommentId, replyToRoleId, text) {
+    var moments = loadUserMoments();
+    var moment = moments.find(function(m) { return m.id === momentId; });
+    if (!moment) return null;
+    if (!moment.comments) moment.comments = [];
+
+    var reply = {
+        id: 'comment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        author: 'user',
+        authorName: '我',
+        content: text,
+        time: new Date().toISOString(),
+        replyTo: aiCommentId,
+        replyToRoleId: replyToRoleId,
+        pendingReply: true
+    };
+    moment.comments.push(reply);
+    saveUserMoments(moments);
+    return reply;
+}
+
+// ===== AI 回复用户对 AI 评论的二次回复 =====
+async function generateAIReplyForUserMomentReply(role, moment, userReply) {
+    var recentComments = (moment.comments || []).slice(-8).map(function(c) {
+        var displayName = c.author === 'user' ? '我' : (c.authorName || '他');
+        return displayName + '：' + c.content;
+    }).join('\n');
+
+    var sys = '你是' + role.name + '。用户在朋友圈回复了你的评论，请以你的身份回复他/她。\n\n' +
+        '【你的人设】\n' +
+        '人设：' + (role.persona || '一个真实的人') + '\n' +
+        '背景：' + (role.background || '') + '\n' +
+        '说话风格：' + (role.style || '像真人一样自然') + '\n\n' +
+        '【回复要求】\n' +
+        '1. 必须符合你的人设和你们的关系\n' +
+        '2. 自然、口语化，简短（1-2 句话）\n' +
+        '3. 不要说「感谢评论」这种机械回复\n' +
+        '4. 直接输出评论内容，不要加任何前缀\n' +
+        '5. 不要用 emoji';
+
+    var prompt = '【你评论过的朋友圈】\n' + (moment.content || '（图片动态）') + '\n\n' +
+        '【评论区上下文】\n' + recentComments + '\n\n' +
+        '【用户最后回复你的内容】\n' + userReply.content + '\n\n' +
+        '请直接回复：';
+
+    try {
+        var reply = await callAIForMomentReply(sys, prompt, 1500);
+        if (!reply || !reply.trim()) return null;
+        return reply.trim().replace(/^["「『]|["」』]$/g, '').trim();
+    } catch(e) {
+        console.error('AI 二次回复失败:', e && e.message ? e.message : e);
+        return null;
+    }
+}
+
+// ===== 处理用户对 AI 评论的待回复（带日志版） =====
+var _userReplyProcessing = false;
+async function processUserMomentPendingReplies() {
+    console.log('🟢 [processUserMomentPendingReplies] 进入函数, 锁=' + _userReplyProcessing);
+    if (_userReplyProcessing) {
+        console.log('🔒 锁被占用，跳过');
+        return;
+    }
+    _userReplyProcessing = true;
+    try {
+        var moments = loadUserMoments();
+        console.log('📚 读取到 ' + moments.length + ' 条用户动态');
+        var now = Date.now();
+        var changed = false;
+
+        for (var mi = 0; mi < moments.length; mi++) {
+            var moment = moments[mi];
+            if (!moment.comments || !Array.isArray(moment.comments)) {
+                console.log('  动态 ' + (mi+1) + ': 无评论，跳过');
+                continue;
+            }
+
+            var pending = moment.comments.filter(function(c) {
+                return c.author === 'user' && c.pendingReply && c.replyTo && c.replyToRoleId &&
+                       (now - new Date(c.time).getTime() >= 5 * 60 * 1000);
+            });
+            console.log('  动态 ' + (mi+1) + ' (id=' + moment.id.substring(0, 25) + '): ' + moment.comments.length + ' 条评论, ' + pending.length + ' 条待回复');
+
+            if (pending.length === 0) continue;
+
+            for (var j = 0; j < pending.length; j++) {
+                var c = pending[j];
+                console.log('    -> 处理评论: ' + c.id.substring(0, 25) + '...');
+                var role = roles.find(function(r) { return r.id === c.replyToRoleId; });
+                if (!role) {
+                    console.warn('    ⚠️ 未找到角色: ' + c.replyToRoleId);
+                    c.pendingReply = false;
+                    changed = true;
+                    continue;
+                }
+                console.log('    ✅ 匹配到角色: ' + role.name + '，开始调用 AI...');
+
+                var replyText = await generateAIReplyForUserMomentReply(role, moment, c);
+                if (replyText) {
+                    console.log('    🎉 AI 生成回复: ' + replyText.substring(0, 50));
+                    moment.comments.push({
+                        id: 'comment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                        author: 'ai',
+                        authorName: role.name || '他',
+                        roleId: role.id,
+                        content: replyText,
+                        time: new Date().toISOString(),
+                        replyTo: c.id,
+                        pendingReply: false
+                    });
+                    addMomentNotificationForUserMoment(role, moment, replyText);
+                    changed = true;
+                } else {
+                    console.warn('    ⚠️ AI 未返回内容');
+                }
+                c.pendingReply = false;
+                changed = true;
+                await new Promise(function(r) { setTimeout(r, 1000); });
+            }
+        }
+
+        if (changed) {
+            saveUserMoments(moments);
+            updateMomentBadge();
+            console.log('💾 已保存，共改动 ' + changed + ' 处');
+            // 如果用户正在看朋友圈，自动刷新
+            if (wechatTab === 'moments' || document.getElementById('contactsMomentsView')?.style.display === 'block') {
+                setTimeout(function() { renderMainAppMoments(); }, 300);
+            }
+        } else {
+            console.log('ℹ️ 无改动');
+        }
+    } catch(e) {
+        console.error('❌ 处理出错:', e && e.message ? e.message : e);
+        console.error('完整错误:', e);
+    } finally {
+        _userReplyProcessing = false;
+        console.log('🔓 锁已释放');
+    }
+}
+
+// ===== 主应用专用：调用 AI 生成朋友圈回复 =====
+async function callAIForMomentReply(systemPrompt, userPrompt, maxTokens) {
+    var mode = CONFIG.accessMode || 'direct';
+    var apiKey, endpoint, model;
+    if (mode === 'direct') {
+        apiKey = CONFIG.apiKey;
+        endpoint = 'https://api.deepseek.com/v1';
+        model = CONFIG.model || 'deepseek-v4-pro';
+    } else if (mode === 'relay') {
+        apiKey = CONFIG.relayApiKey || CONFIG.apiKey;
+        endpoint = CONFIG.relayEndpoint;
+        model = CONFIG.relayModel || 'gpt-3.5-turbo';
+    } else if (mode === 'websearch') {
+        apiKey = CONFIG.websearchApiKey;
+        endpoint = CONFIG.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+        model = CONFIG.websearchModel || 'qwen-plus';
+    }
+    if (!apiKey || !endpoint) throw new Error('请先在设置里配置 API');
+    if (!endpoint.endsWith('/v1') && !endpoint.includes('/chat/completions')) {
+        endpoint = endpoint.replace(/\/+$/, '') + '/v1';
+    }
+    var url = endpoint.replace(/\/+$/, '') + '/chat/completions';
+
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 40000);
+    try {
+        var resp = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.9,
+                max_tokens: maxTokens || 2000
+            }),
+            signal: controller.signal,
+            cache: 'no-store'
+        });
+        clearTimeout(timeoutId);
+        if (!resp.ok) {
+            var errText = await resp.text();
+            throw new Error('API 错误 (' + resp.status + '): ' + errText.slice(0, 200));
+        }
+        var data = await resp.json();
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('API 返回格式异常');
+        }
+        var msgObj = data.choices[0].message;
+        var content = msgObj.content || '';
+        if (!content.trim()) {
+            var reason = data.choices[0].finish_reason || 'unknown';
+            if (reason === 'length') {
+                throw new Error('token 不足被截断，请重试或增加 max_tokens');
+            }
+            throw new Error('AI 返回内容为空（finish_reason: ' + reason + '）');
+        }
+        return content;
+    } catch(e) {
+        clearTimeout(timeoutId);
+        throw e;
+    }
+}
+
+// ===== 渲染顶部消息条 =====
+function renderMomentNotifBar() {
+    var bar = document.getElementById('momentNotifBar');
+    if (!bar) return;
+    var notif = getActiveNotification();
+    if (!notif) {
+        bar.style.display = 'none';
+        bar.innerHTML = '';
+        return;
+    }
+    var avatarStyle = notif.roleAvatar
+        ? 'background-image:url(' + notif.roleAvatar + ');background-size:cover;background-position:center;'
+        : 'background-color:#07c160;';
+    var avatarContent = notif.roleAvatar ? '' : escapeHtml((notif.roleName || '?').charAt(0));
+
+    bar.innerHTML =
+        '<div class="notif-avatar" style="' + avatarStyle + '">' + avatarContent + '</div>' +
+        '<div class="notif-body">' +
+        '<span class="notif-name">' + escapeHtml(notif.roleName) + '</span>' +
+        (notif.isUserMoment ? '评论了你的动态' : '回复了你的评论') +
+        '<span class="notif-content">' + escapeHtml(notif.commentContent) + '</span>' +
+        '</div>' +
+        '<button class="notif-close" data-notif-close="' + notif.id + '">×</button>';
+
+    bar.style.display = 'flex';
+
+    // 点击消息条跳转
+    bar.onclick = function(e) {
+        if (e.target.closest('.notif-close')) return;
+        jumpToMoment(notif);
+    };
+
+    // 关闭按钮
+    var closeBtn = bar.querySelector('[data-notif-close]');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dismissNotification(this.dataset.notifClose);
+        });
+    }
+}
+
+// ===== 跳转到指定动态 =====
+
+function jumpToMoment(notif) {
+    markNotificationRead(notif.id);
+    renderMomentNotifBar();
+    // 找到对应 DOM
+    setTimeout(function() {
+        // 用户动态用 data-user-moment-id，AI 动态用 data-moment-row
+        var el = document.querySelector('[data-moment-row="' + notif.momentId + '"]') ||
+                 document.querySelector('[data-user-moment-id="' + notif.momentId + '"]');
+        if (el) {
+            // 找到外层动态卡片
+            var card = el.closest('.main-moment-item') || el;
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.classList.add('highlight-flash');
+            setTimeout(function() { card.classList.remove('highlight-flash'); }, 1600);
+        } else {
+            showToast('这条动态可能已被清理');
+        }
+    }, 100);
+}
+
+// ===== AI 生成评论回复 =====
+async function generateAIReplyForComment(role, moment, userComment) {
+    var recentComments = (moment.comments || []).slice(-6).map(function(c) {
+        return (c.author === 'user' ? '我' : role.name) + '：' + c.content;
+    }).join('\n');
+
+    var sys = '你是' + role.name + '。你刚看到有人在你的朋友圈下面评论了。请以你的身份回复这条评论。\n\n' +
+        '【你的人设】\n' +
+        '人设：' + (role.persona || '一个真实的人') + '\n' +
+        '背景：' + (role.background || '') + '\n' +
+        '说话风格：' + (role.style || '像真人一样自然') + '\n\n' +
+        '【回复要求】\n' +
+        '1. 必须符合你的人设和你们的关系\n' +
+        '2. 自然、口语化，像真实朋友圈评论一样简短（1-2 句话）\n' +
+        '3. 不要用「亲」「亲爱哒」这种腻歪称呼\n' +
+        '4. 不要说「感谢你的评论」这种机械回复\n' +
+        '5. 直接输出评论内容，不要加任何前缀\n' +
+        '6. 不要用 emoji';
+
+    var prompt = '【你发的朋友圈】\n' + (moment.content || '（图片动态）') + '\n\n' +
+        '【评论区已有内容】\n' + recentComments + '\n\n' +
+        '【你要回复的评论】\n我：' + userComment.content + '\n\n' +
+        '请直接回复这条评论：';
+
+    try {
+        var reply = await callAIForMomentReply(sys, prompt, 2000);
+        if (!reply || !reply.trim()) return null;
+        return reply.trim().replace(/^["「『]|["」』]$/g, '').trim();
+    } catch(e) {
+        console.error('AI 生成回复失败:', e && e.message ? e.message : e);
+        return null;
+    }
+}
+
+// ===== 检查并处理所有角色的待回复评论 =====
+var _aiReplyProcessing = false;
+async function processAllPendingReplies() {
+    if (_aiReplyProcessing) return;
+    _aiReplyProcessing = true;
+    try {
+        for (var ri = 0; ri < roles.length; ri++) {
+            var role = roles[ri];
+            await processRolePendingReplies(role);
+        }
+    } catch(e) {
+        console.error('处理待回复评论出错:', e);
+    } finally {
+        _aiReplyProcessing = false;
+    }
+}
+
+async function processRolePendingReplies(role) {
+    var key = 'phone_data_' + role.id;
+    var raw = localStorage.getItem(key);
+    if (!raw) return;
+    var data;
+    try { data = JSON.parse(raw); } catch(e) { return; }
+    if (!data.moments || !Array.isArray(data.moments)) return;
+
+    var changed = false;
+    var now = Date.now();
+    var replyCount = 0;
+
+    for (var i = 0; i < data.moments.length; i++) {
+        var moment = data.moments[i];
+        if (!moment.comments || !Array.isArray(moment.comments)) continue;
+
+        // 找出所有待回复的评论
+        var pending = moment.comments.filter(function(c) {
+            return c.author === 'user' && c.pendingReply && (now - new Date(c.time).getTime() >= 5 * 60 * 1000);
+        });
+        if (pending.length === 0) continue;
+
+        // 检查 AI 是否已经回复过 3 次
+        var aiReplyCount = moment.comments.filter(function(c) { return c.author === 'ai'; }).length;
+        if (aiReplyCount >= 3) {
+            // 达到上限，标记为不再 pending
+            pending.forEach(function(c) { c.pendingReply = false; });
+            changed = true;
+            continue;
+        }
+
+        // 每条待回复评论都让 AI 回复一次
+        for (var j = 0; j < pending.length; j++) {
+            if (aiReplyCount + replyCount >= 3) {
+                pending[j].pendingReply = false;
+                changed = true;
+                continue;
+            }
+            var c = pending[j];
+            var replyText = await generateAIReplyForComment(role, moment, c);
+            if (replyText) {
+                var aiComment = {
+                    id: 'comment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                    author: 'ai',
+                    authorName: role.name || '他',
+                    content: replyText,
+                    time: new Date().toISOString(),
+                    pendingReply: false
+                };
+                moment.comments.push(aiComment);
+                replyCount++;
+                changed = true;
+                // 新增通知
+                addMomentNotification(role, moment, aiComment);
+            } else {
+                console.warn('⚠️ 该条评论 AI 没回复成功，momentId=' + moment.id + ', commentId=' + c.id);
+            }
+            c.pendingReply = false;
+            changed = true;
+            // 延迟 1 秒，避免并发
+            await new Promise(function(r) { setTimeout(r, 1000); });
+        }
+    }
+
+    if (changed) {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+            // 增加未读红点
+            if (replyCount > 0) {
+                addMomentUnread(role.id, replyCount);
+            }
+        } catch(e) {
+            console.error('保存 AI 回复失败:', e);
+        }
+    }
+}
+
+// ===== 未读通知管理（新版：基于 notifications 数组） =====
+function loadNotifications() {
+    try {
+        var raw = localStorage.getItem('moment_notifications_v1');
+        return raw ? JSON.parse(raw) : [];
+    } catch(e) { return []; }
+}
+function saveNotifications(list) {
+    try {
+        localStorage.setItem('moment_notifications_v1', JSON.stringify(list));
+    } catch(e) {}
+}
+
+function addMomentNotification(role, moment, aiComment) {
+    var list = loadNotifications();
+    var notif = {
+        id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        roleId: role.id,
+        roleName: role.name || '他',
+        roleAvatar: role.avatar || '',
+        momentId: moment.id,
+        momentContent: moment.content || '（图片动态）',
+        commentContent: aiComment.content || '',
+        time: new Date().toISOString(),
+        read: false,
+        dismissed: false
+    };
+    list.push(notif);
+    // 最多保留 50 条
+    if (list.length > 50) list = list.slice(-50);
+    saveNotifications(list);
+    updateMomentBadge();
+}
+
+function getActiveNotification() {
+    var list = loadNotifications();
+    for (var i = list.length - 1; i >= 0; i--) {
+        if (!list[i].read && !list[i].dismissed) return list[i];
+    }
+    return null;
+}
+
+function markNotificationRead(notifId) {
+    var list = loadNotifications();
+    var n = list.find(function(x) { return x.id === notifId; });
+    if (n) {
+        n.read = true;
+        saveNotifications(list);
+    }
+    updateMomentBadge();
+}
+
+function dismissNotification(notifId) {
+    var list = loadNotifications();
+    var n = list.find(function(x) { return x.id === notifId; });
+    if (n) {
+        n.dismissed = true;
+        saveNotifications(list);
+    }
+    renderMomentNotifBar();
+}
+
+function clearAllNotifications() {
+    var list = loadNotifications();
+    list.forEach(function(n) { n.read = true; });
+    saveNotifications(list);
+    updateMomentBadge();
+}
+
+// 兼容旧调用：addMomentUnread 改成走新逻辑
+function addMomentUnread(roleId, count) {
+    // 旧函数保留空实现，实际通知走 addMomentNotification
+    updateMomentBadge();
+}
+
+
+function getMomentUnreadTotal() {
+    var list = loadNotifications();
+    return list.filter(function(n) { return !n.read && !n.dismissed; }).length;
+}
+
+function clearMomentUnread() {
+    // 只标记已读，不删除数据（保留消息条显示能力）
+    var list = loadNotifications();
+    list.forEach(function(n) { n.read = true; });
+    saveNotifications(list);
+    updateMomentBadge();
+}
+
+
+function clearMomentUnread() {
+    try {
+        localStorage.removeItem('moment_unread_v1');
+        updateMomentBadge();
+    } catch(e) {}
+}
+
+function updateMomentBadge() {
+    var badge = document.getElementById('momentBadge');
+    if (!badge) return;
+    var total = getMomentUnreadTotal();
+    if (total > 0) {
+        badge.textContent = total > 99 ? '99+' : String(total);
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// ===== 检查是否有待回复的评论（5 分钟后触发） =====
+function getPendingReplyComments(roleId, momentId) {
+    var key = 'phone_data_' + roleId;
+    var raw = localStorage.getItem(key);
+    if (!raw) return [];
+    try {
+        var data = JSON.parse(raw);
+        var moments = data.moments || [];
+        var moment = moments.find(function(m) { return m.id === momentId; });
+        if (!moment || !moment.comments) return [];
+        var now = Date.now();
+        return moment.comments.filter(function(c) {
+            if (!c.pendingReply) return false;
+            if (c.author !== 'user') return false;
+            var age = now - new Date(c.time).getTime();
+            return age >= 5 * 60 * 1000;
+        });
+    } catch(e) { return []; }
+}
+
+// ===== 渲染某条动态的评论列表 =====
+
+function renderMomentCommentsHtml(moment, isUserMoment) {
+    var comments = moment.comments || [];
+    if (comments.length === 0) return '';
+    var html = '<div class="main-moment-comments">';
+    comments.forEach(function(c) {
+        var nameText = c.authorName || '匿名';
+
+        if (c.replyTo) {
+            // 有 replyTo，说明这是"回复某人"的评论
+            if (c.author === 'ai') {
+                nameText = nameText + ' 回复我';
+            } else {
+                var targetComment = (moment.comments || []).find(function(x) { return x.id === c.replyTo; });
+                var targetName = targetComment ? (targetComment.authorName || '他') : '他';
+                nameText = '我回复' + targetName;
+            }
+        } else {
+            // 无 replyTo
+            if (c.author === 'ai' && !isUserMoment) {
+                nameText = nameText + ' 回复我';
+            }
+        }
+
+        // 只有用户动态下的 AI 评论才有"回复"按钮
+        var replyBtnHtml = '';
+        if (isUserMoment && c.author === 'ai' && c.roleId) {
+            replyBtnHtml = '<button class="comment-reply-btn" data-reply-comment="' + c.id + '" data-reply-moment="' + moment.id + '" data-reply-role="' + c.roleId + '">回复</button>';
+        }
+        // 输入框（默认隐藏）
+        var replyInputHtml = '';
+        if (isUserMoment && c.author === 'ai' && c.roleId) {
+            replyInputHtml = '<div class="comment-reply-input" data-reply-input-for="' + c.id + '" style="display:none;">' +
+                '<input type="text" placeholder="回复 ' + escapeHtml(c.authorName || '') + '..." data-reply-input-id="' + c.id + '" maxlength="200" />' +
+                '<button data-send-user-reply="' + c.id + '" data-send-reply-moment="' + moment.id + '" data-send-reply-role="' + c.roleId + '">发送</button>' +
+                '</div>';
+        }
+        html += '<div class="moment-comment">' +
+            '<span class="comment-name">' + escapeHtml(nameText) + '：</span>' +
+            '<span class="comment-content">' + escapeHtml(c.content || '') + '</span>' +
+            replyBtnHtml +
+            replyInputHtml +
+            '</div>';
+    });
+    html += '</div>';
+    return html;
+}
+
+// ===== 用户自己的朋友圈存储 =====
+function loadUserMoments() {
+    try {
+        var raw = localStorage.getItem('user_moments_v1');
+        return raw ? JSON.parse(raw) : [];
+    } catch(e) { return []; }
+}
+function saveUserMoments(moments) {
+    try {
+        localStorage.setItem('user_moments_v1', JSON.stringify(moments));
+    } catch(e) {
+        console.error('保存用户动态失败:', e);
+    }
+}
+
+function saveUserMomentImage(momentId, base64) {
+    return openPhoneImageConfigDB_Main().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('config', 'readwrite');
+            var store = tx.objectStore('config');
+            var req = store.put({ key: 'user_moment_image_' + momentId, value: base64, updatedAt: Date.now() });
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    });
+}
+
+function loadUserMomentImage(momentId) {
+    return openPhoneImageConfigDB_Main().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('config', 'readonly');
+            var store = tx.objectStore('config');
+            var req = store.get('user_moment_image_' + momentId);
+            req.onsuccess = function() {
+                db.close();
+                resolve(req.result ? req.result.value : null);
+            };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    }).catch(function() { return null; });
+}
+
+function deleteUserMomentImage(momentId) {
+    return openPhoneImageConfigDB_Main().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('config', 'readwrite');
+            var store = tx.objectStore('config');
+            var req = store.delete('user_moment_image_' + momentId);
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    }).catch(function() {});
+}
+
+// ===== 发朋友圈 UI 逻辑 =====
+var pendingNewMomentImage = null;
+
+function openNewMomentSheet() {
+    document.getElementById('newMomentSheet').classList.add('active');
+}
+function closeNewMomentSheet() {
+    document.getElementById('newMomentSheet').classList.remove('active');
+}
+
+function openNewMomentEditor(withImage) {
+    closeNewMomentSheet();
+    pendingNewMomentImage = null;
+    document.getElementById('newMomentContent').value = '';
+    var picker = document.getElementById('newMomentImagePicker');
+    var preview = document.getElementById('newMomentImagePreview');
+    if (withImage) {
+        picker.style.display = 'flex';
+        preview.style.backgroundImage = '';
+        preview.innerHTML = '<i class="fas fa-plus"></i>';
+    } else {
+        picker.style.display = 'none';
+    }
+    document.getElementById('newMomentEditor').dataset.withImage = withImage ? '1' : '0';
+    document.getElementById('newMomentEditor').classList.add('active');
+    setTimeout(function() {
+        document.getElementById('newMomentContent').focus();
+    }, 200);
+}
+
+function pickNewMomentImage() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            var img = new Image();
+            img.onload = function() {
+                var canvas = document.createElement('canvas');
+                var MIN = 512, MAX = 1024;
+                var w = img.width, h = img.height;
+                var sh = Math.min(w, h), lo = Math.max(w, h);
+                if (sh < MIN) { var r = MIN / sh; w = Math.round(w * r); h = Math.round(h * r); lo = Math.max(w, h); }
+                if (lo > MAX) { var r2 = MAX / lo; w = Math.round(w * r2); h = Math.round(h * r2); }
+                canvas.width = w; canvas.height = h;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                pendingNewMomentImage = canvas.toDataURL('image/jpeg', 0.85);
+                var preview = document.getElementById('newMomentImagePreview');
+                preview.style.backgroundImage = 'url(' + pendingNewMomentImage + ')';
+                preview.innerHTML = '';
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
+async function publishNewMoment() {
+    var content = document.getElementById('newMomentContent').value.trim();
+    var withImage = document.getElementById('newMomentEditor').dataset.withImage === '1';
+    if (!content && !pendingNewMomentImage) {
+        alert('请输入文字或选择图片');
+        return;
+    }
+    var id = 'user_moment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    var hasImage = withImage && !!pendingNewMomentImage;
+    var moment = {
+        id: id,
+        content: content,
+        hasImage: hasImage,
+        time: new Date().toISOString(),
+        author: 'user',
+        aiPendingComment: true,     // 标记：等待 AI 主动评论
+        aiCommentDelay: Math.floor(5 * 60 * 1000 + Math.random() * 25 * 60 * 1000)  // 5-30分钟随机
+    };
+    if (hasImage) {
+        try {
+            await saveUserMomentImage(id, pendingNewMomentImage);
+        } catch(e) {
+            console.error('保存图片失败:', e);
+            alert('图片保存失败');
+            return;
+        }
+    }
+    var moments = loadUserMoments();
+    moments.push(moment);
+    saveUserMoments(moments);
+    document.getElementById('newMomentEditor').classList.remove('active');
+    pendingNewMomentImage = null;
+    showToast('已发布');
+    renderMainAppMoments();
+}
+
+function deleteUserMoment(momentId) {
+    var moments = loadUserMoments();
+    moments = moments.filter(function(m) { return m.id !== momentId; });
+    saveUserMoments(moments);
+    deleteUserMomentImage(momentId);
+    showToast('已删除');
+    renderMainAppMoments();
+}
+
+      // 渲染主应用的朋友圈（AI 公开 + 用户自己）
+
+function renderMainAppMoments() {
+    var outerContainer = document.getElementById('contactsMomentsView');
+    if (!outerContainer) return;
+    // 渲染到内部列表容器，避免覆盖顶部的消息条
+    var container = document.getElementById('momentListContainer') || outerContainer;
+
+    var allMoments = [];
+
+    // AI 动态（只取公开）
+    roles.forEach(function(role) {
+        var moments = getRoleMomentsForMainApp(role.id);
+        moments.forEach(function(m) {
+            if (m.visibility === 'public') {
+                allMoments.push({ moment: m, role: role, isUser: false });
+            }
+        });
+    });
+
+    // 用户动态
+    var userMoments = loadUserMoments();
+    userMoments.forEach(function(m) {
+        allMoments.push({ moment: m, role: null, isUser: true });
+    });
+
+    allMoments.sort(function(a, b) {
+        return new Date(b.moment.time) - new Date(a.moment.time);
+    });
+
+    if (allMoments.length === 0) {
+        container.innerHTML = '<div class="main-moments-empty">' +
+            '<div class="empty-icon"></div>' +
+            '<p>还没有朋友圈</p>' +
+            '<p class="sub">点击右上角加号发布</p>' +
+            '</div>';
+        return;
+    }
+
+    var html = '';
+    allMoments.forEach(function(item) {
+        var m = item.moment;
+        var timeStr = formatMomentTime(m.time);
+
+        if (item.isUser) {
+            // 用户动态
+            var userAvatar = CONFIG.userAvatar || '';
+            var avatarStyle = userAvatar
+                ? 'background-image:url(' + userAvatar + ');background-size:cover;background-position:center;'
+                : 'background-color:#576b95;';
+            var avatarContent = userAvatar ? '' : '我';
+
+            var imageHtml = '';
+            if (m.hasImage) {
+                imageHtml = '<div class="main-moment-image" data-user-moment-id="' + m.id + '"><div class="main-moment-img-loading">加载图片中...</div></div>';
+            }
+
+            html += '<div class="main-moment-item" data-moment-row="' + m.id + '">' +
+                '<div class="main-moment-header">' +
+                '<div class="main-moment-avatar" style="' + avatarStyle + '">' + avatarContent + '</div>' +
+                '<div class="main-moment-name">我</div>' +
+                '<button class="main-moment-delete" data-delete-user-moment="' + m.id + '"><i class="fas fa-trash-alt"></i></button>' +
+                '</div>' +
+                '<div class="main-moment-content">' + escapeHtml(m.content || '') + '</div>' +
+                imageHtml +
+                '<div class="main-moment-time">' + timeStr + '</div>' +
+                renderMomentCommentsHtml(m, true) +
+                '</div>';
+        } else {
+            // AI 动态
+            var role = item.role;
+            var avatarStyle = role.avatar
+                ? 'background-image:url(' + role.avatar + ');background-size:cover;background-position:center;'
+                : 'background-color:#07c160;';
+            var avatarContent = role.avatar ? '' : escapeHtml((role.name || '?').charAt(0));
+
+            var imageHtml = '';
+            if (m.needImage && m.imageStatus === 'done') {
+                imageHtml = '<div class="main-moment-image" data-moment-id="' + m.id + '"><div class="main-moment-img-loading">加载图片中...</div></div>';
+            }
+
+           
+            var userCommentCount = (m.comments || []).filter(function(c) { return c.author === 'user'; }).length;
+            var canComment = userCommentCount < 3;
+            var commentBtnHtml = canComment
+                ? '<button class="moment-action-btn" data-comment-moment="' + m.id + '" data-comment-role="' + role.id + '"><i class="far fa-comment"></i><span>评论</span></button>'
+                : '<button class="moment-action-btn" disabled style="opacity:0.4;"><i class="far fa-comment"></i><span>已达上限</span></button>';
+
+            html += '<div class="main-moment-item" data-moment-row="' + m.id + '">' +
+                '<div class="main-moment-header">' +
+                '<div class="main-moment-avatar" style="' + avatarStyle + '">' + avatarContent + '</div>' +
+                '<div class="main-moment-name">' + escapeHtml(role.name || '') + '</div>' +
+                '</div>' +
+                '<div class="main-moment-content">' + escapeHtml(m.content || '') + '</div>' +
+                imageHtml +
+                '<div class="main-moment-time">' + timeStr + '</div>' +
+                renderMomentCommentsHtml(m, false) + +
+                '<div class="main-moment-actions-bar">' +
+                commentBtnHtml +
+                '</div>' +
+                '<div class="main-moment-input-area" data-input-for="' + m.id + '" style="display:none;">' +
+                '<input type="text" placeholder="评论..." data-input-id="' + m.id + '" data-input-role="' + role.id + '" maxlength="200" />' +
+                '<button data-send-comment="' + m.id + '" data-send-role="' + role.id + '">发送</button>' +
+                '</div>' +
+                '</div>';
+        }
+    });
+    var listContainer = document.getElementById('momentListContainer');
+    if (listContainer) {
+        listContainer.innerHTML = html;
+    } else {
+        container.innerHTML = html;
+    }
+
+    // 加载 AI 图片
+    container.querySelectorAll('[data-moment-id]').forEach(function(el) {
+        var mid = el.dataset.momentId;
+        loadPhoneMomentImage(mid).then(function(base64) {
+            if (base64) {
+                el.innerHTML = '<img src="' + base64 + '" alt="配图" />';
+            } else {
+                el.innerHTML = '<div class="main-moment-img-error">图片加载失败</div>';
+            }
+        });
+    });
+
+    // 加载用户图片
+    container.querySelectorAll('[data-user-moment-id]').forEach(function(el) {
+        var mid = el.dataset.userMomentId;
+        loadUserMomentImage(mid).then(function(base64) {
+            if (base64) {
+                el.innerHTML = '<img src="' + base64 + '" alt="配图" />';
+            } else {
+                el.innerHTML = '<div class="main-moment-img-error">图片加载失败</div>';
+            }
+        });
+    });
+
+    // 绑定删除
+    container.querySelectorAll('[data-delete-user-moment]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var mid = this.dataset.deleteUserMoment;
+            if (!confirm('删除这条朋友圈？')) return;
+            deleteUserMoment(mid);
+        });
+    });
+
+    // 绑定评论按钮：展开/收起输入框
+    container.querySelectorAll('[data-comment-moment]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var mid = this.dataset.commentMoment;
+            var inputArea = container.querySelector('[data-input-for="' + mid + '"]');
+            if (!inputArea) return;
+            if (inputArea.style.display === 'none' || !inputArea.style.display) {
+                // 先收起其他所有
+                container.querySelectorAll('.main-moment-input-area').forEach(function(el) {
+                    el.style.display = 'none';
+                });
+                inputArea.style.display = 'flex';
+                setTimeout(function() {
+                    var inp = inputArea.querySelector('input');
+                    if (inp) inp.focus();
+                }, 100);
+            } else {
+                inputArea.style.display = 'none';
+            }
+        });
+    });
+
+    // 绑定发送按钮：真的提交
+    container.querySelectorAll('[data-send-comment]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var mid = this.dataset.sendComment;
+            var rid = this.dataset.sendRole;
+            var inputArea = container.querySelector('[data-input-for="' + mid + '"]');
+            if (!inputArea) return;
+            var inp = inputArea.querySelector('input');
+            var text = inp ? inp.value.trim() : '';
+            if (!text) {
+                if (inp) inp.focus();
+                return;
+            }
+
+            // 检查用户是否已经评论 3 次
+            var key = 'phone_data_' + rid;
+            var raw = localStorage.getItem(key);
+            if (raw) {
+                try {
+                    var data = JSON.parse(raw);
+                    var moment = (data.moments || []).find(function(x) { return x.id === mid; });
+                    if (moment && moment.comments) {
+                        var userCount = moment.comments.filter(function(c) { return c.author === 'user'; }).length;
+                        if (userCount >= 3) {
+                            showToast('你已评论 3 次，已达上限');
+                            return;
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            var result = submitMomentComment(rid, mid, text);
+            if (!result) {
+                showToast('评论失败，请重试');
+                return;
+            }
+            if (inp) inp.value = '';
+            inputArea.style.display = 'none';
+            showToast('评论已发送，ta 稍后回复');
+            // 重新渲染
+            renderMainAppMoments();
+        });
+    });
+
+    // 回车提交
+    container.querySelectorAll('[data-input-id]').forEach(function(inp) {
+        inp.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                var mid = this.dataset.inputId;
+                var sendBtn = container.querySelector('[data-send-comment="' + mid + '"]');
+                if (sendBtn) sendBtn.click();
+            }
+        });
+    });
+
+    // 绑定"回复"按钮：展开输入框
+    container.querySelectorAll('[data-reply-comment]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var cid = this.dataset.replyComment;
+            var inputBox = container.querySelector('[data-reply-input-for="' + cid + '"]');
+            if (!inputBox) return;
+            // 收起其他所有
+            container.querySelectorAll('.comment-reply-input').forEach(function(el) {
+                if (el !== inputBox) el.style.display = 'none';
+            });
+            if (inputBox.style.display === 'none' || !inputBox.style.display) {
+                inputBox.style.display = 'flex';
+                setTimeout(function() {
+                    var inp = inputBox.querySelector('input');
+                    if (inp) inp.focus();
+                }, 100);
+            } else {
+                inputBox.style.display = 'none';
+            }
+        });
+    });
+
+    // 绑定提交回复按钮
+    container.querySelectorAll('[data-send-user-reply]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var cid = this.dataset.sendUserReply;
+            var mid = this.dataset.sendReplyMoment;
+            var rid = this.dataset.sendReplyRole;
+            var inputBox = container.querySelector('[data-reply-input-for="' + cid + '"]');
+            if (!inputBox) return;
+            var inp = inputBox.querySelector('input');
+            var text = inp ? inp.value.trim() : '';
+            if (!text) {
+                if (inp) inp.focus();
+                return;
+            }
+            var result = submitUserMomentReply(mid, cid, rid, text);
+            if (!result) {
+                showToast('回复失败，请重试');
+                return;
+            }
+            showToast('回复已发送，ta 稍后回应');
+            renderMainAppMoments();
+        });
+    });
+
+    // 回车提交回复
+    container.querySelectorAll('[data-reply-input-id]').forEach(function(inp) {
+        inp.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                var cid = this.dataset.replyInputId;
+                var sendBtn = container.querySelector('[data-send-user-reply="' + cid + '"]');
+                if (sendBtn) sendBtn.click();
+            }
+        });
+    });
+
+    // 渲染顶部消息条
+    renderMomentNotifBar();
+}
+
 function renderContacts() {
     var contactsList = document.getElementById('contactsList');
     if (!contactsList) return;
@@ -6456,6 +8517,8 @@ function openContacts() {
     document.getElementById('memeScreen').classList.remove('open');
     document.getElementById('diaryScreen').classList.remove('open');
     document.getElementById('contactsScreen').classList.add('open');
+    // 每次进来都重置到"联系人"tab
+    if (window.switchContactsTab) window.switchContactsTab('contacts');
     renderContacts();
     if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300);
 }
@@ -8881,7 +10944,83 @@ else if (app === 'video') openVideoLibrary();
 });
 
     document.getElementById('backFromContacts').addEventListener('click', closeContacts);
-    document.getElementById('backFromChat').addEventListener('click', closeChat);
+    // 联系人页面 tab 切换
+    var contactsTab = 'contacts';
+    function switchContactsTab(tab) {
+        contactsTab = tab;
+        document.querySelectorAll('.contacts-tab').forEach(function(el) {
+            if (el.dataset.tab === tab) el.classList.add('active');
+            else el.classList.remove('active');
+        });
+        var list = document.getElementById('contactsList');
+        var momentsView = document.getElementById('contactsMomentsView');
+        var title = document.getElementById('contactsTitle');
+        var actionsEl = document.getElementById('contactsActions');
+        if (tab === 'contacts') {
+            list.style.display = 'block';
+            momentsView.style.display = 'none';
+            if (title) title.textContent = '联系人';
+            if (actionsEl) {
+                actionsEl.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+                actionsEl.onclick = null;
+            }
+        } else if (tab === 'moments') {
+            list.style.display = 'none';
+            momentsView.style.display = 'block';
+            if (title) title.textContent = '朋友圈';
+            if (actionsEl) {
+                actionsEl.innerHTML = '<i class="fas fa-plus"></i>';
+                actionsEl.onclick = function(e) {
+                    e.stopPropagation();
+                    openNewMomentSheet();
+                };
+            }
+            renderMainAppMoments();
+            //会 红点不直接清空——让用户点消息条后再清，或关闭消息条后再清
+            // 后台检查待回复评论
+            setTimeout(function() { processAllPendingReplies(); }, 500);
+        }
+    }
+    document.querySelectorAll('.contacts-tab').forEach(function(el) {
+        el.addEventListener('click', function() {
+            switchContactsTab(this.dataset.tab);
+        });
+    });
+    window.switchContactsTab = switchContactsTab; 
+
+// 发朋友圈弹窗事件
+    document.getElementById('newMomentTextBtn').addEventListener('click', function() {
+        openNewMomentEditor(false);
+    });
+    document.getElementById('newMomentImageBtn').addEventListener('click', function() {
+        openNewMomentEditor(true);
+    });
+    document.getElementById('newMomentCancelBtn').addEventListener('click', closeNewMomentSheet);
+    document.getElementById('newMomentSheet').addEventListener('click', function(e) {
+        if (e.target === this) closeNewMomentSheet();
+    });
+    document.getElementById('newMomentEditorCancelBtn').addEventListener('click', function() {
+        document.getElementById('newMomentEditor').classList.remove('active');
+    });
+    document.getElementById('newMomentEditor').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('active');
+    });
+    document.getElementById('newMomentImagePreview').addEventListener('click', pickNewMomentImage);
+    document.getElementById('newMomentPublishBtn').addEventListener('click', publishNewMoment);
+
+// 启动待回复评论检查：每 2 分钟检查一次
+    setTimeout(function() { processAllPendingReplies(); }, 5000);
+    setInterval(function() { processAllPendingReplies(); }, 2 * 60 * 1000);
+    // 启动用户动态的 AI 主动评论检查：每 2 分钟检查一次
+    setTimeout(function() { processUserMomentPendingComments(); }, 8000);
+    setInterval(function() { processUserMomentPendingComments(); }, 2 * 60 * 1000);
+    // 启动用户对 AI 评论的二次回复检查：每 2 分钟检查一次
+    setTimeout(function() { processUserMomentPendingReplies(); }, 12000);
+    setInterval(function() { processUserMomentPendingReplies(); }, 2 * 60 * 1000);
+    // 初始化红点显示
+    updateMomentBadge();
+
+document.getElementById('backFromChat').addEventListener('click', closeChat);
     document.getElementById('backFromMeme').addEventListener('click', closeMeme);
     document.getElementById('backFromDiary').addEventListener('click', closeDiary);
     document.getElementById('backFromVideoLibrary').addEventListener('click', closeVideoLibrary); 
