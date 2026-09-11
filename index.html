@@ -3046,6 +3046,8 @@ var _saveTimer = null, _idCounter = 0, _lastVisibilityCheck = 0;
 var _regenerating = {};
 var audioPlayers = {};
 var _testAudio = null;
+// ⭐ 自拍图片内存缓存（避免每次渲染都重新读 IndexedDB 导致闪烁）
+var _selfieImageCache = {};
 var _voiceGenerating = {};
 
 function generateId() { _idCounter++; return 'id_' + Date.now() + '_' + _idCounter + '_' + Math.random().toString(36).substr(2, 6); }
@@ -3863,12 +3865,22 @@ function renderMessages() {// ===== 修复：清理不再显示的音频播放�
         }
     }
 
-    // ===== 新增：异步加载自拍图片 =====
+   // ===== 异步加载自拍图片（优先用内存缓存） =====
     container.querySelectorAll('.selfie-bubble[data-selfie-key]').forEach(function(el) {
         var storageKey = el.dataset.selfieKey;
         if (!storageKey) return;
+
+        // ⭐ 优先从内存缓存读，命中就直接显示，完全不会闪
+        if (_selfieImageCache[storageKey]) {
+            el.innerHTML = '<img src="' + _selfieImageCache[storageKey] + '" alt="自拍" />';
+            el.classList.add('has-image');
+            return;
+        }
+
+        // 缓存未命中（比如刚刷新页面），异步加载一次
         loadImageConfigForMain(storageKey).then(function(base64) {
             if (base64) {
+                _selfieImageCache[storageKey] = base64;  // ⭐ 加载后存入缓存
                 el.innerHTML = '<img src="' + base64 + '" alt="自拍" />';
                 el.classList.add('has-image');
             } else {
@@ -6959,6 +6971,8 @@ async function generateChatSelfie(role, userMessage) {
         // 5. 存 IndexedDB
         var msgId = 'selfie_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
         await saveImageConfigForMain('chat_selfie_' + msgId, base64);
+        // ⭐ 立即存入内存缓存，避免首次渲染时闪一下
+        _selfieImageCache['chat_selfie_' + msgId] = base64;
 
         // 6. 插入消息
         var r = roles.find(function(x) { return x.id === role.id; });
