@@ -1239,6 +1239,33 @@
         [data-theme="light"] .voice-player .time-display {
             color: rgba(0, 0, 0, 0.2);
         }
+
+/* ===== 自拍消息样式 ===== */
+.selfie-bubble {
+    max-width: 200px;
+    min-height: 100px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.selfie-bubble img {
+    width: 100%;
+    display: block;
+    border-radius: 10px;
+}
+.selfie-loading {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 30px 20px;
+    text-align: center;
+}
+.selfie-bubble.has-image {
+    background: transparent;
+}
+
         /* ===== 新增：语音条样式（微信风格） ===== */
         .voice-bubble {
             background: var(--bg-bubble-other);
@@ -3653,6 +3680,77 @@ async function fetchWithRetry(url, options, maxRetries) {
 }
 // ===== 修复结束 =====
 
+// ===== 自拍触发词 =====
+var SELFIE_KEYWORDS = [
+    '我想看你', '我想看看你', '让我看看你', '想看看你', '想看你',
+    '你在干嘛', '你在干什么', '你在做什么', '你在忙什么', '你在做什么呢',
+    '看看你', '看你一眼', '你现在什么样', '发张照片', '发个自拍', '自拍一张'
+];
+
+function isSelfieTrigger(text) {
+    if (!text) return false;
+    for (var i = 0; i < SELFIE_KEYWORDS.length; i++) {
+        if (text.indexOf(SELFIE_KEYWORDS[i]) !== -1) return true;
+    }
+    return false;
+}
+
+// 冷却检查（每个角色独立 10 分钟）
+function canGenerateSelfie(roleId) {
+    try {
+        var raw = localStorage.getItem('selfie_cooldown_v1');
+        var map = raw ? JSON.parse(raw) : {};
+        var last = map[roleId] || 0;
+        return (Date.now() - last) > 10 * 60 * 1000;
+    } catch(e) { return true; }
+}
+
+function markSelfieGenerated(roleId) {
+    try {
+        var raw = localStorage.getItem('selfie_cooldown_v1');
+        var map = raw ? JSON.parse(raw) : {};
+        map[roleId] = Date.now();
+        localStorage.setItem('selfie_cooldown_v1', JSON.stringify(map));
+    } catch(e) {}
+}
+
+// ===== 主应用版：写入 IndexedDB（供自拍图片使用） =====
+function saveImageConfigForMain(key, value) {
+    return openPhoneImageConfigDB_Main().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('config', 'readwrite');
+            var store = tx.objectStore('config');
+            var req = store.put({ key: key, value: value, updatedAt: Date.now() });
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    });
+}
+
+// ===== Blob 转 Base64 =====
+function blobToBase64Main(blob) {
+    return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onloadend = function() { resolve(reader.result); };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+// ===== 读取指定角色的参考图（正面照优先） =====
+async function loadRefImageForRole(roleId) {
+    // 优先多图版（refImages_<roleId>）
+    var refImages = await loadImageConfigForMain('refImages_' + roleId);
+    if (Array.isArray(refImages)) {
+        for (var i = 0; i < refImages.length; i++) {
+            if (refImages[i]) return refImages[i];  // 返回第一张（正面照）
+        }
+    }
+    // 兜底：旧单图版（refImage_<roleId>）
+    var single = await loadImageConfigForMain('refImage_' + roleId);
+    return single || null;
+}
+
 function isVoiceTrigger(text) {
     if (!text) return false;
     var lower = text.toLowerCase();
@@ -3764,6 +3862,22 @@ function renderMessages() {// ===== 修复：清理不再显示的音频播放�
             }, 500);
         }
     }
+
+    // ===== 新增：异步加载自拍图片 =====
+    container.querySelectorAll('.selfie-bubble[data-selfie-key]').forEach(function(el) {
+        var storageKey = el.dataset.selfieKey;
+        if (!storageKey) return;
+        loadImageConfigForMain(storageKey).then(function(base64) {
+            if (base64) {
+                el.innerHTML = '<img src="' + base64 + '" alt="自拍" />';
+                el.classList.add('has-image');
+            } else {
+                el.innerHTML = '<div class="selfie-loading">图片已过期</div>';
+            }
+        }).catch(function() {
+            el.innerHTML = '<div class="selfie-loading">加载失败</div>';
+        });
+    });
 }
 
 function createMessageRow(msg, role) {
@@ -3860,6 +3974,13 @@ function createMessageRow(msg, role) {
     // ========== 处理图片消息 ==========
     else if (msg.type === 'image') {
         contentHtml = '<img src="' + msg.content + '" alt="图片" />';
+    }
+
+    // ========== 处理自拍消息 ==========
+    else if (msg.type === 'selfie') {
+        contentHtml = '<div class="selfie-bubble" data-selfie-key="' + (msg.imageStorageKey || '') + '">' +
+            '<div class="selfie-loading">📸 正在加载照片...</div>' +
+            '</div>';
     }
 
     // ========== 处理语音消息 ==========
@@ -4389,6 +4510,12 @@ if (quotedMsg) {
     var role = getCurrentRole();
     if (!role) { showToast('⚠️ 未找到当前角色'); return; }
     
+    // ===== 新增：检测是否触发自拍 =====
+    var shouldTriggerSelfie = isSelfieTrigger(text) && canGenerateSelfie(role.id);
+    if (shouldTriggerSelfie) {
+        console.log('📸 检测到自拍触发词，将在 AI 回复后生成自拍');
+    }
+    
     var shouldGenerateVoice = isVoiceTrigger(text);
     if (shouldGenerateVoice && CONFIG.voice.mode === 'none') {
         showToast('🔇 语音已关闭，将在设置中开启后生效');
@@ -4491,6 +4618,12 @@ if (quotedMsg) {
             document.getElementById('sendBtn').disabled = false;
             input.focus();
             isSending = false;
+            // ⭐ 新增：如果触发了自拍，延迟 2 秒后开始生成（让主回复先显示）
+            if (shouldTriggerSelfie) {
+                setTimeout(function() {
+                    generateChatSelfie(role, text);
+                }, 2000);
+            }
             return;
         }
         
@@ -4510,6 +4643,12 @@ if (quotedMsg) {
                 document.getElementById('sendBtn').disabled = false;
                 input.focus();
                 isSending = false;
+                // ⭐ 新增：如果触发了自拍，延迟 2 秒后开始生成
+                if (shouldTriggerSelfie) {
+                    setTimeout(function() {
+                        generateChatSelfie(role, text);
+                    }, 2000);
+                }
                 return;
             }
             var msgId = addMessageToRole(role.id, 'assistant', segments[idx], 'text', null, false);
@@ -6705,6 +6844,149 @@ async function processUserMomentPendingReplies() {
     } finally {
         _userReplyProcessing = false;
         console.log('🔓 锁已释放');
+    }
+}
+
+// ===== 生成自拍：AI 生成 prompt =====
+async function generateSelfiePrompt(role, userMessage) {
+    var recentMsgs = (role.messages || []).slice(-8).map(function(m) {
+        return (m.role === 'user' ? '用户' : role.name) + '：' + (m.content || '').substring(0, 60);
+    }).join('\n');
+
+    var sys = '你是' + role.name + '。用户说想看你，你准备拍一张自拍发给他。请根据你的人设和最近对话，用一段英文描述这张自拍的内容。\n\n' +
+        '【人设】' + (role.persona || '一个真实的人') + '\n' +
+        '【背景】' + (role.background || '') + '\n\n' +
+        '【要求】\n' +
+        '1. 描述场景（在哪里、在做什么）\n' +
+        '2. 描述氛围、光线、构图\n' +
+        '3. 必须是"自拍"视角（selfie, holding phone, looking at camera, front camera）\n' +
+        '4. 不要描述人物长相特征（系统会用参考图）\n' +
+        '5. 只输出英文描述，不要中文，不要解释，不要加引号\n' +
+        '6. 40-80 字英文\n\n' +
+        '【示例】"A young man taking a selfie in his cozy study room, holding a book, soft warm lamp light, wearing a dark casual shirt, relaxed smile, evening atmosphere, cinematic realistic style, front camera selfie angle"';
+
+    var user = '最近对话：\n' + recentMsgs + '\n\n用户刚刚说：' + userMessage + '\n\n请生成自拍描述：';
+
+    try {
+        var result = await callAIForMomentReply(sys, user, 1000);
+        if (!result) return null;
+        return result.trim().replace(/^["「『]|["」』]$/g, '').trim();
+    } catch(e) {
+        console.error('生成自拍 prompt 失败:', e);
+        return null;
+    }
+}
+
+// ===== 调用 wan2.7-image-pro 生成自拍 =====
+async function callWanSelfieAPI(apiKey, refImage, prompt) {
+    var resp = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+            model: 'wan2.7-image-pro',
+            input: {
+                messages: [{
+                    role: 'user',
+                    content: [
+                        { text: prompt },
+                        { image: refImage }
+                    ]
+                }]
+            },
+            parameters: { n: 1, size: '2K', watermark: false }
+        }),
+        cache: 'no-store'
+    });
+    var data = await resp.json();
+    if (data.code) throw new Error(data.message || data.code);
+    var content = data.output && data.output.choices && data.output.choices[0] && data.output.choices[0].message && data.output.choices[0].message.content;
+    if (Array.isArray(content)) {
+        for (var i = 0; i < content.length; i++) {
+            if (content[i].image) return content[i].image;
+        }
+    }
+    return null;
+}
+
+// ===== 完整流程：生成自拍并插入消息 =====
+async function generateChatSelfie(role, userMessage) {
+    console.log('📸 开始生成自拍，角色：' + role.name + ' (id=' + role.id + ')');
+
+    try {
+        // 1. 严格读取当前角色的参考图
+        var refImage = await loadRefImageForRole(role.id);
+        if (!refImage) {
+            console.warn('⚠️ 角色 ' + role.name + ' 没有参考图，无法生成');
+            addMessageToRole(role.id, 'assistant', '我还没给你看过我长什么样呢...先去「他的手机 → 设置 → 我的参考照片」上传几张吧？');
+            renderMessages();
+            return;
+        }
+        console.log('✅ 参考图已读取，长度：' + refImage.length);
+
+        // 2. AI 生成 prompt
+        var imagePrompt = await generateSelfiePrompt(role, userMessage);
+        if (!imagePrompt) {
+            console.warn('⚠️ prompt 生成失败');
+            return;
+        }
+        console.log('📝 自拍 prompt:', imagePrompt);
+
+        // 3. 调 wan2.7-image-pro
+        var apiKey = await loadImageConfigForMain('imageApiKey');
+        if (!apiKey) {
+            console.warn('⚠️ 未配置百炼图片 API Key');
+            addMessageToRole(role.id, 'assistant', '相机好像坏了...你检查一下「他的手机 → 设置 → 百炼图片 API Key」？');
+            renderMessages();
+            return;
+        }
+
+        var imageUrl = await callWanSelfieAPI(apiKey, refImage, imagePrompt);
+        if (!imageUrl) {
+            console.warn('⚠️ 图片生成失败');
+            return;
+        }
+        console.log('✅ 图片生成成功');
+
+        // 4. 下载图片转 base64
+        var imgResp = await fetch(imageUrl);
+        var blob = await imgResp.blob();
+        var base64 = await blobToBase64Main(blob);
+        console.log('✅ 图片已下载，大小：' + (blob.size / 1024).toFixed(1) + ' KB');
+
+        // 5. 存 IndexedDB
+        var msgId = 'selfie_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+        await saveImageConfigForMain('chat_selfie_' + msgId, base64);
+
+        // 6. 插入消息
+        var r = roles.find(function(x) { return x.id === role.id; });
+        if (!r) return;
+        r.messages.push({
+            id: msgId,
+            role: 'assistant',
+            content: '[自拍]',
+            type: 'selfie',
+            time: new Date().toISOString(),
+            imageStorageKey: 'chat_selfie_' + msgId,
+            hasAudio: false,
+            audioUrl: null,
+            audioDuration: 0,
+            voiceRequested: false
+        });
+
+        immediateSaveAllData();
+        renderMessages();
+        markSelfieGenerated(role.id);
+        console.log('🎉 自拍已发送给用户');
+
+    } catch(e) {
+        console.error('❌ 生成自拍失败:', e && e.message ? e.message : e);
+        try {
+            addMessageToRole(role.id, 'assistant', '手滑了，照片糊了...下次再给你拍吧');
+            renderMessages();
+        } catch(e2) {}
     }
 }
 
