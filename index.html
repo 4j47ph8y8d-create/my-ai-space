@@ -579,10 +579,11 @@
 }
 
 /* ===== 朋友圈顶部消息条 ===== */
+
 .moment-notif-bar {
     margin: 8px 12px 0;
-    background: linear-gradient(135deg, #fff5f5, #fff0f0);
-    border: 1px solid rgba(255,107,129,0.25);
+    background: linear-gradient(135deg, #efecf5, #e5e0ee);
+    border: 1px solid rgba(140,120,170,0.2);
     border-radius: 12px;
     padding: 10px 12px;
     display: flex;
@@ -591,19 +592,22 @@
     cursor: pointer;
     transition: 0.15s;
     animation: notifSlideIn 0.3s ease;
-    box-shadow: 0 2px 8px rgba(255,107,129,0.08);
+    box-shadow: 0 2px 8px rgba(140,120,170,0.1);
 }
+
 [data-theme="dark"] .moment-notif-bar {
-    background: linear-gradient(135deg, #2a1a1f, #251a1e);
-    border-color: rgba(255,107,129,0.3);
+    background: linear-gradient(135deg, #3a3244, #322b3d);
+    border-color: rgba(180,160,210,0.25);
 }
+
 .moment-notif-bar:active {
     transform: scale(0.99);
-    background: linear-gradient(135deg, #ffe8e8, #ffe0e0);
+    background: linear-gradient(135deg, #e3def0, #d9d3e8);
 }
 [data-theme="dark"] .moment-notif-bar:active {
-    background: linear-gradient(135deg, #352025, #2d1f23);
+    background: linear-gradient(135deg, #453c50, #3d3549);
 }
+
 .notif-avatar {
     width: 32px;
     height: 32px;
@@ -619,21 +623,21 @@
     font-size: 13px;
     font-weight: 500;
 }
+
 .notif-body {
     flex: 1;
     min-width: 0;
     font-size: 13px;
-    color: var(--text-primary);
+    color: #4a4a4a;
     line-height: 1.5;
 }
 .notif-body .notif-name {
-    color: #ff6b81;
+    color: #5c4a7a;
     font-weight: 600;
     margin-right: 2px;
 }
 .notif-body .notif-content {
-    color: var(--text-primary);
-    opacity: 0.85;
+    color: #6a6a6a;
     display: block;
     margin-top: 2px;
     overflow: hidden;
@@ -641,6 +645,16 @@
     white-space: nowrap;
     font-size: 12px;
 }
+[data-theme="dark"] .notif-body {
+    color: #dcd6e6;
+}
+[data-theme="dark"] .notif-body .notif-name {
+    color: #b8a8d8;
+}
+[data-theme="dark"] .notif-body .notif-content {
+    color: #c4bed0;
+}
+
 .notif-close {
     background: none;
     border: none;
