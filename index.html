@@ -2858,7 +2858,13 @@ if (data.user && data.user.role) {
                     });
                     const loadData = await loadRes.json();
                     if (loadData.success && loadData.data && loadData.data.roles && loadData.data.roles.length > 0) {
-                        roles = loadData.data.roles;
+                        // ⭐ 本地优先：只有本地为空时才用云端
+                        if (!roles || roles.length === 0) {
+                            roles = loadData.data.roles;
+                            console.log('☁️ 登录时本地为空，已从云端加载');
+                        } else {
+                            console.log('☁️ 登录时本地已有数据，跳过云端覆盖');
+                        }
                         CONFIG = loadData.data.config || CONFIG;
                         CONFIG.diaries = loadData.data.diaries || [];
                         if (roles.length > 0) {
@@ -13575,12 +13581,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 if (cloudData.roles && cloudData.roles.length > 0) {
-                    if (roles.length === 0 || cloudData.roles.length > roles.length) {
+                    // ⭐ 修复：本地优先，云端只补充本地没有的角色，绝不覆盖已有角色的数据
+                    if (roles.length === 0) {
+                        // 本地完全为空 → 才用云端
                         roles = cloudData.roles;
                         if (!currentRoleId || !roles.find(function(r) { return r.id === currentRoleId; })) {
                             currentRoleId = roles[0] ? roles[0].id : null;
                         }
-                        console.log('☁️ 已加载 ' + roles.length + ' 个角色');
+                        console.log('☁️ 本地为空，已从云端加载 ' + roles.length + ' 个角色');
+                    } else {
+                        // 本地有数据 → 只补充云端有、但本地没有的角色
+                        var added = 0;
+                        cloudData.roles.forEach(function(cloudRole) {
+                            var exists = roles.find(function(r) { return r.id === cloudRole.id; });
+                            if (!exists) {
+                                roles.push(cloudRole);
+                                added++;
+                            }
+                        });
+                        if (added > 0) {
+                            console.log('☁️ 已从云端补充 ' + added + ' 个本地缺失的角色（本地已有角色未被覆盖）');
+                        } else {
+                            console.log('☁️ 云端角色与本地完全一致，无补充');
+                        }
                     }
                 }
                 
