@@ -6860,6 +6860,7 @@ async function processUserMomentPendingReplies() {
 }
 
 // ===== 生成自拍：AI 生成 prompt =====
+
 async function generateSelfiePrompt(role, userMessage) {
     var recentMsgs = (role.messages || []).slice(-8).map(function(m) {
         return (m.role === 'user' ? '用户' : role.name) + '：' + (m.content || '').substring(0, 60);
@@ -6868,21 +6869,40 @@ async function generateSelfiePrompt(role, userMessage) {
     var sys = '你是' + role.name + '。用户说想看你，你准备拍一张自拍发给他。请根据你的人设和最近对话，用一段英文描述这张自拍的内容。\n\n' +
         '【人设】' + (role.persona || '一个真实的人') + '\n' +
         '【背景】' + (role.background || '') + '\n\n' +
-        '【要求】\n' +
-        '1. 描述场景（在哪里、在做什么）\n' +
-        '2. 描述氛围、光线、构图\n' +
-        '3. 必须是"自拍"视角（selfie, holding phone, looking at camera, front camera）\n' +
-        '4. 不要描述人物长相特征（系统会用参考图）\n' +
-        '5. 只输出英文描述，不要中文，不要解释，不要加引号\n' +
-        '6. 40-80 字英文\n\n' +
-        '【示例】"A young man taking a selfie in his cozy study room, holding a book, soft warm lamp light, wearing a dark casual shirt, relaxed smile, evening atmosphere, cinematic realistic style, front camera selfie angle"';
+        '【⚠️ 核心硬性要求 - 必须遵守】\n' +
+        '1. 必须是【自拍视角】：selfie, holding phone, front camera angle, arm visible 等描述\n' +
+        '2. 【必须看着镜头】：eyes looking directly at camera, making eye contact with camera, gazing at camera lens 等。这是重点，一定要写清楚！\n' +
+        '3. 允许的姿态（三选一即可）：\n' +
+        '   - 正脸面对镜头（facing camera directly）\n' +
+        '   - 微侧脸但眼睛看镜头（head slightly turned but eyes still on camera）\n' +
+        '   - 微微低头/抬头但眼睛看镜头（head tilted but eyes on camera）\n' +
+        '4. ⚠️ 禁止：闭眼、看别处、看窗外、背影、全身照、多人合影、手机屏幕遮脸\n\n' +
+        '【其他要求】\n' +
+        '- 描述场景（在哪里、在做什么）\n' +
+        '- 描述氛围、光线、构图\n' +
+        '- 不要描述人物长相特征（系统会用参考图）\n' +
+        '- 只输出英文描述，不要中文，不要解释，不要加引号\n' +
+        '- 40-80 字英文\n\n' +
+        '【正确的示例】\n' +
+        '✓ "A young man taking a selfie in a cozy study room, holding a book, eyes looking directly at the camera, slight confident smile, warm lamp light, dark casual shirt, evening atmosphere, realistic front camera selfie"\n' +
+        '✓ "Selfie shot of a young man in a café, head slightly turned but eyes on the camera, holding a coffee cup, soft daylight from the window, casual outfit, relaxed vibe, realistic photo"\n\n' +
+        '【错误的示例 - 不要模仿】\n' +
+        '✗ "looking at the sunset"（看别处）\n' +
+        '✗ "eyes closed, enjoying the moment"（闭眼）\n' +
+        '✗ "back view"（背影）';
 
-    var user = '最近对话：\n' + recentMsgs + '\n\n用户刚刚说：' + userMessage + '\n\n请生成自拍描述：';
+    var user = '最近对话：\n' + recentMsgs + '\n\n用户刚刚说：' + userMessage + '\n\n请生成自拍描述（务必遵守"眼睛看镜头"的核心要求）：';
 
     try {
         var result = await callAIForMomentReply(sys, user, 1000);
         if (!result) return null;
-        return result.trim().replace(/^["「『]|["」』]$/g, '').trim();
+        var cleaned = result.trim().replace(/^["「『]|["」』]$/g, '').trim();
+        // ⭐ 兜底：如果 AI 没提"看镜头"，自动补上
+        if (cleaned && !/camera|eye|gaze|looking at/i.test(cleaned)) {
+            cleaned += ', eyes looking directly at the camera';
+        }
+        console.log('📸 自拍 prompt 已生成:', cleaned);
+        return cleaned;
     } catch(e) {
         console.error('生成自拍 prompt 失败:', e);
         return null;
