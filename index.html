@@ -6194,10 +6194,13 @@ function getRoleMomentsForMainApp(roleId) {
 }
 
 // 时间友好显示
+
 function formatMomentTime(timeStr) {
     if (!timeStr) return '';
+    if (timeStr === 'NaN' || timeStr === 'null' || timeStr === 'undefined') return '';
     var date = new Date(timeStr);
     if (isNaN(date.getTime())) return '';
+
     var now = new Date();
     var diff = now - date;
     var min = Math.floor(diff / 60000);
@@ -7067,26 +7070,42 @@ function getPendingReplyComments(roleId, momentId) {
     } catch(e) { return []; }
 }
 
+// ===== 安全字符串：把 NaN / null / undefined 都替换成 fallback =====
+function safeStr(value, fallback) {
+    if (value === null || value === undefined) return fallback || '';
+    var s = String(value);
+    if (s === 'NaN' || s === 'null' || s === 'undefined') return fallback || '';
+    return s;
+}
+
+// ===== 严格过滤脏评论 =====
+function isDirtyComment(c) {
+    var nameStr = String(c.authorName || '');
+    var contentStr = String(c.content || '');
+    if (nameStr === 'NaN' || nameStr === 'undefined' || nameStr === 'null') return true;
+    if (contentStr === 'NaN' || contentStr === 'undefined' || contentStr === 'null' || contentStr === '') return true;
+    return false;
+}
+
 // ===== 渲染某条动态的评论列表 =====
 
 function renderMomentCommentsHtml(moment, isUserMoment) {
-    var comments = moment.comments || [];
+    var comments = (moment.comments || []).filter(function(c) { return !isDirtyComment(c); });
     if (comments.length === 0) return '';
     var html = '<div class="main-moment-comments">';
     comments.forEach(function(c) {
-        var nameText = c.authorName || '匿名';
+
+        var nameText = safeStr(c.authorName, '匿名');
 
         if (c.replyTo) {
-            // 有 replyTo，说明这是"回复某人"的评论
             if (c.author === 'ai') {
                 nameText = nameText + ' 回复我';
             } else {
                 var targetComment = (moment.comments || []).find(function(x) { return x.id === c.replyTo; });
-                var targetName = targetComment ? (targetComment.authorName || '他') : '他';
+                var targetName = targetComment ? safeStr(targetComment.authorName, '他') : '他';
                 nameText = '我回复' + targetName;
             }
         } else {
-            // 无 replyTo
             if (c.author === 'ai' && !isUserMoment) {
                 nameText = nameText + ' 回复我';
             }
@@ -7107,7 +7126,7 @@ function renderMomentCommentsHtml(moment, isUserMoment) {
         }
         html += '<div class="moment-comment">' +
             '<span class="comment-name">' + escapeHtml(nameText) + '：</span>' +
-            '<span class="comment-content">' + escapeHtml(c.content || '') + '</span>' +
+            '<span class="comment-content">' + escapeHtml(safeStr(c.content, '')) + '</span>' +
             replyBtnHtml +
             replyInputHtml +
             '</div>';
@@ -7340,7 +7359,7 @@ function renderMainAppMoments() {
                 '<div class="main-moment-name">我</div>' +
                 '<button class="main-moment-delete" data-delete-user-moment="' + m.id + '"><i class="fas fa-trash-alt"></i></button>' +
                 '</div>' +
-                '<div class="main-moment-content">' + escapeHtml(m.content || '') + '</div>' +
+                '<div class="main-moment-content">' + escapeHtml(safeStr(m.content, '')) + '</div>' +
                 imageHtml +
                 '<div class="main-moment-time">' + timeStr + '</div>' +
                 renderMomentCommentsHtml(m, true) +
@@ -7370,10 +7389,10 @@ function renderMainAppMoments() {
                 '<div class="main-moment-avatar" style="' + avatarStyle + '">' + avatarContent + '</div>' +
                 '<div class="main-moment-name">' + escapeHtml(role.name || '') + '</div>' +
                 '</div>' +
-                '<div class="main-moment-content">' + escapeHtml(m.content || '') + '</div>' +
+                '<div class="main-moment-content">' + escapeHtml(safeStr(m.content, '')) + '</div>' +
                 imageHtml +
                 '<div class="main-moment-time">' + timeStr + '</div>' +
-                renderMomentCommentsHtml(m, false) + +
+                renderMomentCommentsHtml(m, false) + 
                 '<div class="main-moment-actions-bar">' +
                 commentBtnHtml +
                 '</div>' +
