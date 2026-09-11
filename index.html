@@ -7267,7 +7267,7 @@ async function publishNewMoment() {
         time: new Date().toISOString(),
         author: 'user',
         aiPendingComment: true,     // 标记：等待 AI 主动评论
-        aiCommentDelay: Math.floor(5 * 60 * 1000 + Math.random() * 25 * 60 * 1000)  // 5-30分钟随机
+        aiCommentDelay: Math.floor(1 * 60 * 1000 + Math.random() * 7 * 60 * 1000)  // 1-8分钟随机
     };
     if (hasImage) {
         try {
