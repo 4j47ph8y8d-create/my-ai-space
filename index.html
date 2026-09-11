@@ -6505,9 +6505,12 @@ async function processUserMomentPendingComments() {
             saveUserMoments(moments);
             updateMomentBadge();
             // 如果用户正在看朋友圈，自动刷新
-            if (document.getElementById('contactsMomentsView')?.style.display === 'block') {
-                setTimeout(function() { renderMainAppMoments(); }, 300);
-            }
+            setTimeout(function() {
+                if (document.getElementById('contactsMomentsView')?.style.display === 'block') {
+                    renderMainAppMoments();
+                }
+                renderMomentNotifBar();
+            }, 300);
         }
     } catch(e) {
         console.error('处理用户动态待评论出错:', e);
@@ -6536,6 +6539,8 @@ function addMomentNotificationForUserMoment(role, moment, commentText) {
     if (list.length > 50) list = list.slice(-50);
     saveNotifications(list);
     updateMomentBadge();
+    // ⭐ 新增：立即刷新消息条
+    renderMomentNotifBar();
 }
 
 // ===== 提交用户对 AI 评论的回复 =====
@@ -6665,9 +6670,12 @@ async function processUserMomentPendingReplies() {
             updateMomentBadge();
             console.log('💾 已保存，共改动 ' + changed + ' 处');
             // 如果用户正在看朋友圈，自动刷新
-            if (wechatTab === 'moments' || document.getElementById('contactsMomentsView')?.style.display === 'block') {
-                setTimeout(function() { renderMainAppMoments(); }, 300);
-            }
+            setTimeout(function() {
+                if (document.getElementById('contactsMomentsView')?.style.display === 'block') {
+                    renderMainAppMoments();
+                }
+                renderMomentNotifBar();
+            }, 300);
         } else {
             console.log('ℹ️ 无改动');
         }
@@ -6935,6 +6943,13 @@ async function processRolePendingReplies(role) {
             if (replyCount > 0) {
                 addMomentUnread(role.id, replyCount);
             }
+            // ⭐ 新增：自动刷新朋友圈界面 + 消息条
+            setTimeout(function() {
+                if (document.getElementById('contactsMomentsView')?.style.display === 'block') {
+                    renderMainAppMoments();
+                }
+                renderMomentNotifBar();
+            }, 300);
         } catch(e) {
             console.error('保存 AI 回复失败:', e);
         }
@@ -6973,12 +6988,19 @@ function addMomentNotification(role, moment, aiComment) {
     if (list.length > 50) list = list.slice(-50);
     saveNotifications(list);
     updateMomentBadge();
+    // ⭐ 新增：立即刷新消息条
+    renderMomentNotifBar();
 }
 
 function getActiveNotification() {
     var list = loadNotifications();
+    // 从最新往前找，找第一条未读未关闭的
     for (var i = list.length - 1; i >= 0; i--) {
         if (!list[i].read && !list[i].dismissed) return list[i];
+    }
+    // 如果所有都 read 了，但还没 dismissed，返回最新的一条已读通知
+    for (var j = list.length - 1; j >= 0; j--) {
+        if (!list[j].dismissed) return list[j];
     }
     return null;
 }
