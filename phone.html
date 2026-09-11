@@ -1230,15 +1230,29 @@ async function generateMoments(role, pd) {
     var json = parseJSON(result);
     var newMoments = [];
     if (json && json.moments && Array.isArray(json.moments)) {
-        newMoments = json.moments.map(function(m) {
+        // ⭐ 时间线修复：第一条最接近现在（0.5-3 小时前），
+        // 后面的依次再往前推，保证时间严格递减、不错乱
+        // ⭐ 时间线修复：如果已有旧动态，新的从旧动态最新一条之前开始排
+        var baseTime = Date.now();
+        if (kept.length > 0) {
+            var oldTimes = kept.map(function(m) { return new Date(m.time).getTime(); });
+            var latestOld = Math.max.apply(null, oldTimes);
+            baseTime = latestOld;  // 新动态都排在旧动态之前
+        }
+        var cumulativeOffset = 0;
+        newMoments = json.moments.map(function(m, idx) {
             var needImg = !!m.needImage;
             var validTypes = ['selfie', 'scene', 'food', 'item', 'pet', 'other'];
             var imgType = validTypes.indexOf(m.imageType) !== -1 ? m.imageType : 'scene';
+            // 每条间隔 0.5 ~ 3 小时，累计往前推
+            var gap = (0.5 + Math.random() * 2.5) * 3600 * 1000;
+            cumulativeOffset += gap;
+            var momentTime = new Date(baseTime - cumulativeOffset).toISOString();
             return {
                 id: 'moment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
                 content: m.content || '',
                 visibility: m.visibility === 'private' ? 'private' : 'public',
-                time: new Date(Date.now() - Math.random() * 2 * 24 * 3600 * 1000).toISOString(),
+                time: momentTime,
                 needImage: needImg,
                 imageType: needImg ? imgType : null,
                 imagePrompt: needImg ? (m.imagePrompt || '') : '',
