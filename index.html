@@ -9579,7 +9579,11 @@ function cleanupResources() {
     }
 }
 
-window.addEventListener('beforeunload', function() { cleanupResources(); });
+window.addEventListener('beforeunload', function() { 
+    // ⭐ 页面关闭前强制保存一次（同步 API 无法用，只能尽力而为）
+    try { immediateSaveAllData(); } catch(e) {}
+    cleanupResources(); 
+});
 
 function renderMemeScreen() { renderCategoryList(); }
 
