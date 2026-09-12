@@ -2878,49 +2878,49 @@ if (data.user && data.user.role) {
                     localStorage.removeItem('dream_user_remember');
                 }
                 
-                // ===== 登录后合并云端数据（本地优先，云端只补充） =====
+
+// ===== 登录后按时间戳合并云端数据（谁新用谁） =====
                 try {
                     const loadRes = await fetch(API_BASE + '/data/load', {
                         headers: { 'Authorization': 'Bearer ' + data.token }
                     });
                     const loadData = await loadRes.json();
                     if (loadData.success && loadData.data) {
-                        var cloudRoles = loadData.data.roles || [];
+                        // 如果本地完全没有数据，先把云端全部搬过来
                         var localRaw = localStorage.getItem('ds_multirole_v2');
-                        var localData = localRaw ? JSON.parse(localRaw) : null;
-
-                        if (!localData || !localData.roles || localData.roles.length === 0) {
-                            // 本地为空 → 用云端
-                            if (cloudRoles.length > 0) {
+                        if (!localRaw || !JSON.parse(localRaw).roles || JSON.parse(localRaw).roles.length === 0) {
+                            var cloudRoles0 = loadData.data.roles || [];
+                            if (cloudRoles0.length > 0) {
                                 localStorage.setItem('ds_multirole_v2', JSON.stringify({
                                     config: loadData.data.config || {},
-                                    roles: cloudRoles,
-                                    currentRoleId: cloudRoles[0].id
+                                    roles: cloudRoles0,
+                                    currentRoleId: cloudRoles0[0].id
                                 }));
-                                console.log('☁️ 本地为空，已从云端加载 ' + cloudRoles.length + ' 个角色');
+                                console.log('☁️ 本地为空，已从云端加载 ' + cloudRoles0.length + ' 个角色');
                             }
                         } else {
-                            // 本地有数据 → 只补充"本地没有的角色"，绝不覆盖已有角色
-                            var added = 0;
-                            cloudRoles.forEach(function(cloudRole) {
-                                var exists = localData.roles.find(function(r) { return r.id === cloudRole.id; });
-                                if (!exists) {
-                                    localData.roles.push(cloudRole);
-                                    added++;
-                                }
-                            });
-                            if (added > 0) {
-                                localStorage.setItem('ds_multirole_v2', JSON.stringify(localData));
-                                console.log('☁️ 已从云端补充 ' + added + ' 个本地缺失的角色（本地已有角色完全保留）');
-                            } else {
-                                console.log('☁️ 云端无新增角色，本地数据完全保留');
-                            }
+                            // ⭐ 按时间戳合并
+                            console.log('☁️ 开始按时间戳合并云端数据...');
+                            var mergedCount = mergeCloudDataByTimestamp(
+                                loadData.data.roles || [],
+                                loadData.data.config,
+                                loadData.data.diaries
+                            );
+                            console.log('☁️ 合并完成，共改动 ' + mergedCount + ' 处');
+                            // 保存回本地
+                            var mergedSaveData = {
+                                config: CONFIG,
+                                roles: roles.map(function(r) { return deepCloneRole(r); }),
+                                currentRoleId: currentRoleId
+                            };
+                            localStorage.setItem('ds_multirole_v2', JSON.stringify(mergedSaveData));
                         }
                     }
                 } catch (e) {
                     console.error('加载云端数据失败:', e);
                 }
                 // ===== 结束 =====
+
                 
                 alert('✨ 欢迎回来！');
                 hideLoginScreen();
@@ -3111,9 +3111,79 @@ function getLevel(value) { for (var i = 0; i < CONSTANTS.LEVEL_MAP.length; i++) 
 function getIntimacyLevel(intimacy) { if (intimacy < 20) return '初识'; if (intimacy < 40) return '熟悉'; if (intimacy < 60) return '亲密'; if (intimacy < 80) return '依赖'; return '灵魂伴侣'; }
 function getHeartData(role) { if (!role) return { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; if (!role.heartData) { role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; debouncedSaveAllData(); } return role.heartData; }
 
+// ===== 按时间戳合并云端数据到本地（谁新用谁） =====
+function mergeCloudDataByTimestamp(cloudRoles, cloudConfig, cloudDiaries) {
+    if (!Array.isArray(cloudRoles) || cloudRoles.length === 0) return 0;
+
+    var merged = 0;
+
+    cloudRoles.forEach(function(cloudRole) {
+        var localRole = roles.find(function(r) { return r.id === cloudRole.id; });
+
+        if (!localRole) {
+            // 本地没有这个角色 → 直接加
+            cloudRole.lastModified = cloudRole.lastModified || Date.now();
+            roles.push(cloudRole);
+            merged++;
+            console.log('  ✅ 新增角色：' + cloudRole.name);
+        } else {
+            // 本地有 → 比较时间戳
+            var localTime = localRole.lastModified || 0;
+            var cloudTime = cloudRole.lastModified || 0;
+
+            if (cloudTime > localTime) {
+                // 云端更新 → 用云端整个替换（保留本地不存在的字段）
+                var idx = roles.findIndex(function(r) { return r.id === localRole.id; });
+                if (idx !== -1) {
+                    roles[idx] = cloudRole;
+                    merged++;
+                    console.log('  ✅ 云端更新：' + cloudRole.name + ' (云端 ' + new Date(cloudTime).toLocaleString() + ' > 本地 ' + new Date(localTime).toLocaleString() + ')');
+                }
+            } else {
+                console.log('  📌 保留本地：' + localRole.name + ' (本地 ' + new Date(localTime).toLocaleString() + ' >= 云端 ' + new Date(cloudTime).toLocaleString() + ')');
+            }
+        }
+    });
+
+    // 合并配置
+    if (cloudConfig) {
+        Object.keys(cloudConfig).forEach(function(key) {
+            if (CONFIG[key] === undefined || CONFIG[key] === null || CONFIG[key] === '') {
+                CONFIG[key] = cloudConfig[key];
+            }
+        });
+    }
+
+    // 合并日记
+    if (Array.isArray(cloudDiaries)) {
+        if (!Array.isArray(CONFIG.diaries)) CONFIG.diaries = [];
+        var localIds = {};
+        CONFIG.diaries.forEach(function(d) { if (d.id) localIds[d.id] = true; });
+        cloudDiaries.forEach(function(d) {
+            if (d.id && !localIds[d.id]) {
+                CONFIG.diaries.push(d);
+                merged++;
+            }
+        });
+    }
+
+    return merged;
+}
+
+// ===== 给角色打时间戳（保存前调用） =====
+function tagRoleTimestamps() {
+    var now = Date.now();
+    roles.forEach(function(r) {
+        r.lastModified = now;
+    });
+}
+
 function immediateSaveAllData() {
     try {
+        // ⭐ 关键：保存前给所有角色打时间戳
+        tagRoleTimestamps();
         // ===== 1. 先保存到本地 =====
+
         var configToSave = JSON.parse(JSON.stringify(CONFIG));
         if (configToSave.heart) delete configToSave.heart.recoveryTimer;
         
@@ -3170,6 +3240,7 @@ function debouncedSaveAllData() {
 
 function saveAllData() {
     try {
+        tagRoleTimestamps();
         var configToSave = JSON.parse(JSON.stringify(CONFIG));
         if (configToSave.heart) delete configToSave.heart.recoveryTimer;
         var wallpaperFlag = configToSave.wallpaper ? 'saved' : '';
@@ -3189,7 +3260,8 @@ function deepCloneRole(role) {
         persona: role.persona || '', background: role.background || '', style: role.style || '',
         extra: role.extra || '', messages: [], memory: [], heartData: null,
         createdAt: role.createdAt || new Date().toISOString(), extendedState: null,
-        voiceId: role.voiceId || ''
+        voiceId: role.voiceId || '',
+        lastModified: role.lastModified || 0  // ⭐ 保留时间戳
     };
     if (Array.isArray(role.messages)) {
         clone.messages = role.messages.map(function(m) {
@@ -11304,7 +11376,7 @@ initCallFloatingDrag();
         console.error('通话系统初始化失败:', e);
     }
 
-// ===== 启动时合并云端数据（本地优先） =====
+// ===== 启动时按时间戳合并云端数据 =====
     var token = localStorage.getItem('dream_token');
     if (token) {
         setTimeout(function() {
@@ -11314,12 +11386,9 @@ initCallFloatingDrag();
             .then(function(res) { return res.json(); })
             .then(function(result) {
                 if (result.success && result.data && result.data.roles) {
-                    var cloudRoles = result.data.roles || [];
-                    var localRoles = roles || [];
-
-                    if (localRoles.length === 0) {
-                        // 本地空 → 用云端
-                        roles = cloudRoles;
+                    // 本地空 → 全搬
+                    if (roles.length === 0) {
+                        roles = result.data.roles;
                         CONFIG = result.data.config || CONFIG;
                         CONFIG.diaries = result.data.diaries || [];
                         if (!currentRoleId || !roles.find(function(r) { return r.id === currentRoleId; })) {
@@ -11334,21 +11403,19 @@ initCallFloatingDrag();
                         if (typeof updateHeartDisplay === 'function') updateHeartDisplay();
                         console.log('☁️ 本地为空，已从云端加载');
                     } else {
-                        // 本地有 → 只补充缺失角色
-                        var added = 0;
-                        cloudRoles.forEach(function(cloudRole) {
-                            var exists = localRoles.find(function(r) { return r.id === cloudRole.id; });
-                            if (!exists) {
-                                localRoles.push(cloudRole);
-                                added++;
-                            }
-                        });
-                        if (added > 0) {
-                            console.log('☁️ 已从云端补充 ' + added + ' 个角色');
-                            renderContacts();
-                            renderRoleManager();
-                        } else {
-                            console.log('☁️ 本地数据完整，无需补充');
+                        // ⭐ 按时间戳合并
+                        console.log('☁️ 开始按时间戳合并...');
+                        var merged = mergeCloudDataByTimestamp(
+                            result.data.roles,
+                            result.data.config,
+                            result.data.diaries
+                        );
+                        console.log('☁️ 合并完成，改动 ' + merged + ' 处');
+                        if (merged > 0) {
+                            var mergedSave = { config: CONFIG, roles: roles.map(function(r) { return deepCloneRole(r); }), currentRoleId: currentRoleId };
+                            localStorage.setItem('ds_multirole_v2', JSON.stringify(mergedSave));
+                            if (typeof renderContacts === 'function') renderContacts();
+                            if (typeof renderRoleManager === 'function') renderRoleManager();
                         }
                     }
                 }
@@ -11457,6 +11524,36 @@ else if (app === 'video') openVideoLibrary();
     setInterval(function() { processUserMomentPendingReplies(); }, 2 * 60 * 1000);
     // 初始化红点显示
     updateMomentBadge();
+
+    // ⭐ 新增：主应用朋友圈自动刷新（每 5 秒检查手机端数据变化）
+    var _lastMomentHash = '';
+    setInterval(function() {
+        // 只在朋友圈 tab 打开时才刷新
+        var momentsView = document.getElementById('contactsMomentsView');
+        if (!momentsView || momentsView.style.display !== 'block') return;
+
+        // 计算手机端朋友圈数据的"指纹"
+        var hash = '';
+        roles.forEach(function(role) {
+            var raw = localStorage.getItem('phone_data_' + role.id);
+            if (raw) {
+                try {
+                    var d = JSON.parse(raw);
+                    var ms = d.moments || [];
+                    hash += role.id + ':' + ms.length + ':' + (ms.length > 0 ? (ms[ms.length-1].time || '') : '') + '|';
+                } catch(e) {}
+            }
+        });
+
+        // 指纹变了 → 重新渲染
+        if (hash !== _lastMomentHash) {
+            _lastMomentHash = hash;
+            if (typeof renderMainAppMoments === 'function') {
+                renderMainAppMoments();
+                console.log('🔄 检测到手机端朋友圈更新，主应用已刷新');
+            }
+        }
+    }, 5000);
 
 document.getElementById('backFromChat').addEventListener('click', closeChat);
     document.getElementById('backFromMeme').addEventListener('click', closeMeme);
@@ -13957,29 +14054,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                if (cloudData.roles && cloudData.roles.length > 0) {
-                    // ⭐ 修复：本地优先，云端只补充本地没有的角色，绝不覆盖已有角色的数据
+               if (cloudData.roles && cloudData.roles.length > 0) {
                     if (roles.length === 0) {
-                        // 本地完全为空 → 才用云端
                         roles = cloudData.roles;
                         if (!currentRoleId || !roles.find(function(r) { return r.id === currentRoleId; })) {
                             currentRoleId = roles[0] ? roles[0].id : null;
                         }
-                        console.log('☁️ 本地为空，已从云端加载 ' + roles.length + ' 个角色');
+                        console.log('☁️ 本地为空，已从云端加载');
                     } else {
-                        // 本地有数据 → 只补充云端有、但本地没有的角色
-                        var added = 0;
-                        cloudData.roles.forEach(function(cloudRole) {
-                            var exists = roles.find(function(r) { return r.id === cloudRole.id; });
-                            if (!exists) {
-                                roles.push(cloudRole);
-                                added++;
-                            }
-                        });
-                        if (added > 0) {
-                            console.log('☁️ 已从云端补充 ' + added + ' 个本地缺失的角色（本地已有角色未被覆盖）');
+                        // ⭐ 按时间戳合并
+                        var merged2 = mergeCloudDataByTimestamp(
+                            cloudData.roles,
+                            cloudData.config,
+                            cloudData.diaries
+                        );
+                        if (merged2 > 0) {
+                            console.log('☁️ 按时间戳合并完成，改动 ' + merged2 + ' 处');
                         } else {
-                            console.log('☁️ 云端角色与本地完全一致，无补充');
+                            console.log('☁️ 本地数据已是最新，无需合并');
                         }
                     }
                 }
