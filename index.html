@@ -3751,18 +3751,23 @@ function blobToBase64Main(blob) {
     });
 }
 
-// ===== 读取指定角色的参考图（正面照优先） =====
-async function loadRefImageForRole(roleId) {
+// ===== 读取指定角色的所有参考图（返回数组） =====
+async function loadAllRefImagesForRole(roleId) {
+    var result = [];
     // 优先多图版（refImages_<roleId>）
     var refImages = await loadImageConfigForMain('refImages_' + roleId);
     if (Array.isArray(refImages)) {
-        for (var i = 0; i < refImages.length; i++) {
-            if (refImages[i]) return refImages[i];  // 返回第一张（正面照）
-        }
+        // 按顺序：正面、全身、侧面、背面、其他（索引 0-4）
+        refImages.forEach(function(img, idx) {
+            if (img) result.push({ img: img, slot: idx });
+        });
     }
     // 兜底：旧单图版（refImage_<roleId>）
-    var single = await loadImageConfigForMain('refImage_' + roleId);
-    return single || null;
+    if (result.length === 0) {
+        var single = await loadImageConfigForMain('refImage_' + roleId);
+        if (single) result.push({ img: single, slot: 0 });
+    }
+    return result;
 }
 
 function isVoiceTrigger(text) {
@@ -6873,12 +6878,28 @@ async function processUserMomentPendingReplies() {
 
 // ===== 生成自拍：AI 生成 prompt =====
 
-async function generateSelfiePrompt(role, userMessage) {
+async function generateSelfiePrompt(role, userMessage, refList) {
     var recentMsgs = (role.messages || []).slice(-8).map(function(m) {
         return (m.role === 'user' ? '用户' : role.name) + '：' + (m.content || '').substring(0, 60);
     }).join('\n');
 
+    // ⭐ 新增：根据实际传入的参考图，告诉 AI 有哪些素材
+    var refInfo = '';
+    if (refList && refList.length > 0) {
+        var slots = refList.map(function(item) { return item.slot; });
+        refInfo = '\n【系统会提供的参考图】\n';
+        slots.forEach(function(slot) {
+            if (slot === 0) refInfo += '- 图1：正面照（提供脸部特征）\n';
+            else if (slot === 1) refInfo += '- 图2：全身照（提供身材比例）\n';
+            else if (slot === 2) refInfo += '- 图3：侧面照（提供侧脸特征）\n';
+            else if (slot === 3) refInfo += '- 图4：背面照（提供背部/发型参考）\n';
+            else refInfo += '- 其他参考图\n';
+        });
+        refInfo += '⚠️ 系统会严格使用这些参考图作为人物一致性约束，你只需要描述场景，不要描述人物长相和身材。\n\n';
+    }
+
     var sys = '你是' + role.name + '。用户说想看你，你准备拍一张自拍发给他。请根据你的人设和最近对话，用一段英文描述这张自拍的内容。\n\n' +
+        refInfo +
         '【人设】' + (role.persona || '一个真实的人') + '\n' +
         '【背景】' + (role.background || '') + '\n\n' +
         '【⚠️ 核心硬性要求 - 必须遵守】\n' +
@@ -6895,6 +6916,12 @@ async function generateSelfiePrompt(role, userMessage) {
         '- 不要描述人物长相特征（系统会用参考图）\n' +
         '- 只输出英文描述，不要中文，不要解释，不要加引号\n' +
         '- 40-80 字英文\n\n' +
+
+'【⚠️ 人物一致性约束】\n' +
+        '- 严格保持参考图中的脸部特征、发型、身材比例\n' +
+        '- 不要改变人物的种族、性别、体型\n' +
+        '- 输出的画面里人物应该是【参考图里的这个人】，只是换了场景和动作\n\n' +
+
         '【正确的示例】\n' +
         '✓ "A young man taking a selfie in a cozy study room, holding a book, eyes looking directly at the camera, slight confident smile, warm lamp light, dark casual shirt, evening atmosphere, realistic front camera selfie"\n' +
         '✓ "Selfie shot of a young man in a café, head slightly turned but eyes on the camera, holding a coffee cup, soft daylight from the window, casual outfit, relaxed vibe, realistic photo"\n\n' +
@@ -6921,8 +6948,20 @@ async function generateSelfiePrompt(role, userMessage) {
     }
 }
 
-// ===== 调用 wan2.7-image-pro 生成自拍 =====
-async function callWanSelfieAPI(apiKey, refImage, prompt) {
+// ===== 调用 wan2.7-image-pro 生成自拍（多图参考版） =====
+async function callWanSelfieAPI(apiKey, refList, prompt) {
+    // refList: [{img: base64, slot: 0-4}, ...]
+    // slot 含义：0=正面, 1=全身, 2=侧面, 3=背面, 4=其他
+
+    // 构造多图参考：按 slot 排序，正面优先
+    var sortedList = refList.slice().sort(function(a, b) { return a.slot - b.slot; });
+    var contentArray = [{ text: prompt }];
+    sortedList.slice(0, 5).forEach(function(item) {  // 最多传 5 张
+        contentArray.push({ image: item.img });
+    });
+
+    console.log('📤 传给模型 ' + (contentArray.length - 1) + ' 张参考图');
+
     var resp = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
         method: 'POST',
         headers: {
@@ -6934,10 +6973,7 @@ async function callWanSelfieAPI(apiKey, refImage, prompt) {
             input: {
                 messages: [{
                     role: 'user',
-                    content: [
-                        { text: prompt },
-                        { image: refImage }
-                    ]
+                    content: contentArray
                 }]
             },
             parameters: { n: 1, size: '2K', watermark: false }
@@ -6960,18 +6996,21 @@ async function generateChatSelfie(role, userMessage) {
     console.log('📸 开始生成自拍，角色：' + role.name + ' (id=' + role.id + ')');
 
     try {
-        // 1. 严格读取当前角色的参考图
-        var refImage = await loadRefImageForRole(role.id);
-        if (!refImage) {
+        // 1. 严格读取当前角色的【所有】参考图
+        var refList = await loadAllRefImagesForRole(role.id);
+        if (refList.length === 0) {
             console.warn('⚠️ 角色 ' + role.name + ' 没有参考图，无法生成');
             addMessageToRole(role.id, 'assistant', '我还没给你看过我长什么样呢...先去「他的手机 → 设置 → 我的参考照片」上传几张吧？');
             renderMessages();
             return;
         }
-        console.log('✅ 参考图已读取，长度：' + refImage.length);
+        console.log('✅ 读取到 ' + refList.length + ' 张参考图');
+        refList.forEach(function(item, i) {
+            console.log('   参考图' + (i+1) + ': slot=' + item.slot + ', 长度=' + item.img.length);
+        });
 
         // 2. AI 生成 prompt
-        var imagePrompt = await generateSelfiePrompt(role, userMessage);
+        var imagePrompt = await generateSelfiePrompt(role, userMessage, refList);
         if (!imagePrompt) {
             console.warn('⚠️ prompt 生成失败');
             return;
@@ -6987,7 +7026,7 @@ async function generateChatSelfie(role, userMessage) {
             return;
         }
 
-        var imageUrl = await callWanSelfieAPI(apiKey, refImage, imagePrompt);
+        var imageUrl = await callWanSelfieAPI(apiKey, refList, imagePrompt);
         if (!imageUrl) {
             console.warn('⚠️ 图片生成失败');
             return;
