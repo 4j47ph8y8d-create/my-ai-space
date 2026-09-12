@@ -1192,7 +1192,19 @@ async function generateMoments(role, pd) {
         return (m.role === 'user' ? '用户' : role.name) + '：' + (m.content || '').substring(0, 80);
     }).join('\n');
 
+    var _nowObj = new Date();
+    var _currentTimeStr = String(_nowObj.getHours()).padStart(2, '0') + ':' + String(_nowObj.getMinutes()).padStart(2, '0');
+    var _currentDateStr = _nowObj.getFullYear() + '-' + String(_nowObj.getMonth() + 1).padStart(2, '0') + '-' + String(_nowObj.getDate()).padStart(2, '0');
+
     var sys = '你是' + role.name + '。请生成 2-3 条符合你人设的朋友圈动态，可以包含思念、日常、心情。有些可以是"仅自己可见"。\n\n' +
+        '【当前时间】现在是 ' + _currentDateStr + ' ' + _currentTimeStr + '\n' +
+        '⚠️ 每条动态必须【时间与内容吻合】：\n' +
+        '- 如果内容提到"晚霞/日落/黄昏/傍晚"，时间应该是 17:00-19:30\n' +
+        '- 如果内容提到"清晨/早上/朝阳"，时间应该是 05:00-09:00\n' +
+        '- 如果内容提到"中午/午休/午饭"，时间应该是 11:30-14:00\n' +
+        '- 如果内容提到"深夜/凌晨/失眠"，时间应该是 22:00-03:00\n' +
+        '- 如果内容是"日常/感慨/心情"，就正常分配 08:00-22:00 之间的时间\n' +
+        '- 绝对不能出现"晚霞内容 + 中午时间"这种矛盾！\n\n' +
         '【配图决策规则 - 非常重要】\n' +
         '你需要为每条动态判断是否需要配图：\n' +
         '1. 如果内容适合用图片表达（分享风景、食物、宠物、自拍、物品、日常片段、街景、天空等），设 needImage=true\n' +
@@ -1219,7 +1231,8 @@ async function generateMoments(role, pd) {
         '      "visibility": "public 或 private",\n' +
         '      "needImage": true 或 false,\n' +
         '      "imageType": "selfie/scene/food/item/pet/other",\n' +
-        '      "imagePrompt": "英文或中文的图片详细描述（needImage 为 true 时必填）"\n' +
+        '      "imagePrompt": "英文或中文的图片详细描述（needImage 为 true 时必填）",\n' +
+        '      "time": "HH:MM 格式的具体时间，必须与内容吻合"\n' +
         '    }\n' +
         '  ]\n' +
         '}';
@@ -1230,24 +1243,34 @@ async function generateMoments(role, pd) {
     var json = parseJSON(result);
     var newMoments = [];
     if (json && json.moments && Array.isArray(json.moments)) {
-        // ⭐ 时间线修复：第一条最接近现在（0.5-3 小时前），
-        // 后面的依次再往前推，保证时间严格递减、不错乱
-        // ⭐ 时间线修复：如果已有旧动态，新的从旧动态最新一条之前开始排
-        var baseTime = Date.now();
-        if (kept.length > 0) {
-            var oldTimes = kept.map(function(m) { return new Date(m.time).getTime(); });
-            var latestOld = Math.max.apply(null, oldTimes);
-            baseTime = latestOld;  // 新动态都排在旧动态之前
-        }
+        // ⭐ 时间戳修复：优先用 AI 给的时间（HH:MM），否则用默认逻辑
+        var today = new Date();
+        var fallbackBaseTime = Date.now();
         var cumulativeOffset = 0;
         newMoments = json.moments.map(function(m, idx) {
             var needImg = !!m.needImage;
             var validTypes = ['selfie', 'scene', 'food', 'item', 'pet', 'other'];
             var imgType = validTypes.indexOf(m.imageType) !== -1 ? m.imageType : 'scene';
-            // 每条间隔 0.5 ~ 3 小时，累计往前推
-            var gap = (0.5 + Math.random() * 2.5) * 3600 * 1000;
-            cumulativeOffset += gap;
-            var momentTime = new Date(baseTime - cumulativeOffset).toISOString();
+
+            // ⭐ 关键：优先用 AI 给的时间
+            var momentTime;
+            if (m.time && /^\d{1,2}:\d{2}$/.test(m.time)) {
+                var parts = m.time.split(':');
+                var h = parseInt(parts[0]);
+                var min = parseInt(parts[1]);
+                var d = new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, min, 0);
+                // 如果 AI 给的时间是"未来"（今天还没到），往前推一天
+                if (d.getTime() > Date.now()) {
+                    d.setDate(d.getDate() - 1);
+                }
+                momentTime = d.toISOString();
+                console.log('📅 AI 指定时间 ' + m.time + ' → ' + d.toLocaleString());
+            } else {
+                // 兜底：用原逻辑
+                var gap = (0.5 + Math.random() * 2.5) * 3600 * 1000;
+                cumulativeOffset += gap;
+                momentTime = new Date(fallbackBaseTime - cumulativeOffset).toISOString();
+            }
             return {
                 id: 'moment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
                 content: m.content || '',
