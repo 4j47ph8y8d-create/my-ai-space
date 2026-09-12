@@ -2878,37 +2878,49 @@ if (data.user && data.user.role) {
                     localStorage.removeItem('dream_user_remember');
                 }
                 
-                // ===== 新增：登录后从云端加载数据 =====
+                // ===== 登录后合并云端数据（本地优先，云端只补充） =====
                 try {
                     const loadRes = await fetch(API_BASE + '/data/load', {
                         headers: { 'Authorization': 'Bearer ' + data.token }
                     });
                     const loadData = await loadRes.json();
-                    if (loadData.success && loadData.data && loadData.data.roles && loadData.data.roles.length > 0) {
-                        // ⭐ 本地优先：只有本地为空时才用云端
-                        if (!roles || roles.length === 0) {
-                            roles = loadData.data.roles;
-                            console.log('☁️ 登录时本地为空，已从云端加载');
+                    if (loadData.success && loadData.data) {
+                        var cloudRoles = loadData.data.roles || [];
+                        var localRaw = localStorage.getItem('ds_multirole_v2');
+                        var localData = localRaw ? JSON.parse(localRaw) : null;
+
+                        if (!localData || !localData.roles || localData.roles.length === 0) {
+                            // 本地为空 → 用云端
+                            if (cloudRoles.length > 0) {
+                                localStorage.setItem('ds_multirole_v2', JSON.stringify({
+                                    config: loadData.data.config || {},
+                                    roles: cloudRoles,
+                                    currentRoleId: cloudRoles[0].id
+                                }));
+                                console.log('☁️ 本地为空，已从云端加载 ' + cloudRoles.length + ' 个角色');
+                            }
                         } else {
-                            console.log('☁️ 登录时本地已有数据，跳过云端覆盖');
+                            // 本地有数据 → 只补充"本地没有的角色"，绝不覆盖已有角色
+                            var added = 0;
+                            cloudRoles.forEach(function(cloudRole) {
+                                var exists = localData.roles.find(function(r) { return r.id === cloudRole.id; });
+                                if (!exists) {
+                                    localData.roles.push(cloudRole);
+                                    added++;
+                                }
+                            });
+                            if (added > 0) {
+                                localStorage.setItem('ds_multirole_v2', JSON.stringify(localData));
+                                console.log('☁️ 已从云端补充 ' + added + ' 个本地缺失的角色（本地已有角色完全保留）');
+                            } else {
+                                console.log('☁️ 云端无新增角色，本地数据完全保留');
+                            }
                         }
-                        CONFIG = loadData.data.config || CONFIG;
-                        CONFIG.diaries = loadData.data.diaries || [];
-                        if (roles.length > 0) {
-                            currentRoleId = roles[0].id;
-                        }
-                        var saveData = {
-                            config: CONFIG,
-                            roles: roles,
-                            currentRoleId: currentRoleId
-                        };
-                        localStorage.setItem('ds_multirole_v2', JSON.stringify(saveData));
-                        console.log('☁️ 已从云端加载数据');
                     }
                 } catch (e) {
                     console.error('加载云端数据失败:', e);
                 }
-                // ===== 新增结束 =====
+                // ===== 结束 =====
                 
                 alert('✨ 欢迎回来！');
                 hideLoginScreen();
@@ -11253,7 +11265,7 @@ initCallFloatingDrag();
         console.error('通话系统初始化失败:', e);
     }
 
-// ===== 新增：登录后检查云端数据 =====
+// ===== 启动时合并云端数据（本地优先） =====
     var token = localStorage.getItem('dream_token');
     if (token) {
         setTimeout(function() {
@@ -11265,30 +11277,40 @@ initCallFloatingDrag();
                 if (result.success && result.data && result.data.roles) {
                     var cloudRoles = result.data.roles || [];
                     var localRoles = roles || [];
-                    
-                    // 如果云端有数据，且比本地多，或本地为空，则使用云端数据
-                    if (false && (cloudRoles.length > localRoles.length || localRoles.length === 0)) {
-                        console.log('☁️ 检测到云端有更新的数据，正在同步...');
+
+                    if (localRoles.length === 0) {
+                        // 本地空 → 用云端
                         roles = cloudRoles;
                         CONFIG = result.data.config || CONFIG;
                         CONFIG.diaries = result.data.diaries || [];
                         if (!currentRoleId || !roles.find(function(r) { return r.id === currentRoleId; })) {
                             currentRoleId = roles[0] ? roles[0].id : null;
                         }
-                        // 保存到本地
-                        var saveData = {
-                            config: CONFIG,
-                            roles: roles,
-                            currentRoleId: currentRoleId
-                        };
+                        var saveData = { config: CONFIG, roles: roles, currentRoleId: currentRoleId };
                         localStorage.setItem('ds_multirole_v2', JSON.stringify(saveData));
-                        // 刷新界面
                         if (typeof renderContacts === 'function') renderContacts();
                         if (typeof renderRoleManager === 'function') renderRoleManager();
                         if (typeof renderDiaryAll === 'function') renderDiaryAll();
                         if (typeof updateChatTitle === 'function') updateChatTitle();
                         if (typeof updateHeartDisplay === 'function') updateHeartDisplay();
-                        showToast('☁️ 已从云端同步数据');
+                        console.log('☁️ 本地为空，已从云端加载');
+                    } else {
+                        // 本地有 → 只补充缺失角色
+                        var added = 0;
+                        cloudRoles.forEach(function(cloudRole) {
+                            var exists = localRoles.find(function(r) { return r.id === cloudRole.id; });
+                            if (!exists) {
+                                localRoles.push(cloudRole);
+                                added++;
+                            }
+                        });
+                        if (added > 0) {
+                            console.log('☁️ 已从云端补充 ' + added + ' 个角色');
+                            renderContacts();
+                            renderRoleManager();
+                        } else {
+                            console.log('☁️ 本地数据完整，无需补充');
+                        }
                     }
                 }
             })
