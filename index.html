@@ -6955,63 +6955,82 @@ async function generateSelfiePrompt(role, userMessage, refList) {
         return (m.role === 'user' ? '用户' : role.name) + '：' + (m.content || '').substring(0, 60);
     }).join('\n');
 
-    // ⭐ 新增：根据实际传入的参考图，告诉 AI 有哪些素材
+    // 根据实际传入的参考图，告诉 AI 有哪些素材
     var refInfo = '';
     if (refList && refList.length > 0) {
-        var slots = refList.map(function(item) { return item.slot; });
-        refInfo = '\n【系统会提供的参考图】\n';
-        slots.forEach(function(slot) {
-            if (slot === 0) refInfo += '- 图1：正面照（提供脸部特征）\n';
-            else if (slot === 1) refInfo += '- 图2：全身照（提供身材比例）\n';
-            else if (slot === 2) refInfo += '- 图3：侧面照（提供侧脸特征）\n';
-            else if (slot === 3) refInfo += '- 图4：背面照（提供背部/发型参考）\n';
-            else refInfo += '- 其他参考图\n';
+        var hasFace = false, hasBody = false, hasSide = false;
+        refList.forEach(function(item) {
+            if (item.slot === 0) hasFace = true;
+            if (item.slot === 1) hasBody = true;
+            if (item.slot === 2) hasSide = true;
         });
-        refInfo += '⚠️ 系统会严格使用这些参考图作为人物一致性约束，你只需要描述场景，不要描述人物长相和身材。\n\n';
+        refInfo = '\n【系统会提供的参考图】\n';
+        if (hasFace) refInfo += '- 正面照（提供脸型、五官、发型、性别）\n';
+        if (hasBody) refInfo += '- 全身照（提供身材比例、体型）\n';
+        if (hasSide) refInfo += '- 侧面照（提供侧脸轮廓、发型）\n';
+        refInfo += '⚠️ 系统会用参考图严格约束人物的【脸、体型、性别、发型】。\n';
+        refInfo += '⚠️ 你不需要描述这些特征（说了也没用），只需要描述【场景、动作、衣服、氛围】。\n\n';
+    }
+
+    // 从人设中推断衣服风格
+    var personaText = (role.persona || '') + ' ' + (role.background || '') + ' ' + (role.extra || '');
+    var personaStyle = '';
+    if (personaText) {
+        personaStyle = '\n【角色人设（用于决定衣服和场景风格）】\n' + personaText.trim() + '\n\n' +
+            '⚠️ 衣服必须符合这个人设，例如：\n' +
+            '- 如果是学生/大学生 → 简洁休闲装\n' +
+            '- 如果是上班族/白领 → 衬衫西裤或商务休闲\n' +
+            '- 如果是艺术工作者 → 有设计感的衣服\n' +
+            '- 如果是运动型角色 → 运动服或休闲卫衣\n' +
+            '- 如果是居家场景 → 家居服、宽松T恤\n' +
+            '⚠️ 绝对不能出现和角色气质完全不符的衣服！\n\n';
     }
 
     var sys = '你是' + role.name + '。用户说想看你，你准备拍一张自拍发给他。请根据你的人设和最近对话，用一段英文描述这张自拍的内容。\n\n' +
+        '【⚠️ 核心规则】\n' +
+        '1. 你只负责描述【场景、动作、衣服、氛围、光线】，绝对不要描述人物长相\n' +
+        '2. 系统会用你上传的参考图自动约束人物的：脸型、五官、体型、性别、发型\n' +
+        '3. 描述时用第一人称视角（像是真的在自拍）\n' +
         refInfo +
-        '【人设】' + (role.persona || '一个真实的人') + '\n' +
-        '【背景】' + (role.background || '') + '\n\n' +
-        '【⚠️ 核心硬性要求 - 必须遵守】\n' +
+        personaStyle +
+        '【⚠️ 自拍硬性要求】\n' +
         '1. 必须是【自拍视角】：selfie, holding phone, front camera angle, arm visible 等描述\n' +
-        '2. 【必须看着镜头】：eyes looking directly at camera, making eye contact with camera, gazing at camera lens 等。这是重点，一定要写清楚！\n' +
-        '3. 允许的姿态（三选一即可）：\n' +
-        '   - 正脸面对镜头（facing camera directly）\n' +
-        '   - 微侧脸但眼睛看镜头（head slightly turned but eyes still on camera）\n' +
-        '   - 微微低头/抬头但眼睛看镜头（head tilted but eyes on camera）\n' +
-        '4. ⚠️ 禁止：闭眼、看别处、看窗外、背影、全身照、多人合影、手机屏幕遮脸\n\n' +
+        '2. 【必须看着镜头】：eyes looking directly at camera, making eye contact with the camera\n' +
+        '3. 允许的姿态（三选一）：\n' +
+        '   - 正脸看镜头（facing camera directly）\n' +
+        '   - 微侧脸但眼睛看镜头（head slightly turned, eyes on camera）\n' +
+        '   - 微微低头/抬头看镜头（head tilted, eyes on camera）\n' +
+        '4. ⚠️ 禁止：闭眼、看别处、背影、多人合影、手机挡脸\n\n' +
         '【其他要求】\n' +
         '- 描述场景（在哪里、在做什么）\n' +
         '- 描述氛围、光线、构图\n' +
-        '- 不要描述人物长相特征（系统会用参考图）\n' +
         '- 只输出英文描述，不要中文，不要解释，不要加引号\n' +
         '- 40-80 字英文\n\n' +
-
-'【⚠️ 人物一致性约束】\n' +
-        '- 严格保持参考图中的脸部特征、发型、身材比例\n' +
-        '- 不要改变人物的种族、性别、体型\n' +
-        '- 输出的画面里人物应该是【参考图里的这个人】，只是换了场景和动作\n\n' +
-
         '【正确的示例】\n' +
-        '✓ "A young man taking a selfie in a cozy study room, holding a book, eyes looking directly at the camera, slight confident smile, warm lamp light, dark casual shirt, evening atmosphere, realistic front camera selfie"\n' +
-        '✓ "Selfie shot of a young man in a café, head slightly turned but eyes on the camera, holding a coffee cup, soft daylight from the window, casual outfit, relaxed vibe, realistic photo"\n\n' +
+        '✓ "A young man taking a selfie in his cozy study room, wearing a simple white t-shirt, holding a book, eyes looking directly at the camera, soft warm lamp light, evening atmosphere, realistic front camera selfie"\n' +
+        '✓ "Selfie shot in a café, wearing a light gray hoodie, head slightly turned but eyes on the camera, holding a coffee cup, soft daylight from the window, relaxed vibe, realistic photo"\n\n' +
         '【错误的示例 - 不要模仿】\n' +
         '✗ "looking at the sunset"（看别处）\n' +
         '✗ "eyes closed, enjoying the moment"（闭眼）\n' +
-        '✗ "back view"（背影）';
+        '✗ "A white-haired man"（描述长相，不要！）\n' +
+        '✗ "wearing a tuxedo"（如果人设不是商务角色，穿西装不合理）';
 
-    var user = '最近对话：\n' + recentMsgs + '\n\n用户刚刚说：' + userMessage + '\n\n请生成自拍描述（务必遵守"眼睛看镜头"的核心要求）：';
+    var user = '最近对话：\n' + recentMsgs + '\n\n用户刚刚说：' + userMessage + '\n\n请生成自拍描述（注意：只描述场景/衣服/动作，不要描述长相）：';
 
     try {
         var result = await callAIForMomentReply(sys, user, 1000);
         if (!result) return null;
         var cleaned = result.trim().replace(/^["「『]|["」』]$/g, '').trim();
-        // ⭐ 兜底：如果 AI 没提"看镜头"，自动补上
+
+        // 兜底：如果 AI 没提"看镜头"，自动补上
         if (cleaned && !/camera|eye|gaze|looking at/i.test(cleaned)) {
             cleaned += ', eyes looking directly at the camera';
         }
+        // 兜底：强制说明是自拍
+        if (cleaned && !/selfie|front camera|holding phone/i.test(cleaned)) {
+            cleaned = 'Selfie shot: ' + cleaned;
+        }
+
         console.log('📸 自拍 prompt 已生成:', cleaned);
         return cleaned;
     } catch(e) {
