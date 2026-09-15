@@ -7200,13 +7200,21 @@ async function generateSelfiePrompt(role, userMessage, refList, selectedOutfit) 
 }
 
 // ===== 调用 wan2.7-image-pro 生成自拍（多图参考版） =====
+
 async function callWanSelfieAPI(apiKey, refList, prompt, selectedOutfit) {
     // refList: [{img: base64, slot: 0-4}, ...]
-    // slot 含义：0=正面, 1=全身, 2=侧面, 3=背面, 4=其他
     // selectedOutfit: 可选，衣柜里选中的衣服
 
-    // ⭐ 传入给模型的 prompt 开头，明确图片用途
-    if (selectedOutfit) {
+    // 1. 人物参考图：按 slot 排序（0=正面, 1=全身, 2=侧面, 3=背面, 4=其他）
+    var sortedList = refList.slice().sort(function(a, b) { return a.slot - b.slot; });
+    var filteredList = sortedList.slice(0, 5);  // ⭐ 关键：重新定义 filteredList
+
+    // 2. 构造 content 数组
+    var contentArray = [];
+
+    // 3. 构造 prompt
+    var finalPrompt = '';
+    if (selectedOutfit && selectedOutfit.image) {
         var personImgCount = filteredList.length;
         var totalImages = personImgCount + 1;
         finalPrompt =
@@ -7220,32 +7228,28 @@ async function callWanSelfieAPI(apiKey, refList, prompt, selectedOutfit) {
             '⚠️ Do NOT replace it with anything else. Do NOT use the outfit from images 1-' + personImgCount + '.\n\n' +
             'SCENE: ' + prompt + '\n\n' +
             'OUTPUT: A realistic selfie of the person (face + body from images 1-' + personImgCount + ') wearing the exact outfit from image ' + totalImages + ', in the described scene.';
-        console.log('📝 最终 prompt:', finalPrompt.substring(0, 300) + '...');
+        console.log('📝 最终 prompt:', finalPrompt.substring(0, 200) + '...');
     } else {
-        var personImgCount2 = filteredList.length;
-        finalPrompt = 'STRICT REFERENCE: Image 1 to ' + personImgCount2 + ' = character references: keep the same face, gender, body type, hairstyle. SCENE: ' + prompt;
+        finalPrompt = 'STRICT REFERENCE: Image 1 to ' + filteredList.length + ' = character references: keep the same face, gender, body type, hairstyle. SCENE: ' + prompt;
     }
 
-    var contentArray = [{ text: finalPrompt }];
+    // 4. 加入 prompt
+    contentArray.push({ text: finalPrompt });
 
-    // 1. 先放人物参考图（按 slot 排序，正面优先）
-    var sortedList = refList.slice().sort(function(a, b) { return a.slot - b.slot; });
-
-    // ⭐ 新逻辑：保留所有人物图（包括全身照，用于身材），但 prompt 里强调衣服来源
-    var filteredList = sortedList;
-
-    filteredList.slice(0, 5).forEach(function(item) {
+    // 5. 加入人物参考图
+    filteredList.forEach(function(item) {
         contentArray.push({ image: item.img });
     });
 
-    // 2. 再放衣服参考图（如果有）
+    // 6. 加入衣服参考图
     if (selectedOutfit && selectedOutfit.image) {
         contentArray.push({ image: selectedOutfit.image });
         console.log('👔 已加入衣服参考图：「' + selectedOutfit.name + '」');
     }
 
-    console.log('📤 传给模型 ' + (contentArray.length - 1) + ' 张参考图（' + refList.length + ' 人物 + ' + (selectedOutfit ? 1 : 0) + ' 衣服）');
+    console.log('📤 传给模型 ' + (contentArray.length - 1) + ' 张参考图（' + filteredList.length + ' 人物 + ' + (selectedOutfit && selectedOutfit.image ? 1 : 0) + ' 衣服）');
 
+    // 7. 调用 API
     var resp = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
         method: 'POST',
         headers: {
@@ -7264,6 +7268,7 @@ async function callWanSelfieAPI(apiKey, refList, prompt, selectedOutfit) {
         }),
         cache: 'no-store'
     });
+
     var data = await resp.json();
     if (data.code) throw new Error(data.message || data.code);
     var content = data.output && data.output.choices && data.output.choices[0] && data.output.choices[0].message && data.output.choices[0].message.content;
