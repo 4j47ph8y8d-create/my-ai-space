@@ -7206,22 +7206,35 @@ async function callWanSelfieAPI(apiKey, refList, prompt, selectedOutfit) {
     // selectedOutfit: 可选，衣柜里选中的衣服
 
     // ⭐ 传入给模型的 prompt 开头，明确图片用途
-    var finalPrompt = prompt;
     if (selectedOutfit) {
-        finalPrompt = 'STRICT REFERENCE GUIDE: ' +
-            'Image 1 to ' + refList.length + ' = character references: keep the EXACT same face, facial features, gender, body type and hairstyle as these images. ' +
-            'Image ' + (refList.length + 1) + ' = OUTFIT reference: the character must wear EXACTLY the clothing shown in this image — same color, same fabric, same design, same everything. DO NOT invent or change the clothing. ' +
-            'SCENE: ' + prompt + ' ' +
-            'The final image must look like the same person from images 1-' + refList.length + ' wearing the exact outfit from image ' + (refList.length + 1) + ', in the described scene.';
+        var personImgCount = filteredList.length;
+        var totalImages = personImgCount + 1;
+        finalPrompt =
+            '╔══════════════════════════════════════╗\n' +
+            '║  IMAGE ROLES (STRICTLY FOLLOW)        ║\n' +
+            '╚══════════════════════════════════════╝\n' +
+            'Image 1 to ' + personImgCount + ' (人物参考): Use ONLY for face, gender, body proportions, physique, height, and hairstyle.\n' +
+            '⚠️ CRITICAL: IGNORE ALL CLOTHING in images 1-' + personImgCount + '. Do NOT copy any outfit from these images.\n\n' +
+            'Image ' + totalImages + ' (衣服参考): This is the ONLY source of clothing.\n' +
+            '⚠️ The character MUST wear EXACTLY the outfit shown in image ' + totalImages + ' — identical color, fabric, design, cut, details.\n' +
+            '⚠️ Do NOT replace it with anything else. Do NOT use the outfit from images 1-' + personImgCount + '.\n\n' +
+            'SCENE: ' + prompt + '\n\n' +
+            'OUTPUT: A realistic selfie of the person (face + body from images 1-' + personImgCount + ') wearing the exact outfit from image ' + totalImages + ', in the described scene.';
+        console.log('📝 最终 prompt:', finalPrompt.substring(0, 300) + '...');
     } else {
-        finalPrompt = 'STRICT REFERENCE: Image 1 to ' + refList.length + ' = character references: keep the same face, gender, body type, hairstyle. SCENE: ' + prompt;
+        var personImgCount2 = filteredList.length;
+        finalPrompt = 'STRICT REFERENCE: Image 1 to ' + personImgCount2 + ' = character references: keep the same face, gender, body type, hairstyle. SCENE: ' + prompt;
     }
 
     var contentArray = [{ text: finalPrompt }];
 
     // 1. 先放人物参考图（按 slot 排序，正面优先）
     var sortedList = refList.slice().sort(function(a, b) { return a.slot - b.slot; });
-    sortedList.slice(0, 5).forEach(function(item) {
+
+    // ⭐ 新逻辑：保留所有人物图（包括全身照，用于身材），但 prompt 里强调衣服来源
+    var filteredList = sortedList;
+
+    filteredList.slice(0, 5).forEach(function(item) {
         contentArray.push({ image: item.img });
     });
 
