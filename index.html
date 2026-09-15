@@ -3842,6 +3842,62 @@ async function loadAllRefImagesForRole(roleId) {
     return result;
 }
 
+// ===== 从衣柜选衣服 + 读取衣服图片 =====
+async function selectOutfitForSelfie(roleId, userMessage, recentMessages) {
+    // 1. 读衣柜
+    var wardrobeKey = 'phone_data_' + roleId;
+    var raw = localStorage.getItem(wardrobeKey);
+    if (!raw) return null;
+    var data;
+    try { data = JSON.parse(raw); } catch(e) { return null; }
+    var wardrobe = data.wardrobe || [];
+    if (wardrobe.length === 0) return null;
+
+    // 2. 构造对话上下文
+    var context = '';
+    if (recentMessages && recentMessages.length > 0) {
+        context = recentMessages.slice(-6).map(function(m) {
+            return (m.role === 'user' ? '用户' : '角色') + '：' + (m.content || '').substring(0, 50);
+        }).join('\n');
+    }
+    if (userMessage) {
+        context += '\n用户最后说：' + userMessage;
+    }
+
+    // 3. 让 AI 选
+    var wardrobeList = wardrobe.map(function(w, i) {
+        return (i + 1) + '. 名称：「' + (w.name || '未命名') + '」，场景：' + (w.scene || '未指定');
+    }).join('\n');
+
+    var sys = '你是场景判断助手。根据对话上下文，判断当前最适合穿哪套衣服。\n\n' +
+        '【衣柜】\n' + wardrobeList + '\n\n' +
+        '【判断规则】\n' +
+        '1. 从衣柜里选【最符合当前场景】的一套\n' +
+        '2. 如果对话提到"加班/工作/开会/公司" → 选工作相关的\n' +
+        '3. 如果提到"在家/休息/睡觉/起床/刚醒" → 选居家相关的\n' +
+        '4. 如果提到"约会/吃饭/看电影/逛街" → 选约会相关的\n' +
+        '5. 如果提到"运动/健身/跑步" → 选运动相关的\n' +
+        '6. 如果提到"聚会/派对/宴会" → 选聚会相关的\n' +
+        '7. 无法判断时，选"日常/休闲/便装"相关的那套\n' +
+        '8. 如果都不匹配，选序号 1 的\n\n' +
+        '【只输出一个数字】（1 到 ' + wardrobe.length + '）';
+
+    var user = '【对话上下文】\n' + context + '\n\n请输出序号（只输出数字）：';
+
+    try {
+        var result = await callAIForMomentReply(sys, user, 200);
+        var idx = parseInt((result || '').trim().match(/\d+/));
+        if (!isNaN(idx) && idx >= 1 && idx <= wardrobe.length) {
+            console.log('👔 AI 选择了第 ' + idx + ' 套：' + wardrobe[idx - 1].name + '（场景：' + wardrobe[idx - 1].scene + '）');
+            return wardrobe[idx - 1];
+        }
+    } catch(e) {
+        console.warn('AI 选衣服失败:', e && e.message);
+    }
+    console.log('👔 无法判断，默认用第 1 套');
+    return wardrobe[0];
+}
+
 function isVoiceTrigger(text) {
     if (!text) return false;
     var lower = text.toLowerCase();
@@ -6948,9 +7004,64 @@ async function processUserMomentPendingReplies() {
     }
 }
 
+// ===== 从衣柜选一套衣服（AI 判断场景） =====
+async function pickOutfitForScene(roleId, conversationContext) {
+    // 读衣柜
+    var wardrobeKey = 'phone_data_' + roleId;
+    var raw = localStorage.getItem(wardrobeKey);
+    if (!raw) return null;
+    var data;
+    try { data = JSON.parse(raw); } catch(e) { return null; }
+    var wardrobe = data.wardrobe || [];
+    if (wardrobe.length === 0) return null;
+
+    console.log('👔 衣柜里有 ' + wardrobe.length + ' 套衣服');
+    wardrobe.forEach(function(w) {
+        console.log('  - 「' + w.name + '」（场景：' + w.scene + '）');
+    });
+
+    // 只有 1 套 → 直接返回
+    if (wardrobe.length === 1) {
+        console.log('👔 只有一套，直接用');
+        return wardrobe[0];
+    }
+
+    // 让 AI 判断
+    var wardrobeList = wardrobe.map(function(w, i) {
+        return (i + 1) + '. 名称：「' + (w.name || '未命名') + '」，场景：' + (w.scene || '未指定');
+    }).join('\n');
+
+    var sys = '你是场景判断助手。根据对话上下文，判断当前最适合穿哪套衣服。\n\n' +
+        '【衣柜】\n' + wardrobeList + '\n\n' +
+        '【判断规则】\n' +
+        '1. 从衣柜里选【最符合当前场景】的一套\n' +
+        '2. 如果对话里提到"加班/工作/开会" → 选工作相关的\n' +
+        '3. 如果提到"在家/休息/睡觉" → 选居家相关的\n' +
+        '4. 如果提到"约会/吃饭/看电影" → 选约会相关的\n' +
+        '5. 如果提到"运动/健身/跑步" → 选运动相关的\n' +
+        '6. 无法判断时，选"日常/休闲"相关的那套\n' +
+        '7. 如果都不太匹配，选序号 1 的\n\n' +
+        '【只输出一个数字】（1 到 ' + wardrobe.length + '）';
+
+    var user = '【最近对话】\n' + conversationContext + '\n\n请输出序号（只输出数字）：';
+
+    try {
+        var result = await callAIForMomentReply(sys, user, 200);
+        var idx = parseInt((result || '').trim().match(/\d+/));
+        if (!isNaN(idx) && idx >= 1 && idx <= wardrobe.length) {
+            console.log('👔 AI 选择了第 ' + idx + ' 套：' + wardrobe[idx - 1].name);
+            return wardrobe[idx - 1];
+        }
+    } catch(e) {
+        console.warn('AI 判断场景失败，用默认:', e && e.message);
+    }
+    console.log('👔 无法判断，默认用第 1 套');
+    return wardrobe[0];
+}
+
 // ===== 生成自拍：AI 生成 prompt =====
 
-async function generateSelfiePrompt(role, userMessage, refList) {
+async function generateSelfiePrompt(role, userMessage, refList, selectedOutfit) {
     var recentMsgs = (role.messages || []).slice(-8).map(function(m) {
         return (m.role === 'user' ? '用户' : role.name) + '：' + (m.content || '').substring(0, 60);
     }).join('\n');
@@ -6972,18 +7083,28 @@ async function generateSelfiePrompt(role, userMessage, refList) {
         refInfo += '⚠️ 你不需要描述这些特征（说了也没用），只需要描述【场景、动作、衣服、氛围】。\n\n';
     }
 
-    // 从人设中推断衣服风格
-    var personaText = (role.persona || '') + ' ' + (role.background || '') + ' ' + (role.extra || '');
-    var personaStyle = '';
-    if (personaText) {
-        personaStyle = '\n【角色人设（用于决定衣服和场景风格）】\n' + personaText.trim() + '\n\n' +
-            '⚠️ 衣服必须符合这个人设，例如：\n' +
-            '- 如果是学生/大学生 → 简洁休闲装\n' +
-            '- 如果是上班族/白领 → 衬衫西裤或商务休闲\n' +
-            '- 如果是艺术工作者 → 有设计感的衣服\n' +
-            '- 如果是运动型角色 → 运动服或休闲卫衣\n' +
-            '- 如果是居家场景 → 家居服、宽松T恤\n' +
-            '⚠️ 绝对不能出现和角色气质完全不符的衣服！\n\n';
+    // ⭐ 衣服处理：优先用衣柜选中的那套，否则根据人设推断
+    var outfitInstruction = '';
+    if (selectedOutfit) {
+        outfitInstruction = '\n【⚠️ 衣服要求 - 必须严格遵守】\n' +
+            '系统会额外提供一张【衣服参考图】，你必须：\n' +
+            '- 严格使用这张衣服参考图里【这套衣服的款式、颜色、材质】\n' +
+            '- 不要改变衣服的任何细节\n' +
+            '- 只需要描述场景和动作，**不要描述衣服**（因为系统会用参考图）\n' +
+            '当前场景：「' + (selectedOutfit.scene || '') + '」，衣服名称：「' + (selectedOutfit.name || '') + '」\n\n';
+    } else {
+        // 没有衣柜，退回人设推断
+        var personaText = (role.persona || '') + ' ' + (role.background || '') + ' ' + (role.extra || '');
+        if (personaText) {
+            outfitInstruction = '\n【角色人设（用于决定衣服和场景风格）】\n' + personaText.trim() + '\n\n' +
+                '⚠️ 衣服必须符合这个人设，例如：\n' +
+                '- 学生/大学生 → 简洁休闲装\n' +
+                '- 上班族/白领 → 衬衫西裤或商务休闲\n' +
+                '- 艺术工作者 → 有设计感的衣服\n' +
+                '- 运动型角色 → 运动服或休闲卫衣\n' +
+                '- 居家场景 → 家居服、宽松T恤\n' +
+                '⚠️ 绝对不能出现和角色气质完全不符的衣服！\n\n';
+        }
     }
 
     var sys = '你是' + role.name + '。用户说想看你，你准备拍一张自拍发给他。请根据你的人设和最近对话，用一段英文描述这张自拍的内容。\n\n' +
@@ -6992,7 +7113,7 @@ async function generateSelfiePrompt(role, userMessage, refList) {
         '2. 系统会用你上传的参考图自动约束人物的：脸型、五官、体型、性别、发型\n' +
         '3. 描述时用第一人称视角（像是真的在自拍）\n' +
         refInfo +
-        personaStyle +
+        outfitInstruction +
         '【⚠️ 自拍硬性要求】\n' +
         '1. 必须是【自拍视角】：selfie, holding phone, front camera angle, arm visible 等描述\n' +
         '2. 【必须看着镜头】：eyes looking directly at camera, making eye contact with the camera\n' +
@@ -7040,18 +7161,36 @@ async function generateSelfiePrompt(role, userMessage, refList) {
 }
 
 // ===== 调用 wan2.7-image-pro 生成自拍（多图参考版） =====
-async function callWanSelfieAPI(apiKey, refList, prompt) {
+async function callWanSelfieAPI(apiKey, refList, prompt, selectedOutfit) {
     // refList: [{img: base64, slot: 0-4}, ...]
     // slot 含义：0=正面, 1=全身, 2=侧面, 3=背面, 4=其他
+    // selectedOutfit: 可选，衣柜里选中的衣服
 
-    // 构造多图参考：按 slot 排序，正面优先
+    // ⭐ 传入给模型的 prompt 开头，明确图片用途
+    var finalPrompt = prompt;
+    if (selectedOutfit) {
+        finalPrompt = 'Image 1 to ' + refList.length + ': character face/body references (keep face, body type, gender, hairstyle). ' +
+                      'Image ' + (refList.length + 1) + ': outfit reference (use exactly this clothing). ' +
+                      'Scene: ' + prompt;
+    } else {
+        finalPrompt = 'Image 1 to ' + refList.length + ': character face/body references. Scene: ' + prompt;
+    }
+
+    var contentArray = [{ text: finalPrompt }];
+
+    // 1. 先放人物参考图（按 slot 排序，正面优先）
     var sortedList = refList.slice().sort(function(a, b) { return a.slot - b.slot; });
-    var contentArray = [{ text: prompt }];
-    sortedList.slice(0, 5).forEach(function(item) {  // 最多传 5 张
+    sortedList.slice(0, 5).forEach(function(item) {
         contentArray.push({ image: item.img });
     });
 
-    console.log('📤 传给模型 ' + (contentArray.length - 1) + ' 张参考图');
+    // 2. 再放衣服参考图（如果有）
+    if (selectedOutfit && selectedOutfit.image) {
+        contentArray.push({ image: selectedOutfit.image });
+        console.log('👔 已加入衣服参考图：「' + selectedOutfit.name + '」');
+    }
+
+    console.log('📤 传给模型 ' + (contentArray.length - 1) + ' 张参考图（' + refList.length + ' 人物 + ' + (selectedOutfit ? 1 : 0) + ' 衣服）');
 
     var resp = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
         method: 'POST',
@@ -7096,12 +7235,23 @@ async function generateChatSelfie(role, userMessage) {
             return;
         }
         console.log('✅ 读取到 ' + refList.length + ' 张参考图');
-        refList.forEach(function(item, i) {
-            console.log('   参考图' + (i+1) + ': slot=' + item.slot + ', 长度=' + item.img.length);
-        });
 
-        // 2. AI 生成 prompt
-        var imagePrompt = await generateSelfiePrompt(role, userMessage, refList);
+        // ⭐ 新增：从衣柜选一套衣服
+        var selectedOutfit = null;
+        try {
+            selectedOutfit = await selectOutfitForSelfie(role.id, userMessage, role.messages || []);
+        } catch(e) {
+            console.warn('选衣服失败:', e && e.message);
+        }
+
+        if (selectedOutfit) {
+            console.log('👔 使用衣服：「' + selectedOutfit.name + '」（' + selectedOutfit.scene + '）');
+        } else {
+            console.log('👔 衣柜为空，AI 自由发挥衣服');
+        }
+
+        // 2. AI 生成 prompt（把选中的衣服信息传进去）
+        var imagePrompt = await generateSelfiePrompt(role, userMessage, refList, selectedOutfit);
         if (!imagePrompt) {
             console.warn('⚠️ prompt 生成失败');
             return;
@@ -7117,7 +7267,7 @@ async function generateChatSelfie(role, userMessage) {
             return;
         }
 
-        var imageUrl = await callWanSelfieAPI(apiKey, refList, imagePrompt);
+        var imageUrl = await callWanSelfieAPI(apiKey, refList, imagePrompt, selectedOutfit);
         if (!imageUrl) {
             console.warn('⚠️ 图片生成失败');
             return;
