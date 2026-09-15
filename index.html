@@ -157,6 +157,25 @@
         .contact-item .contact-avatar { width: 40px; height: 40px; border-radius: 8px; background-size: cover; background-position: center; background-color: #07c160; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; }
         .contact-item .contact-info { flex: 1; min-width: 0; }
         .contact-item .contact-info .contact-name { font-weight: 600; font-size: 14px; color: var(--text-primary); }
+
+.contact-status {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-left: 5px;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+}
+.contact-status.online {
+    background: #2ecc71;
+    box-shadow: 0 0 0 1.5px rgba(46,204,113,0.2);
+}
+.contact-status.offline {
+    background: #95a5a6;
+    opacity: 0.5;
+}
         .contact-item .contact-info .contact-preview { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
         .contact-item .unread-dot { background: #ff3b30; color: #fff; font-size: 10px; font-weight: 600; min-width: 18px; height: 18px; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 0 6px; flex-shrink: 0; margin-left: auto; }
         .contact-item .unread-dot.empty { display: none; }
@@ -8319,10 +8338,13 @@ function renderContacts() {
         var state = role.extendedState || {};
         var lastUserTime = state.lastUserMessageTime || CONFIG.lastChatVisit[role.id] || 0;
         var timeSinceUser = Date.now() - lastUserTime;
-        var statusIndicator = '';
-        if (timeSinceUser < 30 * 60 * 1000) { statusIndicator = ' 🟢'; }
-        else if (timeSinceUser > CONSTANTS.OFFLINE_THRESHOLD && CONFIG.sleepMode[role.id] !== true) { statusIndicator = ' 🌙'; }
-        item.innerHTML = '<div class="contact-avatar" style="' + avatarStyle + '">' + (role.avatar ? '' : escapeHtml(getInitials(role.name))) + '</div><div class="contact-info"><div class="contact-name">' + (isHeartBound ? '💕 ' : '') + escapeHtml(role.name) + statusIndicator + '</div><div class="contact-preview">' + escapeHtml(preview) + '</div></div>' + dotHtml;
+        var statusDotHtml = '';
+        if (timeSinceUser < 30 * 60 * 1000) {
+            statusDotHtml = '<span class="contact-status online"></span>';
+        } else if (timeSinceUser > CONSTANTS.OFFLINE_THRESHOLD && CONFIG.sleepMode[role.id] !== true) {
+            statusDotHtml = '<span class="contact-status offline"></span>';
+        }
+        item.innerHTML = '<div class="contact-avatar" style="' + avatarStyle + '">' + (role.avatar ? '' : escapeHtml(getInitials(role.name))) + '</div><div class="contact-info"><div class="contact-name">' + (isHeartBound ? '💕 ' : '') + escapeHtml(role.name) + statusDotHtml + '</div><div class="contact-preview">' + escapeHtml(preview) + '</div></div>' + dotHtml;
         item.addEventListener('click', function() {
             clearUnreadForRole(role.id);
             currentRoleId = role.id;
