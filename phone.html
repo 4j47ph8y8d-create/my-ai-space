@@ -98,6 +98,8 @@ body {
 .icon-track { background: linear-gradient(135deg, #a29bfe, #6c5ce7); }
 .icon-settings { background: linear-gradient(135deg, #b2bec3, #636e72); }
 
+.icon-wardrobe { background: linear-gradient(135deg, #fd79a8, #e84393); }
+
 /* Dock 栏 */
 .dock { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 340px; background: rgba(255,255,255,0.1); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.08); border-radius: 26px; padding: 12px 16px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
 .dock .app-icon .icon { width: 52px; height: 52px; border-radius: 13px; font-size: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
@@ -428,6 +430,126 @@ body {
     color: rgba(255,255,255,0.5);
 }
 
+/* ===== 衣柜 ===== */
+.wardrobe-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 4px 0;
+}
+.wardrobe-item {
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    cursor: pointer;
+    transition: 0.15s;
+    position: relative;
+}
+.wardrobe-item:active { transform: scale(0.97); }
+.wardrobe-item .outfit-image {
+    width: 100%;
+    aspect-ratio: 3/4;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--bg-secondary);
+    position: relative;
+}
+.wardrobe-item .outfit-scene-tag {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    backdrop-filter: blur(4px);
+}
+.wardrobe-item .outfit-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255,59,48,0.9);
+    border: none;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.wardrobe-item .outfit-info {
+    padding: 10px 12px;
+}
+.wardrobe-item .outfit-name {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+.wardrobe-item .outfit-desc {
+    font-size: 11px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wardrobe-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+.wardrobe-empty i {
+    font-size: 48px;
+    opacity: 0.3;
+    margin-bottom: 14px;
+    display: block;
+}
+.wardrobe-empty p {
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* 衣柜上传器 */
+.outfit-image-uploader {
+    width: 100%;
+    aspect-ratio: 3/4;
+    max-width: 240px;
+    margin: 0 auto 20px;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 12px;
+    background-color: var(--bg-secondary);
+    background-size: cover;
+    background-position: center;
+    transition: 0.15s;
+}
+.outfit-image-uploader:active { transform: scale(0.97); }
+.outfit-image-uploader i {
+    font-size: 28px;
+    opacity: 0.5;
+}
+.outfit-image-uploader.has-image {
+    border-style: solid;
+    border-color: rgba(253,121,168,0.4);
+}
+.outfit-image-uploader.has-image i,
+.outfit-image-uploader.has-image span {
+    display: none;
+}
+
 /* Toast */
 .toast { position: fixed; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 9999; backdrop-filter: blur(10px); }
 </style>
@@ -505,6 +627,10 @@ body {
             <div class="app-icon" data-app="track">
                 <div class="icon icon-track"><i class="fas fa-map-marked-alt"></i></div>
                 <div class="label">行动轨迹</div>
+            </div>
+            <div class="app-icon" data-app="wardrobe">
+                <div class="icon icon-wardrobe"><i class="fas fa-tshirt"></i></div>
+                <div class="label">衣柜</div>
             </div>
         </div>
 
@@ -642,6 +768,41 @@ body {
             <button class="app-action" id="refreshTrack"><i class="fas fa-sync-alt"></i></button>
         </div>
         <div class="app-body" id="trackBody"></div>
+    </div>
+
+<!-- ========== 衣柜 ========== -->
+    <div id="wardrobeApp" class="screen app-screen">
+        <div class="app-topbar">
+            <button class="app-back" data-close="wardrobeApp"><i class="fas fa-chevron-left"></i></button>
+            <div class="app-title">衣柜</div>
+            <button class="app-action" id="wardrobeAddBtn"><i class="fas fa-plus"></i></button>
+        </div>
+        <div class="app-body" id="wardrobeBody"></div>
+    </div>
+
+    <!-- ========== 添加/编辑衣服弹窗 ========== -->
+    <div class="overlay" id="outfitEditorOverlay">
+        <div class="modal">
+            <h3 id="outfitEditorTitle">添加衣服</h3>
+            <div class="outfit-image-uploader" id="outfitImageUploader">
+                <i class="fas fa-plus"></i>
+                <span>点击上传衣服参考图</span>
+            </div>
+            <div class="form-group">
+                <label>衣服名称</label>
+                <input type="text" id="outfitNameInput" placeholder="例如：深蓝工作装" maxlength="20" />
+            </div>
+            <div class="form-group">
+                <label>场景标签（AI 会根据场景自动选用）</label>
+                <input type="text" id="outfitSceneInput" placeholder="例如：工作、约会、居家" maxlength="10" />
+            </div>
+            <div class="form-group">
+                <label>补充描述（可选）</label>
+                <textarea id="outfitDescInput" placeholder="例如：深蓝色西装外套配白色衬衫，下身深色西裤" maxlength="100"></textarea>
+            </div>
+            <button class="btn-primary" id="outfitSaveBtn">保存</button>
+            <button class="btn-secondary" id="outfitCancelBtn">取消</button>
+        </div>
     </div>
 
     <!-- ========== 设置 ========== -->
@@ -2195,6 +2356,195 @@ function renderTrack() {
     body.innerHTML = '<div class="track-map">' + svgHtml + '</div>' + timelineHtml;
 }
 
+// ========== 衣柜 ==========
+var WARDROBE_MAX = 8;
+var _editingOutfitId = null;
+var _pendingOutfitImage = null;
+
+function getWardrobe(roleId) {
+    var key = 'phone_data_' + roleId;
+    var raw = localStorage.getItem(key);
+    if (!raw) return [];
+    try {
+        var d = JSON.parse(raw);
+        return d.wardrobe || [];
+    } catch(e) { return []; }
+}
+
+function saveWardrobe(roleId, wardrobe) {
+    var key = 'phone_data_' + roleId;
+    var raw = localStorage.getItem(key);
+    var d = raw ? JSON.parse(raw) : {};
+    d.wardrobe = wardrobe;
+    localStorage.setItem(key, JSON.stringify(d));
+}
+
+function openWardrobeApp() {
+    openApp('wardrobeApp');
+    renderWardrobeList();
+}
+
+function renderWardrobeList() {
+    var body = document.getElementById('wardrobeBody');
+    if (!body) return;
+    var wardrobe = getWardrobe(currentRoleId);
+    if (wardrobe.length === 0) {
+        body.innerHTML = '<div class="wardrobe-empty">' +
+            '<i class="fas fa-tshirt"></i>' +
+            '<p>衣柜里还没有衣服</p>' +
+            '<p style="font-size:11px;opacity:0.6;margin-top:6px;">点击右上角 + 添加</p>' +
+            '</div>';
+        return;
+    }
+    var html = '<div class="wardrobe-grid">';
+    wardrobe.forEach(function(item) {
+        html += '<div class="wardrobe-item" data-outfit-id="' + item.id + '">' +
+            '<div class="outfit-image" style="background-image:url(' + item.image + ')">' +
+            (item.scene ? '<div class="outfit-scene-tag">' + escapeHtml(item.scene) + '</div>' : '') +
+            '<button class="outfit-delete" data-delete-outfit="' + item.id + '"><i class="fas fa-times"></i></button>' +
+            '</div>' +
+            '<div class="outfit-info">' +
+            '<div class="outfit-name">' + escapeHtml(item.name || '未命名') + '</div>' +
+            (item.description ? '<div class="outfit-desc">' + escapeHtml(item.description) + '</div>' : '') +
+            '</div>' +
+            '</div>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+
+    // 点击编辑
+    body.querySelectorAll('.wardrobe-item').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            if (e.target.closest('.outfit-delete')) return;
+            openOutfitEditor(this.dataset.outfitId);
+        });
+    });
+    // 删除
+    body.querySelectorAll('[data-delete-outfit]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var oid = this.dataset.deleteOutfit;
+            if (!confirm('删除这套衣服？')) return;
+            var wardrobe = getWardrobe(currentRoleId).filter(function(x) { return x.id !== oid; });
+            saveWardrobe(currentRoleId, wardrobe);
+            renderWardrobeList();
+            toast('已删除');
+        });
+    });
+}
+
+function openOutfitEditor(outfitId) {
+    var wardrobe = getWardrobe(currentRoleId);
+    _editingOutfitId = outfitId || null;
+    _pendingOutfitImage = null;
+
+    var title = document.getElementById('outfitEditorTitle');
+    var uploader = document.getElementById('outfitImageUploader');
+    var nameInput = document.getElementById('outfitNameInput');
+    var sceneInput = document.getElementById('outfitSceneInput');
+    var descInput = document.getElementById('outfitDescInput');
+
+    if (outfitId) {
+        var item = wardrobe.find(function(x) { return x.id === outfitId; });
+        if (!item) return;
+        title.textContent = '编辑衣服';
+        nameInput.value = item.name || '';
+        sceneInput.value = item.scene || '';
+        descInput.value = item.description || '';
+        uploader.style.backgroundImage = 'url(' + item.image + ')';
+        uploader.classList.add('has-image');
+        _pendingOutfitImage = item.image;
+    } else {
+        if (wardrobe.length >= WARDROBE_MAX) {
+            toast('衣柜最多 ' + WARDROBE_MAX + ' 套');
+            return;
+        }
+        title.textContent = '添加衣服';
+        nameInput.value = '';
+        sceneInput.value = '';
+        descInput.value = '';
+        uploader.style.backgroundImage = '';
+        uploader.classList.remove('has-image');
+    }
+    document.getElementById('outfitEditorOverlay').classList.add('active');
+}
+
+function pickOutfitImage() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            var img = new Image();
+            img.onload = function() {
+                var canvas = document.createElement('canvas');
+                // 衣服参考图：保留细节，最大边 1024
+                var MAX = 1024;
+                var w = img.width, h = img.height;
+                if (w > MAX || h > MAX) {
+                    var ratio = Math.min(MAX / w, MAX / h);
+                    w = Math.round(w * ratio);
+                    h = Math.round(h * ratio);
+                }
+                canvas.width = w; canvas.height = h;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                _pendingOutfitImage = dataUrl;
+                var uploader = document.getElementById('outfitImageUploader');
+                uploader.style.backgroundImage = 'url(' + dataUrl + ')';
+                uploader.classList.add('has-image');
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
+function saveOutfitFromEditor() {
+    var name = document.getElementById('outfitNameInput').value.trim();
+    var scene = document.getElementById('outfitSceneInput').value.trim();
+    var desc = document.getElementById('outfitDescInput').value.trim();
+
+    if (!_pendingOutfitImage) { alert('请上传衣服参考图'); return; }
+    if (!name) { alert('请输入衣服名称'); return; }
+    if (!scene) { alert('请输入场景标签'); return; }
+
+    var wardrobe = getWardrobe(currentRoleId);
+
+    if (_editingOutfitId) {
+        var item = wardrobe.find(function(x) { return x.id === _editingOutfitId; });
+        if (item) {
+            item.name = name;
+            item.scene = scene;
+            item.description = desc;
+            item.image = _pendingOutfitImage;
+        }
+    } else {
+        if (wardrobe.length >= WARDROBE_MAX) {
+            alert('衣柜已满');
+            return;
+        }
+        wardrobe.push({
+            id: 'outfit_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            name: name,
+            scene: scene,
+            description: desc,
+            image: _pendingOutfitImage,
+            createdAt: new Date().toISOString()
+        });
+    }
+
+    saveWardrobe(currentRoleId, wardrobe);
+    document.getElementById('outfitEditorOverlay').classList.remove('active');
+    renderWardrobeList();
+    toast('已保存');
+}
+
 // ========== 设置 ==========
 
 function openSettingsApp() {
@@ -2653,6 +3003,7 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (app === 'music') openMusic();
             else if (app === 'track') openTrack();
             else if (app === 'settings') openSettingsApp();
+            else if (app === 'wardrobe') openWardrobeApp();
         });
     });
 
@@ -2683,6 +3034,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('closeRolePicker').addEventListener('click', closeRolePicker);
     document.getElementById('rolePickerOverlay').addEventListener('click', function(e) {
         if (e.target === this) closeRolePicker();
+    });
+
+// 衣柜事件
+    document.getElementById('wardrobeAddBtn').addEventListener('click', function() {
+        openOutfitEditor(null);
+    });
+    document.getElementById('outfitImageUploader').addEventListener('click', pickOutfitImage);
+    document.getElementById('outfitSaveBtn').addEventListener('click', saveOutfitFromEditor);
+    document.getElementById('outfitCancelBtn').addEventListener('click', function() {
+        document.getElementById('outfitEditorOverlay').classList.remove('active');
+    });
+    document.getElementById('outfitEditorOverlay').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('active');
     });
 
     // 设置项
