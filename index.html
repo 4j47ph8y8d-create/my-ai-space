@@ -7124,10 +7124,12 @@ async function generateSelfiePrompt(role, userMessage, refList, selectedOutfit) 
     var outfitInstruction = '';
     if (selectedOutfit) {
         outfitInstruction = '\n【⚠️ 衣服要求 - 必须严格遵守】\n' +
-            '系统会额外提供一张【衣服参考图】，你必须：\n' +
-            '- 严格使用这张衣服参考图里【这套衣服的款式、颜色、材质】\n' +
-            '- 不要改变衣服的任何细节\n' +
-            '- 只需要描述场景和动作，**不要描述衣服**（因为系统会用参考图）\n' +
+            '系统会额外提供一张【衣服参考图】。\n' +
+            '你必须：\n' +
+            '- 严格使用这张衣服参考图里【这套衣服的款式、颜色、材质、细节】\n' +
+            '- 【绝对不允许】替换成其他衣服，哪怕颜色相近也不行\n' +
+            '- 只需要描述场景、动作、氛围、光线\n' +
+            '- 【不要描述衣服】，因为系统会自动把参考图的衣服"穿"到人物身上\n' +
             '当前场景：「' + (selectedOutfit.scene || '') + '」，衣服名称：「' + (selectedOutfit.name || '') + '」\n\n';
     } else {
         // 没有衣柜，退回人设推断
@@ -7206,11 +7208,13 @@ async function callWanSelfieAPI(apiKey, refList, prompt, selectedOutfit) {
     // ⭐ 传入给模型的 prompt 开头，明确图片用途
     var finalPrompt = prompt;
     if (selectedOutfit) {
-        finalPrompt = 'Image 1 to ' + refList.length + ': character face/body references (keep face, body type, gender, hairstyle). ' +
-                      'Image ' + (refList.length + 1) + ': outfit reference (use exactly this clothing). ' +
-                      'Scene: ' + prompt;
+        finalPrompt = 'STRICT REFERENCE GUIDE: ' +
+            'Image 1 to ' + refList.length + ' = character references: keep the EXACT same face, facial features, gender, body type and hairstyle as these images. ' +
+            'Image ' + (refList.length + 1) + ' = OUTFIT reference: the character must wear EXACTLY the clothing shown in this image — same color, same fabric, same design, same everything. DO NOT invent or change the clothing. ' +
+            'SCENE: ' + prompt + ' ' +
+            'The final image must look like the same person from images 1-' + refList.length + ' wearing the exact outfit from image ' + (refList.length + 1) + ', in the described scene.';
     } else {
-        finalPrompt = 'Image 1 to ' + refList.length + ': character face/body references. Scene: ' + prompt;
+        finalPrompt = 'STRICT REFERENCE: Image 1 to ' + refList.length + ' = character references: keep the same face, gender, body type, hairstyle. SCENE: ' + prompt;
     }
 
     var contentArray = [{ text: finalPrompt }];
