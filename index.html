@@ -7004,6 +7004,34 @@ async function processUserMomentPendingReplies() {
     }
 }
 
+// ===== 从衣柜 IndexedDB 读取图片（主应用版） =====
+function loadWardrobeImageForSelfie(imageId) {
+    return new Promise(function(resolve) {
+        var req = indexedDB.open('WardrobeDB', 1);
+        req.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('images')) {
+                db.createObjectStore('images', { keyPath: 'id' });
+            }
+        };
+        req.onsuccess = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('images')) {
+                db.close(); resolve(null); return;
+            }
+            var tx = db.transaction('images', 'readonly');
+            var store = tx.objectStore('images');
+            var getReq = store.get(imageId);
+            getReq.onsuccess = function() {
+                db.close();
+                resolve(getReq.result ? getReq.result.data : null);
+            };
+            getReq.onerror = function() { db.close(); resolve(null); };
+        };
+        req.onerror = function() { resolve(null); };
+    });
+}
+
 // ===== 从衣柜选一套衣服（AI 判断场景） =====
 async function pickOutfitForScene(roleId, conversationContext) {
     // 读衣柜
@@ -7049,14 +7077,23 @@ async function pickOutfitForScene(roleId, conversationContext) {
         var result = await callAIForMomentReply(sys, user, 200);
         var idx = parseInt((result || '').trim().match(/\d+/));
         if (!isNaN(idx) && idx >= 1 && idx <= wardrobe.length) {
-            console.log('👔 AI 选择了第 ' + idx + ' 套：' + wardrobe[idx - 1].name);
-            return wardrobe[idx - 1];
+            console.log('👔 AI 选择了第 ' + idx + ' 套：' + wardrobe[idx - 1].name + '（场景：' + wardrobe[idx - 1].scene + '）');
+            // ⭐ 补充图片数据：从 IndexedDB 读
+            var selected = wardrobe[idx - 1];
+            if (selected.imageId) {
+                selected.image = await loadWardrobeImageForSelfie(selected.imageId);
+            }
+            return selected;
         }
     } catch(e) {
-        console.warn('AI 判断场景失败，用默认:', e && e.message);
+        console.warn('AI 选衣服失败:', e && e.message);
     }
     console.log('👔 无法判断，默认用第 1 套');
-    return wardrobe[0];
+    var def = wardrobe[0];
+    if (def.imageId) {
+        def.image = await loadWardrobeImageForSelfie(def.imageId);
+    }
+    return def;
 }
 
 // ===== 生成自拍：AI 生成 prompt =====
