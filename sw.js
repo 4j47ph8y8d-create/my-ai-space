@@ -3,13 +3,11 @@
 //  关键原则：只缓存静态资源，API 请求直接放行
 // ============================================================
 
-const CACHE_NAME = 'lunar-reverie-v2';
+const CACHE_NAME = 'lunar-reverie-v3';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/phone.html',
-    '/mall.html',
-    '/memory.html',
     '/manifest.json',
     '/icon.PNG'
 ];
@@ -47,22 +45,23 @@ self.addEventListener('fetch', function(event) {
     var url = event.request.url;
     var method = event.request.method;
 
-    // ===== 关键：以下请求直接放行，SW 不拦截 =====
+    // ⭐ 关键：以下请求全部放行，SW 不拦截
     // 1. 所有非 GET 请求（POST/PUT/DELETE 等）
-    // 2. DeepSeek API
-    // 3. 阿里云百炼（图片生成）
+    // 2. 阿里云百炼（图片生成）
+    // 3. DeepSeek API
     // 4. 同域的 /api/ 路径（你的后端）
     // 5. 所有跨域请求
+    // 6. 阿里云 OSS（图片下载）
     if (method !== 'GET' ||
         url.includes('api.deepseek.com') ||
         url.includes('dashscope.aliyuncs.com') ||
+        url.includes('aliyuncs.com') ||
         url.includes('/api/') ||
         !url.startsWith(self.location.origin)) {
-        // 不调用 respondWith，让浏览器直接请求
-        return;
+        return;  // 不调用 respondWith，浏览器直接请求
     }
 
-    // ===== 静态资源：网络优先，失败时用缓存 =====
+    // 静态资源：网络优先，失败时用缓存
     event.respondWith(
         fetch(event.request).then(function(response) {
             if (response && response.status === 200) {
