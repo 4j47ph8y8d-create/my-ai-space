@@ -1037,6 +1037,60 @@ function deleteWallpaperFromDB(roleId) {
 }
 // ===== 结束 =====
 
+// ===== 衣柜图片 IndexedDB 存储 =====
+function openWardrobeDB() {
+    return new Promise(function(resolve, reject) {
+        var request = indexedDB.open('WardrobeDB', 1);
+        request.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('images')) {
+                db.createObjectStore('images', { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = function(e) { resolve(e.target.result); };
+        request.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+function saveWardrobeImageToDB(imageId, base64) {
+    return openWardrobeDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('images', 'readwrite');
+            var store = tx.objectStore('images');
+            var req = store.put({ id: imageId, data: base64, updatedAt: Date.now() });
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    });
+}
+
+function loadWardrobeImageFromDB(imageId) {
+    return openWardrobeDB().then(function(db) {
+        return new Promise(function(resolve) {
+            var tx = db.transaction('images', 'readonly');
+            var store = tx.objectStore('images');
+            var req = store.get(imageId);
+            req.onsuccess = function() {
+                db.close();
+                resolve(req.result ? req.result.data : null);
+            };
+            req.onerror = function() { db.close(); resolve(null); };
+        });
+    }).catch(function() { return null; });
+}
+
+function deleteWardrobeImageFromDB(imageId) {
+    return openWardrobeDB().then(function(db) {
+        return new Promise(function(resolve) {
+            var tx = db.transaction('images', 'readwrite');
+            var store = tx.objectStore('images');
+            var req = store.delete(imageId);
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); resolve(); };
+        });
+    });
+}
+
 // ===== 微信聊天记录 IndexedDB 存储 =====
 function openChatDB() {
     return new Promise(function(resolve, reject) {
@@ -2398,8 +2452,11 @@ function renderWardrobeList() {
     }
     var html = '<div class="wardrobe-grid">';
     wardrobe.forEach(function(item) {
+        // ⭐ 新版用 imageId，旧版可能还有 image 字段（兼容）
+        var imgDataAttr = item.imageId ? 'data-image-id="' + item.imageId + '"' : '';
+        var bgStyle = item.image ? 'background-image:url(' + item.image + ')' : '';
         html += '<div class="wardrobe-item" data-outfit-id="' + item.id + '">' +
-            '<div class="outfit-image" style="background-image:url(' + item.image + ')">' +
+            '<div class="outfit-image" ' + imgDataAttr + ' style="' + bgStyle + '">' +
             (item.scene ? '<div class="outfit-scene-tag">' + escapeHtml(item.scene) + '</div>' : '') +
             '<button class="outfit-delete" data-delete-outfit="' + item.id + '"><i class="fas fa-times"></i></button>' +
             '</div>' +
@@ -2411,6 +2468,16 @@ function renderWardrobeList() {
     });
     html += '</div>';
     body.innerHTML = html;
+
+    // ⭐ 异步加载每张衣服的图片
+    body.querySelectorAll('.outfit-image[data-image-id]').forEach(function(el) {
+        var imgId = el.dataset.imageId;
+        loadWardrobeImageFromDB(imgId).then(function(base64) {
+            if (base64) {
+                el.style.backgroundImage = 'url(' + base64 + ')';
+            }
+        });
+    });
 
     // 点击编辑
     body.querySelectorAll('.wardrobe-item').forEach(function(el) {
@@ -2425,7 +2492,13 @@ function renderWardrobeList() {
             e.stopPropagation();
             var oid = this.dataset.deleteOutfit;
             if (!confirm('删除这套衣服？')) return;
-            var wardrobe = getWardrobe(currentRoleId).filter(function(x) { return x.id !== oid; });
+            var oldWardrobe = getWardrobe(currentRoleId);
+            var oldItem = oldWardrobe.find(function(x) { return x.id === oid; });
+            // ⭐ 同时删除 IndexedDB 里的图片
+            if (oldItem && oldItem.imageId) {
+                deleteWardrobeImageFromDB(oldItem.imageId);
+            }
+            var wardrobe = oldWardrobe.filter(function(x) { return x.id !== oid; });
             saveWardrobe(currentRoleId, wardrobe);
             renderWardrobeList();
             toast('已删除');
@@ -2451,9 +2524,20 @@ function openOutfitEditor(outfitId) {
         nameInput.value = item.name || '';
         sceneInput.value = item.scene || '';
         descInput.value = item.description || '';
-        uploader.style.backgroundImage = 'url(' + item.image + ')';
-        uploader.classList.add('has-image');
-        _pendingOutfitImage = item.image;
+        // ⭐ 从 IndexedDB 读图（兼容旧版 image 字段）
+        if (item.imageId) {
+            loadWardrobeImageFromDB(item.imageId).then(function(base64) {
+                if (base64) {
+                    uploader.style.backgroundImage = 'url(' + base64 + ')';
+                    uploader.classList.add('has-image');
+                    _pendingOutfitImage = base64;
+                }
+            });
+        } else if (item.image) {
+            uploader.style.backgroundImage = 'url(' + item.image + ')';
+            uploader.classList.add('has-image');
+            _pendingOutfitImage = item.image;
+        }
     } else {
         if (wardrobe.length >= WARDROBE_MAX) {
             toast('衣柜最多 ' + WARDROBE_MAX + ' 套');
@@ -2516,33 +2600,48 @@ function saveOutfitFromEditor() {
 
     var wardrobe = getWardrobe(currentRoleId);
 
+    // ⭐ 先把图片存到 IndexedDB
     if (_editingOutfitId) {
         var item = wardrobe.find(function(x) { return x.id === _editingOutfitId; });
-        if (item) {
+        if (!item) return;
+        var imageId = 'outfit_img_' + item.id;
+        saveWardrobeImageToDB(imageId, _pendingOutfitImage).then(function() {
             item.name = name;
             item.scene = scene;
             item.description = desc;
-            item.image = _pendingOutfitImage;
-        }
+            item.imageId = imageId;       // ⭐ 只存 ID
+            delete item.image;             // ⭐ 删除旧字段，避免占空间
+            saveWardrobe(currentRoleId, wardrobe);
+            document.getElementById('outfitEditorOverlay').classList.remove('active');
+            renderWardrobeList();
+            toast('已保存');
+        }).catch(function(e) {
+            alert('图片保存失败: ' + e.message);
+        });
     } else {
         if (wardrobe.length >= WARDROBE_MAX) {
             alert('衣柜已满');
             return;
         }
-        wardrobe.push({
-            id: 'outfit_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            name: name,
-            scene: scene,
-            description: desc,
-            image: _pendingOutfitImage,
-            createdAt: new Date().toISOString()
+        var newId = 'outfit_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+        var newImageId = 'outfit_img_' + newId;
+        saveWardrobeImageToDB(newImageId, _pendingOutfitImage).then(function() {
+            wardrobe.push({
+                id: newId,
+                name: name,
+                scene: scene,
+                description: desc,
+                imageId: newImageId,          // ⭐ 只存 ID
+                createdAt: new Date().toISOString()
+            });
+            saveWardrobe(currentRoleId, wardrobe);
+            document.getElementById('outfitEditorOverlay').classList.remove('active');
+            renderWardrobeList();
+            toast('已保存');
+        }).catch(function(e) {
+            alert('图片保存失败: ' + e.message);
         });
     }
-
-    saveWardrobe(currentRoleId, wardrobe);
-    document.getElementById('outfitEditorOverlay').classList.remove('active');
-    renderWardrobeList();
-    toast('已保存');
 }
 
 // ========== 设置 ==========
