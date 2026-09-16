@@ -975,6 +975,118 @@
         [data-theme="light"] .style-picker-panel .panel-header h3 { color: rgba(0,0,0,0.8); }
         .style-picker-panel .panel-header .close-btn { font-size: 20px; color: rgba(255,255,255,0.3); cursor: pointer; border: none; background: none; }
         [data-theme="light"] .style-picker-panel .panel-header .close-btn { color: rgba(0,0,0,0.3); }
+
+/* ===== 自动化总开关 ===== */
+.auto-switch-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--border-color);
+}
+.auto-switch-item:last-child {
+    border-bottom: none;
+}
+.auto-switch-item .auto-switch-label {
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+    letter-spacing: 0.5px;
+}
+[data-theme="light"] .auto-switch-item .auto-switch-label {
+    color: rgba(0,0,0,0.8);
+}
+.auto-switch-item .auto-switch-desc {
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 2px;
+}
+[data-theme="light"] .auto-switch-item .auto-switch-desc {
+    color: rgba(0,0,0,0.35);
+}
+
+/* iPhone 风格开关 */
+.ios-switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+}
+.ios-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+.ios-switch .ios-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255,255,255,0.25);
+    transition: 0.25s;
+    border-radius: 26px;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+[data-theme="light"] .ios-switch .ios-slider {
+    background-color: rgba(0,0,0,0.15);
+    border-color: rgba(0,0,0,0.08);
+}
+.ios-switch .ios-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 2px;
+    background-color: #ffffff;
+    transition: 0.25s;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+.ios-switch input:checked + .ios-slider {
+    background-color: #07c160;
+    border-color: #07c160;
+}
+.ios-switch input:checked + .ios-slider:before {
+    transform: translateX(20px);
+}
+.ios-switch input:disabled + .ios-slider {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* 总开关 */
+.auto-master-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 4px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+}
+
+.auto-master-item .auto-switch-desc {
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 2px;
+}
+[data-theme="light"] .auto-master-item .auto-switch-desc {
+    color: rgba(0,0,0,0.35);
+}
+
+.auto-master-item .auto-master-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.5px;
+}
+[data-theme="light"] .auto-master-item .auto-master-label {
+    color: rgba(0,0,0,0.9);
+}
+
         .style-category-title { color: rgba(255,255,255,0.4); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin: 14px 0 8px; font-weight: 400; }
         [data-theme="light"] .style-category-title { color: rgba(0,0,0,0.4); }
         .style-category-title:first-of-type { margin-top: 0; }
@@ -2702,7 +2814,67 @@
     </div>
 
     <div class="permission-overlay" id="permissionOverlay"><div class="permission-dialog"><div class="icon">📸</div><h3>访问相册</h3><p>为了更换头像、壁纸和发送图片，需要访问你的相册。<br />拒绝后仍可正常聊天，仅无法使用图片相关功能。</p><div class="btn-group"><button class="btn-allow-all" id="permAllowAll">✅ 允许访问</button><button class="btn-deny" id="permDeny">🚫 不允许</button><button class="btn-cancel-perm" id="permCancel">取消</button></div></div></div>
-    <div class="style-picker-overlay" id="stylePickerOverlay"><div class="style-picker-panel"><div class="panel-header"><h3>✨ 个性化</h3><button class="close-btn" id="closeStylePicker">&times;</button></div><div class="style-category-title">📱 桌面图标</div><div class="style-option-grid" id="styleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🫧 对话框气泡</div><div class="style-option-grid" id="bubbleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🕒 时间显示</div><div class="style-option-grid" id="timeModeGrid"></div><div class="style-category-title" style="margin-top:14px;">💕 心跳悬浮窗</div><div class="style-option-grid" id="floatingSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🎨 心跳颜色</div><div class="style-option-grid" id="heartColorGrid"></div><div class="style-category-title" style="margin-top:14px;">🤖 AI 表情包</div><div class="style-option-grid" id="aiMemeSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🌓 深色/浅色模式</div><div class="style-option-grid" id="themeModeGrid"></div></div></div>
+    <div class="style-picker-overlay" id="stylePickerOverlay"><div class="style-picker-panel"><div class="panel-header"><h3>✨ 个性化</h3><button class="close-btn" id="closeStylePicker">&times;</button></div><div class="style-category-title">📱 桌面图标</div><div class="style-option-grid" id="styleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🫧 对话框气泡</div><div class="style-option-grid" id="bubbleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🕒 时间显示</div><div class="style-option-grid" id="timeModeGrid"></div><div class="style-category-title" style="margin-top:14px;">💕 心跳悬浮窗</div><div class="style-option-grid" id="floatingSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🎨 心跳颜色</div><div class="style-option-grid" id="heartColorGrid"></div><div class="style-category-title" style="margin-top:14px;">🤖 AI 表情包</div><div class="style-option-grid" id="aiMemeSwitchGrid"></div>
+
+<div class="style-category-title" style="margin-top:14px;">自动化</div>
+<div id="autoSwitchPanel" style="background: rgba(255,255,255,0.04); border-radius: 14px; padding: 4px 14px; border: 1px solid rgba(255,255,255,0.06);">
+    <!-- 总开关 -->
+    <div class="auto-master-item">
+        <div>
+            <div class="auto-master-label">总开关</div>
+            <div class="auto-switch-desc">一键开启/关闭所有自动化</div>
+        </div>
+        <label class="ios-switch">
+            <input type="checkbox" id="autoMasterSwitch" checked>
+            <span class="ios-slider"></span>
+        </label>
+    </div>
+    <!-- 自动回复 -->
+    <div class="auto-switch-item">
+        <div>
+            <div class="auto-switch-label">自动回复</div>
+            <div class="auto-switch-desc">30分钟主动消息</div>
+        </div>
+        <label class="ios-switch">
+            <input type="checkbox" id="autoReplySwitch" checked>
+            <span class="ios-slider"></span>
+        </label>
+    </div>
+    <!-- 生成日记 -->
+    <div class="auto-switch-item">
+        <div>
+            <div class="auto-switch-label">生成日记</div>
+            <div class="auto-switch-desc">每日自动书写</div>
+        </div>
+        <label class="ios-switch">
+            <input type="checkbox" id="autoDiarySwitch" checked>
+            <span class="ios-slider"></span>
+        </label>
+    </div>
+    <!-- 电话 -->
+    <div class="auto-switch-item">
+        <div>
+            <div class="auto-switch-label">电话</div>
+            <div class="auto-switch-desc">AI 主动来电</div>
+        </div>
+        <label class="ios-switch">
+            <input type="checkbox" id="autoCallSwitch" checked>
+            <span class="ios-slider"></span>
+        </label>
+    </div>
+    <!-- 朋友圈回复 -->
+    <div class="auto-switch-item">
+        <div>
+            <div class="auto-switch-label">朋友圈回复</div>
+            <div class="auto-switch-desc">AI 评论与回复</div>
+        </div>
+        <label class="ios-switch">
+            <input type="checkbox" id="autoMomentSwitch" checked>
+            <span class="ios-slider"></span>
+        </label>
+    </div>
+</div>
+<div class="style-category-title" style="margin-top:14px;">🌓 深色/浅色模式</div><div class="style-option-grid" id="themeModeGrid"></div></div></div>
     <div class="data-modal-overlay" id="dataModalOverlay"><div class="data-modal"><button class="modal-close" id="dataModalClose">&times;</button><div class="modal-title">💾 数据管理</div><div class="modal-subtitle">选择要导出或导入的数据类型</div><div id="dataModalOptions"><div class="export-option" data-value="all"><input type="checkbox" checked /><span class="opt-label">全部数据 <span class="opt-badge">推荐</span></span><span class="opt-desc">角色 + 聊天 + 记忆 + 日记 + 设置</span></div><div class="export-option" data-value="settings"><input type="checkbox" /><span class="opt-label">仅美化设置</span><span class="opt-desc">壁纸、头像、风格</span></div><div class="export-option" data-value="roles"><input type="checkbox" /><span class="opt-label">仅角色设定</span><span class="opt-desc">不含聊天记录、记忆和日记</span></div><div class="export-option" data-value="chats"><input type="checkbox" /><span class="opt-label">仅聊天记录 + 记忆</span><span class="opt-desc">不含角色设定和日记</span></div><div class="export-option" data-value="diaries"><input type="checkbox" /><span class="opt-label">仅日记数据</span><span class="opt-desc">所有角色的日记</span></div><div class="export-option" data-value="selected"><input type="checkbox" /><span class="opt-label">按角色选择导出</span><span class="opt-desc">选中的角色完整数据（含日记）</span></div><div class="role-select-list" id="roleSelectList" style="display:none;"></div></div><div class="modal-actions"><button class="btn-import" id="dataImportBtn"><i class="fas fa-upload"></i> 导入</button><button class="btn-export" id="dataExportBtn"><i class="fas fa-download"></i> 导出</button><button class="btn-cancel" id="dataModalCancel">取消</button></div><div style="font-size:10px;color:var(--text-secondary);text-align:center;margin-top:8px;"><i class="fas fa-shield-alt"></i> 数据仅保存在本地，不上传任何服务器</div></div></div>
     <div class="diary-notification" id="diaryNotification"><div class="notif-icon">📖</div><h3>他的日记已送达</h3><p id="diaryNotifText">✨ 今晚的故事，他已经写好了...</p><button class="notif-btn" id="diaryNotifBtn">📖 去阅读</button><br /><button class="notif-close" id="diaryNotifClose">稍后再说</button></div>
     <div class="floating-heart" id="floatingHeart"><span class="fh-value" id="fhValue">65</span><span class="fh-label">BPM</span></div>
@@ -3063,7 +3235,11 @@ var CONFIG = {
     aiMemeEnabled: true, diaries: [], diaryAutoGenerateEnabled: true, lastDiaryCheckDate: null,
     diaryCalendarCollapsed: false, floatingHeartPosition: { x: null, y: null },
     lastChatVisit: {}, lastAiMessageTime: {}, aiMessageCooldown: 30 * 60 * 1000,
-    timeDividerThreshold: 10 * 60 * 1000, sleepMode: {}, unreadCount: {}
+    timeDividerThreshold: 10 * 60 * 1000, sleepMode: {}, unreadCount: {},
+    autoReplyEnabled: true,
+    autoDiaryEnabled: true,
+    autoCallEnabled: true,
+    autoMomentReplyEnabled: true
 };
 
 var roles = [], currentRoleId = null, draftCache = {}, readMessages = {}, quotedMsg = null;
@@ -3344,6 +3520,10 @@ function deepCloneRole(role) {
         if (!CONFIG.heart.peakValue) CONFIG.heart.peakValue = 65;
         if (!CONFIG.heart.recoveryTimer) CONFIG.heart.recoveryTimer = null;
         if (CONFIG.aiMemeEnabled === undefined) CONFIG.aiMemeEnabled = true;
+if (CONFIG.autoReplyEnabled === undefined) CONFIG.autoReplyEnabled = true;
+if (CONFIG.autoDiaryEnabled === undefined) CONFIG.autoDiaryEnabled = true;
+if (CONFIG.autoCallEnabled === undefined) CONFIG.autoCallEnabled = true;
+if (CONFIG.autoMomentReplyEnabled === undefined) CONFIG.autoMomentReplyEnabled = true;
         if (!CONFIG.diaries || !Array.isArray(CONFIG.diaries)) CONFIG.diaries = [];
         if (CONFIG.diaryAutoGenerateEnabled === undefined) CONFIG.diaryAutoGenerateEnabled = true;
         if (CONFIG.diaryCalendarCollapsed === undefined) CONFIG.diaryCalendarCollapsed = false;
@@ -6068,6 +6248,12 @@ function checkAndSendActiveMessage(role) {
 }
 
 function checkAllRolesForActiveMessages() {
+
+if (CONFIG.autoReplyEnabled === false) {
+        console.log('自动回复已关闭，跳过');
+        return;
+    }
+
     console.log('🔍 检测所有角色（30分钟主动陪伴）...');
 
     // ========== 新增：检查当前是否有通话进行中 ==========
@@ -6760,6 +6946,9 @@ async function generateAICommentForUserMoment(role, moment) {
 // ===== 检查并处理用户动态的待评论（每 2 分钟跑一次） =====
 var _userMomentProcessing = false;
 async function processUserMomentPendingComments() {
+
+if (CONFIG.autoMomentReplyEnabled === false) return;
+
     if (_userMomentProcessing) return;
     _userMomentProcessing = true;
     try {
@@ -6932,6 +7121,9 @@ async function generateAIReplyForUserMomentReply(role, moment, userReply) {
 // ===== 处理用户对 AI 评论的待回复（带日志版） =====
 var _userReplyProcessing = false;
 async function processUserMomentPendingReplies() {
+
+if (CONFIG.autoMomentReplyEnabled === false) return;
+
     console.log('🟢 [processUserMomentPendingReplies] 进入函数, 锁=' + _userReplyProcessing);
     if (_userReplyProcessing) {
         console.log('🔒 锁被占用，跳过');
@@ -7568,6 +7760,9 @@ async function generateAIReplyForComment(role, moment, userComment) {
 // ===== 检查并处理所有角色的待回复评论 =====
 var _aiReplyProcessing = false;
 async function processAllPendingReplies() {
+
+if (CONFIG.autoMomentReplyEnabled === false) return;
+
     if (_aiReplyProcessing) return;
     _aiReplyProcessing = true;
     try {
@@ -8828,6 +9023,12 @@ if (!content) throw new Error('未获取到回复');
 }
 
 function checkAndGenerateDailyDiaries() {
+
+if (CONFIG.autoDiaryEnabled === false) {
+        console.log('日记生成已关闭，跳过');
+        return;
+    }
+
     var todayKey = getTodayKey();
     var hasAnyDiary = false;
     roles.forEach(function(role) {
@@ -10145,6 +10346,82 @@ function getSelectedRoleIds() {
     return ids;
 }
 
+// ===== 自动化开关 =====
+function initAutoSwitchPanel() {
+    var masterSwitch = document.getElementById('autoMasterSwitch');
+    var replySwitch = document.getElementById('autoReplySwitch');
+    var diarySwitch = document.getElementById('autoDiarySwitch');
+    var callSwitch = document.getElementById('autoCallSwitch');
+    var momentSwitch = document.getElementById('autoMomentSwitch');
+    
+    if (!masterSwitch) return;
+    
+    // 初始化状态
+    masterSwitch.checked = CONFIG.autoReplyEnabled !== false;
+    replySwitch.checked = CONFIG.autoReplyEnabled !== false;
+    diarySwitch.checked = CONFIG.autoDiaryEnabled !== false;
+    callSwitch.checked = CONFIG.autoCallEnabled !== false;
+    momentSwitch.checked = CONFIG.autoMomentReplyEnabled !== false;
+    
+    // 总开关关闭时，子开关才变灰；总开关打开时，子开关都可点击
+    function syncDisabledState() {
+        var masterOn = masterSwitch.checked;
+        [replySwitch, diarySwitch, callSwitch, momentSwitch].forEach(function(sw) {
+            sw.disabled = !masterOn;
+        });
+    }
+    syncDisabledState();
+    
+    // 总开关
+    masterSwitch.addEventListener('change', function() {
+        var on = this.checked;
+        CONFIG.autoReplyEnabled = on;
+        CONFIG.autoDiaryEnabled = on;
+        CONFIG.autoCallEnabled = on;
+        CONFIG.autoMomentReplyEnabled = on;
+        replySwitch.checked = on;
+        diarySwitch.checked = on;
+        callSwitch.checked = on;
+        momentSwitch.checked = on;
+        syncDisabledState();
+        saveAllData();
+        showToast(on ? '自动化已全部开启' : '自动化已全部关闭');
+    });
+    
+    // 自动回复
+    replySwitch.addEventListener('change', function() {
+        CONFIG.autoReplyEnabled = this.checked;
+        saveAllData();
+        showToast(this.checked ? '自动回复已开启' : '自动回复已关闭');
+    });
+    
+    // 生成日记
+    diarySwitch.addEventListener('change', function() {
+        CONFIG.autoDiaryEnabled = this.checked;
+        saveAllData();
+        showToast(this.checked ? '日记生成已开启' : '日记生成已关闭');
+    });
+    
+    // 电话
+    callSwitch.addEventListener('change', function() {
+        CONFIG.autoCallEnabled = this.checked;
+        saveAllData();
+        showToast(this.checked ? '电话功能已开启' : '电话功能已关闭');
+    });
+    
+    // 朋友圈
+    momentSwitch.addEventListener('change', function() {
+        CONFIG.autoMomentReplyEnabled = this.checked;
+        saveAllData();
+        showToast(this.checked ? '朋友圈回复已开启' : '朋友圈回复已关闭');
+    });
+    
+    function updateMasterSwitchState() {
+        // 不自动改变总开关状态，保持用户手动控制的意图
+        // 总开关只负责"一键全开/全关"，不跟随子开关
+    }
+}
+
 function renderStylePicker() {
     var iconGrid = document.getElementById('styleOptionGrid');
     if (!iconGrid) return;
@@ -10376,6 +10653,8 @@ function renderStylePicker() {
             themeGrid.appendChild(option);
         });
     }
+    
+    initAutoSwitchPanel();
 }
 
 function applyIconStyle(styleId) {
@@ -13625,6 +13904,11 @@ updateAvatar(role, element) {
     },
 
     checkAutoCall(role) {
+
+if (window.CONFIG && window.CONFIG.autoCallEnabled === false) {
+            return false;
+        }
+
         if (!role) return false;
         if (this.isActive || this.isIncoming) return false;
         if (!window.CONFIG) return false;
