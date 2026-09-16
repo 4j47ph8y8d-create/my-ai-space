@@ -1031,6 +1031,17 @@
   transform: scale(0.96);
 }
 
+.period-reminder-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.period-reminder-btn-no {
+  background: #FFE6EB;
+  color: #A07688;
+}
+
         .diary-notification { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0.9); background: #fdf8ed; border-radius: 20px; padding: 24px 20px 18px; max-width: 300px; width: 88%; z-index: 200; box-shadow: 0 20px 60px rgba(0,0,0,0.4); animation: fadeInUp 0.4s ease; font-family: "Ma Shan Zheng", cursive; text-align: center; display: none; }
         .diary-notification.active { display: block; }
         .diary-notification .notif-icon { font-size: 40px; margin-bottom: 6px; }
@@ -3530,9 +3541,15 @@
 <div class="period-reminder" id="periodReminder">
   <div class="period-reminder-card">
     <div class="period-reminder-icon"></div>
-    <h3>小月历提醒</h3>
+    <h3 id="periodReminderTitle">小月历提醒</h3>
     <p id="periodReminderText">距离下次经期还有 3 天，这几天注意休息。</p>
-    <button class="period-reminder-btn" id="periodReminderBtn">知道了</button>
+    <div class="period-reminder-btns" id="periodReminderBtns">
+      <button class="period-reminder-btn" id="periodReminderBtn">知道了</button>
+    </div>
+    <div class="period-reminder-btns" id="periodReminderConfirmBtns" style="display:none;">
+      <button class="period-reminder-btn period-reminder-btn-no" id="periodReminderNoBtn">还没</button>
+      <button class="period-reminder-btn" id="periodReminderYesBtn">来了</button>
+    </div>
   </div>
 </div>
 
@@ -9901,6 +9918,16 @@ if (_prBtn) {
   _prBtn.addEventListener('click', closePeriodReminder);
 }
 
+var _prYesBtn = document.getElementById('periodReminderYesBtn');
+if (_prYesBtn) {
+  _prYesBtn.addEventListener('click', confirmPeriodArrived);
+}
+
+var _prNoBtn = document.getElementById('periodReminderNoBtn');
+if (_prNoBtn) {
+  _prNoBtn.addEventListener('click', confirmPeriodNotYet);
+}
+
     console.log('📖 日记自动书写系统已启动（每小时检查一次）');
 }
 
@@ -10696,29 +10723,143 @@ function checkPeriodReminder() {
   if (!info) return;
 
   var days = info.days;
+  var todayKey = formatDateKey(new Date());
 
-  // 只在 0 到 3 天之间提醒
+  // 判断今天是不是预测起始日（或推迟后的日子）
+  var isPredictedStartToday = isPredictedDay(todayKey);
+
+ // ===== 情况 A：今天是预测日 =====
+  if (isPredictedStartToday) {
+    if (CONFIG.period.lastAskDate === todayKey) return;
+    showAskDialog();
+    return;
+  }
+
+  // ===== 情况 A2：预测日已经过了，还在推迟中（每天都问）=====
+  if (days < 0) {
+    // 判断是不是"推迟中"：最后一次记录之后，没有任何新的记录开始
+    var lastRecord = null;
+    var records = CONFIG.period.records || [];
+    for (var i = 0; i < records.length; i++) {
+      if (!lastRecord || parseDateKey(records[i].startDate) > parseDateKey(lastRecord.startDate)) {
+        lastRecord = records[i];
+      }
+    }
+    if (lastRecord) {
+      var daysSinceLast = daysBetween(parseDateKey(lastRecord.startDate), new Date());
+      var expectedCycle = getEffectiveCycle();
+      // 如果已经超过预测日（daysSinceLast > expectedCycle），说明推迟了 → 每天问
+      if (daysSinceLast > expectedCycle) {
+        if (CONFIG.period.lastAskDate === todayKey) return;
+        showAskDialog();
+        return;
+      }
+    }
+  }
+
+  // ===== 情况 B：距离预测日 ≤ 3 天 =====
   if (days < 0 || days > 3) return;
 
-  // 同一天只提醒一次
-  var todayKey = formatDateKey(new Date());
   if (CONFIG.period.lastReminderDate === todayKey) return;
 
-  var textEl = document.getElementById('periodReminderText');
-  var modal = document.getElementById('periodReminder');
-  if (!textEl || !modal) return;
+  showCountdownDialog(days);
+}
 
+// 显示「还有 X 天」提醒
+function showCountdownDialog(days) {
+  var modal = document.getElementById('periodReminder');
+  if (!modal) return;
+
+  var titleEl = document.getElementById('periodReminderTitle');
+  var textEl = document.getElementById('periodReminderText');
+  var btns1 = document.getElementById('periodReminderBtns');
+  var btns2 = document.getElementById('periodReminderConfirmBtns');
+
+  titleEl.textContent = '小月历提醒';
   if (days === 0) {
     textEl.textContent = '预计今天就是经期开始的日子，记得提前做好准备。';
   } else {
     textEl.textContent = '距离下次经期还有 ' + days + ' 天，这几天注意休息。';
   }
+  btns1.style.display = 'flex';
+  btns2.style.display = 'none';
 
   modal.classList.add('active');
 
   // 标记今天已提醒
-  CONFIG.period.lastReminderDate = todayKey;
+  CONFIG.period.lastReminderDate = formatDateKey(new Date());
   saveAllData();
+}
+
+// 显示「今天来了吗」询问
+function showAskDialog() {
+  var modal = document.getElementById('periodReminder');
+  if (!modal) return;
+
+  var titleEl = document.getElementById('periodReminderTitle');
+  var textEl = document.getElementById('periodReminderText');
+  var btns1 = document.getElementById('periodReminderBtns');
+  var btns2 = document.getElementById('periodReminderConfirmBtns');
+
+  titleEl.textContent = '小月历提醒';
+  textEl.textContent = '今天来月经了吗？';
+  btns1.style.display = 'none';
+  btns2.style.display = 'flex';
+
+  modal.classList.add('active');
+}
+
+// 用户点「来了」
+function confirmPeriodArrived() {
+  var todayKey = formatDateKey(new Date());
+
+  if (!CONFIG.period) {
+    CONFIG.period = { records: [], lastReminderDate: null, lastAskDate: null };
+  }
+  if (!CONFIG.period.records) CONFIG.period.records = [];
+
+  // 按平均天数补全
+  var duration = calcAverageDuration();
+  var startObj = parseDateKey(todayKey);
+  var endObj = new Date(startObj);
+  endObj.setDate(endObj.getDate() + duration - 1);
+
+  CONFIG.period.records.push({
+    id: generatePeriodId(),
+    startDate: todayKey,
+    endDate: formatDateKey(endObj),
+    note: '',
+    createdAt: new Date().toISOString()
+  });
+
+  CONFIG.period.avgCycle = calcAverageCycle();
+  CONFIG.period.avgDuration = calcAverageDuration();
+  CONFIG.period.lastAskDate = todayKey;
+
+  saveAllData();
+  closePeriodReminder();
+
+  showToast('已记录经期，共 ' + duration + ' 天');
+
+  // 如果小月历页面开着，刷新一下
+  if (document.getElementById('periodScreen').classList.contains('open')) {
+    renderPeriodPage();
+    updatePeriodButtons();
+  }
+}
+
+// 用户点「还没」
+function confirmPeriodNotYet() {
+  var todayKey = formatDateKey(new Date());
+  if (!CONFIG.period) CONFIG.period = {};
+  CONFIG.period.lastAskDate = todayKey;
+  saveAllData();
+  closePeriodReminder();
+}
+
+function closePeriodReminder() {
+  var modal = document.getElementById('periodReminder');
+  if (modal) modal.classList.remove('active');
 }
 
 function closePeriodReminder() {
