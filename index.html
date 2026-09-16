@@ -88,7 +88,7 @@
         .heart-card .heart-wrap { position: relative; width: 64px; height: 56px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .heart-card .heart-wrap svg { width: 56px; height: 50px; display: block; position: relative; z-index: 2; filter: drop-shadow(0 0 20px var(--heart-glow-color)); animation: heartbeat 1.2s ease-in-out infinite; transform-origin: center; }
         .heart-card .heart-wrap .heart-glow { position: absolute; top: 50%; left: 50%; width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle, var(--heart-glow-color), rgba(255,107,129,0.02) 60%, transparent 90%); transform: translate(-50%,-50%) scale(0.8); opacity: 0; pointer-events: none; z-index: 1; animation: pulseGlow 1.2s ease-in-out infinite; }
-        .heart-card .heart-value { font-size: 20px; font-weight: 700; color: var(--heart-color); margin-top: 1px; letter-spacing: 1px; text-shadow: 0 0 20px var(--heart-glow-color); transition: color 0.3s ease; }
+        .heart-card .signature { font-size: 12px; color: rgba(255,255,255,0.85); letter-spacing: 0.5px; text-align: center; padding: 3px 12px 2px; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.08); width: 80%; cursor: pointer; transition: 0.2s; text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
         .heart-card .heart-value .percent { font-size: 13px; color: rgba(255,255,255,0.3); font-weight: 400; }
         .heart-card .heart-value .bpm-label { font-size: 10px; color: rgba(255,255,255,0.25); font-weight: 400; margin-left: 2px; }
         .heart-card .signature { font-size: 12px; color: rgba(255,255,255,0.45); letter-spacing: 0.5px; text-align: center; padding: 3px 12px 2px; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.04); width: 80%; cursor: pointer; transition: 0.2s; }
@@ -3123,9 +3123,6 @@ function createDefaultRole(name) {
 
 function getRolesList() { return roles || []; }
 function escapeHtml(text) { if (text === null || text === undefined) return ''; text = String(text); var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-
-function getRolesList() { return roles || []; }
-function escapeHtml(text) { if (text === null || text === undefined) return ''; text = String(text); var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 function getLevel(value) { for (var i = 0; i < CONSTANTS.LEVEL_MAP.length; i++) { if (value <= CONSTANTS.LEVEL_MAP[i].max) return CONSTANTS.LEVEL_MAP[i].label; } return '灵魂共振'; }
 function getIntimacyLevel(intimacy) { if (intimacy < 20) return '初识'; if (intimacy < 40) return '熟悉'; if (intimacy < 60) return '亲密'; if (intimacy < 80) return '依赖'; return '灵魂伴侣'; }
 function getHeartData(role) { if (!role) return { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; if (!role.heartData) { role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; debouncedSaveAllData(); } return role.heartData; }
@@ -3166,12 +3163,12 @@ function mergeCloudDataByTimestamp(cloudRoles, cloudConfig, cloudDiaries) {
 
     // 合并配置
     if (cloudConfig) {
-        Object.keys(cloudConfig).forEach(function(key) {
-            if (CONFIG[key] === undefined || CONFIG[key] === null || CONFIG[key] === '') {
-                CONFIG[key] = cloudConfig[key];
-            }
-        });
-    }
+    Object.keys(cloudConfig).forEach(function(key) {
+        if (CONFIG[key] === undefined || CONFIG[key] === null) {
+            CONFIG[key] = cloudConfig[key];
+        }
+    });
+}
 
     // 合并日记
     if (Array.isArray(cloudDiaries)) {
@@ -3561,11 +3558,8 @@ function formatTime(timeStr, mode) {
     try {
         var date = new Date(timeStr);
         if (isNaN(date.getTime())) {
-            if (mode === 'HH:MM' || mode === undefined || mode === null) {
-                return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-            }
-            return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-        }
+    return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+}
         if (mode === 'HH:MM' || mode === undefined || mode === null) {
             var h = String(date.getHours()).padStart(2, '0');
             var m = String(date.getMinutes()).padStart(2, '0');
@@ -4108,7 +4102,7 @@ function createMessageRow(msg, role) {
         
         var now = new Date();
         var hour = now.getHours();
-        var timeStr = hour < 6 ? '深夜' : hour < 12 ? '清晨' : hour < 17 ? '午后' : '黄昏';
+        var timeStr = formatTime(msg.time, CONFIG.timeMode || 'HH:MM');
         
         var statusText = isUserGift ? '你 → ' + role.name : fromName + ' → 你';
         
@@ -4227,6 +4221,7 @@ row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') +
 }
 
 function formatTimeDisplay(seconds) {
+    seconds = parseFloat(seconds);
     if (isNaN(seconds) || seconds < 0) seconds = 0;
     var m = Math.floor(seconds / 60);
     var s = Math.floor(seconds % 60);
@@ -4876,7 +4871,6 @@ function addMessageToRole(roleId, role, content, type, giftData, voiceRequested)
         audioUrl: null,
         audioDuration: 0,
         voiceRequested: voiceRequested || false,
-quoted: quotedData || null,
         quoted: quotedData // ← 新增：存储引用信息
     };
     if (giftData) msg.giftData = giftData;
@@ -5250,7 +5244,7 @@ function callDeepSeekDirect(userMessage, role, voiceRequested) {
             break;
         }
     }
-    var systemPrompt = buildSystemPrompt(role); var systemPrompt = buildSystemPrompt(role);
+    var systemPrompt = buildSystemPrompt(role);
 // ===== 小钩子：在系统提示最后加一句温柔提醒 =====
 systemPrompt += '\n\n💡 小提示：如果需要用表情包表达情绪，就大胆用 [表情包：名称] 吧！系统会自动显示图片的～';
 // ===== 小钩子结束 =====
@@ -5627,6 +5621,7 @@ function triggerHeartSpike(role, weight, keyword, level) {
     if (!role) return;
     var hd = getHeartData(role);
     var resting = hd.restingValue || 65;
+    CONFIG.heart.spikeActive = true;
     var spikeAmount = Math.min(25, 15 + Math.floor(Math.random() * 10) + Math.floor(weight / 2));
     var peakValue = Math.min(99, resting + spikeAmount);
     hd.value = peakValue;
@@ -5911,7 +5906,7 @@ function generateActiveMessage(role) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
         body: JSON.stringify({
-            model: model || 'deepseek-v4-pro t',
+            model: model || 'deepseek-v4-pro',
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
             temperature: 0.85,
             max_tokens: 200
@@ -11736,7 +11731,7 @@ else if (app === 'video') openVideoLibrary();
                 };
             }
             renderMainAppMoments();
-            //会 红点不直接清空——让用户点消息条后再清，或关闭消息条后再清
+            // ⭐ 不清空红点！只有用户点消息条或关闭消息条时才标记已读
             // 后台检查待回复评论
             setTimeout(function() { processAllPendingReplies(); }, 500);
         }
@@ -13063,8 +13058,7 @@ showVideoFloating(role) {
     
     var el = this.els.floating;
     if (!el) return;
-    var el = this.els.floating;
-    if (!el) return;
+   
     
     el.style.width = '120px';
     el.style.height = '160px';
@@ -14185,8 +14179,7 @@ CallController.playRandomVideoForRole = function(role) {
     
     var videoEl = document.getElementById('callVideoPlayer');
     if (!videoEl) return;
-    var videoEl = document.getElementById('callVideoPlayer');
-    if (!videoEl) return;
+   
     
     if (!role) {
         videoEl.style.display = 'none';
