@@ -6009,6 +6009,41 @@ function consolidateMemory(role) {
     debouncedSaveAllData();
 }
 
+// ===== 获取经期状态（供 AI 感知）=====
+function getPeriodStatusForAI() {
+  if (!CONFIG.period || !CONFIG.period.records || CONFIG.period.records.length === 0) return null;
+
+  var today = new Date();
+  var todayKey = formatDateKey(today);
+
+  // 1. 今天是否在经期中
+  var inPeriod = false;
+  var periodDayNum = 0;
+  CONFIG.period.records.forEach(function(r) {
+    var s = parseDateKey(r.startDate);
+    var e = parseDateKey(r.endDate);
+    if (today >= s && today <= e) {
+      inPeriod = true;
+      periodDayNum = daysBetween(s, today) + 1;
+    }
+  });
+
+  if (inPeriod) {
+    return '用户现在处于经期（第 ' + periodDayNum + ' 天）。';
+  }
+
+  // 2. 距离下次 ≤ 3 天
+  var info = daysUntilNextPeriod();
+  if (info && info.days >= 0 && info.days <= 3) {
+    if (info.days === 0) {
+      return '用户预计今天来经期。';
+    }
+    return '用户距离下次经期还有 ' + info.days + ' 天。';
+  }
+
+  return null;
+}
+
 function buildSystemPrompt(role) {
     // ===== 新增：加载商品列表 =====
     var productList = [];
@@ -6035,6 +6070,9 @@ function buildSystemPrompt(role) {
     }
     // ===== 新增结束 =====
     
+
+// 获取经期状态
+  var periodStatusForAI = getPeriodStatusForAI();
 
     // ===== 第一步：强制角色宣言 =====
     var parts = [];
@@ -6115,7 +6153,10 @@ abilityBlock += '如果你特别喜欢某件商品，可以告诉用户你喜欢
     parts.push('3. 如果用户问的是知识性问题，用「' + role.name + '」的视角回答（可以说“我记得好像是…”）。');
     parts.push('4. 像真人一样自然聊天，不要机械分段，不要每句都加表情。');
     parts.push('5. 你现在就是 ' + role.name + '，ta 正在和你说话。');
-    
+    // ===== 注入经期状态（仅告知，不给话术）=====
+  if (periodStatusForAI) {
+    parts.push('【当前状态】' + periodStatusForAI);
+  }
     return parts.join('\n\n');
 }
 
