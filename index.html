@@ -118,6 +118,7 @@
         .app-icon .icon-wrap.phone { background: linear-gradient(135deg,#74b9ff,#0984e3); color: #fff; box-shadow: 0 4px 12px rgba(9,132,227,0.4); }
         .app-icon .icon-wrap.memory { background: linear-gradient(135deg,#a29bfe,#6c5ce7); color: #fff; box-shadow: 0 4px 12px rgba(108,92,231,0.4); }
 .app-icon .icon-wrap.video { background: linear-gradient(135deg,#b2bec3,#636e72); color: #fff; box-shadow: 0 4px 12px rgba(99,110,114,0.4); }
+.app-icon .icon-wrap.period { background: linear-gradient(135deg, #FFB6C1, #E75480); color: #fff; box-shadow: 0 4px 12px rgba(231,84,128,0.4); }
         .app-icon .app-name { font-size: 10px; color: rgba(255,255,255,0.85); text-align: center; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
         [data-theme="light"] .app-icon .app-name { color: rgba(0,0,0,0.7); text-shadow: none; }
         .dock { display: flex; justify-content: center; gap: 20px; padding: 8px 0 4px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: auto; flex-shrink: 0; position: relative; z-index: 2; }
@@ -946,6 +947,90 @@
         .diary-empty i { font-size: 36px; color: #d4a574; opacity: 0.3; margin-bottom: 10px; }
         .diary-empty p { font-size: 13px; line-height: 1.6; font-family: "Ma Shan Zheng", cursive; }
         .diary-empty .empty-hint { font-size: 11px; color: #c0b0a0; margin-top: 4px; }
+
+.period-reminder {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.period-reminder.active {
+  display: flex;
+}
+
+.period-reminder-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 24px 20px 18px;
+  max-width: 300px;
+  width: 88%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,132,184,0.15);
+  animation: fadeInUp 0.3s ease;
+  text-align: center;
+}
+
+.period-reminder-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: #FFE6EB;
+  position: relative;
+}
+
+.period-reminder-icon::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #FF84B8;
+}
+
+.period-reminder-card h3 {
+  font-size: 17px;
+  color: #5A2A3A;
+  margin-bottom: 8px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.period-reminder-card p {
+  font-size: 14px;
+  color: #A07688;
+  line-height: 1.6;
+  margin-bottom: 16px;
+  letter-spacing: 0.3px;
+}
+
+.period-reminder-btn {
+  background: #FF84B8;
+  color: #FFFFFF;
+  border: none;
+  padding: 10px 28px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: 0.15s;
+  letter-spacing: 0.5px;
+}
+
+.period-reminder-btn:active {
+  transform: scale(0.96);
+}
+
         .diary-notification { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0.9); background: #fdf8ed; border-radius: 20px; padding: 24px 20px 18px; max-width: 300px; width: 88%; z-index: 200; box-shadow: 0 20px 60px rgba(0,0,0,0.4); animation: fadeInUp 0.4s ease; font-family: "Ma Shan Zheng", cursive; text-align: center; display: none; }
         .diary-notification.active { display: block; }
         .diary-notification .notif-icon { font-size: 40px; margin-bottom: 6px; }
@@ -1660,6 +1745,443 @@
     .gift-card-snapshot-product {
         font-size: 11px;
     }
+}
+
+/* ============================================================
+   🩸 小月历
+   ============================================================ */
+
+.screen-period {
+    width: 100%;
+    height: 100%;
+    background: #FFE6EB;
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 15;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow: hidden;
+}
+.screen-period.open {
+    transform: translateX(0);
+}
+
+/* 顶部中粉 + 白色波点 */
+.period-header {
+    background-color: #FF84B8;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.45) 1.5px, transparent 1.5px);
+    background-size: 16px 16px;
+    padding: calc(12px + var(--safe-top, 0px)) 16px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    min-height: 54px;
+    position: relative;
+    z-index: 2;
+}
+.period-header .back-btn {
+    font-size: 20px;
+    color: #FFFFFF;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 4px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: 0.15s;
+}
+.period-header .back-btn:active {
+    background: rgba(255,255,255,0.25);
+}
+.period-header .period-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #FFFFFF;
+    flex: 1;
+    text-align: center;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 3px rgba(180,60,110,0.2);
+}
+.period-header .period-placeholder {
+    width: 32px;
+}
+
+/* 倒计时卡片 */
+.period-countdown {
+    background: linear-gradient(180deg, #FF84B8 0%, #FFB6C1 60%, #FFE6EB 100%);
+    padding: 20px 16px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+.period-countdown .countdown-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+    text-shadow: 0 1px 2px rgba(180,60,110,0.15);
+}
+.period-countdown .countdown-days {
+    font-size: 52px;
+    font-weight: 300;
+    color: #FFFFFF;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 8px rgba(255,132,184,0.4);
+}
+.period-countdown .countdown-unit {
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+    margin-top: 4px;
+    letter-spacing: 4px;
+    text-shadow: 0 1px 2px rgba(180,60,110,0.15);
+}
+.period-countdown .countdown-date {
+    font-size: 12px;
+    color: #FFFFFF;
+    margin-top: 8px;
+    padding: 3px 14px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+.period-countdown.is-empty .countdown-days {
+    font-size: 32px;
+    font-weight: 400;
+}
+
+/* 日历区域 */
+.period-calendar-wrap {
+    flex: 1;
+    background: #FFE6EB;
+    padding: 14px 16px 8px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 月份导航 */
+.period-month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px 12px;
+}
+.period-month-nav .month-arrow {
+    background: none;
+    border: none;
+    color: #FF84B8;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.period-month-nav .month-arrow:active {
+    background: rgba(255,132,184,0.15);
+}
+
+.period-month-nav .period-month-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #FF84B8;
+    letter-spacing: 1px;
+}
+
+/* 星期标题 */
+.period-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,132,184,0.2);
+    margin-bottom: 8px;
+}
+.period-weekdays span {
+    text-align: center;
+    font-size: 11px;
+    color: #FFB6C1;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* 日期网格 */
+.period-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    padding-bottom: 12px;
+}
+.period-days-grid .day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #FF84B8;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.15s;
+    position: relative;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.period-days-grid .day-cell:active {
+    transform: scale(0.9);
+}
+.period-days-grid .day-cell.other-month {
+    color: #E0BFC9;
+    opacity: 0.5;
+}
+.period-days-grid .day-cell.other-month:active {
+    transform: none;
+}
+
+/* 经期日：中粉圆底 */
+.period-days-grid .day-cell.period-day {
+    background: #FF84B8;
+    color: #FFFFFF;
+    font-weight: 500;
+}
+
+/* 预测日：极浅粉圆底 */
+.period-days-grid .day-cell.predicted-day {
+    background: rgba(255,132,184,0.22);
+    color: #FF84B8;
+    font-weight: 500;
+}
+
+/* 今天：金色描边 */
+.period-days-grid .day-cell.today {
+    box-shadow: inset 0 0 0 2px #F39C12;
+}
+.period-days-grid .day-cell.today.period-day {
+    box-shadow: inset 0 0 0 2px #F39C12;
+}
+
+/* 起止日：数字下加小圆点 */
+.period-days-grid .day-cell.has-dot::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #5A2A3A;
+}
+.period-days-grid .day-cell.period-day.has-dot::after {
+    background: #FFFFFF;
+}
+.period-days-grid .day-cell.predicted-day.has-dot::after {
+    background: #FF84B8;
+}
+
+/* 选中：手绘圆环 */
+.period-days-grid .day-cell.selected::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M 48 8 C 68 5, 88 14, 92 32 C 96 50, 92 68, 80 82 C 68 96, 48 96, 32 90 C 16 84, 6 68, 8 50 C 10 32, 22 18, 40 10 C 52 5, 66 6, 76 14' fill='none' stroke='%23FF84B8' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    transform: rotate(-8deg);
+    opacity: 1;
+    z-index: 2;
+}
+.period-days-grid .day-cell.selected.period-day::before {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M 48 8 C 68 5, 88 14, 92 32 C 96 50, 92 68, 80 82 C 68 96, 48 96, 32 90 C 16 84, 6 68, 8 50 C 10 32, 22 18, 40 10 C 52 5, 66 6, 76 14' fill='none' stroke='%23FFFFFF' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+}
+.period-days-grid .day-cell.selected.predicted-day::before {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M 48 8 C 68 5, 88 14, 92 32 C 96 50, 92 68, 80 82 C 68 96, 48 96, 32 90 C 16 84, 6 68, 8 50 C 10 32, 22 18, 40 10 C 52 5, 66 6, 76 14' fill='none' stroke='%23FF84B8' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+}
+
+/* 图例 */
+.period-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 10px 0 4px;
+    margin-top: auto;
+}
+.period-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #A07688;
+}
+.period-legend .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.period-legend .legend-dot.legend-period {
+    background: #FF84B8;
+}
+.period-legend .legend-dot.legend-predicted {
+    background: rgba(255,132,184,0.22);
+    border: 1px solid rgba(255,132,184,0.5);
+}
+.period-legend .legend-dot.legend-today {
+    background: transparent;
+    border: 2px solid #F39C12;
+}
+
+/* 底部按钮 */
+.period-actions {
+    display: flex;
+    gap: 12px;
+    padding: 10px 16px calc(14px + var(--safe-bottom, 0px));
+    background: #FFE6EB;
+    border-top: 1px solid rgba(255,132,184,0.2);
+    flex-shrink: 0;
+}
+.period-actions .period-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
+    border: none;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.15s;
+    letter-spacing: 0.5px;
+}
+.period-actions .period-btn:active {
+    transform: scale(0.96);
+}
+.period-actions .period-btn-delete {
+    background: rgba(255,132,184,0.15);
+    color: #FF84B8;
+}
+.period-actions .period-btn-delete:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+.period-actions .period-btn-add {
+    background: #FF84B8;
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(255,132,184,0.35);
+}
+
+.period-actions .period-btn-add:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* ===== 小月历 - 弹窗 ===== */
+.period-modal {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 22px 20px 18px;
+    max-width: 340px;
+    width: 100%;
+    animation: fadeInUp 0.25s ease;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,132,184,0.15);
+}
+.period-modal h3 {
+    font-size: 16px;
+    color: #5A2A3A;
+    margin-bottom: 14px;
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.period-modal .period-modal-info {
+    background: #FFE6EB;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+.period-modal .period-modal-info .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+}
+.period-modal .period-modal-info .info-label {
+    font-size: 12px;
+    color: #A07688;
+    letter-spacing: 0.5px;
+}
+.period-modal .period-modal-info .info-value {
+    font-size: 14px;
+    color: #FF84B8;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.period-modal .period-modal-hint {
+    font-size: 11px;
+    color: #A07688;
+    text-align: center;
+    padding: 6px 0 12px;
+    line-height: 1.5;
+    letter-spacing: 0.3px;
+}
+.period-modal .period-modal-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.period-modal .period-modal-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 11px;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.15s;
+    letter-spacing: 0.5px;
+}
+.period-modal .period-modal-btn:active {
+    transform: scale(0.97);
+}
+.period-modal .period-modal-btn-cancel {
+    background: #FFE6EB;
+    color: #A07688;
+}
+.period-modal .period-modal-btn-confirm {
+    background: #FF84B8;
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(255,132,184,0.3);
+}
+.period-modal .period-modal-btn-secondary {
+    background: rgba(255,132,184,0.15);
+    color: #FF84B8;
+}
+.period-modal .period-modal-btn-danger {
+    background: #E74C3C;
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(231,76,60,0.3);
 }
 
 /* ===== 视频素材库样式 ===== */
@@ -2530,6 +3052,20 @@
     <span class="app-name">收藏屋</span>
 </div>
 
+<!-- 🩸 小月历 -->
+<button class="app-icon" data-app="period">
+    <div class="icon-wrap period">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:26px;height:26px;">
+            <path d="M12 2 C 12 2, 4 12, 4 16 
+                     C 4 20, 8 23, 12 23 
+                     C 16 23, 20 20, 20 16 
+                     C 20 12, 12 2, 12 2 Z" 
+                  fill="#E75480" />
+        </svg>
+    </div>
+    <span class="app-name">小月历</span>
+</button>
+
 <!-- 🎬 视频素材库 -->
     <button class="app-icon" data-app="video">
         <div class="icon-wrap video"><i class="fas fa-film"></i></div>
@@ -2580,6 +3116,119 @@
     <div class="screen-chat" id="chatScreen"><div class="chat-bg-layer" id="chatBgLayer"></div><div class="chat-header"><button class="back-btn" id="backFromChat"><i class="fas fa-chevron-left"></i></button><div class="title"><span class="chat-role-name" id="chatRoleName">DeepSeek</span></div><div class="actions"><i class="fas fa-trash-alt" id="clearChatBtn" style="color:#e74c3c;cursor:pointer;font-size:16px;" title="清空聊天记录"></i></div></div><div class="chat-messages" id="messageContainer"></div><div class="chat-input-area"><div class="quote-bar" id="quoteBar"><i class="fas fa-quote-left" style="color:#07c160;font-size:11px;"></i><span class="quote-text" id="quoteText">引用内容</span><button class="quote-cancel" id="quoteCancelBtn"><i class="fas fa-times"></i></button></div><div class="input-row"><button class="meme-btn" id="memeBtn" title="选择表情包"><i class="fas fa-face-smile"></i></button><button class="plus-btn" id="plusBtn"><i class="fas fa-plus-circle"></i></button><input type="text" id="messageInput" placeholder="输入消息..." /><button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></button></div></div></div>
     <div class="screen-meme" id="memeScreen"><div class="meme-header-bar"><button class="back-btn" id="backFromMeme"><i class="fas fa-chevron-left"></i></button><div class="title" id="memeTitle">📚 表情包</div><div class="meme-actions" style="display:flex;gap:8px;"><button class="meme-action-btn" id="memeExportBtn" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:var(--text-secondary);" title="导出表情包"><i class="fas fa-download"></i></button><button class="meme-action-btn" id="memeImportBtn" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:var(--text-secondary);" title="导入表情包"><i class="fas fa-upload"></i></button></div></div><div class="meme-body-scroll" id="memeBodyScroll"></div></div>
     <div class="screen-diary" id="diaryScreen"><div class="diary-header"><button class="back-btn" id="backFromDiary"><i class="fas fa-chevron-left"></i></button><div class="title"><i class="fas fa-book-open"></i> 他的日记</div><div class="diary-actions"><select class="role-selector" id="diaryRoleSelector"></select><button class="write-btn" id="writeDiaryBtn"><i class="fas fa-feather-alt"></i> 写今日</button></div></div><div class="calendar-toggle-outside" id="calendarToggle"><span class="toggle-label"><i class="fas fa-calendar-alt"></i> 日历</span><span class="toggle-icon" id="toggleIcon"><i class="fas fa-chevron-up"></i></span></div><div class="diary-calendar-nav" id="diaryCalendarNav"><div class="month-nav"><button class="month-btn" id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button><span class="month-label" id="monthLabel">2026年6月</span><button class="month-btn" id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button></div><div class="weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="days-grid" id="daysGrid"></div></div><div class="diary-body" id="diaryBody"></div><div class="diary-page-nav" id="diaryPageNav"><button class="page-btn" id="prevDayBtn"><i class="fas fa-chevron-left"></i> 上一篇</button><span class="page-indicator" id="pageIndicator">今天</span><button class="page-btn" id="nextDayBtn">下一篇 <i class="fas fa-chevron-right"></i></button></div></div>
+
+<!-- ============================================================
+     🩸 小月历
+     ============================================================ -->
+<div class="screen-period" id="periodScreen">
+    <!-- 顶部深粉 + 波点 -->
+    <div class="period-header">
+        <button class="back-btn" id="backFromPeriod">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <div class="period-title">小月历</div>
+        <div class="period-placeholder"></div>
+    </div>
+
+    <!-- 中部倒计时卡片 -->
+    <div class="period-countdown" id="periodCountdown">
+        <div class="countdown-label">距离下次还有</div>
+        <div class="countdown-days" id="countdownDays">--</div>
+        <div class="countdown-unit">天</div>
+        <div class="countdown-date" id="countdownDate">还没有记录</div>
+    </div>
+
+    <!-- 浅粉日历区 -->
+    <div class="period-calendar-wrap">
+        <!-- 月份切换 -->
+        <div class="period-month-nav">
+            <button class="month-arrow" id="periodPrevMonth">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="period-month-label" id="periodMonthLabel">2026年9月</div>
+            <button class="month-arrow" id="periodNextMonth">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- 星期标题 -->
+        <div class="period-weekdays">
+            <span>日</span>
+            <span>一</span>
+            <span>二</span>
+            <span>三</span>
+            <span>四</span>
+            <span>五</span>
+            <span>六</span>
+        </div>
+
+        <!-- 日期网格 -->
+        <div class="period-days-grid" id="periodDaysGrid"></div>
+
+        <!-- 图例 -->
+        <div class="period-legend">
+            <div class="legend-item">
+                <span class="legend-dot legend-period"></span>
+                <span>经期</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot legend-predicted"></span>
+                <span>预测</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot legend-today"></span>
+                <span>今天</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部按钮 -->
+    <div class="period-actions">
+        <button class="period-btn period-btn-delete" id="periodDeleteBtn">
+            <i class="fas fa-trash-alt"></i>
+            <span>删除</span>
+        </button>
+        <button class="period-btn period-btn-add" id="periodAddBtn">
+            <i class="fas fa-plus"></i>
+            <span>添加</span>
+        </button>
+    </div>
+</div>
+
+<!-- 小月历 - 添加弹窗 -->
+<div class="overlay" id="periodAddModal">
+    <div class="period-modal">
+        <h3 id="periodModalTitle">添加经期</h3>
+        <div class="period-modal-info">
+            <div class="info-row">
+                <span class="info-label">选中日期</span>
+                <span class="info-value" id="periodModalPickedDate">--</span>
+            </div>
+        </div>
+        <div class="period-modal-hint" id="periodModalHint">请选择操作</div>
+        <div class="period-modal-actions" id="periodModalActions">
+            <!-- 按钮由 JS 动态渲染 -->
+        </div>
+    </div>
+</div>
+
+<!-- 小月历 - 删除确认弹窗 -->
+<div class="overlay" id="periodDeleteModal">
+    <div class="period-modal">
+        <h3>删除这一天</h3>
+        <div class="period-modal-info">
+            <div class="info-row">
+                <span class="info-label">日期</span>
+                <span class="info-value" id="periodDeleteDate">--</span>
+            </div>
+            <div class="period-modal-hint" id="periodDeleteHint">删除后，这次经期将提前到前一天结束，并重新推算下次经期。</div>
+        </div>
+        <div class="period-modal-actions">
+            <button class="period-modal-btn period-modal-btn-cancel" id="periodDeleteCancel">取消</button>
+            <button class="period-modal-btn period-modal-btn-confirm period-modal-btn-danger" id="periodDeleteConfirm">删除</button>
+        </div>
+    </div>
+</div>
 
  <!-- ===== 视频素材库 ===== -->
     <div class="screen-video-library" id="videoLibraryScreen">
@@ -2876,6 +3525,17 @@
 </div>
 <div class="style-category-title" style="margin-top:14px;">🌓 深色/浅色模式</div><div class="style-option-grid" id="themeModeGrid"></div></div></div>
     <div class="data-modal-overlay" id="dataModalOverlay"><div class="data-modal"><button class="modal-close" id="dataModalClose">&times;</button><div class="modal-title">💾 数据管理</div><div class="modal-subtitle">选择要导出或导入的数据类型</div><div id="dataModalOptions"><div class="export-option" data-value="all"><input type="checkbox" checked /><span class="opt-label">全部数据 <span class="opt-badge">推荐</span></span><span class="opt-desc">角色 + 聊天 + 记忆 + 日记 + 设置</span></div><div class="export-option" data-value="settings"><input type="checkbox" /><span class="opt-label">仅美化设置</span><span class="opt-desc">壁纸、头像、风格</span></div><div class="export-option" data-value="roles"><input type="checkbox" /><span class="opt-label">仅角色设定</span><span class="opt-desc">不含聊天记录、记忆和日记</span></div><div class="export-option" data-value="chats"><input type="checkbox" /><span class="opt-label">仅聊天记录 + 记忆</span><span class="opt-desc">不含角色设定和日记</span></div><div class="export-option" data-value="diaries"><input type="checkbox" /><span class="opt-label">仅日记数据</span><span class="opt-desc">所有角色的日记</span></div><div class="export-option" data-value="selected"><input type="checkbox" /><span class="opt-label">按角色选择导出</span><span class="opt-desc">选中的角色完整数据（含日记）</span></div><div class="role-select-list" id="roleSelectList" style="display:none;"></div></div><div class="modal-actions"><button class="btn-import" id="dataImportBtn"><i class="fas fa-upload"></i> 导入</button><button class="btn-export" id="dataExportBtn"><i class="fas fa-download"></i> 导出</button><button class="btn-cancel" id="dataModalCancel">取消</button></div><div style="font-size:10px;color:var(--text-secondary);text-align:center;margin-top:8px;"><i class="fas fa-shield-alt"></i> 数据仅保存在本地，不上传任何服务器</div></div></div>
+
+<!-- 经期提醒弹窗 -->
+<div class="period-reminder" id="periodReminder">
+  <div class="period-reminder-card">
+    <div class="period-reminder-icon"></div>
+    <h3>小月历提醒</h3>
+    <p id="periodReminderText">距离下次经期还有 3 天，这几天注意休息。</p>
+    <button class="period-reminder-btn" id="periodReminderBtn">知道了</button>
+  </div>
+</div>
+
     <div class="diary-notification" id="diaryNotification"><div class="notif-icon">📖</div><h3>他的日记已送达</h3><p id="diaryNotifText">✨ 今晚的故事，他已经写好了...</p><button class="notif-btn" id="diaryNotifBtn">📖 去阅读</button><br /><button class="notif-close" id="diaryNotifClose">稍后再说</button></div>
     <div class="floating-heart" id="floatingHeart"><span class="fh-value" id="fhValue">65</span><span class="fh-label">BPM</span></div>
     <div class="heart-detail-overlay" id="heartDetailOverlay"><div class="heart-detail-panel"><button class="close-btn" id="hdCloseBtn">&times;</button><div class="hd-avatar" id="hdAvatar"></div><div class="hd-name" id="hdName">未绑定角色</div><div class="hd-value" id="hdValue">65<span class="hd-percent">%</span><span class="hd-bpm">♥ BPM</span></div><div class="hd-level" id="hdLevel">平静</div><div class="hd-signature" id="hdSignature">今天也很想你 💕</div><div class="hd-recent" id="hdRecent">最近心跳加速：<span class="highlight">等待你的第一句情话</span></div></div></div>
@@ -3236,6 +3896,7 @@ var CONFIG = {
     diaryCalendarCollapsed: false, floatingHeartPosition: { x: null, y: null },
     lastChatVisit: {}, lastAiMessageTime: {}, aiMessageCooldown: 30 * 60 * 1000,
     timeDividerThreshold: 10 * 60 * 1000, sleepMode: {}, unreadCount: {},
+period: null,
     autoReplyEnabled: true,
     autoDiaryEnabled: true,
     autoCallEnabled: true,
@@ -3256,6 +3917,172 @@ var _testAudio = null;
 // ⭐ 自拍图片内存缓存（避免每次渲染都重新读 IndexedDB 导致闪烁）
 var _selfieImageCache = {};
 var _voiceGenerating = {};
+
+// ============================================================
+//  🩸 小月历 - 核心算法
+// ============================================================
+
+// 格式化日期为 YYYY-MM-DD
+function formatDateKey(date) {
+    var d = new Date(date);
+    return d.getFullYear() + '-' + 
+           String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+           String(d.getDate()).padStart(2, '0');
+}
+
+// 解析 YYYY-MM-DD 为 Date 对象（本地时间）
+function parseDateKey(key) {
+    if (!key) return null;
+    var parts = key.split('-');
+    return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+}
+
+// 算两个日期相差的天数
+function daysBetween(date1, date2) {
+    var d1 = new Date(date1); d1.setHours(0, 0, 0, 0);
+    var d2 = new Date(date2); d2.setHours(0, 0, 0, 0);
+    return Math.round((d2 - d1) / (24 * 60 * 60 * 1000));
+}
+
+// 算平均周期（最近 6 次）
+function calcAverageCycle() {
+    var period = CONFIG.period;
+    if (!period || !period.records || period.records.length < 2) return 28;
+
+    var sorted = period.records.slice().sort(function(a, b) {
+        return parseDateKey(a.startDate) - parseDateKey(b.startDate);
+    });
+    var recent = sorted.slice(-6);
+
+    var gaps = [];
+    for (var i = 1; i < recent.length; i++) {
+        var prev = parseDateKey(recent[i-1].startDate);
+        var curr = parseDateKey(recent[i].startDate);
+        var days = daysBetween(prev, curr);
+        if (days >= 15 && days <= 60) gaps.push(days);
+    }
+    if (gaps.length === 0) return 28;
+
+    var avg = gaps.reduce(function(a, b) { return a + b; }, 0) / gaps.length;
+    return Math.round(avg);
+}
+
+// 算平均经期天数（最近 6 次）
+function calcAverageDuration() {
+    var period = CONFIG.period;
+    if (!period || !period.records || period.records.length === 0) return 5;
+
+    var sorted = period.records.slice().sort(function(a, b) {
+        return parseDateKey(a.startDate) - parseDateKey(b.startDate);
+    });
+    var recent = sorted.slice(-6);
+
+    var durations = recent.map(function(r) {
+        return daysBetween(parseDateKey(r.startDate), parseDateKey(r.endDate)) + 1;
+    }).filter(function(d) { return d > 0 && d < 15; });
+
+    if (durations.length === 0) return 5;
+    var avg = durations.reduce(function(a, b) { return a + b; }, 0) / durations.length;
+    return Math.round(avg);
+}
+
+// 获取当前生效的周期天数（用户手动优先）
+function getEffectiveCycle() {
+    var period = CONFIG.period;
+    if (!period) return 28;
+    if (period.customCycle && period.customCycle > 0) return period.customCycle;
+    return calcAverageCycle();
+}
+
+// 获取当前生效的经期天数
+function getEffectiveDuration() {
+    var period = CONFIG.period;
+    if (!period) return 5;
+    if (period.customDuration && period.customDuration > 0) return period.customDuration;
+    return calcAverageDuration();
+}
+
+// 预测未来 3 次的经期
+function predictNextPeriods() {
+    var period = CONFIG.period;
+    if (!period || !period.records || period.records.length === 0) return [];
+
+    var sorted = period.records.slice().sort(function(a, b) {
+        return parseDateKey(a.startDate) - parseDateKey(b.startDate);
+    });
+    var last = sorted[sorted.length - 1];
+    var lastStart = parseDateKey(last.startDate);
+    var cycle = getEffectiveCycle();
+    var duration = getEffectiveDuration();
+
+    var predictions = [];
+    for (var i = 1; i <= 3; i++) {
+        var predictStart = new Date(lastStart);
+        predictStart.setDate(predictStart.getDate() + cycle * i);
+        var predictEnd = new Date(predictStart);
+        predictEnd.setDate(predictEnd.getDate() + duration - 1);
+        predictions.push({
+            startDate: formatDateKey(predictStart),
+            endDate: formatDateKey(predictEnd),
+            isPrediction: true
+        });
+    }
+    return predictions;
+}
+
+// 距离下次来还有几天
+function daysUntilNextPeriod() {
+    var period = CONFIG.period;
+    if (!period || !period.records || period.records.length === 0) return null;
+
+    var sorted = period.records.slice().sort(function(a, b) {
+        return parseDateKey(a.startDate) - parseDateKey(b.startDate);
+    });
+    var last = sorted[sorted.length - 1];
+    var lastStart = parseDateKey(last.startDate);
+    var nextStart = new Date(lastStart);
+    nextStart.setDate(nextStart.getDate() + getEffectiveCycle());
+
+    var today = new Date();
+    var days = daysBetween(today, nextStart);
+    return { days: days, date: formatDateKey(nextStart) };
+}
+
+// 判断某一天是不是"经期日"（历史记录）
+function isPeriodDay(dateKey) {
+    var period = CONFIG.period;
+    if (!period || !period.records) return false;
+    var target = parseDateKey(dateKey);
+    for (var i = 0; i < period.records.length; i++) {
+        var r = period.records[i];
+        var s = parseDateKey(r.startDate);
+        var e = parseDateKey(r.endDate);
+        if (target >= s && target <= e) {
+            return { isStart: daysBetween(s, target) === 0, isEnd: daysBetween(target, e) === 0 };
+        }
+    }
+    return false;
+}
+
+// 判断某一天是不是"预测日"
+function isPredictedDay(dateKey) {
+    var predictions = predictNextPeriods();
+    var target = parseDateKey(dateKey);
+    for (var i = 0; i < predictions.length; i++) {
+        var p = predictions[i];
+        var s = parseDateKey(p.startDate);
+        var e = parseDateKey(p.endDate);
+        if (target >= s && target <= e) {
+            return { isStart: daysBetween(s, target) === 0, isEnd: daysBetween(target, e) === 0 };
+        }
+    }
+    return false;
+}
+
+// 生成新的经期记录 ID
+function generatePeriodId() {
+    return 'period_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+}
 
 function generateId() { _idCounter++; return 'id_' + Date.now() + '_' + _idCounter + '_' + Math.random().toString(36).substr(2, 6); }
 function getCurrentRole() { return roles.find(function(r) { return r.id === currentRoleId; }) || roles[0] || null; }
@@ -3524,6 +4351,15 @@ if (CONFIG.autoReplyEnabled === undefined) CONFIG.autoReplyEnabled = true;
 if (CONFIG.autoDiaryEnabled === undefined) CONFIG.autoDiaryEnabled = true;
 if (CONFIG.autoCallEnabled === undefined) CONFIG.autoCallEnabled = true;
 if (CONFIG.autoMomentReplyEnabled === undefined) CONFIG.autoMomentReplyEnabled = true;
+if (!CONFIG.period) CONFIG.period = {
+            records: [],
+            avgCycle: null,
+            avgDuration: null,
+            customCycle: null,
+            customDuration: null,
+            lastReminderDate: null
+        };
+        if (!CONFIG.period.records) CONFIG.period.records = [];
         if (!CONFIG.diaries || !Array.isArray(CONFIG.diaries)) CONFIG.diaries = [];
         if (CONFIG.diaryAutoGenerateEnabled === undefined) CONFIG.diaryAutoGenerateEnabled = true;
         if (CONFIG.diaryCalendarCollapsed === undefined) CONFIG.diaryCalendarCollapsed = false;
@@ -9056,6 +9892,15 @@ if (CONFIG.autoDiaryEnabled === false) {
 function startDiaryAutoCheck() {
     setInterval(checkAndGenerateDailyDiaries, 60 * 60 * 1000);
     setTimeout(checkAndGenerateDailyDiaries, 5000);
+
+// ===== 启动经期提醒检查 =====
+setTimeout(checkPeriodReminder, 3000);
+
+var _prBtn = document.getElementById('periodReminderBtn');
+if (_prBtn) {
+  _prBtn.addEventListener('click', closePeriodReminder);
+}
+
     console.log('📖 日记自动书写系统已启动（每小时检查一次）');
 }
 
@@ -9500,6 +10345,498 @@ function openDiary() {
     renderDiaryAll();
     if (CONFIG.heart.floatingEnabled !== false) setTimeout(showFloatingHeart, 300);
 }
+
+// ============================================================
+//  🩸 小月历 - 页面控制
+// ============================================================
+
+// 当前查看的月份（Date 对象，只用到年和月）
+var periodViewDate = new Date();
+
+// 当前选中的日期（YYYY-MM-DD），null 表示没有选中
+var periodSelectedDate = null;
+
+var periodDeleteTarget = null;
+
+// 打开页面
+function openPeriodScreen() {
+    document.getElementById('launcherScreen').classList.add('hidden');
+    document.getElementById('chatScreen').classList.remove('open');
+    document.getElementById('contactsScreen').classList.remove('open');
+    document.getElementById('memeScreen').classList.remove('open');
+    document.getElementById('diaryScreen').classList.remove('open');
+    document.getElementById('videoLibraryScreen').classList.remove('open');
+    document.getElementById('periodScreen').classList.add('open');
+
+    // 回到当前月
+    periodViewDate = new Date();
+    periodSelectedDate = null;
+
+    renderPeriodPage();
+    updatePeriodButtons();
+}
+
+// 关闭页面
+function closePeriodScreen() {
+    document.getElementById('periodScreen').classList.remove('open');
+    document.getElementById('launcherScreen').classList.remove('hidden');
+}
+
+// ============================================================
+//  🩸 小月历 - 添加/删除逻辑
+// ============================================================
+
+// 打开添加弹窗
+
+function openPeriodAddModal() {
+  if (!periodSelectedDate) {
+    showToast('请先选择一天');
+    return;
+  }
+  if (isPeriodDay(periodSelectedDate)) {
+    showToast('这一天已经在经期里了，请用删除');
+    return;
+  }
+  var targetDate = parseDateKey(periodSelectedDate);
+  var records = (CONFIG.period && CONFIG.period.records) || [];
+  var nextRecord = null;
+  var prevRecord = null;
+  records.forEach(function(r) {
+    var rs = parseDateKey(r.startDate);
+    var re = parseDateKey(r.endDate);
+    if (targetDate < rs) {
+      if (!nextRecord || parseDateKey(nextRecord.startDate) > rs) {
+        nextRecord = r;
+      }
+    } else if (targetDate > re) {
+      if (!prevRecord || parseDateKey(prevRecord.endDate) < re) {
+        prevRecord = r;
+      }
+    }
+  });
+  document.getElementById('periodModalPickedDate').textContent = formatDateChinese(periodSelectedDate);
+  var hintEl = document.getElementById('periodModalHint');
+  var actionsEl = document.getElementById('periodModalActions');
+  actionsEl.innerHTML = '';
+  if (records.length === 0) {
+    hintEl.textContent = '这将作为经期的开始日';
+    addModalButton('确定添加', 'confirm-add-new', 'confirm');
+    addModalButton('取消', 'cancel', 'cancel');
+  } else if (prevRecord) {
+    var prevEnd = parseDateKey(prevRecord.endDate);
+    var daysAfter = daysBetween(prevEnd, targetDate);
+    if (daysAfter <= 20) {
+      hintEl.textContent = '这一天在现有经期记录之后';
+      addModalButton('添加经期天数', 'add-days', 'confirm');
+      addModalButton('改变开始日', 'change-start', 'secondary');
+      addModalButton('取消', 'cancel', 'cancel');
+    } else {
+      hintEl.textContent = '这将作为新经期的开始日';
+      addModalButton('确定添加', 'confirm-add-new', 'confirm');
+      addModalButton('取消', 'cancel', 'cancel');
+    }
+  } else if (nextRecord) {
+    var nextStart = parseDateKey(nextRecord.startDate);
+    var daysBefore = daysBetween(targetDate, nextStart);
+    if (daysBefore <= 20) {
+      hintEl.textContent = '这一天在下一次经期之前';
+      addModalButton('改变开始日', 'change-start', 'confirm');
+      addModalButton('取消', 'cancel', 'cancel');
+    } else {
+      hintEl.textContent = '这将作为新经期的开始日';
+      addModalButton('确定添加', 'confirm-add-new', 'confirm');
+      addModalButton('取消', 'cancel', 'cancel');
+    }
+  } else {
+    hintEl.textContent = '这将作为经期的开始日';
+    addModalButton('确定添加', 'confirm-add-new', 'confirm');
+    addModalButton('取消', 'cancel', 'cancel');
+  }
+  document.getElementById('periodAddModal').classList.add('active');
+}
+
+// 动态生成弹窗按钮
+function addModalButton(text, action, type) {
+    var actionsEl = document.getElementById('periodModalActions');
+    var btn = document.createElement('button');
+    btn.className = 'period-modal-btn period-modal-btn-' + type;
+    btn.textContent = text;
+    btn.dataset.action = action;
+    btn.addEventListener('click', function() {
+        handleModalAction(action);
+    });
+    actionsEl.appendChild(btn);
+}
+
+// 处理弹窗按钮点击
+function handleModalAction(action) {
+    if (action === 'cancel') { closePeriodAddModal(); return; }
+    if (action === 'confirm-add-new') { confirmAddNewRecord(); return; }
+    if (action === 'add-days') { confirmAddDays(); return; }
+    if (action === 'change-start') { confirmChangeStart(); return; }
+}
+
+// 关闭添加弹窗
+function closePeriodAddModal() {
+    document.getElementById('periodAddModal').classList.remove('active');
+}
+
+// 确认：新记录
+function confirmAddNewRecord() {
+    if (!CONFIG.period) {
+        CONFIG.period = { records: [], avgCycle: null, avgDuration: null, customCycle: null, customDuration: null, lastReminderDate: null };
+    }
+    var startDate = periodSelectedDate;
+    var startDateObj = parseDateKey(startDate);
+    var duration = (CONFIG.period.records.length > 0) ? calcAverageDuration() : 5;
+    var endDateObj = new Date(startDateObj);
+    endDateObj.setDate(endDateObj.getDate() + duration - 1);
+
+    CONFIG.period.records.push({
+        id: generatePeriodId(),
+        startDate: startDate,
+        endDate: formatDateKey(endDateObj),
+        note: '',
+        createdAt: new Date().toISOString()
+    });
+
+    CONFIG.period.avgCycle = calcAverageCycle();
+    CONFIG.period.avgDuration = calcAverageDuration();
+
+    saveAllData();
+    showToast('已记录 ' + duration + ' 天');
+    closePeriodAddModal();
+    periodSelectedDate = null;
+    renderPeriodPage();
+    updatePeriodButtons();
+}
+
+// 确认：延长天数
+function confirmAddDays() {
+    if (!CONFIG.period || !periodSelectedDate) return;
+    var targetDate = parseDateKey(periodSelectedDate);
+    var targetRecord = null;
+    CONFIG.period.records.forEach(function(r) {
+        var re = parseDateKey(r.endDate);
+        if (re < targetDate) {
+            if (!targetRecord || parseDateKey(targetRecord.endDate) < re) {
+                targetRecord = r;
+            }
+        }
+    });
+    if (!targetRecord) { showToast('未找到要延长的记录'); return; }
+
+    var newDuration = daysBetween(parseDateKey(targetRecord.startDate), targetDate) + 1;
+    targetRecord.endDate = periodSelectedDate;
+    CONFIG.period.avgCycle = calcAverageCycle();
+    CONFIG.period.avgDuration = calcAverageDuration();
+
+    saveAllData();
+    showToast('经期已延长至 ' + newDuration + ' 天');
+    closePeriodAddModal();
+    periodSelectedDate = null;
+    renderPeriodPage();
+    updatePeriodButtons();
+}
+
+// 确认：改变开始日
+function confirmChangeStart() {
+    if (!CONFIG.period || !periodSelectedDate) return;
+    var targetDate = parseDateKey(periodSelectedDate);
+    var targetRecord = null;
+    var minDist = Infinity;
+
+    CONFIG.period.records.forEach(function(r) {
+        var rs = parseDateKey(r.startDate);
+        var re = parseDateKey(r.endDate);
+        if (targetDate >= rs && targetDate <= re) return;
+        var dist = Math.min(Math.abs(daysBetween(targetDate, rs)), Math.abs(daysBetween(targetDate, re)));
+        if (dist < minDist) { minDist = dist; targetRecord = r; }
+    });
+
+    if (!targetRecord) { showToast('未找到要修改的记录'); return; }
+    if (targetDate > parseDateKey(targetRecord.endDate)) {
+        showToast('新开始日不能晚于结束日');
+        return;
+    }
+
+    targetRecord.startDate = periodSelectedDate;
+    CONFIG.period.avgCycle = calcAverageCycle();
+    CONFIG.period.avgDuration = calcAverageDuration();
+
+    saveAllData();
+    showToast('开始日已修改');
+    closePeriodAddModal();
+    periodSelectedDate = null;
+    renderPeriodPage();
+    updatePeriodButtons();
+}
+
+// 打开删除弹窗
+function openPeriodDelete() {
+    if (!periodSelectedDate) { showToast('请先选择一天'); return; }
+    var info = isPeriodDay(periodSelectedDate);
+    if (!info) { showToast('这一天不在经期记录里'); return; }
+
+    periodDeleteTarget = periodSelectedDate;
+
+    var record = null;
+    CONFIG.period.records.forEach(function(r) {
+        var rs = parseDateKey(r.startDate);
+        var re = parseDateKey(r.endDate);
+        var t = parseDateKey(periodSelectedDate);
+        if (t >= rs && t <= re) record = r;
+    });
+    if (!record) { showToast('未找到记录'); return; }
+
+    var isStart = (periodSelectedDate === record.startDate);
+    document.getElementById('periodDeleteDate').textContent = formatDateChinese(periodSelectedDate);
+
+    var hintEl = document.getElementById('periodDeleteHint');
+    if (isStart) {
+        hintEl.textContent = '这是经期开始日，删除后将删除整条记录。';
+    } else {
+        hintEl.textContent = '删除后，这次经期将提前到前一天结束。';
+    }
+
+    document.getElementById('periodDeleteModal').classList.add('active');
+}
+
+// 关闭删除弹窗
+function closePeriodDelete() {
+    periodDeleteTarget = null;
+    document.getElementById('periodDeleteModal').classList.remove('active');
+}
+
+// 确认删除
+function confirmPeriodDelete() {
+    if (!periodDeleteTarget) return;
+    executePeriodDelete(periodDeleteTarget);
+    closePeriodDelete();
+}
+
+// 执行删除
+function executePeriodDelete(targetKey) {
+    if (!CONFIG.period || !CONFIG.period.records) return;
+
+    var target = parseDateKey(targetKey);
+    var removed = false;
+
+    for (var i = 0; i < CONFIG.period.records.length; i++) {
+        var r = CONFIG.period.records[i];
+        var rs = parseDateKey(r.startDate);
+        var re = parseDateKey(r.endDate);
+
+        // 情况 1：删开始日 → 整条删
+        if (targetKey === r.startDate) {
+            CONFIG.period.records.splice(i, 1);
+            removed = true;
+            showToast('已删除整条记录');
+            break;
+        }
+
+        // 情况 2：删中间/结束日 → 结束日提前
+        if (target > rs && target <= re) {
+            var newEnd = new Date(target);
+            newEnd.setDate(newEnd.getDate() - 1);
+            r.endDate = formatDateKey(newEnd);
+            removed = true;
+            showToast('经期已提前结束');
+            break;
+        }
+    }
+
+    if (!removed) { showToast('未找到对应记录'); return; }
+
+    CONFIG.period.avgCycle = calcAverageCycle();
+    CONFIG.period.avgDuration = calcAverageDuration();
+
+    saveAllData();
+    periodSelectedDate = null;
+    renderPeriodPage();
+    updatePeriodButtons();
+}
+
+// 更新底部按钮状态
+function updatePeriodButtons() {
+    var addBtn = document.getElementById('periodAddBtn');
+    var deleteBtn = document.getElementById('periodDeleteBtn');
+    if (!addBtn || !deleteBtn) return;
+
+    if (!periodSelectedDate) {
+        // 没选日期 → 两个按钮都灰
+        addBtn.disabled = true;
+        deleteBtn.disabled = true;
+        return;
+    }
+
+    var info = isPeriodDay(periodSelectedDate);
+    if (info) {
+        // 选中的在经期里 → 只能删
+        addBtn.disabled = true;
+        deleteBtn.disabled = false;
+    } else {
+        // 选中的不在经期里 → 只能加
+        addBtn.disabled = false;
+        deleteBtn.disabled = true;
+    }
+}
+
+// 渲染整个页面
+function renderPeriodPage() {
+    renderPeriodCountdown();
+    renderPeriodCalendar();
+}
+
+// ===== 经期提醒 =====
+function checkPeriodReminder() {
+  if (!CONFIG.period || !CONFIG.period.records || CONFIG.period.records.length === 0) return;
+
+  var info = daysUntilNextPeriod();
+  if (!info) return;
+
+  var days = info.days;
+
+  // 只在 0 到 3 天之间提醒
+  if (days < 0 || days > 3) return;
+
+  // 同一天只提醒一次
+  var todayKey = formatDateKey(new Date());
+  if (CONFIG.period.lastReminderDate === todayKey) return;
+
+  var textEl = document.getElementById('periodReminderText');
+  var modal = document.getElementById('periodReminder');
+  if (!textEl || !modal) return;
+
+  if (days === 0) {
+    textEl.textContent = '预计今天就是经期开始的日子，记得提前做好准备。';
+  } else {
+    textEl.textContent = '距离下次经期还有 ' + days + ' 天，这几天注意休息。';
+  }
+
+  modal.classList.add('active');
+
+  // 标记今天已提醒
+  CONFIG.period.lastReminderDate = todayKey;
+  saveAllData();
+}
+
+function closePeriodReminder() {
+  var modal = document.getElementById('periodReminder');
+  if (modal) modal.classList.remove('active');
+}
+
+// 渲染倒计时
+function renderPeriodCountdown() {
+    var info = daysUntilNextPeriod();
+    var daysEl = document.getElementById('countdownDays');
+    var dateEl = document.getElementById('countdownDate');
+    var card = document.getElementById('periodCountdown');
+
+    if (!info) {
+        daysEl.textContent = '--';
+        dateEl.textContent = '还没有记录';
+        card.classList.add('is-empty');
+        return;
+    }
+
+    card.classList.remove('is-empty');
+    if (info.days < 0) {
+        daysEl.textContent = '已推迟';
+        dateEl.textContent = '预计 ' + formatDateChinese(info.date);
+    } else if (info.days === 0) {
+        daysEl.textContent = '今天';
+        dateEl.textContent = '就是今天';
+    } else {
+        daysEl.textContent = info.days;
+        dateEl.textContent = '预计 ' + formatDateChinese(info.date);
+    }
+}
+
+// 格式化日期为中文（9月30日）
+function formatDateChinese(dateKey) {
+    var d = parseDateKey(dateKey);
+    if (!d) return dateKey;
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+}
+
+// 渲染日历
+function renderPeriodCalendar() {
+    var year = periodViewDate.getFullYear();
+    var month = periodViewDate.getMonth();
+
+    // 月份标题
+    document.getElementById('periodMonthLabel').textContent = year + '年' + (month + 1) + '月';
+
+    // 第一天是周几
+    var firstDay = new Date(year, month, 1).getDay();
+    // 本月天数
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    // 上月天数（用于补前面空格）
+    var daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    var todayKey = formatDateKey(new Date());
+    var html = '';
+
+    // 上月补位（灰显）
+    for (var i = firstDay - 1; i >= 0; i--) {
+        var d = daysInPrevMonth - i;
+        html += '<div class="day-cell other-month" data-date="">' + d + '</div>';
+    }
+
+    // 本月
+    for (var d = 1; d <= daysInMonth; d++) {
+        var dateKey = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+        var classes = 'day-cell';
+
+        // 判断是否经期日
+        var periodInfo = isPeriodDay(dateKey);
+        if (periodInfo) {
+            classes += ' period-day';
+            if (periodInfo.isStart || periodInfo.isEnd) classes += ' has-dot';
+        } else {
+            // 判断是否预测日
+            var predInfo = isPredictedDay(dateKey);
+            if (predInfo) {
+                classes += ' predicted-day';
+                if (predInfo.isStart || predInfo.isEnd) classes += ' has-dot';
+            }
+        }
+
+        // 今天
+        if (dateKey === todayKey) classes += ' today';
+
+        // 选中
+        if (dateKey === periodSelectedDate) classes += ' selected';
+
+        html += '<div class="' + classes + '" data-date="' + dateKey + '">' + d + '</div>';
+    }
+
+    // 下月补位（灰显）
+    var totalCells = firstDay + daysInMonth;
+    var remaining = (7 - (totalCells % 7)) % 7;
+    for (var d = 1; d <= remaining; d++) {
+        html += '<div class="day-cell other-month" data-date="">' + d + '</div>';
+    }
+
+    document.getElementById('periodDaysGrid').innerHTML = html;
+
+    // 绑定点击：点任意日期（包括经期里的）都能选中
+    document.querySelectorAll('#periodDaysGrid .day-cell').forEach(function(cell) {
+        cell.addEventListener('click', function() {
+            var dateKey = this.dataset.date;
+            if (!dateKey) return; // 上月/下月补位不能点
+            // 再点同一天 → 取消选中
+            if (periodSelectedDate === dateKey) {
+                periodSelectedDate = null;
+            } else {
+                periodSelectedDate = dateKey;
+            }
+            renderPeriodCalendar();
+        });
+    }); updatePeriodButtons();
+}
+
 
 // ===== 视频素材库 =====
 function openVideoLibrary() {
@@ -11972,7 +13309,7 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (app === 'favorite') {
             showToast('⭐ 收藏屋开发中...');
         }
-else if (app === 'video') openVideoLibrary();
+else if (app === 'video') openVideoLibrary(); else if (app === 'period') openPeriodScreen();
         else showToast('📱 功能开发中~');
     });
 });
@@ -12106,6 +13443,20 @@ document.getElementById('backFromChat').addEventListener('click', closeChat);
     document.getElementById('backFromMeme').addEventListener('click', closeMeme);
     document.getElementById('backFromDiary').addEventListener('click', closeDiary);
     document.getElementById('backFromVideoLibrary').addEventListener('click', closeVideoLibrary); 
+
+document.getElementById('backFromPeriod').addEventListener('click', closePeriodScreen);
+    document.getElementById('periodPrevMonth').addEventListener('click', function() {
+        periodViewDate.setMonth(periodViewDate.getMonth() - 1);
+        renderPeriodCalendar();
+    });
+    document.getElementById('periodNextMonth').addEventListener('click', function() {
+        periodViewDate.setMonth(periodViewDate.getMonth() + 1);
+        renderPeriodCalendar();
+    });
+    document.getElementById('periodAddBtn').addEventListener('click', openPeriodAddModal);
+    document.getElementById('periodDeleteBtn').addEventListener('click', openPeriodDelete);
+    document.getElementById('periodDeleteCancel').addEventListener('click', closePeriodDelete);
+    document.getElementById('periodDeleteConfirm').addEventListener('click', confirmPeriodDelete);
 
 document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
     document.getElementById('settingsOverlay').addEventListener('click', function(e) {
