@@ -2819,6 +2819,7 @@
   padding: 36px 26px 32px;
   position: relative;
   min-height: 420px;
+  max-height: calc(100vh - 160px);
   background-color: #F5EAD0;
   background-image:
     radial-gradient(ellipse at 15% 20%, rgba(180,150,90,0.10) 0%, transparent 40%),
@@ -2831,7 +2832,9 @@
     0 2px 6px rgba(100,80,40,0.1),
     inset 0 0 80px rgba(190,160,100,0.18);
   border: 1px solid rgba(180,150,90,0.25);
-  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* 横线 */
@@ -2885,8 +2888,9 @@
   white-space: pre-wrap;
   position: relative;
   z-index: 1;
-  max-height: 70vh;
+  flex: 1;
   overflow-y: auto;
+  padding-right: 4px;
 }
 
 .letter-paper-content .letter-salutation {
@@ -11377,15 +11381,19 @@ function updateLetterBoxFooter() {
     writeBtn.innerHTML = '<i class="fas fa-chevron-left"></i> 返回';
     writeBtn.onclick = function() {
       currentLetterBoxMode = 'incoming';
-      renderLetterGallery();
-      updateLetterBoxFooter();
+letterDeleteMode = false;
+letterSelectedIds = [];
+renderLetterGallery();
+updateLetterBoxFooter();
     };
     if (outgoingBtn) {
       outgoingBtn.textContent = '收到的信';
       outgoingBtn.onclick = function() {
         currentLetterBoxMode = 'incoming';
-        renderLetterGallery();
-        updateLetterBoxFooter();
+letterDeleteMode = false;
+letterSelectedIds = [];
+renderLetterGallery();
+updateLetterBoxFooter();
       };
     }
   } else {
@@ -11397,8 +11405,10 @@ function updateLetterBoxFooter() {
       outgoingBtn.innerHTML = '给他的信 <i class="fas fa-chevron-right"></i>';
       outgoingBtn.onclick = function() {
         currentLetterBoxMode = 'outgoing';
-        renderLetterGallery();
-        updateLetterBoxFooter();
+letterDeleteMode = false;
+letterSelectedIds = [];
+renderLetterGallery();
+updateLetterBoxFooter();
       };
     }
   }
@@ -11525,8 +11535,10 @@ function handleLetterSend() {
 
   // 回到「收到的信」模式，刷新画廊
   currentLetterBoxMode = 'incoming';
-  renderLetterGallery();
-  updateLetterBoxFooter();
+letterDeleteMode = false;
+letterSelectedIds = [];
+renderLetterGallery();
+updateLetterBoxFooter();
 }
 
 function closeLetterWrite() {
@@ -12215,6 +12227,7 @@ function confirmLetterDelete() {
 
   renderLetterGallery();
   updateLetterDeleteButton();
+  updateLetterBadge();
   showToast('已删除 ' + deleted + ' 封信');
 }
 
