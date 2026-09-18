@@ -8804,11 +8804,12 @@ async function processUserMomentPendingComments() {
                 if (!moment.aiCommentedBy) moment.aiCommentedBy = {};
                 if (moment.aiCommentedBy[role.id]) continue;
 
-                // 每个角色最多主动评论前 2 条（避免每条都来）
-                var roleCommentCount = moments.filter(function(m) {
-                    return m.aiCommentedBy && m.aiCommentedBy[role.id];
-                }).length;
-                if (roleCommentCount >= 2) continue;
+                // 每条动态最多被 2 个角色评论（新动态重新计数）
+var momentCommentCount = 0;
+if (moment.aiCommentedBy) {
+    momentCommentCount = Object.keys(moment.aiCommentedBy).length;
+}
+if (momentCommentCount >= 2) continue;
 
                
 
