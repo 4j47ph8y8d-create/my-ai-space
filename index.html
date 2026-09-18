@@ -504,12 +504,30 @@
     background: var(--bg-card);
     opacity: 0.8;
 }
+
 .comment-reply-input {
     margin-top: 6px;
     display: flex;
     gap: 6px;
     animation: fadeInUp 0.2s ease;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-right: 4px;
 }
+
+.comment-reply-input input {
+    flex: 1 1 0;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.comment-reply.m-input button {
+    flex: 0 oment0 auto;
+    white-com-space: nowrap;
+}
+
 .comment-reply-input input {
     flex: 1;
     padding: 6px 12px;
@@ -565,13 +583,17 @@
     border-radius: 8px;
     padding: 10px 14px;
 }
+
 .moment-comment {
     font-size: 14px;
     line-height: 1.65;
     color: var(--text-primary);
     padding: 4px 0;
     word-break: break-word;
+    overflow: hidden;
+    box-sizing: border-box;
 }
+
 .moment-comment + .moment-comment {
     border-top: 1px solid var(--border-color);
     margin-top: 2px;
