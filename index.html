@@ -12364,36 +12364,7 @@ updateLetterBadge();
 
       setTimeout(next, 1000);
 
-      var replyLetter = {
-        id: 'letter_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-        roleId: userLetter.roleId,
-        from: 'assistant',
-        to: '我',
-        title: parsed.title || '',
-        salutation: parsed.salutation || '亲爱的你：',
-        content: parsed.content,
-        signature: parsed.signature || role.name,
-        createdAt: new Date().toISOString(),
-        readAt: null,
-        replyTo: userLetter.id,
-        isFavorite: false
-      };
-
-      CONFIG.letters.push(replyLetter);
-      immediateSaveAllData();
-
-      console.log('✅ 回信已生成：' + replyLetter.title);
-
-      showToast('ta 给你回了一封信');
-
-      if (document.getElementById('letterBoxScreen').classList.contains('open')) {
-        if (currentLetterBoxRoleId === userLetter.roleId && currentLetterBoxMode === 'incoming') {
-          renderLetterGallery();
-        }
-      }
-
-      setTimeout(next, 1000);
-
+     
     }).catch(function(e) {
       console.error('❌ 回信生成失败:', e && e.message ? e.message : e, e);
       userLetter.replyGenerated = false;
