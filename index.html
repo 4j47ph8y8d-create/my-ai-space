@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <title>LunarReverie</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&family=Long+Cang&family=Zhi+Mang+Xing&family=Liu+Jian+Mao+Cao&family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet" />
     <style> /* ============================================================
    ⭐ 收藏屋图标 - 固定薄荷绿（一体式小房子）
    ============================================================ */
@@ -64,7 +64,7 @@
 
 /* 5. 图标背景本身不固定，跟随主题，所以这里不设置背景颜色 */
 /* 背景颜色由 applyIconStyle 动态控制 */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-custom, "") -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
         body { background: #1a1a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 0; margin: 0; }
         .phone-frame { width: 100%; max-width: 430px; height: 100vh; max-height: 100vh; background: #1a1a1a; border-radius: 0; box-shadow: none; overflow: hidden; position: relative; transition: background 0.3s ease, color 0.3s ease; }
         :root { --bg-primary: #1a1a1a; --bg-secondary: #ededed; --bg-card: #ffffff; --bg-bubble-self: rgba(149,236,105,0.92); --bg-bubble-other: rgba(255,255,255,0.92); --text-primary: #1a1a1a; --text-secondary: #999; --text-inverse: #fff; --border-color: rgba(217,217,217,0.5); --shadow-color: rgba(0,0,0,0.06); --input-bg: rgba(237,237,237,0.7); --header-bg: rgba(255,255,255,0.92); --msg-time-color: #999; --font-size-base: 15px; --font-weight-base: 400; --pinned-bg: rgba(243,156,18,0.08); --pinned-border: rgba(243,156,18,0.3); --heart-color: #ff6b81; --heart-glow-color: rgba(255,107,129,0.2); --safe-top: 0px; --safe-bottom: 0px; }
@@ -4308,7 +4308,8 @@
     </div>
 
     <div class="permission-overlay" id="permissionOverlay"><div class="permission-dialog"><div class="icon">📸</div><h3>访问相册</h3><p>为了更换头像、壁纸和发送图片，需要访问你的相册。<br />拒绝后仍可正常聊天，仅无法使用图片相关功能。</p><div class="btn-group"><button class="btn-allow-all" id="permAllowAll">✅ 允许访问</button><button class="btn-deny" id="permDeny">🚫 不允许</button><button class="btn-cancel-perm" id="permCancel">取消</button></div></div></div>
-    <div class="style-picker-overlay" id="stylePickerOverlay"><div class="style-picker-panel"><div class="panel-header"><h3>✨ 个性化</h3><button class="close-btn" id="closeStylePicker">&times;</button></div><div class="style-category-title">📱 桌面图标</div><div class="style-option-grid" id="styleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🫧 对话框气泡</div><div class="style-option-grid" id="bubbleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🕒 时间显示</div><div class="style-option-grid" id="timeModeGrid"></div><div class="style-category-title" style="margin-top:14px;">💕 心跳悬浮窗</div><div class="style-option-grid" id="floatingSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🎨 心跳颜色</div><div class="style-option-grid" id="heartColorGrid"></div><div class="style-category-title" style="margin-top:14px;">🤖 AI 表情包</div><div class="style-option-grid" id="aiMemeSwitchGrid"></div>
+    <div class="style-picker-overlay" id="stylePickerOverlay"><div class="style-picker-panel"><div class="panel-header"><h3>✨ 个性化</h3><button class="close-btn" id="closeStylePicker">&times;</button></div><div class="style-category-title">📱 桌面图标</div><div class="style-option-grid" id="styleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🫧 对话框气泡</div><div class="style-option-grid" id="bubbleOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🕒 时间显示</div><div class="style-option-grid" id="timeModeGrid"></div><div class="style-category-title" style="margin-top:14px;">💕 心跳悬浮窗</div><div class="style-option-grid" id="floatingSwitchGrid"></div><div class="style-category-title" style="margin-top:14px;">🎨 心跳颜色</div><div class="style-option-grid" id="heartColorGrid"></div> <div class="style-category-title" style="margin-top:14px;">🔤 字体风格</div>
+<div class="style-option-grid" id="fontOptionGrid"></div><div class="style-category-title" style="margin-top:14px;">🤖 AI 表情包</div><div class="style-option-grid" id="aiMemeSwitchGrid"></div>
 
 <div class="style-category-title" style="margin-top:14px;">自动化</div>
 <div id="autoSwitchPanel" style="background: rgba(255,255,255,0.04); border-radius: 14px; padding: 4px 14px; border: 1px solid rgba(255,255,255,0.06);">
@@ -14486,8 +14487,62 @@ function renderStylePicker() {
             themeGrid.appendChild(option);
         });
     }
-    
-    initAutoSwitchPanel();
+    // ===== 字体选择 =====
+  var fontGrid = document.getElementById('fontOptionGrid');
+  if (fontGrid) {
+    var FONT_OPTIONS = [
+      { id: 'default', name: '默认', family: '' },
+      { id: 'mashan', name: '马善政毛笔', family: 'Ma Shan Zheng' },
+      { id: 'kuaile', name: '站酷快乐体', family: 'ZCOOL KuaiLe' },
+      { id: 'xiaowei', name: '站酷小薇', family: 'ZCOOL XiaoWei' },
+      { id: 'longcang', name: '龙藏手写', family: 'Long Cang' },
+      { id: 'zhimang', name: '志莽行书', family: 'Zhi Mang Xing' },
+      { id: 'liujian', name: '柳建毛草', family: 'Liu Jian Mao Cao' },
+      { id: 'notosans', name: '思源黑体', family: 'Noto Sans SC' },
+      { id: 'notoserif', name: '思源宋体', family: 'Noto Serif SC' }
+    ];
+
+    fontGrid.innerHTML = '';
+    FONT_OPTIONS.forEach(function(opt) {
+      var el = document.createElement('div');
+      var isActive = (CONFIG.fontFamily || 'default') === opt.id;
+      el.className = 'style-option ' + (isActive ? 'active' : '');
+      el.dataset.font = opt.id;
+      el.innerHTML = '<div class="style-name-label" style="font-family: ' + (opt.family ? '"' + opt.family + '", ' : '') + 'inherit;">' + opt.name + '<span class="style-check">✓</span></div>';
+      el.addEventListener('click', function() {
+        fontGrid.querySelectorAll('.style-option').forEach(function(x) { x.classList.remove('active'); });
+        el.classList.add('active');
+        applyCustomFont(opt.id);
+        showToast('🔤 已切换至「' + opt.name + '」');
+      });
+      fontGrid.appendChild(el);
+    });
+  }
+
+  initAutoSwitchPanel();
+}
+
+// ===== 应用自定义字体 =====
+function applyCustomFont(fontId) {
+  var FONT_MAP = {
+    'mashan': 'Ma Shan Zheng',
+    'kuaile': 'ZCOOL KuaiLe',
+    'xiaowei': 'ZCOOL XiaoWei',
+    'longcang': 'Long Cang',
+    'zhimang': 'Zhi Mang Xing',
+    'liujian': 'Liu Jian Mao Cao',
+    'notosans': 'Noto Sans SC',
+    'notoserif': 'Noto Serif SC'
+  };
+
+  var fontFamily = FONT_MAP[fontId] || '';
+  if (fontFamily) {
+    document.documentElement.style.setProperty('--font-custom', '"' + fontFamily + '", ');
+  } else {
+    document.documentElement.style.setProperty('--font-custom', '');
+  }
+  CONFIG.fontFamily = fontId || 'default';
+  saveAllData();
 }
 
 function applyIconStyle(styleId) {
@@ -15596,6 +15651,7 @@ function init() {
         applyIconStyle(CONFIG.iconStyle || 'glass');
         applyBubbleStyle(CONFIG.bubbleStyle || 'default');
         applyFontSettings();
+applyCustomFont(CONFIG.fontFamily || 'default');
         applyTheme(CONFIG.theme || 'dark');
     } catch (e) { console.error('样式应用失败:', e); }
     try {
