@@ -10946,69 +10946,148 @@ function loadMemeData() {
 }
 
 function getStorageUsage() {
-    return openMemeDB().then(function(db) {
-        var totalSize = 0, memeCount = 0;
-        var memeTx = db.transaction('memes', 'readonly');
-        var memeStore = memeTx.objectStore('memes');
-        return new Promise(function(resolve) {
-            var cursor = memeStore.openCursor();
-            cursor.onsuccess = function(e) {
-                var c = e.target.result;
-                if (c) {
-                    totalSize += JSON.stringify(c.value).length;
-                    memeCount++;
-                    c.continue();
-                } else { db.close(); resolve(); }
-            };
-            cursor.onerror = function() { db.close(); resolve(); };
-        }).then(function() {
-            var catTx = db.transaction('categories', 'readonly');
-            var catStore = catTx.objectStore('categories');
-            return new Promise(function(resolve) {
-                var cursor = catStore.openCursor();
-                cursor.onsuccess = function(e) {
-                    var c = e.target.result;
-                    if (c) {
-                        totalSize += JSON.stringify(c.value).length;
-                        c.continue();
-                    } else { db.close(); resolve(); }
-                };
-                cursor.onerror = function() { db.close(); resolve(); };
-            });
-        }).then(function() {
-            var sizeKB = Math.round(totalSize / 1024);
-            var totalKB = 50 * 1024;
-            return { sizeKB: sizeKB, remainKB: Math.max(0, totalKB - sizeKB), totalKB: totalKB, memeCount: memeCount };
-        });
-    }).catch(function(e) {
-        return { sizeKB: 0, remainKB: 50 * 1024, totalKB: 50 * 1024, memeCount: 0 };
+  // ===== 1. 统计 LocalStorage =====
+  var lsSize = 0;
+  var lsDetails = {};
+  try {
+    for (var key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        var len = (localStorage[key] || '').length + key.length;
+        lsSize += len;
+        lsDetails[key] = Math.round(len / 1024);
+      }
+    }
+  } catch (e) {}
+
+  // ===== 2. 统计 IndexedDB（表情包 + 图片 + 视频）=====
+  return openMemeDB().then(function(db) {
+    var idbSize = 0;
+    var memeCount = 0;
+
+    // 表情包
+    var memeTx = db.transaction('memes', 'readonly');
+    var memeStore = memeTx.objectStore('memes');
+
+    return new Promise(function(resolve) {
+      var cursor = memeStore.openCursor();
+      cursor.onsuccess = function(e) {
+        var c = e.target.result;
+        if (c) {
+          idbSize += JSON.stringify(c.value).length;
+          memeCount++;
+          c.continue();
+        } else { resolve(); }
+      };
+      cursor.onerror = function() { resolve(); };
+    }).then(function() {
+      // 分类
+      var catTx = db.transaction('categories', 'readonly');
+      var catStore = catTx.objectStore('categories');
+      return new Promise(function(resolve) {
+        var cursor = catStore.openCursor();
+        cursor.onsuccess = function(e) {
+          var c = e.target.result;
+          if (c) {
+            idbSize += JSON.stringify(c.value).length;
+            c.continue();
+          } else { resolve(); }
+        };
+        cursor.onerror = function() { resolve(); };
+      });
+    }).then(function() {
+      db.close();
+      return {
+        lsSize: lsSize,
+        lsSizeKB: Math.round(lsSize / 1024),
+        lsDetails: lsDetails,
+        idbSize: idbSize,
+        idbSizeKB: Math.round(idbSize / 1024),
+        memeCount: memeCount,
+        totalKB: Math.round((lsSize + idbSize) / 1024),
+        // 上限用 LocalStorage 的 5MB（因为大部分数据在 localStorage）
+        lsLimitKB: 5 * 1024
+      };
     });
+  }).catch(function(e) {
+    return {
+      lsSize: lsSize,
+      lsSizeKB: Math.round(lsSize / 1024),
+      lsDetails: lsDetails,
+      idbSize: 0,
+      idbSizeKB: 0,
+      memeCount: 0,
+      totalKB: Math.round(lsSize / 1024),
+      lsLimitKB: 5 * 1024
+    };
+  });
 }
 
-function updateStorageDisplay() {
-    getStorageUsage().then(function(usage) {
-        var statusEl = document.getElementById('storageStatus');
-        var countEl = document.getElementById('storageMemeCount');
-        var sizeEl = document.getElementById('storageSize');
-        var remainEl = document.getElementById('storageRemain');
-        var progressEl = document.getElementById('storageProgressBar');
-        if (statusEl) {
-            var pct = Math.round((usage.sizeKB / usage.totalKB) * 100);
-            if (pct > 80) { statusEl.textContent = '⚠️ 空间紧张 (' + pct + '%)'; statusEl.style.color = '#ff6b6b'; }
-            else if (pct > 60) { statusEl.textContent = '⚡ 使用中 (' + pct + '%)'; statusEl.style.color = '#fdcb6e'; }
-            else { statusEl.textContent = '✅ 空间充足 (' + pct + '%)'; statusEl.style.color = '#07c160'; }
-        }
-        if (countEl) countEl.textContent = '表情包：' + usage.memeCount + ' 张';
-        if (sizeEl) sizeEl.textContent = '已用：' + usage.sizeKB + ' KB';
-        if (remainEl) remainEl.textContent = '剩余：' + usage.remainKB + ' KB';
-        if (progressEl) {
-            var pct2 = Math.min(100, Math.round((usage.sizeKB / usage.totalKB) * 100));
-            progressEl.style.width = pct2 + '%';
-            if (pct2 > 80) progressEl.style.background = 'linear-gradient(90deg, #ff6b6b, #ee5a24)';
-            else if (pct2 > 60) progressEl.style.background = 'linear-gradient(90deg, #fdcb6e, #f0932b)';
-            else progressEl.style.background = 'linear-gradient(90deg, #a29bfe, #6c5ce7)';
-        }
+// 调试用：查看详细用量（控制台输入 showStorageDetail()）
+window.showStorageDetail = function() {
+  getStorageUsage().then(function(usage) {
+    console.log('===== 存储用量详情 =====');
+    console.log('📦 LocalStorage 总量:', usage.lsSizeKB, 'KB');
+    console.log('📦 IndexedDB 总量:', usage.idbSizeKB, 'KB');
+    console.log('📦 合计:', usage.totalKB, 'KB');
+    console.log('');
+    console.log('===== LocalStorage 明细 =====');
+    var sorted = Object.keys(usage.lsDetails).sort(function(a, b) {
+      return usage.lsDetails[b] - usage.lsDetails[a];
     });
+    sorted.forEach(function(key) {
+      console.log('  ', usage.lsDetails[key] + ' KB', '|', key);
+    });
+  });
+};
+
+function updateStorageDisplay() {
+  getStorageUsage().then(function(usage) {
+    var statusEl = document.getElementById('storageStatus');
+    var countEl = document.getElementById('storageMemeCount');
+    var sizeEl = document.getElementById('storageSize');
+    var remainEl = document.getElementById('storageRemain');
+    var progressEl = document.getElementById('storageProgressBar');
+
+    // 百分比基于 LocalStorage 的 5MB 上限
+    var pct = Math.min(100, Math.round((usage.lsSizeKB / usage.lsLimitKB) * 100));
+
+    if (statusEl) {
+      if (pct > 80) {
+        statusEl.textContent = '⚠️ 空间紧张 (' + pct + '%)';
+        statusEl.style.color = '#ff6b6b';
+      } else if (pct > 60) {
+        statusEl.textContent = '⚡ 使用中 (' + pct + '%)';
+        statusEl.style.color = '#fdcb6e';
+      } else {
+        statusEl.textContent = '✅ 空间充足 (' + pct + '%)';
+        statusEl.style.color = '#07c160';
+      }
+    }
+
+    if (countEl) {
+      countEl.textContent = '表情包：' + usage.memeCount + ' 张';
+    }
+
+    if (sizeEl) {
+      sizeEl.textContent = '已用：' + usage.totalKB + ' KB';
+    }
+
+    if (remainEl) {
+      var remain = Math.max(0, usage.lsLimitKB - usage.lsSizeKB);
+      remainEl.textContent = '剩余：' + remain + ' KB';
+    }
+
+    if (progressEl) {
+      progressEl.style.width = pct + '%';
+      if (pct > 80) {
+        progressEl.style.background = 'linear-gradient(90deg, #ff6b6b, #ee5a24)';
+      } else if (pct > 60) {
+        progressEl.style.background = 'linear-gradient(90deg, #fdcb6e, #f0932b)';
+      } else {
+        progressEl.style.background = 'linear-gradient(90deg, #a29bfe, #6c5ce7)';
+      }
+    }
+  });
 }
 
 async function fetchModelsFromRelay() {
