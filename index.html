@@ -106,7 +106,72 @@
         @keyframes pulseGlowSpike { 0% { transform: translate(-50%,-50%) scale(0.8); opacity: 0; } 25% { transform: translate(-50%,-50%) scale(1.8); opacity: 0.8; } 50% { transform: translate(-50%,-50%) scale(1.5); opacity: 0.4; } 75% { transform: translate(-50%,-50%) scale(1.7); opacity: 0.6; } 100% { transform: translate(-50%,-50%) scale(0.8); opacity: 0; } }
         @keyframes heartbeat { 0% { transform: scale(1); } 14% { transform: scale(1.1); } 28% { transform: scale(1); } 42% { transform: scale(1.04); } 70% { transform: scale(1); } 100% { transform: scale(1); } }
         @keyframes pulseGlow { 0% { transform: translate(-50%,-50%) scale(0.8); opacity: 0; } 14% { transform: translate(-50%,-50%) scale(1.2); opacity: 0.5; } 28% { transform: translate(-50%,-50%) scale(1.3); opacity: 0.15; } 42% { transform: translate(-50%,-50%) scale(1.35); opacity: 0.05; } 70% { transform: translate(-50%,-50%) scale(1.4); opacity: 0; } 100% { transform: translate(-50%,-50%) scale(0.8); opacity: 0; } }
-        .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 6px; padding: 0 4px; margin-bottom: 8px; align-content: start; flex-shrink: 0; position: relative; z-index: 2; }
+        /* 分页滑动容器 */
+.app-grid-wrapper {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    position: relative;
+    z-index: 2;
+    padding: 0 4px;
+    margin-bottom: 8px;
+}
+
+.app-grid-wrapper::-webkit-scrollbar {
+    display: none;
+}
+
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: min-content;
+    gap: 10px 6px;
+    flex: 0 0 100%;
+    width: 100%;
+    align-content: start;
+    scroll-snap-align: start;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 分页圆点 */
+.page-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 0 2px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.page-dots .page-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    transition: 0.2s;
+}
+
+[data-theme="light"] .page-dots .page-dot {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.page-dots .page-dot.active {
+    background: rgba(255, 255, 255, 0.9);
+    width: 18px;
+    border-radius: 4px;
+}
+
+[data-theme="light"] .page-dots .page-dot.active {
+    background: rgba(0, 0, 0, 0.6);
+}
         .app-icon { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 5px 3px; border-radius: 14px; transition: 0.15s; border: none; background: transparent; color: #fff; font-family: inherit; pointer-events: auto; position: relative; z-index: 3; }
         .app-icon:active { transform: scale(0.88); background: rgba(255,255,255,0.08); }
         [data-theme="light"] .app-icon { color: #1a1a1a; }
@@ -3815,7 +3880,8 @@
             <div class="signature" id="signatureArea"><span class="signature-text" id="signatureText">今天也很想你 💕</span><input class="signature-input" id="signatureInput" type="text" placeholder="写下你的个签..." maxlength="30" /></div>
             <div class="bind-info" id="bindInfo">💕 当前绑定：<span class="role-name" id="bindRoleName">未绑定</span> <span style="font-size:9px;opacity:0.5;margin-left:4px;">点击更换</span></div>
         </div>
-        <div class="app-grid"> <!-- ⭐ 收藏屋（新图标） -->
+       <div class="app-grid-wrapper" id="appGridWrapper">
+<div class="app-grid" id="appGrid"> <!-- ⭐ 收藏屋（新图标） -->
 
 <div class="app-icon" data-app="favorite">
     <div class="icon-wrap favorite">
@@ -3867,7 +3933,9 @@
             <button class="app-icon" data-app="mall"><div class="icon-wrap mall"><i class="fas fa-shopping-bag"></i></div><span class="app-name">商城</span></button>
             <button class="app-icon" data-app="phone"><div class="icon-wrap phone"><i class="fas fa-mobile-alt"></i></div><span class="app-name">他的手机</span></button>
         </div>
-        <div class="dock">
+</div>
+<div class="page-dots" id="pageDots"></div>
+<div class="dock">
             <button class="app-icon" data-app="contacts"><div class="icon-wrap contacts"><i class="fas fa-address-book"></i></div><span class="app-name">联系人</span></button>
             <button class="app-icon" data-app="memory"><div class="icon-wrap memory"><i class="fas fa-brain"></i></div><span class="app-name">时光胶囊</span></button>
             <button class="app-icon" data-app="settings"><div class="icon-wrap settings"><i class="fas fa-cog"></i></div><span class="app-name">设置</span></button>
@@ -5066,14 +5134,8 @@ function mergeCloudDataByTimestamp(cloudRoles, cloudConfig, cloudDiaries) {
             var cloudTime = cloudRole.lastModified || 0;
 
             if (cloudTime > localTime) {
-                // 云端更新 → 用云端整个替换（保留本地不存在的字段）
-                var idx = roles.findIndex(function(r) { return r.id === localRole.id; });
-                if (idx !== -1) {
-                    roles[idx] = cloudRole;
-                    merged++;
-                    console.log('  ✅ 云端更新：' + cloudRole.name + ' (云端 ' + new Date(cloudTime).toLocaleString() + ' > 本地 ' + new Date(localTime).toLocaleString() + ')');
-                }
-            } else {
+    console.log(' 📌 保留本地：' + localRole.name + '（云端较新但不覆盖本地）');
+} else {
                 console.log('  📌 保留本地：' + localRole.name + ' (本地 ' + new Date(localTime).toLocaleString() + ' >= 云端 ' + new Date(cloudTime).toLocaleString() + ')');
             }
         }
@@ -10359,6 +10421,66 @@ function renderMainAppMoments() {
 
     // 渲染顶部消息条
     renderMomentNotifBar();
+}
+
+// ===== 桌面分页 =====
+var APP_GRID_PER_PAGE = 9; // 每页显示 9 个图标（3×3）
+
+function setupAppGridPagination() {
+    var wrapper = document.getElementById('appGridWrapper');
+    var grid = document.getElementById('appGrid');
+    var dotsBox = document.getElementById('pageDots');
+    if (!wrapper || !grid || !dotsBox) return;
+
+    // 取出所有图标
+    var icons = Array.from(grid.querySelectorAll('.app-icon'));
+    if (icons.length === 0) return;
+
+    // 计算页数
+    var totalPages = Math.ceil(icons.length / APP_GRID_PER_PAGE);
+
+    // 重建网格：按页分块
+    grid.innerHTML = '';
+    for (var p = 0; p < totalPages; p++) {
+        var page = document.createElement('div');
+        page.className = 'app-grid';
+        page.style.scrollSnapAlign = 'start';
+
+        var start = p * APP_GRID_PER_PAGE;
+        var end = Math.min(start + APP_GRID_PER_PAGE, icons.length);
+        for (var i = start; i < end; i++) {
+            page.appendChild(icons[i]);
+        }
+        grid.parentNode.insertBefore(page, grid);
+    }
+    // 原来的 grid 已空，删掉
+    grid.remove();
+
+    // 所有页 = wrapper 里的 .app-grid
+    var pages = wrapper.querySelectorAll('.app-grid');
+
+    // 生成圆点
+    dotsBox.innerHTML = '';
+    for (var d = 0; d < pages.length; d++) {
+        var dot = document.createElement('div');
+        dot.className = 'page-dot' + (d === 0 ? ' active' : '');
+        dotsBox.appendChild(dot);
+    }
+
+    // 如果只有一页，隐藏圆点
+    if (pages.length <= 1) {
+        dotsBox.style.display = 'none';
+    }
+
+    // 滑动时更新圆点
+    wrapper.addEventListener('scroll', function() {
+        var pageWidth = wrapper.clientWidth;
+        var currentPage = Math.round(wrapper.scrollLeft / pageWidth);
+        var dots = dotsBox.querySelectorAll('.page-dot');
+        dots.forEach(function(dot, i) {
+            dot.classList.toggle('active', i === currentPage);
+        });
+    });
 }
 
 function renderContacts() {
@@ -15694,7 +15816,7 @@ initCallFloatingDrag();
         updateStatusTime();
         setInterval(updateStatusTime, 30000);
         setupMessageEventDelegation();
-       
+       setupAppGridPagination();
     } catch (e) { console.error('界面渲染失败:', e); }
     try {
         document.getElementById('launcherScreen').classList.remove('hidden');
