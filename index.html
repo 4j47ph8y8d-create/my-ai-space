@@ -8722,8 +8722,7 @@ async function generateAICommentForUserMoment(role, moment) {
 // ===== 检查并处理用户动态的待评论（每 2 分钟跑一次） =====
 var _userMomentProcessing = false;
 async function processUserMomentPendingComments() {
-
-if (CONFIG.autoMomentReplyEnabled === false) return;
+  if (CONFIG.autoMomentReplyEnabled === false) return;
 
     if (_userMomentProcessing) return;
     _userMomentProcessing = true;
