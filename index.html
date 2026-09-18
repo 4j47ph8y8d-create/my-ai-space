@@ -855,11 +855,11 @@
         @keyframes dotBounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .chat-input-area { background: var(--header-bg); backdrop-filter: blur(10px); padding: 6px 10px calc(10px + var(--safe-bottom, 0px)); border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; position: relative; z-index: 1; }
-        .chat-input-area .input-row { display: flex; align-items: center; gap: 6px; }
+        .chat-input-area .input-row { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; }
         .chat-input-area .meme-btn { background: none; border: none; font-size: 20px; color: #576b95; cursor: pointer; padding: 4px; flex-shrink: 0; transition: 0.15s; }
         .chat-input-area .meme-btn:active { transform: scale(0.85); }
         .chat-input-area .plus-btn { background: none; border: none; font-size: 22px; color: #576b95; cursor: pointer; padding: 4px; flex-shrink: 0; }
-        .chat-input-area input { flex: 1; border: none; outline: none; background: var(--input-bg); padding: 6px 12px; border-radius: 8px; font-size: 14px; color: var(--text-primary); transition: background 0.3s ease; min-height: 34px; }
+        .chat-input-area input { flex: 1; min-width: 0; border: none; outline: none; background: var(--input-bg); padding: 6px 12px; border-radius: 8px; font-size: 14px; color: var(--text-primary); transition: background 0.3s ease; min-height: 34px; }
         .chat-input-area input:focus { background: var(--bg-card); box-shadow: 0 0 0 2px rgba(7,193,96,0.2); }
         .chat-input-area .send-btn { background: #07c160; border: none; color: #fff; width: 34px; height: 34px; border-radius: 50%; font-size: 14px; cursor: pointer; flex-shrink: 0; transition: 0.15s; display: flex; align-items: center; justify-content: center; }
         .chat-input-area .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
