@@ -9872,6 +9872,18 @@ function renderMomentCommentsHtml(moment, isUserMoment) {
 
 // ===== 用户自己的朋友圈存储 =====
 
+// 保存朋友圈（新版：双写）
+function saveUserMoments(moments) {
+  window._userMomentsCache = moments;
+  saveWithDual('user_moments_v1', moments);
+}
+
+// 保存通知（新版：双写）
+function saveNotifications(list) {
+  window._notificationsCache = list;
+  saveWithDual('moment_notifications_v1', list);
+}
+
 function loadUserMoments() {
   // 同步版本（兼容老代码，从缓存读）
   if (window._userMomentsCache) {
@@ -15822,6 +15834,16 @@ setTimeout(function() {
   try { renderDiaryAll(); } catch (e) {}
   try { updateHeartDisplay(); } catch (e) {}
 }, 1500);
+
+// ⭐ 延迟恢复字体（防止时序问题）
+  setTimeout(function() {
+    try {
+      applyCustomFont(CONFIG.fontFamily || 'default');
+      console.log('🔤 字体已恢复:', CONFIG.fontFamily, '→', document.documentElement.style.getPropertyValue('--font-custom'));
+    } catch(e) {
+      console.error('字体恢复失败:', e);
+    }
+  }, 2000);
 
     console.log('🚀 梦女空间 v4.0 - 多模型 + 百炼语音版 已启动！');
     console.log('✅ 支持直连 DeepSeek + 中转模式（书垒等 OpenAI 兼容）');
