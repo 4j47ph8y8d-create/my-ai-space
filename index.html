@@ -5108,6 +5108,12 @@ function immediateSaveAllData() {
             currentRoleId: currentRoleId
         };
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+
+// ⭐ 新增：同步写入 IndexedDB
+    idbSet('ds_multirole_v2', data).catch(function(e) {
+      console.error('IndexedDB 写入失败:', e);
+    });
+
         saveMemeData().catch(function(e) { console.error('表情包保存失败:', e); });
         
         // ===== 2. 同步到云端 =====
@@ -5158,6 +5164,12 @@ function saveAllData() {
         configToSave.wallpaper = wallpaperFlag;
         var data = { config: configToSave, roles: roles.map(function(r) { return deepCloneRole(r); }), currentRoleId: currentRoleId };
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+
+// ⭐ 新增：同步写入 IndexedDB
+    idbSet('ds_multirole_v2', data).catch(function(e) {
+      console.error('IndexedDB 写入失败:', e);
+    });
+
     } catch (e) {
         console.error('保存数据失败:', e);
     }
@@ -5215,7 +5227,41 @@ function deepCloneRole(role) {
         };
     }
     return clone;
-} function loadAllData() {
+} 
+
+function initLoadAllData() {
+  return loadAllDataAsync().then(function(data) {
+    if (!data) {
+      console.log('📦 没有主数据，全新初始化');
+      loadAllData();
+      return;
+    }
+    console.log('📦 从 IndexedDB 读到主数据');
+    // ⭐ 判断：IndexedDB 和 LocalStorage 哪个数据更多（防止覆盖）
+    var lsRaw = localStorage.getItem('ds_multirole_v2');
+    var lsData = null;
+    try { lsData = lsRaw ? JSON.parse(lsRaw) : null; } catch(e) {}
+
+    var idbCount = (data.roles || []).length;
+    var lsCount = lsData ? (lsData.roles || []).length : 0;
+
+    if (lsCount > idbCount) {
+      console.log('⚠️ LocalStorage 数据更多（' + lsCount + ' > ' + idbCount + '），保留 LocalStorage');
+      loadAllData();
+      return;
+    }
+
+    // IndexedDB 数据 >= LocalStorage，用 IndexedDB 的
+    console.log('✅ 用 IndexedDB 数据（' + idbCount + ' 个角色）');
+    localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+    loadAllData();
+  }).catch(function(e) {
+    console.error('❌ 异步加载失败，走兜底:', e);
+    loadAllData();
+  });
+}
+
+function loadAllData() {
     var savedData = null;
     try {
         var raw = localStorage.getItem('ds_multirole_v2');
@@ -9632,16 +9678,15 @@ async function processRolePendingReplies(role) {
 }
 
 // ===== 未读通知管理（新版：基于 notifications 数组） =====
+
 function loadNotifications() {
-    try {
-        var raw = localStorage.getItem('moment_notifications_v1');
-        return raw ? JSON.parse(raw) : [];
-    } catch(e) { return []; }
-}
-function saveNotifications(list) {
-    try {
-        localStorage.setItem('moment_notifications_v1', JSON.stringify(list));
-    } catch(e) {}
+  if (window._notificationsCache) {
+    return window._notificationsCache;
+  }
+  try {
+    var raw = localStorage.getItem('moment_notifications_v1');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
 }
 
 function addMomentNotification(role, moment, aiComment) {
@@ -9825,18 +9870,26 @@ function renderMomentCommentsHtml(moment, isUserMoment) {
 }
 
 // ===== 用户自己的朋友圈存储 =====
+
 function loadUserMoments() {
-    try {
-        var raw = localStorage.getItem('user_moments_v1');
-        return raw ? JSON.parse(raw) : [];
-    } catch(e) { return []; }
+  // 同步版本（兼容老代码，从缓存读）
+  if (window._userMomentsCache) {
+    return window._userMomentsCache;
+  }
+  // 缓存没有 → 从 LocalStorage 读（IndexedDB 需要异步，第一次进页面时会预加载）
+  try {
+    var raw = localStorage.getItem('user_moments_v1');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
 }
-function saveUserMoments(moments) {
-    try {
-        localStorage.setItem('user_moments_v1', JSON.stringify(moments));
-    } catch(e) {
-        console.error('保存用户动态失败:', e);
-    }
+
+// 异步版本（新代码用这个）
+function loadUserMomentsAsync() {
+  return loadWithFallback('user_moments_v1').then(function(data) {
+    var moments = data || [];
+    window._userMomentsCache = moments;  // 缓存
+    return moments;
+  });
 }
 
 function saveUserMomentImage(momentId, base64) {
@@ -10860,6 +10913,167 @@ var DEFAULT_CATEGORIES = [
     { id: 'cat_wronged', name: '表达委屈', icon: '😭' },
     { id: 'cat_like', name: '表达喜欢', icon: '❤️' }
 ];
+
+// ============================================================
+// 💾 主数据库（IndexedDB）—— 用于存大量数据
+// ============================================================
+
+function openMainDB() {
+  return new Promise(function(resolve, reject) {
+    var request = indexedDB.open('LunarReverieDB', 1);
+
+    request.onupgradeneeded = function(e) {
+      var db = e.target.result;
+
+      // 数据表：按 key 存（通用）
+      if (!db.objectStoreNames.contains('data')) {
+        db.createObjectStore('data', { keyPath: 'key' });
+      }
+    };
+
+    request.onsuccess = function(e) { resolve(e.target.result); };
+    request.onerror = function(e) { reject(e.target.error); };
+  });
+}
+
+// 读一个 key
+function idbGet(key) {
+  return openMainDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction('data', 'readonly');
+      var store = tx.objectStore('data');
+      var req = store.get(key);
+      req.onsuccess = function() {
+        db.close();
+        resolve(req.result ? req.result.value : null);
+      };
+      req.onerror = function() {
+        db.close();
+        reject(req.error);
+      };
+    });
+  });
+}
+
+// 写一个 key
+function idbSet(key, value) {
+  return openMainDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction('data', 'readwrite');
+      var store = tx.objectStore('data');
+      var req = store.put({ key: key, value: value, updatedAt: Date.now() });
+      req.onsuccess = function() {
+        db.close();
+        resolve();
+      };
+      req.onerror = function() {
+        db.close();
+        reject(req.error);
+      };
+    });
+  });
+}
+
+// 删一个 key
+function idbDelete(key) {
+  return openMainDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction('data', 'readwrite');
+      var store = tx.objectStore('data');
+      var req = store.delete(key);
+      req.onsuccess = function() {
+        db.close();
+        resolve();
+      };
+      req.onerror = function() {
+        db.close();
+        reject(req.error);
+      };
+    });
+  });
+}
+
+// 列出所有 key
+function idbKeys() {
+  return openMainDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction('data', 'readonly');
+      var store = tx.objectStore('data');
+      var req = store.getAllKeys();
+      req.onsuccess = function() {
+        db.close();
+        resolve(req.result || []);
+      };
+      req.onerror = function() {
+        db.close();
+        reject(req.error);
+      };
+    });
+  });
+}
+
+// ============================================================
+// 💾 兼容读写（IndexedDB 优先，LocalStorage 兜底）
+// ============================================================
+
+// 读：先查 IndexedDB，没有再查 LocalStorage（并同步过来）
+function loadWithFallback(key) {
+  return idbGet(key).then(function(idbValue) {
+    if (idbValue !== null && idbValue !== undefined) {
+      return idbValue;
+    }
+    // IndexedDB 没有 → 从 LocalStorage 读
+    try {
+      var lsValue = localStorage.getItem(key);
+      if (lsValue) {
+        var parsed = JSON.parse(lsValue);
+        // 顺便写进 IndexedDB（下次就不用再读 LocalStorage）
+        idbSet(key, parsed).catch(function(){});
+        return parsed;
+      }
+    } catch (e) {}
+    return null;
+  }).catch(function() {
+    // IndexedDB 出错 → 兜底 LocalStorage
+    try {
+      var lsValue = localStorage.getItem(key);
+      return lsValue ? JSON.parse(lsValue) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+}
+
+// 写：同时写 IndexedDB 和 LocalStorage
+function saveWithDual(key, value) {
+  // 1. IndexedDB
+  idbSet(key, value).catch(function(e) {
+    console.error('IndexedDB 写入失败 [' + key + ']:', e);
+  });
+
+  // 2. LocalStorage（兼容老代码）
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn('LocalStorage 写入失败 [' + key + ']:', e.message);
+  }
+}
+
+// ============================================================
+// 💾 主数据异步读写（ds_multirole_v2 专用）
+// ============================================================
+
+// 异步读主数据（IndexedDB 优先，LocalStorage 兜底）
+function loadAllDataAsync() {
+  return loadWithFallback('ds_multirole_v2').then(function(data) {
+    return data;
+  });
+}
+
+// 异步写主数据（双写）
+function saveAllDataAsync(data) {
+  return saveWithDual('ds_multirole_v2', data);
+}
 
 function openMemeDB() {
     return new Promise(function(resolve, reject) {
@@ -15342,7 +15556,9 @@ function init() {
         return;
     }
 
-    try { loadAllData(); } catch (e) { console.error('加载数据失败:', e); }
+    initLoadAllData().catch(function(e) {
+  console.error('❌ 加载数据失败:', e);
+});
     try {
         loadMemeData().then(function() {
             updateStorageDisplay();
@@ -15482,6 +15698,20 @@ initCallFloatingDrag();
     try { startBackgroundCheck(); } catch (e) { console.error('后台检测启动失败:', e); }
 
 try { startLetterReplyChecker(); } catch (e) {
+
+// 预加载朋友圈 + 通知到内存缓存
+try {
+  loadUserMomentsAsync().then(function() {
+    console.log('💾 朋友圈已预加载');
+  });
+  loadWithFallback('moment_notifications_v1').then(function(data) {
+    window._notificationsCache = data || [];
+    console.log('💾 通知已预加载');
+  });
+} catch (e) {
+  console.error('预加载失败:', e);
+}
+
   console.error('回信检查器启动失败:', e);
 }
 
@@ -15526,6 +15756,17 @@ try { setTimeout(function() { checkAutoLetters(); }, 8000); } catch (e) {
             }
         });
     }
+
+// ⭐ 数据加载完成后，重新渲染一次（防止时序问题）
+setTimeout(function() {
+  console.log('🔄 延迟重渲染，防止空白...');
+  try { updateChatTitle(); } catch (e) {}
+  try { renderContacts(); } catch (e) {}
+  try { renderRoleManager(); } catch (e) {}
+  try { renderDiaryAll(); } catch (e) {}
+  try { updateHeartDisplay(); } catch (e) {}
+}, 1500);
+
     console.log('🚀 梦女空间 v4.0 - 多模型 + 百炼语音版 已启动！');
     console.log('✅ 支持直连 DeepSeek + 中转模式（书垒等 OpenAI 兼容）');
     console.log('✅ 支持百炼 CosyVoice TTS');
