@@ -8733,8 +8733,8 @@ async function processUserMomentPendingComments() {
 
         // 找出所有待 AI 评论的动态
         var pendingMoments = moments.filter(function(m) {
-            return m.aiPendingComment && m.aiCommentDelay && !m.aiCommented;
-        });
+  return m.aiPendingComment && !m.aiCommented;
+});
 
         if (pendingMoments.length === 0) {
             _userMomentProcessing = false;
@@ -8763,12 +8763,7 @@ async function processUserMomentPendingComments() {
                 }).length;
                 if (roleCommentCount >= 2) continue;
 
-                // 30% 概率跳过（不是每条都评，更像真人）
-                if (Math.random() < 0.3) {
-                    moment.aiCommentedBy[role.id] = 'skipped';
-                    changed = true;
-                    continue;
-                }
+               
 
                 var replyText = await generateAICommentForUserMoment(role, moment);
                 if (replyText) {
