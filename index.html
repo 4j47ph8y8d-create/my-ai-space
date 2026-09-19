@@ -97,6 +97,1789 @@
         .heart-card .signature .signature-input:focus { border-color: var(--heart-color); }
         .heart-card .signature .signature-input.show { display: block; }
         .heart-card .signature .signature-text.hide { display: none; }
+
+/* ============================================================
+   💝 纪念日 - 页面一（首页）
+   ============================================================ */
+
+.screen-anniversary {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow: hidden;
+    background: #F4F2F7;
+}
+
+.screen-anniversary.open {
+    transform: translateX(0);
+}
+
+/* ---------- 顶部渐变区 ---------- */
+.anniversary-top {
+    position: relative;
+    flex-shrink: 0;
+    padding: calc(12px + var(--safe-top, 0px)) 18px 60px;
+    background: linear-gradient(180deg,
+        #D7D1E8 0%,
+        #E4D8E8 45%,
+        #F0EAF3 80%,
+        #F4F2F7 100%);
+    overflow: hidden;
+}
+
+/* 顶部装饰光斑（柔和） */
+.anniversary-top::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -40px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        rgba(255, 255, 255, 0.45) 0%,
+        rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
+}
+
+.anniversary-top::after {
+    content: '';
+    position: absolute;
+    bottom: -80px;
+    left: -50px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
+}
+
+/* 返回按钮 */
+.anniversary-back {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px 6px 10px;
+    border: none;
+    border-radius: 18px;
+    background: #B8A5C7;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 12px rgba(184, 165, 199, 0.35);
+    transition: 0.15s;
+}
+
+.anniversary-back:active {
+    transform: scale(0.95);
+    background: #A895B8;
+}
+
+.anniversary-back i {
+    font-size: 12px;
+}
+
+/* 标题 */
+.anniversary-title-wrap {
+    position: relative;
+    z-index: 2;
+    margin-top: 22px;
+    padding: 0 4px;
+}
+
+.anniversary-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #4A4558;
+    letter-spacing: 2px;
+    line-height: 1.3;
+}
+
+.anniversary-subtitle {
+    font-size: 13px;
+    color: #8B82A0;
+    margin-top: 6px;
+    letter-spacing: 1px;
+    font-weight: 400;
+}
+
+/* ---------- 中部大卡（毛玻璃） ---------- */
+.anniversary-main-card {
+    position: relative;
+    z-index: 2;
+    margin: 24px 18px 0;
+    padding: 28px 24px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+        0 10px 40px rgba(184, 165, 199, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    overflow: hidden;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* 毛玻璃卡里的小装饰：右上 / 右下心形 */
+.anniversary-main-card .deco-heart {
+    position: absolute;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #E4C5E0;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(184, 165, 199, 0.2);
+}
+
+.anniversary-main-card .deco-heart.top-right {
+    top: 14px;
+    right: 14px;
+}
+
+.anniversary-main-card .main-days {
+    font-size: 76px;
+    font-weight: 300;
+    color: #6B5F80;
+    line-height: 1;
+    letter-spacing: -2px;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s ease;
+}
+
+.anniversary-main-card .main-unit {
+    font-size: 14px;
+    color: #8B82A0;
+    margin-top: 8px;
+    letter-spacing: 4px;
+    font-weight: 400;
+}
+
+.anniversary-main-card .main-label {
+    font-size: 13px;
+    color: #8B82A0;
+    margin-top: 14px;
+    padding: 4px 14px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    letter-spacing: 1px;
+}
+
+/* 空状态 */
+.anniversary-main-card.is-empty .main-days {
+    font-size: 40px;
+    font-weight: 400;
+}
+
+/* ---------- 底部三个小卡 ---------- */
+.anniversary-sub-cards {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 18px 18px 0;
+}
+
+.anniversary-sub-card {
+    background: #F8F5EE;
+    border-radius: 18px;
+    padding: 14px 8px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 4px 16px rgba(184, 165, 199, 0.12);
+    transition: transform 0.15s;
+    cursor: pointer;
+}
+
+.anniversary-sub-card:active {
+    transform: scale(0.96);
+}
+
+/* 小卡右上角的迷你心 */
+.anniversary-sub-card .sub-heart {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #E4D8E8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-size: 8px;
+}
+
+.anniversary-sub-card .sub-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: #8B82A0;
+    border: 1.5px solid #D4C5E0;
+    margin-bottom: 2px;
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.anniversary-sub-card .sub-name {
+    font-size: 12px;
+    color: #4A4558;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.anniversary-sub-card .sub-days {
+    font-size: 13px;
+    color: #B8A5C7;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* 空位小卡 */
+.anniversary-sub-card.is-empty {
+    background: rgba(248, 245, 238, 0.5);
+    box-shadow: none;
+}
+
+.anniversary-sub-card.is-empty .sub-icon {
+    border-color: #E0D8E8;
+    color: #C5BCD0;
+}
+
+.anniversary-sub-card.is-empty .sub-name {
+    color: #A89DB8;
+    font-weight: 400;
+}
+
+.anniversary-sub-card.is-empty .sub-days {
+    color: #C5BCD0;
+}
+
+/* ---------- 底部 tabbar ---------- */
+.anniversary-tabbar {
+    margin-top: auto;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px 6px calc(10px + var(--safe-bottom, 0px));
+    background: rgba(230, 220, 240, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    box-shadow: 0 -4px 20px rgba(184, 165, 199, 0.15);
+}
+
+.anniversary-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 0;
+    cursor: pointer;
+    user-select: none;
+   }
+
+ -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s;
+.anniversary-tab:active {
+    transform: scale(0.92);
+}
+
+.anniversary-tab .tab-icon-box {
+    width: 40px;
+    height: 28px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: #A89DB8;
+    transition: 0.2s;
+}
+
+.anniversary-tab.active .tab-icon-box {
+    background: linear-gradient(135deg, #B8A5C7, #9B85B0);
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(184, 165, 199, 0.5);
+}
+
+.anniversary-tab .tab-label {
+    font-size: 10px;
+    color: #A89DB8;
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
+.anniversary-tab.active .tab-label {
+    color: #6B5F80;
+    font-weight: 600;
+}
+
+/* ============================================================
+   纪念日 - 页面四（我的） + 添加表单
+   ============================================================ */
+
+/* ---------- 页面四容器 ---------- */
+.screen-anniversary-mine {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow: hidden;
+    background: #F4F2F7;
+}
+
+.screen-anniversary-mine.open {
+    transform: translateX(0);
+}
+
+/* ---------- 顶部 ---------- */
+.anni-mine-top {
+    position: relative;
+    flex-shrink: 0;
+    padding: calc(12px + var(--safe-top, 0px)) 18px 36px;
+    background: linear-gradient(180deg,
+        #D7D1E8 0%,
+        #E4D8E8 55%,
+        #F0E8F2 85%,
+        #F4F2F7 100%);
+}
+
+.anni-mine-top .anni-back {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px 6px 10px;
+    border: none;
+    border-radius: 18px;
+    background: #B8A5C7;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 12px rgba(184, 165, 199, 0.35);
+    transition: 0.15s;
+}
+
+.anni-mine-top .anni-back:active {
+    transform: scale(0.95);
+}
+
+.anni-mine-title-wrap {
+    margin-top: 22px;
+    padding: 0 4px;
+}
+
+.anni-mine-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #4A4558;
+    letter-spacing: 2px;
+    line-height: 1.3;
+}
+
+.anni-mine-subtitle {
+    font-size: 13px;
+    color: #8B82A0;
+    margin-top: 6px;
+    letter-spacing: 1px;
+}
+
+/* ---------- 列表区 ---------- */
+.anni-mine-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 18px 20px;
+}
+
+.anni-mine-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.anni-mine-item {
+    background: #F8F5EE;
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 16px rgba(184, 165, 199, 0.12);
+    transition: transform 0.15s;
+    cursor: pointer;
+}
+
+.anni-mine-item:active {
+    transform: scale(0.98);
+}
+
+.anni-mine-item .item-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #E4D8E8, #C5B5D4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.anni-mine-item .item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.anni-mine-item .item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #4A4558;
+    letter-spacing: 0.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.anni-mine-item .item-date {
+    font-size: 12px;
+    color: #8B82A0;
+    margin-top: 3px;
+    letter-spacing: 0.5px;
+}
+
+.anni-mine-item .item-date .repeat-tag {
+    display: inline-block;
+    font-size: 10px;
+    color: #B8A5C7;
+    border: 1px solid #D4C5E0;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 6px;
+    letter-spacing: 0.5px;
+}
+
+.anni-mine-item .item-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.anni-mine-item .item-actions button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.7);
+    color: #8B82A0;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s;
+}
+
+.anni-mine-item .item-actions button:active {
+    transform: scale(0.88);
+}
+
+.anni-mine-item .item-actions .btn-del {
+    color: #E0748A;
+}
+
+/* 空状态 */
+.anni-mine-empty {
+    text-align: center;
+    padding: 50px 20px;
+    color: #8B82A0;
+}
+
+.anni-mine-empty .empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(228, 216, 232, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #B8A5C7;
+    font-size: 26px;
+    margin: 0 auto 14px;
+}
+
+.anni-mine-empty p {
+    font-size: 13px;
+    line-height: 1.7;
+    letter-spacing: 0.5px;
+}
+
+/* ---------- 底部大按钮 ---------- */
+.anni-mine-footer {
+    padding: 12px 18px calc(16px + var(--safe-bottom, 0px));
+    flex-shrink: 0;
+}
+
+.anni-mine-add-btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #B8A5C7, #9B85B0);
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 8px 24px rgba(184, 165, 199, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: 0.15s;
+}
+
+.anni-mine-add-btn:active {
+    transform: scale(0.97);
+}
+
+/* ============================================================
+   添加 / 编辑纪念日 弹层
+   ============================================================ */
+
+.anni-form-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    background: rgba(74, 69, 88, 0.4);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.anni-form-overlay.active {
+    display: flex;
+}
+
+.anni-form-panel {
+    width: 100%;
+    max-height: 90%;
+    background: #FDFAFF;
+    border-radius: 28px 28px 0 0;
+    padding: 8px 20px calc(24px + var(--safe-bottom, 0px));
+    overflow-y: auto;
+    animation: anniFormUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 -10px 40px rgba(74, 69, 88, 0.15);
+}
+
+@keyframes anniFormUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.anni-form-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 4px;
+    background: #E4D8E8;
+    margin: 6px auto 14px;
+}
+
+.anni-form-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #4A4558;
+    text-align: center;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+}
+
+.anni-form-field {
+    margin-bottom: 16px;
+}
+
+.anni-form-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8B82A0;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.anni-form-field input[type="text"],
+.anni-form-field input[type="date"],
+.anni-form-field textarea {
+    width: 100%;
+    padding: 11px 14px;
+    background: #F4F2F7;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    font-size: 14px;
+    color: #4A4558;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: 0.2s;
+    resize: vertical;
+}
+
+.anni-form-field input:focus,
+.anni-form-field textarea:focus {
+    border-color: #B8A5C7;
+    background: #FFFFFF;
+}
+
+.anni-form-field textarea {
+    min-height: 80px;
+    line-height: 1.5;
+}
+
+/* 图标选择 */
+.anni-icon-picker {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.anni-icon-option {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    background: #F4F2F7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8B82A0;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.15s;
+    border: 2px solid transparent;
+}
+
+.anni-icon-option:active {
+    transform: scale(0.94);
+}
+
+.anni-icon-option.active {
+    background: linear-gradient(135deg, #E4D8E8, #C5B5D4);
+    color: #FFFFFF;
+    border-color: #B8A5C7;
+}
+
+/* 重复开关行 */
+.anni-repeat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: #F4F2F7;
+    border-radius: 12px;
+}
+
+.anni-repeat-row .repeat-label {
+    font-size: 13px;
+    color: #4A4558;
+    letter-spacing: 0.5px;
+}
+
+.anni-repeat-row .repeat-desc {
+    font-size: 10px;
+    color: #A89DB8;
+    margin-top: 2px;
+}
+
+/* iOS 开关（复用你现有的样式也行，这里独立写一份更保险） */
+.ios-switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.ios-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.ios-switch .ios-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #D4C5E0;
+    transition: 0.25s;
+    border-radius: 26px;
+}
+
+.ios-switch .ios-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #FFFFFF;
+    transition: 0.25s;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.ios-switch input:checked + .ios-slider {
+    background-color: #9B85B0;
+}
+
+.ios-switch input:checked + .ios-slider:before {
+    transform: translateX(20px);
+}
+
+/* 底部按钮 */
+.anni-form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.anni-form-actions button {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.15s;
+}
+
+.anni-form-actions button:active {
+    transform: scale(0.97);
+}
+
+.anni-form-actions .btn-cancel {
+    background: #F4F2F7;
+    color: #8B82A0;
+}
+
+.anni-form-actions .btn-save {
+    background: linear-gradient(135deg, #B8A5C7, #9B85B0);
+    color: #FFFFFF;
+    box-shadow: 0 6px 20px rgba(184, 165, 199, 0.4);
+}
+
+/* ============================================================
+   纪念日 - 页面二（日历）
+   ============================================================ */
+
+.screen-anniversary-calendar {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow: hidden;
+    background: #F4F2F7;
+}
+
+.screen-anniversary-calendar.open {
+    transform: translateX(0);
+}
+
+/* ---------- 顶部 ---------- */
+.anni-cal-top {
+    position: relative;
+    flex-shrink: 0;
+    padding: calc(12px + var(--safe-top, 0px)) 18px 36px;
+    background: linear-gradient(180deg,
+        #D7D1E8 0%,
+        #E4D8E8 55%,
+        #F0E8F2 85%,
+        #F4F2F7 100%);
+}
+
+.anni-cal-top .anni-back {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px 6px 10px;
+    border: none;
+    border-radius: 18px;
+    background: #B8A5C7;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 12px rgba(184, 165, 199, 0.35);
+    transition: 0.15s;
+}
+
+.anni-cal-top .anni-back:active {
+    transform: scale(0.95);
+}
+
+.anni-cal-title-wrap {
+    margin-top: 22px;
+    padding: 0 4px;
+}
+
+.anni-cal-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #4A4558;
+    letter-spacing: 2px;
+    line-height: 1.3;
+}
+
+.anni-cal-subtitle {
+    font-size: 13px;
+    color: #8B82A0;
+    margin-top: 6px;
+    letter-spacing: 1px;
+}
+
+/* ---------- 日历主体 ---------- */
+.anni-cal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.anni-cal-card {
+    width: 100%;
+    max-width: 380px;
+    background: #FFFFFF;
+    border-radius: 24px;
+    padding: 18px 14px 20px;
+    box-shadow: 0 6px 24px rgba(184, 165, 199, 0.15);
+    box-sizing: border-box;
+}
+
+/* 月份切换 */
+.anni-cal-month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px 14px;
+}
+
+.anni-cal-month-nav .month-arrow {
+    background: none;
+    border: none;
+    color: #B8A5C7;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 10px;
+    border-radius: 10px;
+    transition: 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.anni-cal-month-nav .month-arrow:active {
+    background: rgba(184, 165, 199, 0.15);
+}
+
+.anni-cal-month-nav .month-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4A4558;
+    letter-spacing: 1px;
+}
+
+/* 星期标题 */
+.anni-cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(212, 197, 224, 0.3);
+    margin-bottom: 10px;
+}
+
+.anni-cal-weekdays span {
+    text-align: center;
+    font-size: 11px;
+    color: #A89DB8;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* 日期网格 */
+.anni-cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.anni-cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #4A4558;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.15s;
+    position: relative;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.anni-cal-day:active {
+    transform: scale(0.9);
+}
+
+/* 上下月补位 */
+.anni-cal-day.other-month {
+    color: #D4C5E0;
+    opacity: 0.6;
+    cursor: default;
+}
+
+.anni-cal-day.other-month:active {
+    transform: none;
+}
+
+/* 今天 */
+.anni-cal-day.today {
+    font-weight: 700;
+    color: #6B5F80;
+}
+
+.anni-cal-day.today::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    border: 1.5px dashed #B8A5C7;
+    pointer-events: none;
+}
+
+/* 有纪念日 */
+.anni-cal-day.has-anni {
+    background: #E4D8E8;
+    color: #4A4558;
+    font-weight: 600;
+}
+
+/* 底部小爱心（有纪念日时出现） */
+.anni-cal-day.has-anni::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #B8A5C7;
+}
+
+/* 手绘圈：普通选中 */
+.anni-cal-day.selected::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M 48 8 C 68 5, 88 14, 92 32 C 96 50, 92 68, 80 82 C 68 96, 48 96, 32 90 C 16 84, 6 68, 8 50 C 10 32, 22 18, 40 10 C 52 5, 66 6, 76 14' fill='none' stroke='%23B8A5C7' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    transform: rotate(-8deg);
+    z-index: 2;
+}
+
+/* 选中 + 今天：手绘圈盖住虚线 */
+.anni-cal-day.selected.today::before {
+    inset: -2px;
+    border: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M 48 8 C 68 5, 88 14, 92 32 C 96 50, 92 68, 80 82 C 68 96, 48 96, 32 90 C 16 84, 6 68, 8 50 C 10 32, 22 18, 40 10 C 52 5, 66 6, 76 14' fill='none' stroke='%23B8A5C7' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    transform: rotate(-8deg);
+    z-index: 2;
+}
+
+/* 选中 + 有纪念日：深紫手绘圈 */
+.anni-cal-day.selected.has-anni::before {
+    inset: -2px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M 48 8 C 68 5, 88 14, 92 32 C 96 50, 92 68, 80 82 C 68 96, 48 96, 32 90 C 16 84, 6 68, 8 50 C 10 32, 22 18, 40 10 C 52 5, 66 6, 76 14' fill='none' stroke='%239B85B0' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    transform: rotate(-8deg);
+    z-index: 2;
+}
+
+/* 图例 */
+.anni-cal-legend {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 20px;
+    padding: 0 4px;
+}
+
+.anni-cal-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #8B82A0;
+    letter-spacing: 0.3px;
+}
+
+.anni-cal-legend .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.anni-cal-legend .legend-dot.legend-anni {
+    background: #E4D8E8;
+}
+
+.anni-cal-legend .legend-dot.legend-anni::after {
+    content: '';
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #B8A5C7;
+    position: absolute;
+    bottom: 1px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.anni-cal-legend .legend-dot.legend-selected {
+    border: 1.5px solid #9B85B0;
+    background: transparent;
+}
+
+/* ============================================================
+   纪念日 - 页面三（详情）
+   ============================================================ */
+
+.screen-anniversary-detail {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 18;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow: hidden;
+    background: linear-gradient(180deg,
+        #E8E0F0 0%,
+        #EFE8F4 30%,
+        #F4F2F7 60%,
+        #F4F2F7 100%);
+}
+
+.screen-anniversary-detail.open {
+    transform: translateX(0);
+}
+
+/* ---------- 顶部栏 ---------- */
+.anni-detail-topbar {
+    position: relative;
+    flex-shrink: 0;
+    padding: calc(12px + var(--safe-top, 0px)) 18px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.anni-detail-topbar .top-back {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: none;
+    color: #4A4558;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s;
+}
+
+.anni-detail-topbar .top-back:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.anni-detail-topbar .top-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4A4558;
+    letter-spacing: 2px;
+}
+
+.anni-detail-topbar .top-placeholder {
+    width: 38px;
+    height: 38px;
+}
+
+/* ---------- 内容区 ---------- */
+.anni-detail-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 18px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ---------- 第一块：大卡（毛玻璃） ---------- */
+.anni-detail-hero {
+    position: relative;
+    border-radius: 28px;
+    padding: 22px 22px 18px;
+    background: linear-gradient(160deg,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(228, 216, 232, 0.45) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+        0 12px 40px rgba(184, 165, 199, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    text-align: center;
+    overflow: hidden;
+}
+
+.anni-detail-hero::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        rgba(255, 200, 220, 0.4) 0%,
+        rgba(255, 200, 220, 0) 70%);
+    pointer-events: none;
+}
+
+.anni-detail-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -80px;
+    left: -60px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        rgba(220, 200, 240, 0.4) 0%,
+        rgba(220, 200, 240, 0) 70%);
+    pointer-events: none;
+}
+
+.anni-detail-hero .hero-date {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    font-size: 13px;
+    color: #6B5F80;
+    letter-spacing: 1px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    z-index: 2;
+}
+
+.anni-detail-hero .hero-icon {
+    position: relative;
+    z-index: 2;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFD1DC, #F5B7C8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-size: 30px;
+    box-shadow:
+        0 10px 30px rgba(245, 183, 200, 0.5),
+        inset 0 -2px 8px rgba(220, 140, 160, 0.15);
+}
+
+.anni-detail-hero .hero-icon::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0) 60%);
+    pointer-events: none;
+}
+
+.anni-detail-hero .hero-name {
+    position: relative;
+    z-index: 2;
+    font-size: 22px;
+    font-weight: 700;
+    color: #4A4558;
+    letter-spacing: 2px;
+    line-height: 1.25;
+}
+
+.anni-detail-hero .hero-note {
+    position: relative;
+    z-index: 2;
+    font-size: 13px;
+    color: #8B82A0;
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+}
+
+/* ---------- 第二块：已相伴 X 天 + 圆环 ---------- */
+.anni-detail-progress {
+    background: linear-gradient(135deg, #FDF8F0, #FAF2E6);
+    border-radius: 22px;
+    padding: 20px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 6px 20px rgba(184, 165, 199, 0.12);
+    position: relative;
+    overflow: hidden;
+}
+
+.anni-detail-progress .progress-info {
+    flex: 1;
+}
+
+.anni-detail-progress .progress-label {
+    font-size: 12px;
+    color: #A89598;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+}
+
+.anni-detail-progress .progress-days {
+    font-size: 36px;
+    font-weight: 300;
+    color: #4A4558;
+    line-height: 1;
+    letter-spacing: -1px;
+    font-variant-numeric: tabular-nums;
+}
+
+.anni-detail-progress .progress-days .progress-unit {
+    font-size: 15px;
+    color: #6B5F80;
+    margin-left: 6px;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+/* 圆环 */
+.anni-detail-progress .progress-ring {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.anni-detail-progress .progress-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.anni-detail-progress .progress-ring .ring-track {
+    fill: none;
+    stroke: rgba(212, 197, 224, 0.4);
+    stroke-width: 8;
+    stroke-linecap: round;
+}
+
+.anni-detail-progress .progress-ring .ring-fill {
+    fill: none;
+    stroke: url(#anniRingGradient);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s ease;
+}
+
+/* ---------- 第三块：当时的心情 ---------- */
+.anni-detail-mood {
+    background: #FFFFFF;
+    border-radius: 22px;
+    padding: 20px 22px;
+    box-shadow: 0 6px 20px rgba(184, 165, 199, 0.1);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.anni-detail-mood:active {
+    transform: scale(0.99);
+}
+
+.anni-detail-mood .mood-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.anni-detail-mood .mood-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #4A4558;
+    letter-spacing: 1px;
+}
+
+.anni-detail-mood .mood-expand-icon {
+    font-size: 12px;
+    color: #A89DB8;
+    transition: transform 0.25s ease;
+}
+
+.anni-detail-mood.expanded .mood-expand-icon {
+    transform: rotate(90deg);
+}
+
+.anni-detail-mood .mood-text {
+    font-size: 14px;
+    color: #6B5F80;
+    line-height: 1.8;
+    letter-spacing: 0.3px;
+    word-break: break-word;
+    white-space: pre-wrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.anni-detail-mood.expanded .mood-text {
+    display: block;
+    -webkit-line-clamp: unset;
+}
+
+.anni-detail-mood .mood-empty {
+    font-size: 13px;
+    color: #C5BCD0;
+    font-style: italic;
+    letter-spacing: 0.5px;
+}
+
+/* ---------- 底部按钮 ---------- */
+.anni-detail-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+    padding-bottom: calc(16px + var(--safe-bottom, 0px));
+}
+
+.anni-detail-actions button {
+    flex: 1;
+    padding: 15px;
+    border: none;
+    border-radius: 18px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.anni-detail-actions button:active {
+    transform: scale(0.97);
+}
+
+.anni-detail-actions .btn-edit {
+    background: #FFFFFF;
+    color: #6B5F80;
+    box-shadow: 0 6px 20px rgba(184, 165, 199, 0.15);
+}
+
+.anni-detail-actions .btn-delete {
+    background: linear-gradient(135deg, #B8A5C7, #9B85B0);
+    color: #FFFFFF;
+    box-shadow: 0 6px 20px rgba(184, 165, 199, 0.4);
+}
+
+/* ============================================================
+   纪念日 - 页面三（回忆 / 时间轴）
+   ============================================================ */
+
+.screen-anniversary-memory {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow: hidden;
+    background: #F4F2F7;
+}
+
+.screen-anniversary-memory.open {
+    transform: translateX(0);
+}
+
+/* ---------- 顶部 ---------- */
+.anni-mem-top {
+    position: relative;
+    flex-shrink: 0;
+    padding: calc(12px + var(--safe-top, 0px)) 18px 36px;
+    background: linear-gradient(180deg,
+        #D7D1E8 0%,
+        #E4D8E8 55%,
+        #F0E8F2 85%,
+        #F4F2F7 100%);
+}
+
+.anni-mem-top .anni-back {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px 6px 10px;
+    border: none;
+    border-radius: 18px;
+    background: #B8A5C7;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 12px rgba(184, 165, 199, 0.35);
+    transition: 0.15s;
+}
+
+.anni-mem-top .anni-back:active {
+    transform: scale(0.95);
+}
+
+.anni-mem-title-wrap {
+    margin-top: 22px;
+    padding: 0 4px;
+}
+
+.anni-mem-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #4A4558;
+    letter-spacing: 2px;
+    line-height: 1.3;
+}
+
+.anni-mem-subtitle {
+    font-size: 13px;
+    color: #8B82A0;
+    margin-top: 6px;
+    letter-spacing: 1px;
+}
+
+/* ---------- 时间轴 ---------- */
+.anni-mem-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 18px 20px;
+}
+
+.anni-mem-timeline {
+    position: relative;
+    padding-left: 34px;
+}
+
+/* 竖线 */
+.anni-mem-timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: linear-gradient(180deg,
+        rgba(212, 197, 224, 0) 0%,
+        rgba(212, 197, 224, 0.6) 8%,
+        rgba(212, 197, 224, 0.6) 92%,
+        rgba(212, 197, 224, 0) 100%);
+    border-radius: 2px;
+}
+
+/* 单条 */
+.anni-mem-item {
+    position: relative;
+    padding: 0 0 22px 0;
+    cursor: pointer;
+}
+
+.anni-mem-item:last-child {
+    padding-bottom: 0;
+}
+
+.anni-mem-item:active .mem-card {
+    transform: scale(0.985);
+}
+
+/* 圆点 */
+.anni-mem-item .mem-dot {
+    position: absolute;
+    left: -29px;
+    top: 4px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    border: 2.5px solid #D4C5E0;
+    box-shadow: 0 0 0 4px #F4F2F7;
+    transition: 0.2s;
+    z-index: 2;
+}
+
+.anni-mem-item.is-today .mem-dot {
+    background: #B8A5C7;
+    border-color: #9B85B0;
+    box-shadow:
+        0 0 0 4px #F4F2F7,
+        0 0 0 7px rgba(184, 165, 199, 0.25);
+}
+
+.anni-mem-item.is-future .mem-dot {
+    background: #FFFFFF;
+    border-color: #D4C5E0;
+}
+
+/* 卡片 */
+.anni-mem-item .mem-card {
+    background: #FFFFFF;
+    border-radius: 18px;
+    padding: 16px 18px;
+    box-shadow: 0 4px 16px rgba(184, 165, 199, 0.12);
+    transition: 0.18s;
+    position: relative;
+    overflow: hidden;
+}
+
+.anni-mem-item.is-today .mem-card {
+    background: linear-gradient(135deg, #FDF6FF 0%, #F5EDFA 100%);
+    box-shadow: 0 6px 22px rgba(184, 165, 199, 0.22);
+}
+
+/* 日期行 */
+.anni-mem-item .mem-date-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.anni-mem-item .mem-date {
+    font-size: 12px;
+    color: #A89DB8;
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+}
+
+.anni-mem-item.is-today .mem-date {
+    color: #8B75A5;
+    font-weight: 600;
+}
+
+.anni-mem-item .mem-ago {
+    font-size: 11px;
+    color: #B8A5C7;
+    padding: 2px 10px;
+    background: rgba(184, 165, 199, 0.12);
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.anni-mem-item.is-today .mem-ago {
+    background: rgba(184, 165, 199, 0.25);
+    color: #7A628F;
+    font-weight: 600;
+}
+
+.anni-mem-item.is-future .mem-ago {
+    background: rgba(212, 197, 224, 0.15);
+    color: #A89DB8;
+}
+
+/* 名字 */
+.anni-mem-item .mem-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4A4558;
+    letter-spacing: 1px;
+    line-height: 1.35;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.anni-mem-item .mem-name i {
+    font-size: 13px;
+    color: #B8A5C7;
+    flex-shrink: 0;
+}
+
+.anni-mem-item.is-today .mem-name i {
+    color: #9B85B0;
+}
+
+/* 心情摘要 */
+.anni-mem-item .mem-mood {
+    font-size: 13px;
+    color: #8B82A0;
+    line-height: 1.65;
+    letter-spacing: 0.2px;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.anni-mem-item .mem-mood.is-empty {
+    color: #C5BCD0;
+    font-style: italic;
+}
+
+/* 空状态 */
+.anni-mem-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #8B82A0;
+}
+
+.anni-mem-empty .empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(228, 216, 232, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #B8A5C7;
+    font-size: 26px;
+    margin: 0 auto 14px;
+}
+
+.anni-mem-empty p {
+    font-size: 13px;
+    line-height: 1.7;
+    letter-spacing: 0.5px;
+}
+
+/* 「今天」标签 */
+.anni-mem-item .mem-today-tag {
+    display: inline-block;
+    font-size: 10px;
+    color: #FFFFFF;
+    background: linear-gradient(135deg, #B8A5C7, #9B85B0);
+    padding: 2px 8px;
+    border-radius: 8px;
+    letter-spacing: 1px;
+    font-weight: 500;
+    margin-left: 2px;
+}
+
         .heart-card .bind-info { font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 3px; cursor: pointer; transition: 0.2s; padding: 2px 8px; border-radius: 10px; }
         .heart-card .bind-info:active { background: rgba(255,255,255,0.05); }
         .heart-card .bind-info .role-name { color: var(--heart-color); font-weight: 500; }
@@ -189,6 +1972,12 @@
   background: #6495ED;
   color: #fff;
   box-shadow: 0 4px 12px rgba(100,149,237,0.4);
+}
+
+.app-icon .icon-wrap.anniversary {
+    background: linear-gradient(135deg, #ff9ff3, #ee5a6f);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(238,90,111,0.4);
 }
 
 .app-icon .letter-badge {
@@ -3921,6 +5710,37 @@
     <span class="app-name">小月历</span>
 </button>
 
+<!-- 💝 纪念日 -->
+<button class="app-icon" data-app="anniversary">
+    <div class="icon-wrap anniversary">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:26px;height:26px;">
+            <!-- 日历外框 -->
+            <rect x="3" y="5" width="18" height="16" rx="3"
+                  fill="none" stroke="currentColor" stroke-width="1.8"
+                  stroke-linejoin="round"/>
+            <!-- 日历顶部的两个挂环 -->
+            <line x1="8" y1="3" x2="8" y2="7"
+                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="16" y1="3" x2="16" y2="7"
+                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <!-- 中间横线 -->
+            <line x1="3" y1="10" x2="21" y2="10"
+                  stroke="currentColor" stroke-width="1.8"/>
+            <!-- 爱心 -->
+            <path d="M12 18.2
+                     C 12 18.2, 8.5 15.8, 8.5 13.8
+                     C 8.5 12.7, 9.4 12, 10.3 12
+                     C 11 12, 11.6 12.5, 12 13
+                     C 12.4 12.5, 13 12, 13.7 12
+                     C 14.6 12, 15.5 12.7, 15.5 13.8
+                     C 15.5 15.8, 12 18.2, 12 18.2 Z"
+                  fill="currentColor" stroke="currentColor"
+                  stroke-width="0.8" stroke-linejoin="round"/>
+        </svg>
+    </div>
+    <span class="app-name">纪念日</span>
+</button>
+
 <!-- 🎬 视频素材库 -->
     <button class="app-icon" data-app="video">
         <div class="icon-wrap video"><i class="fas fa-film"></i></div>
@@ -4163,6 +5983,305 @@
             <button class="period-modal-btn period-modal-btn-confirm period-modal-btn-danger" id="periodDeleteConfirm">删除</button>
         </div>
     </div>
+</div>
+
+<!-- ============================================================
+     💝 纪念日 - 页面一（首页）
+     ============================================================ -->
+<div class="screen-anniversary" id="anniversaryScreen">
+
+    <!-- 顶部渐变区 -->
+    <div class="anniversary-top">
+        <button class="anniversary-back" id="anniversaryBackBtn">
+            <i class="fas fa-chevron-left"></i>
+            返回
+        </button>
+        <div class="anniversary-title-wrap">
+            <div class="anniversary-title">我们的纪念日</div>
+            <div class="anniversary-subtitle">记录每一个重要日子</div>
+        </div>
+    </div>
+
+    <!-- 中部大卡 -->
+    <div class="anniversary-main-card" id="anniversaryMainCard">
+        <div class="deco-heart top-right"><i class="fas fa-heart"></i></div>
+        <div class="main-days" id="anniversaryMainDays">--</div>
+        <div class="main-unit">天</div>
+        <div class="main-label" id="anniversaryMainLabel">还没有纪念日</div>
+    </div>
+
+    <!-- 底部三个小卡 -->
+    <div class="anniversary-sub-cards" id="anniversarySubCards">
+        <!-- 由 JS 动态渲染 -->
+    </div>
+
+    <!-- 底部 tabbar -->
+    <div class="anniversary-tabbar">
+        <div class="anniversary-tab active" data-tab="home">
+            <div class="tab-icon-box"><i class="fas fa-home"></i></div>
+            <div class="tab-label">首页</div>
+        </div>
+        <div class="anniversary-tab" data-tab="calendar">
+            <div class="tab-icon-box"><i class="fas fa-calendar-alt"></i></div>
+            <div class="tab-label">日历</div>
+        </div>
+        <div class="anniversary-tab" data-tab="memory">
+            <div class="tab-icon-box"><i class="far fa-clock"></i></div>
+            <div class="tab-label">回忆</div>
+        </div>
+        <div class="anniversary-tab" data-tab="mine">
+            <div class="tab-icon-box"><i class="far fa-smile"></i></div>
+            <div class="tab-label">我的</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ============================================================
+     纪念日 - 页面四（我的）
+     ============================================================ -->
+<div class="screen-anniversary-mine" id="anniversaryMineScreen">
+
+    <div class="anni-mine-top">
+        <button class="anni-back" id="anniMineBackBtn">
+            <i class="fas fa-chevron-left"></i>
+            返回
+        </button>
+        <div class="anni-mine-title-wrap">
+            <div class="anni-mine-title">我的</div>
+            <div class="anni-mine-subtitle">管理你的纪念日</div>
+        </div>
+    </div>
+
+    <div class="anni-mine-body">
+        <div class="anni-mine-list" id="anniMineList"></div>
+    </div>
+
+    <div class="anni-mine-footer">
+        <button class="anni-mine-add-btn" id="anniMineAddBtn">
+            <i class="fas fa-plus"></i>
+            添加纪念日
+        </button>
+    </div>
+
+</div>
+
+<!-- ============================================================
+     添加 / 编辑纪念日 弹层
+     ============================================================ -->
+<div class="anni-form-overlay" id="anniFormOverlay">
+    <div class="anni-form-panel" id="anniFormPanel">
+        <div class="anni-form-handle"></div>
+        <div class="anni-form-title" id="anniFormTitle">添加纪念日</div>
+
+        <div class="anni-form-field">
+            <label>纪念日名字</label>
+            <input type="text" id="anniFormName" placeholder="如：相遇纪念日" maxlength="20">
+        </div>
+
+        <div class="anni-form-field">
+            <label>日期</label>
+            <input type="date" id="anniFormDate">
+        </div>
+
+        <div class="anni-form-field">
+            <label>副标题</label>
+            <input type="text" id="anniFormNote" placeholder="如：这是我们故事开始的一天" maxlength="30">
+        </div>
+
+        <div class="anni-form-field">
+            <label>当时的心情</label>
+            <textarea id="anniFormMood" placeholder="写点什么吧..." maxlength="200"></textarea>
+        </div>
+
+        <div class="anni-form-field">
+            <label>图标</label>
+            <div class="anni-icon-picker" id="anniIconPicker">
+                <div class="anni-icon-option active" data-icon="fa-heart"><i class="fas fa-heart"></i></div>
+                <div class="anni-icon-option" data-icon="fa-star"><i class="fas fa-star"></i></div>
+                <div class="anni-icon-option" data-icon="fa-birthday-cake"><i class="fas fa-birthday-cake"></i></div>
+                <div class="anni-icon-option" data-icon="fa-gift"><i class="fas fa-gift"></i></div>
+                <div class="anni-icon-option" data-icon="fa-plane"><i class="fas fa-plane"></i></div>
+                <div class="anni-icon-option" data-icon="fa-moon"><i class="fas fa-moon"></i></div>
+                <div class="anni-icon-option" data-icon="fa-sun"><i class="fas fa-sun"></i></div>
+                <div class="anni-icon-option" data-icon="fa-seedling"><i class="fas fa-seedling"></i></div>
+                <div class="anni-icon-option" data-icon="fa-camera"><i class="fas fa-camera"></i></div>
+                <div class="anni-icon-option" data-icon="fa-music"><i class="fas fa-music"></i></div>
+                <div class="anni-icon-option" data-icon="fa-coffee"><i class="fas fa-coffee"></i></div>
+                <div class="anni-icon-option" data-icon="fa-book"><i class="fas fa-book"></i></div>
+            </div>
+        </div>
+
+        <div class="anni-form-field">
+            <div class="anni-repeat-row">
+                <div>
+                    <div class="repeat-label">每年重复</div>
+                    <div class="repeat-desc">开启后每年这天都会提醒</div>
+                </div>
+                <label class="ios-switch">
+                    <input type="checkbox" id="anniFormRepeat" checked>
+                    <span class="ios-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="anni-form-actions">
+            <button class="btn-cancel" id="anniFormCancelBtn">取消</button>
+            <button class="btn-save" id="anniFormSaveBtn">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     纪念日 - 页面二（日历）
+     ============================================================ -->
+<div class="screen-anniversary-calendar" id="anniversaryCalendarScreen">
+
+    <div class="anni-cal-top">
+        <button class="anni-back" id="anniCalBackBtn">
+            <i class="fas fa-chevron-left"></i>
+            返回
+        </button>
+        <div class="anni-cal-title-wrap">
+            <div class="anni-cal-title">日历</div>
+            <div class="anni-cal-subtitle">记录每一个重要日子</div>
+        </div>
+    </div>
+
+    <div class="anni-cal-body">
+        <div class="anni-cal-card">
+
+            <div class="anni-cal-month-nav">
+                <button class="month-arrow" id="anniCalPrevMonth">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="month-label" id="anniCalMonthLabel">2026年9月</div>
+                <button class="month-arrow" id="anniCalNextMonth">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <div class="anni-cal-weekdays">
+                <span>日</span>
+                <span>一</span>
+                <span>二</span>
+                <span>三</span>
+                <span>四</span>
+                <span>五</span>
+                <span>六</span>
+            </div>
+
+            <div class="anni-cal-days" id="anniCalDays"></div>
+
+        </div>
+
+        <div class="anni-cal-legend">
+            <div class="legend-item">
+                <span class="legend-dot legend-anni"></span>
+                <span>有纪念日</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot legend-selected"></span>
+                <span>已选中</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ============================================================
+     纪念日 - 页面三（详情）
+     ============================================================ -->
+<div class="screen-anniversary-detail" id="anniversaryDetailScreen">
+
+    <div class="anni-detail-topbar">
+        <button class="top-back" id="anniDetailBackBtn">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="top-title">纪念日详情</div>
+        <div class="top-placeholder"></div>
+    </div>
+
+    <div class="anni-detail-body">
+
+        <!-- 第一块：毛玻璃大卡 -->
+        <div class="anni-detail-hero">
+            <div class="hero-date" id="anniDetailDate">2025.09.19</div>
+            <div class="hero-icon" id="anniDetailIcon">
+                <i class="fas fa-heart"></i>
+            </div>
+            <div class="hero-name" id="anniDetailName">相遇纪念日</div>
+            <div class="hero-note" id="anniDetailNote">这是我们故事开始的一天</div>
+        </div>
+
+        <!-- 第二块：已相伴 + 圆环 -->
+        <div class="anni-detail-progress">
+            <div class="progress-info">
+                <div class="progress-label" id="anniDetailProgressLabel">已相伴</div>
+                <div class="progress-days">
+                    <span id="anniDetailDays">128</span>
+                    <span class="progress-unit" id="anniDetailDaysUnit">天</span>
+                </div>
+            </div>
+            <div class="progress-ring">
+                <svg viewBox="0 0 72 72">
+                    <defs>
+                        <linearGradient id="anniRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#F5B7C8" />
+                            <stop offset="100%" stop-color="#9B85B0" />
+                        </linearGradient>
+                    </defs>
+                    <circle class="ring-track" cx="36" cy="36" r="28" />
+                    <circle class="ring-fill" id="anniRingFill" cx="36" cy="36" r="28" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- 第三块：当时的心情 -->
+        <div class="anni-detail-mood" id="anniDetailMoodCard">
+            <div class="mood-header">
+                <div class="mood-title">当时的心情</div>
+                <div class="mood-expand-icon"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="mood-text" id="anniDetailMoodText"></div>
+        </div>
+
+        <!-- 底部按钮 -->
+        <div class="anni-detail-actions">
+            <button class="btn-edit" id="anniDetailEditBtn">
+                <i class="fas fa-pen"></i>
+                编辑记录
+            </button>
+            <button class="btn-delete" id="anniDetailDeleteBtn">
+                <i class="fas fa-trash-alt"></i>
+                删除
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ============================================================
+     纪念日 - 页面三（回忆 / 时间轴）
+     ============================================================ -->
+<div class="screen-anniversary-memory" id="anniversaryMemoryScreen">
+
+    <div class="anni-mem-top">
+        <button class="anni-back" id="anniMemBackBtn">
+            <i class="fas fa-chevron-left"></i>
+            返回
+        </button>
+        <div class="anni-mem-title-wrap">
+            <div class="anni-mem-title">回忆</div>
+            <div class="anni-mem-subtitle">我们一起走过的日子</div>
+        </div>
+    </div>
+
+    <div class="anni-mem-body">
+        <div class="anni-mem-timeline" id="anniMemTimeline"></div>
+    </div>
+
 </div>
 
  <!-- ===== 视频素材库 ===== -->
@@ -7170,6 +9289,66 @@ abilityBlock += '如果你特别喜欢某件商品，可以告诉用户你喜欢
   if (periodStatusForAI) {
     parts.push('【当前状态】' + periodStatusForAI);
   }
+
+// ===== 注入今天的纪念日 =====
+    var todayAnniversaries = getTodayAnniversaries();
+    if (todayAnniversaries.length > 0) {
+        var anniLines = [];
+        anniLines.push('【今天是一个特别的日子】');
+        anniLines.push('');
+
+        todayAnniversaries.forEach(function(anni, idx) {
+            var parts2 = (anni.date || '').split('-');
+            if (parts2.length !== 3) return;
+
+            var originYear = parseInt(parts2[0]);
+            var originMonth = parseInt(parts2[1]);
+            var originDay = parseInt(parts2[2]);
+
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            var origin = new Date(originYear, originMonth - 1, originDay);
+            origin.setHours(0, 0, 0, 0);
+
+            var daysTogether = Math.max(0, Math.round((today - origin) / (24 * 60 * 60 * 1000)));
+
+            var anniName = anni.name || '纪念日';
+            var yearCount = today.getFullYear() - originYear;
+
+            var desc = '';
+            if (anni.repeat !== false) {
+                if (yearCount > 0) {
+                    desc = '这是你们的「' + anniName + '」，从 ' +
+                        originYear + ' 年 ' + originMonth + ' 月 ' + originDay + ' 日 开始，' +
+                        '今天正好是第 ' + yearCount + ' 周年，你们已经相伴 ' + daysTogether + ' 天。';
+                } else {
+                    desc = '这是你们的「' + anniName + '」，开始于 ' +
+                        originYear + ' 年 ' + originMonth + ' 月 ' + originDay + ' 日，' +
+                        '今天是第一次迎来这个日子。';
+                }
+            } else {
+                desc = '这是你们的「' + anniName + '」，日期是 ' +
+                    originYear + ' 年 ' + originMonth + ' 月 ' + originDay + ' 日。';
+            }
+
+            if (anni.note && anni.note.trim()) {
+                desc += ' 它的意义是：' + anni.note.trim();
+            }
+
+            anniLines.push('• ' + desc);
+        });
+
+        anniLines.push('');
+        anniLines.push('【关于如何提起】');
+        anniLines.push('- 你是「' + role.name + '」，请完全按照你的人设（性格、说话方式）来决定怎么提起。');
+        anniLines.push('- 可以热烈、可以温柔、可以傲娇、可以内敛、可以含蓄，也可以假装忘了让对方生气。');
+        anniLines.push('- 不要像机器一样生硬地说「今天是纪念日」，要像真人聊天一样自然地带出来。');
+        anniLines.push('- 你「必须知道今天是纪念日」，但具体怎么表达，完全由你的性格和你们的关系决定。');
+        anniLines.push('- 不要每一句话都重复提起，可以只提一次，也可以在聊天中轻轻带过。');
+
+        parts.push(anniLines.join('\n'));
+    }
     return parts.join('\n\n');
 }
 
@@ -13451,6 +15630,1044 @@ function renderPeriodCalendar() {
     }); updatePeriodButtons();
 }
 
+// ============================================================
+// 💝 纪念日 - 页面一（首页）
+// ============================================================
+
+/* ------- 打开 / 关闭 ------- */
+function openAnniversaryScreen() {
+    document.getElementById('launcherScreen').classList.add('hidden');
+    document.getElementById('chatScreen').classList.remove('open');
+    document.getElementById('contactsScreen').classList.remove('open');
+    document.getElementById('memeScreen').classList.remove('open');
+    document.getElementById('diaryScreen').classList.remove('open');
+    document.getElementById('videoLibraryScreen').classList.remove('open');
+    document.getElementById('periodScreen').classList.remove('open');
+    document.getElementById('anniversaryScreen').classList.add('open');
+
+    renderAnniversaryPage();
+}
+
+function closeAnniversaryScreen() {
+    document.getElementById('anniversaryScreen').classList.remove('open');
+    document.getElementById('launcherScreen').classList.remove('hidden');
+}
+
+// ============================================================
+// 纪念日 - 页面四（我的） + 添加 / 编辑表单
+// ============================================================
+
+// 编辑中的纪念日 id（null 表示新建）
+var _anniEditingId = null;
+
+/* ---------- 打开 / 关闭 ---------- */
+function openAnniversaryMineScreen() {
+    var el = document.getElementById('anniversaryMineScreen');
+    if (el) el.classList.add('open');
+    renderAnniversaryMineList();
+}
+
+function closeAnniversaryMineScreen() {
+    var el = document.getElementById('anniversaryMineScreen');
+    if (el) el.classList.remove('open');
+}
+
+/* ---------- 渲染列表 ---------- */
+function renderAnniversaryMineList() {
+    var box = document.getElementById('anniMineList');
+    if (!box) return;
+
+    var list = getAllAnniversaries();
+
+    if (list.length === 0) {
+        box.innerHTML =
+            '<div class="anni-mine-empty">' +
+                '<div class="empty-icon"><i class="fas fa-calendar-heart"></i></div>' +
+                '<p>还没有纪念日<br>点击下方按钮添加第一个吧</p>' +
+            '</div>';
+        return;
+    }
+
+    box.innerHTML = '';
+    list.forEach(function(item) {
+        var el = document.createElement('div');
+        el.className = 'anni-mine-item';
+
+        var dateDisplay = formatAnniDate(item.date, item.repeat !== false);
+        var iconClass = item.icon || 'fa-heart';
+
+        el.innerHTML =
+            '<div class="item-icon"><i class="fas ' + iconClass + '"></i></div>' +
+            '<div class="item-info">' +
+                '<div class="item-name">' + escapeHtml(item.name || '纪念日') + '</div>' +
+                '<div class="item-date">' + dateDisplay +
+                    (item.repeat !== false ? '<span class="repeat-tag">每年</span>' : '') +
+                '</div>' +
+            '</div>' +
+            '<div class="item-actions">' +
+                '<button class="btn-edit" data-id="' + item.id + '" title="编辑"><i class="fas fa-pen"></i></button>' +
+                '<button class="btn-del" data-id="' + item.id + '" title="删除"><i class="fas fa-trash-alt"></i></button>' +
+            '</div>';
+
+        box.appendChild(el);
+    });
+
+// 点列表项进入详情
+    box.querySelectorAll('.anni-mine-item').forEach(function(itemEl) {
+        itemEl.addEventListener('click', function(e) {
+            if (e.target.closest('button')) return;
+            var editBtn = this.querySelector('.btn-edit');
+            if (editBtn) {
+                openAnniversaryDetail(editBtn.dataset.id, 'mine');
+            }
+        });
+    });
+
+    // 绑定编辑 / 删除
+    box.querySelectorAll('.btn-edit').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            openAnniForm(this.dataset.id);
+        });
+    });
+
+    box.querySelectorAll('.btn-del').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var id = this.dataset.id;
+            if (confirm('确定要删除这个纪念日吗？')) {
+                CONFIG.anniversaries = CONFIG.anniversaries.filter(function(x) { return x.id !== id; });
+                saveAllData();
+                renderAnniversaryMineList();
+                if (typeof renderAnniversaryPage === 'function') renderAnniversaryPage();
+                showToast('已删除');
+            }
+        });
+    });
+}
+
+/* ---------- 日期显示：2025.09.19 或 09.19 ---------- */
+function formatAnniDate(dateKey, repeat) {
+    if (!dateKey) return '';
+    var parts = dateKey.split('-');
+    if (repeat && parts.length === 3) {
+        return parts[1] + '.' + parts[2];
+    }
+    if (parts.length === 3) {
+        return parts[0] + '.' + parts[1] + '.' + parts[2];
+    }
+    return dateKey;
+}
+
+/* ---------- 打开表单（编辑传 id，新建不传） ---------- */
+function openAnniForm(id) {
+    _anniEditingId = id || null;
+
+    var title = document.getElementById('anniFormTitle');
+    var nameEl = document.getElementById('anniFormName');
+    var dateEl = document.getElementById('anniFormDate');
+    var noteEl = document.getElementById('anniFormNote');
+    var moodEl = document.getElementById('anniFormMood');
+    var repeatEl = document.getElementById('anniFormRepeat');
+    var iconBox = document.getElementById('anniIconPicker');
+
+    // 重置
+    iconBox.querySelectorAll('.anni-icon-option').forEach(function(o) {
+        o.classList.remove('active');
+    });
+
+    if (id) {
+        var item = CONFIG.anniversaries.find(function(x) { return x.id === id; });
+        if (!item) return;
+
+        title.textContent = '编辑纪念日';
+        nameEl.value = item.name || '';
+        dateEl.value = item.date || '';
+        noteEl.value = item.note || '';
+        moodEl.value = item.mood || '';
+        repeatEl.checked = item.repeat !== false;
+
+        var icon = item.icon || 'fa-heart';
+        var matched = iconBox.querySelector('[data-icon="' + icon + '"]');
+        if (matched) matched.classList.add('active');
+        else iconBox.querySelector('[data-icon="fa-heart"]').classList.add('active');
+    } else {
+        title.textContent = '添加纪念日';
+        nameEl.value = '';
+        dateEl.value = new Date().toISOString().slice(0, 10);
+        noteEl.value = '';
+        moodEl.value = '';
+        repeatEl.checked = true;
+        iconBox.querySelector('[data-icon="fa-heart"]').classList.add('active');
+    }
+
+    document.getElementById('anniFormOverlay').classList.add('active');
+}
+
+function closeAnniForm() {
+    document.getElementById('anniFormOverlay').classList.remove('active');
+    _anniEditingId = null;
+}
+
+/* ---------- 保存 ---------- */
+function saveAnniForm() {
+    var name = document.getElementById('anniFormName').value.trim();
+    var date = document.getElementById('anniFormDate').value;
+    var note = document.getElementById('anniFormNote').value.trim();
+    var mood = document.getElementById('anniFormMood').value.trim();
+    var repeat = document.getElementById('anniFormRepeat').checked;
+
+    var iconEl = document.querySelector('#anniIconPicker .anni-icon-option.active');
+    var icon = iconEl ? iconEl.dataset.icon : 'fa-heart';
+
+    if (!name) { showToast('请输入纪念日名字'); return; }
+    if (!date) { showToast('请选择日期'); return; }
+
+    if (!CONFIG.anniversaries) CONFIG.anniversaries = [];
+
+    if (_anniEditingId) {
+        // 编辑
+        var item = CONFIG.anniversaries.find(function(x) { return x.id === _anniEditingId; });
+        if (item) {
+            item.name = name;
+            item.date = date;
+            item.note = note;
+            item.mood = mood;
+            item.repeat = repeat;
+            item.icon = icon;
+        }
+        showToast('已更新');
+    } else {
+        // 新建
+        var newItem = {
+            id: 'anni_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            name: name,
+            date: date,
+            note: note,
+            mood: mood,
+            repeat: repeat,
+            icon: icon,
+            createdAt: new Date().toISOString()
+        };
+        CONFIG.anniversaries.push(newItem);
+        showToast('已添加');
+    }
+
+    saveAllData();
+    closeAnniForm();
+    renderAnniversaryMineList();
+
+    // 顺便刷新首页
+    if (typeof renderAnniversaryPage === 'function') renderAnniversaryPage();
+
+    // ⭐ 如果详情页开着，同步刷新详情
+    if (_anniDetailId && typeof renderAnniversaryDetail === 'function') {
+        var _updated = (CONFIG.anniversaries || []).find(function(x) { return x.id === _anniDetailId; });
+        if (_updated) renderAnniversaryDetail(_updated);
+    }
+
+    // ⭐ 如果日历开着，同步刷新
+    if (typeof renderAnniversaryCalendar === 'function') {
+        var calEl = document.getElementById('anniversaryCalendarScreen');
+        if (calEl && calEl.classList.contains('open')) {
+            renderAnniversaryCalendar();
+        }
+    }
+}
+
+/* ---------- 事件绑定 ---------- */
+document.addEventListener('DOMContentLoaded', function() {
+    var backBtn = document.getElementById('anniMineBackBtn');
+    if (backBtn) backBtn.addEventListener('click', closeAnniversaryMineScreen);
+
+    var addBtn = document.getElementById('anniMineAddBtn');
+    if (addBtn) addBtn.addEventListener('click', function() { openAnniForm(null); });
+
+    var cancelBtn = document.getElementById('anniFormCancelBtn');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeAnniForm);
+
+    var saveBtn = document.getElementById('anniFormSaveBtn');
+    if (saveBtn) saveBtn.addEventListener('click', saveAnniForm);
+
+    // 点遮罩关闭
+    var overlay = document.getElementById('anniFormOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) closeAnniForm();
+        });
+    }
+
+    // 图标选择
+    var iconBox = document.getElementById('anniIconPicker');
+    if (iconBox) {
+        iconBox.querySelectorAll('.anni-icon-option').forEach(function(opt) {
+            opt.addEventListener('click', function() {
+                iconBox.querySelectorAll('.anni-icon-option').forEach(function(o) {
+                    o.classList.remove('active');
+                });
+                this.classList.add('active');
+            });
+        });
+    }
+});
+
+// ============================================================
+// 纪念日 - 页面二（日历）
+// ============================================================
+
+var _anniCalViewDate = new Date();     // 当前显示的月份
+var _anniCalSelectedDate = null;       // 当前选中的日期 'YYYY-MM-DD'
+
+/* ---------- 打开 / 关闭 ---------- */
+function openAnniversaryCalendarScreen() {
+    var el = document.getElementById('anniversaryCalendarScreen');
+    if (el) el.classList.add('open');
+
+    // 打开时重置到当前月
+    _anniCalViewDate = new Date();
+    _anniCalSelectedDate = null;
+    renderAnniversaryCalendar();
+}
+
+function closeAnniversaryCalendarScreen() {
+    var el = document.getElementById('anniversaryCalendarScreen');
+    if (el) el.classList.remove('open');
+}
+
+/* ---------- 判断某天有没有纪念日 ---------- */
+function getAnniversariesOnDate(dateKey) {
+    // dateKey: 'YYYY-MM-DD'
+    var parts = dateKey.split('-');
+    var year = parseInt(parts[0]);
+    var month = parseInt(parts[1]);
+    var day = parseInt(parts[2]);
+
+    var list = getAllAnniversaries();
+    var result = [];
+
+    list.forEach(function(item) {
+        var dparts = (item.date || '').split('-');
+        if (dparts.length !== 3) return;
+
+        var iy = parseInt(dparts[0]);
+        var im = parseInt(dparts[1]);
+        var iday = parseInt(dparts[2]);
+
+        if (item.repeat !== false) {
+            // 每年重复：只看月和日
+            if (im === month && iday === day) {
+                result.push(item);
+            }
+        } else {
+            // 单次：年月日全等
+            if (iy === year && im === month && iday === day) {
+                result.push(item);
+            }
+        }
+    });
+
+    return result;
+}
+
+/* ---------- 渲染日历 ---------- */
+function renderAnniversaryCalendar() {
+    var labelEl = document.getElementById('anniCalMonthLabel');
+    var gridEl = document.getElementById('anniCalDays');
+    if (!labelEl || !gridEl) return;
+
+    var year = _anniCalViewDate.getFullYear();
+    var month = _anniCalViewDate.getMonth();
+
+    labelEl.textContent = year + '年' + (month + 1) + '月';
+
+    var firstDay = new Date(year, month, 1).getDay();
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    // 今天
+    var now = new Date();
+    var todayKey = now.getFullYear() + '-' +
+                   String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                   String(now.getDate()).padStart(2, '0');
+
+    var html = '';
+
+    // 上月补位
+    for (var i = firstDay - 1; i >= 0; i--) {
+        var d = daysInPrevMonth - i;
+        html += '<div class="anni-cal-day other-month">' + d + '</div>';
+    }
+
+    // 本月
+    for (var d = 1; d <= daysInMonth; d++) {
+        var dateKey = year + '-' +
+                      String(month + 1).padStart(2, '0') + '-' +
+                      String(d).padStart(2, '0');
+
+        var classes = 'anni-cal-day';
+        if (dateKey === todayKey) classes += ' today';
+
+        var annis = getAnniversariesOnDate(dateKey);
+        if (annis.length > 0) classes += ' has-anni';
+
+        if (dateKey === _anniCalSelectedDate) classes += ' selected';
+
+        html += '<div class="' + classes + '" data-date="' + dateKey + '">' + d + '</div>';
+    }
+
+    // 下月补位
+    var totalCells = firstDay + daysInMonth;
+    var remaining = (7 - (totalCells % 7)) % 7;
+    for (var d2 = 1; d2 <= remaining; d2++) {
+        html += '<div class="anni-cal-day other-month">' + d2 + '</div>';
+    }
+
+    gridEl.innerHTML = html;
+
+    // 绑定点击
+    gridEl.querySelectorAll('.anni-cal-day[data-date]').forEach(function(cell) {
+        cell.addEventListener('click', function() {
+            var dateKey = this.dataset.date;
+            _anniCalSelectedDate = dateKey;
+
+            var annis = getAnniversariesOnDate(dateKey);
+
+           // 有纪念日 → 跳详情页
+            if (annis.length > 0) {
+                openAnniversaryDetail(annis[0].id, 'calendar');
+                return;
+            }
+
+            // 没纪念日 → 只高亮
+            renderAnniversaryCalendar();
+        });
+    });
+}
+
+/* ---------- 事件绑定 ---------- */
+document.addEventListener('DOMContentLoaded', function() {
+    var backBtn = document.getElementById('anniCalBackBtn');
+    if (backBtn) backBtn.addEventListener('click', closeAnniversaryCalendarScreen);
+
+    var prevBtn = document.getElementById('anniCalPrevMonth');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function() {
+            _anniCalViewDate.setMonth(_anniCalViewDate.getMonth() - 1);
+            _anniCalSelectedDate = null;
+            renderAnniversaryCalendar();
+        });
+    }
+
+    var nextBtn = document.getElementById('anniCalNextMonth');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function() {
+            _anniCalViewDate.setMonth(_anniCalViewDate.getMonth() + 1);
+            _anniCalSelectedDate = null;
+            renderAnniversaryCalendar();
+        });
+    }
+});
+
+// ============================================================
+// 纪念日 - 页面三（详情）
+// ============================================================
+
+var _anniDetailId = null;       // 当前查看的纪念日 id
+var _anniDetailFrom = 'calendar'; // 来路：'calendar' 或 'mine'
+
+/* ---------- 打开详情 ---------- */
+function openAnniversaryDetail(id, from) {
+    var item = (CONFIG.anniversaries || []).find(function(x) { return x.id === id; });
+    if (!item) {
+        showToast('纪念日不存在');
+        return;
+    }
+
+    _anniDetailId = id;
+    _anniDetailFrom = from || 'calendar';
+
+    renderAnniversaryDetail(item);
+
+    var el = document.getElementById('anniversaryDetailScreen');
+    if (el) el.classList.add('open');
+}
+
+/* ---------- 关闭详情 ---------- */
+
+function closeAnniversaryDetail() {
+    var el = document.getElementById('anniversaryDetailScreen');
+    if (el) el.classList.remove('open');
+
+    // 返回来路
+    if (_anniDetailFrom === 'mine') {
+        renderAnniversaryMineList();
+    } else if (_anniDetailFrom === 'memory') {
+        renderAnniversaryMemory();
+    } else {
+        renderAnniversaryCalendar();
+    }
+
+    _anniDetailId = null;
+}
+
+/* ---------- 渲染详情 ---------- */
+function renderAnniversaryDetail(item) {
+    if (!item) return;
+
+    var dateEl = document.getElementById('anniDetailDate');
+    var iconEl = document.getElementById('anniDetailIcon');
+    var nameEl = document.getElementById('anniDetailName');
+    var noteEl = document.getElementById('anniDetailNote');
+    var daysEl = document.getElementById('anniDetailDays');
+    var unitEl = document.getElementById('anniDetailDaysUnit');
+    var labelEl = document.getElementById('anniDetailProgressLabel');
+    var moodTextEl = document.getElementById('anniDetailMoodText');
+    var moodCardEl = document.getElementById('anniDetailMoodCard');
+    var ringFill = document.getElementById('anniRingFill');
+
+    // 日期显示（每年重复 → 09.19；否则 2025.09.19）
+    var parts = (item.date || '').split('-');
+    var dateDisplay = '';
+    if (parts.length === 3) {
+        if (item.repeat !== false) {
+            dateDisplay = parts[1] + '.' + parts[2];
+        } else {
+            dateDisplay = parts[0] + '.' + parts[1] + '.' + parts[2];
+        }
+    }
+    if (dateEl) dateEl.textContent = dateDisplay;
+
+    // 图标
+    if (iconEl) {
+        iconEl.innerHTML = '<i class="fas ' + (item.icon || 'fa-heart') + '"></i>';
+    }
+
+    // 名字、副标题
+    if (nameEl) nameEl.textContent = item.name || '纪念日';
+    if (noteEl) {
+        if (item.note && item.note.trim()) {
+            noteEl.textContent = item.note.trim();
+            noteEl.style.display = '';
+        } else {
+            noteEl.style.display = 'none';
+        }
+    }
+
+    // 已相伴天数 & 圆环
+    if (item.repeat !== false) {
+        // 每年重复 → 显示已相伴总天数（从首次纪念日至今）
+        var origin = parseAnniDate(item.date);
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var daysSince = Math.max(0, diffDays(origin, today));
+
+        if (labelEl) labelEl.textContent = '已相伴';
+        if (daysEl) daysEl.textContent = daysSince;
+        if (unitEl) unitEl.textContent = '天';
+
+        // 圆环进度：从上一个纪念日到下一个纪念日之间的进度
+        var percent = calcRingPercent(item.date);
+        updateRingProgress(ringFill, percent);
+    } else {
+        // 单次纪念日 → 显示「距离还有 N 天」
+        var target = parseAnniDate(item.date);
+        var today2 = new Date();
+        today2.setHours(0, 0, 0, 0);
+        var daysLeft = diffDays(today2, target);
+
+        if (daysLeft >= 0) {
+            if (labelEl) labelEl.textContent = '距离还有';
+            if (daysEl) daysEl.textContent = daysLeft;
+            if (unitEl) unitEl.textContent = '天';
+            updateRingProgress(ringFill, 0);
+        } else {
+            var passed = Math.abs(daysLeft);
+            if (labelEl) labelEl.textContent = '已过去';
+            if (daysEl) daysEl.textContent = passed;
+            if (unitEl) unitEl.textContent = '天';
+            updateRingProgress(ringFill, 100);
+        }
+    }
+
+    // 当时的心情
+    if (moodTextEl && moodCardEl) {
+        var mood = (item.mood || '').trim();
+        if (mood) {
+            moodTextEl.textContent = mood;
+            moodTextEl.classList.remove('mood-empty');
+            moodCardEl.style.display = '';
+            moodCardEl.classList.remove('expanded');
+        } else {
+            moodTextEl.textContent = '还没有写下当时的心情';
+            moodTextEl.classList.add('mood-empty');
+            moodCardEl.style.display = '';
+            moodCardEl.classList.remove('expanded');
+        }
+    }
+}
+
+/* ---------- 工具：解析 'YYYY-MM-DD' → Date ---------- */
+function parseAnniDate(dateKey) {
+    var parts = (dateKey || '').split('-');
+    if (parts.length !== 3) return new Date();
+    return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+}
+
+/* ---------- 圆环进度：从上一个纪念日到下一个纪念日之间的百分比 ---------- */
+function calcRingPercent(dateKey) {
+    var parts = dateKey.split('-');
+    if (parts.length !== 3) return 0;
+
+    var month = parseInt(parts[1]) - 1;
+    var day = parseInt(parts[2]);
+
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 上一个纪念日
+    var last = new Date(today.getFullYear(), month, day);
+    if (last > today) {
+        last = new Date(today.getFullYear() - 1, month, day);
+    }
+
+    // 下一个纪念日
+    var next = new Date(last);
+    next.setFullYear(next.getFullYear() + 1);
+
+    var total = next - last;
+    var passed = today - last;
+    if (total <= 0) return 0;
+    var pct = Math.max(0, Math.min(100, Math.round((passed / total) * 100)));
+    return pct;
+}
+
+/* ---------- 更新圆环 SVG ---------- */
+function updateRingProgress(circleEl, percent) {
+    if (!circleEl) return;
+    var r = 28;
+    var c = 2 * Math.PI * r;
+    circleEl.style.strokeDasharray = c;
+    var offset = c * (1 - percent / 100);
+    circleEl.style.strokeDashoffset = offset;
+}
+
+/* ---------- 事件绑定 ---------- */
+document.addEventListener('DOMContentLoaded', function() {
+    var backBtn = document.getElementById('anniDetailBackBtn');
+    if (backBtn) backBtn.addEventListener('click', closeAnniversaryDetail);
+
+    var editBtn = document.getElementById('anniDetailEditBtn');
+    if (editBtn) {
+        editBtn.addEventListener('click', function() {
+            if (_anniDetailId) {
+                openAnniForm(_anniDetailId);
+            }
+        });
+    }
+
+    var deleteBtn = document.getElementById('anniDetailDeleteBtn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            if (!_anniDetailId) return;
+            if (!confirm('确定要删除这个纪念日吗？')) return;
+
+            CONFIG.anniversaries = (CONFIG.anniversaries || []).filter(function(x) {
+                return x.id !== _anniDetailId;
+            });
+            saveAllData();
+
+            // 刷新两处
+            if (typeof renderAnniversaryMineList === 'function') renderAnniversaryMineList();
+            if (typeof renderAnniversaryCalendar === 'function') renderAnniversaryCalendar();
+            if (typeof renderAnniversaryPage === 'function') renderAnniversaryPage();
+
+            showToast('已删除');
+            closeAnniversaryDetail();
+        });
+    }
+
+    // 「当时的心情」卡片点击展开/收起
+    var moodCard = document.getElementById('anniDetailMoodCard');
+    if (moodCard) {
+        moodCard.addEventListener('click', function() {
+            this.classList.toggle('expanded');
+        });
+    }
+});
+
+// ============================================================
+// 纪念日 - 页面三（回忆 / 时间轴）
+// ============================================================
+
+function openAnniversaryMemoryScreen() {
+    var el = document.getElementById('anniversaryMemoryScreen');
+    if (el) el.classList.add('open');
+    renderAnniversaryMemory();
+}
+
+function closeAnniversaryMemoryScreen() {
+    var el = document.getElementById('anniversaryMemoryScreen');
+    if (el) el.classList.remove('open');
+}
+
+/* ---------- 计算某个纪念日「下一次发生」的日期 ---------- */
+function getAnniNextDate(item) {
+    var parts = (item.date || '').split('-');
+    if (parts.length !== 3) return null;
+
+    var month = parseInt(parts[1]) - 1;
+    var day = parseInt(parts[2]);
+
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (item.repeat !== false) {
+        var target = new Date(today.getFullYear(), month, day);
+        if (target < today) {
+            target = new Date(today.getFullYear() + 1, month, day);
+        }
+        return target;
+    } else {
+        return new Date(parseInt(parts[0]), month, day);
+    }
+}
+
+/* ---------- 渲染时间轴 ---------- */
+function renderAnniversaryMemory() {
+    var box = document.getElementById('anniMemTimeline');
+    if (!box) return;
+
+    var list = getAllAnniversaries();
+
+    if (list.length === 0) {
+        box.innerHTML =
+            '<div class="anni-mem-empty">' +
+                '<div class="empty-icon"><i class="fas fa-clock"></i></div>' +
+                '<p>还没有回忆<br>去添加第一个纪念日吧</p>' +
+            '</div>';
+        return;
+    }
+
+    // 按「下一次发生日期」排序
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    var sorted = list.map(function(item) {
+        var next = getAnniNextDate(item);
+        var daysToNext = next ? diffDays(today, next) : 9999;
+        var origin = parseAnniDate(item.date);
+        return {
+            item: item,
+            next: next,
+            daysToNext: daysToNext,
+            origin: origin
+        };
+    }).sort(function(a, b) {
+        // 最近的排上面
+        return a.daysToNext - b.daysToNext;
+    });
+
+    box.innerHTML = '';
+
+    sorted.forEach(function(entry) {
+        var item = entry.item;
+        var next = entry.next;
+        var origin = entry.origin;
+
+        // 日期显示（下一次发生的日期）
+        var dateDisplay = '';
+        if (next) {
+            dateDisplay = next.getFullYear() + '.' +
+                String(next.getMonth() + 1).padStart(2, '0') + '.' +
+                String(next.getDate()).padStart(2, '0');
+        }
+
+        // 距今多少天
+        var isToday = false;
+        var agoText = '';
+        if (next) {
+            var dLeft = diffDays(today, next);
+            if (dLeft === 0) {
+                isToday = true;
+                agoText = '今天';
+            } else {
+                // 用「上次发生的日期」来算「多少天前」
+                var lastDate = new Date(next);
+                if (item.repeat !== false) {
+                    lastDate.setFullYear(lastDate.getFullYear() - 1);
+                }
+                var agoDays = diffDays(lastDate, today);
+                if (item.repeat === false && lastDate > today) {
+                    // 单次且还没到 → 显示「还有 X 天」
+                    agoText = '还有 ' + dLeft + ' 天';
+                } else if (agoDays >= 0) {
+                    if (agoDays === 0) {
+                        isToday = true;
+                        agoText = '今天';
+                    } else {
+                        agoText = agoDays + ' 天前';
+                    }
+                } else {
+                    agoText = '还有 ' + dLeft + ' 天';
+                }
+            }
+        }
+
+        var itemClasses = 'anni-mem-item';
+        if (isToday) itemClasses += ' is-today';
+
+        var nameIcon = item.icon || 'fa-heart';
+        var moodText = (item.mood || '').trim();
+        var moodHtml = moodText
+            ? '<div class="mem-mood">' + escapeHtml(moodText) + '</div>'
+            : '<div class="mem-mood is-empty">还没有写下当时的心情</div>';
+
+        var todayTag = isToday
+            ? '<span class="mem-today-tag">今天</span>'
+            : '';
+
+        var html =
+            '<div class="' + itemClasses + '" data-id="' + item.id + '">' +
+                '<div class="mem-dot"></div>' +
+                '<div class="mem-card">' +
+                    '<div class="mem-date-row">' +
+                        '<div class="mem-date">' + dateDisplay + '</div>' +
+                        '<div class="mem-ago">' + agoText + '</div>' +
+                    '</div>' +
+                    '<div class="mem-name">' +
+                        '<i class="fas ' + nameIcon + '"></i>' +
+                        escapeHtml(item.name || '纪念日') +
+                        todayTag +
+                    '</div>' +
+                    moodHtml +
+                '</div>' +
+            '</div>';
+
+        box.insertAdjacentHTML('beforeend', html);
+    });
+
+    // 绑定点击
+    box.querySelectorAll('.anni-mem-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var id = this.dataset.id;
+            if (id) openAnniversaryDetail(id, 'memory');
+        });
+    });
+}
+
+/* ---------- 事件绑定 ---------- */
+document.addEventListener('DOMContentLoaded', function() {
+    var backBtn = document.getElementById('anniMemBackBtn');
+    if (backBtn) backBtn.addEventListener('click', closeAnniversaryMemoryScreen);
+});
+
+/* ------- 渲染主页面 ------- */
+function renderAnniversaryPage() {
+    renderAnniversaryMainCard();
+    renderAnniversarySubCards();
+}
+
+/* ------- 工具：解析日期为「下一次到来的日期」 ------- */
+function getNextOccurrence(dateKey, repeat) {
+    // dateKey: 'YYYY-MM-DD' 或 'MM-DD'
+    // repeat: true 表示每年循环
+    var parts = dateKey.split('-');
+    var month, day;
+    if (parts.length === 3) {
+        month = parseInt(parts[1]) - 1;
+        day = parseInt(parts[2]);
+    } else if (parts.length === 2) {
+        month = parseInt(parts[0]) - 1;
+        day = parseInt(parts[1]);
+    } else {
+        return null;
+    }
+
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (repeat) {
+        var target = new Date(today.getFullYear(), month, day);
+        if (target < today) {
+            target = new Date(today.getFullYear() + 1, month, day);
+        }
+        return target;
+    } else {
+        // 不重复：直接用完整日期，如果已过就返回 null
+        var full = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        full.setHours(0, 0, 0, 0);
+        return full >= today ? full : null;
+    }
+}
+
+/* ------- 工具：算天数差 ------- */
+function diffDays(from, to) {
+    var a = new Date(from); a.setHours(0, 0, 0, 0);
+    var b = new Date(to);   b.setHours(0, 0, 0, 0);
+    return Math.round((b - a) / (24 * 60 * 60 * 1000));
+}
+
+/* ------- 获取所有纪念日（后续会接入真实数据，现在先用空数组） ------- */
+function getAllAnniversaries() {
+    // 数据结构：[{ id, name, date: 'YYYY-MM-DD' 或 'MM-DD', repeat: true/false, icon }]
+    if (!CONFIG.anniversaries || !Array.isArray(CONFIG.anniversaries)) {
+        CONFIG.anniversaries = [];
+    }
+    return CONFIG.anniversaries;
+}
+
+/* ---------- 获取今天的所有纪念日 ---------- */
+function getTodayAnniversaries() {
+    if (!CONFIG.anniversaries || !Array.isArray(CONFIG.anniversaries)) return [];
+
+    var today = new Date();
+    var todayMonth = today.getMonth() + 1;
+    var todayDay = today.getDate();
+    var todayYear = today.getFullYear();
+
+    var result = [];
+
+    CONFIG.anniversaries.forEach(function(item) {
+        var parts = (item.date || '').split('-');
+        if (parts.length !== 3) return;
+
+        var iy = parseInt(parts[0]);
+        var im = parseInt(parts[1]);
+        var iday = parseInt(parts[2]);
+
+        if (item.repeat !== false) {
+            // 每年重复：只看月和日
+            if (im === todayMonth && iday === todayDay) {
+                result.push(item);
+            }
+        } else {
+            // 单次：年月日全等
+            if (iy === todayYear && im === todayMonth && iday === todayDay) {
+                result.push(item);
+            }
+        }
+    });
+
+    return result;
+}
+
+/* ------- 排序：按「下一次到来的日期」由近到远 ------- */
+function sortAnniversariesByNext() {
+    var list = getAllAnniversaries();
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return list.map(function(item) {
+        var next = getNextOccurrence(item.date, item.repeat !== false);
+        return {
+            item: item,
+            next: next,
+            daysLeft: next ? diffDays(today, next) : Infinity
+        };
+    }).filter(function(x) {
+        return x.next !== null;
+    }).sort(function(a, b) {
+        return a.daysLeft - b.daysLeft;
+    });
+}
+
+/* ------- 渲染中部大卡 ------- */
+function renderAnniversaryMainCard() {
+    var daysEl = document.getElementById('anniversaryMainDays');
+    var labelEl = document.getElementById('anniversaryMainLabel');
+    var cardEl = document.getElementById('anniversaryMainCard');
+    if (!daysEl || !labelEl || !cardEl) return;
+
+    var sorted = sortAnniversariesByNext();
+
+    if (sorted.length === 0) {
+        cardEl.classList.add('is-empty');
+        daysEl.textContent = '还没有';
+        labelEl.textContent = '去「我的」添加第一个纪念日吧';
+        return;
+    }
+
+    cardEl.classList.remove('is-empty');
+    var top = sorted[0];
+    daysEl.textContent = top.daysLeft;
+    labelEl.textContent = top.item.name || '纪念日';
+}
+
+/* ------- 渲染底部三个小卡 ------- */
+function renderAnniversarySubCards() {
+    var box = document.getElementById('anniversarySubCards');
+    if (!box) return;
+
+    var sorted = sortAnniversariesByNext();
+    // 大卡显示第一个，小卡显示前三个（如果少于 3 个就补空位）
+    var showList = sorted.slice(0, 3);
+
+    box.innerHTML = '';
+
+    for (var i = 0; i < 3; i++) {
+        var card = document.createElement('div');
+        card.className = 'anniversary-sub-card';
+
+        if (i < showList.length) {
+            var item = showList[i].item;
+            var days = showList[i].daysLeft;
+            var iconClass = item.icon || 'fa-heart';
+
+            card.innerHTML =
+                '<div class="sub-heart"><i class="fas fa-heart"></i></div>' +
+                '<div class="sub-icon"><i class="fas ' + iconClass + '"></i></div>' +
+                '<div class="sub-name">' + escapeHtml(item.name || '纪念日') + '</div>' +
+                '<div class="sub-days">' + days + '天</div>';
+        } else {
+            card.classList.add('is-empty');
+            card.innerHTML =
+                '<div class="sub-icon"><i class="fas fa-plus"></i></div>' +
+                '<div class="sub-name">未添加</div>' +
+                '<div class="sub-days">--</div>';
+        }
+
+        box.appendChild(card);
+    }
+}
+
+/* ------- tabbar 点击（页面二三四还没做，先只切换高亮） ------- */
+document.addEventListener('DOMContentLoaded', function() {
+    var tabs = document.querySelectorAll('.anniversary-tab');
+    tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            var key = this.dataset.tab;
+
+            if (key === 'home') {
+                tabs.forEach(function(t) { t.classList.remove('active'); });
+                this.classList.add('active');
+                return;
+            }
+
+            // 其它 tab：暂时提示
+            if (key === 'calendar') {
+    openAnniversaryCalendarScreen();
+} else if (key === 'memory') {
+    openAnniversaryMemoryScreen();
+} else if (key === 'mine') {
+    openAnniversaryMineScreen();
+}
+        });
+    });
+
+    // 返回按钮
+    var backBtn = document.getElementById('anniversaryBackBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', closeAnniversaryScreen);
+    }
+
+    // 桌面图标点击
+    var iconBtn = document.querySelector('.app-icon[data-app="anniversary"]');
+    if (iconBtn) {
+        iconBtn.addEventListener('click', function() {
+            openAnniversaryScreen();
+        });
+    }
+});
 
 // ===== 视频素材库 =====
 function openVideoLibrary() {
@@ -14677,16 +17894,16 @@ function applyIconStyle(styleId) {
   var oldStyle = document.getElementById('dynamicIconStyle');
   if (oldStyle) oldStyle.remove();
   var STYLE_CSS = {
-    'glass': '.icon-wrap { background: rgba(255,255,255,0.08) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border: 1px solid rgba(255,255,255,0.12) !important; box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important; color: rgba(255,255,255,0.85) !important; } .icon-wrap.contacts { color: #74b9ff !important; } .icon-wrap.memory { color: #a29bfe !important; } .icon-wrap.meme { color: #ff6b81 !important; } .icon-wrap.style { color: #fdcb6e !important; } .icon-wrap.settings { color: #b2bec3 !important; } .icon-wrap.diary { color: #d4a574 !important; background: rgba(245,239,230,0.15) !important; } .icon-wrap.favorite { color: #55efc4 !important; background: rgba(85,239,196,0.15) !important; } .icon-wrap.period { color: #E75480 !important; background: rgba(231,84,128,0.15) !important; } .icon-wrap.video { color: #b2bec3 !important; background: rgba(178,190,195,0.15) !important; } .icon-wrap.letter { color: #6495ED !important; background: rgba(100,149,237,0.15) !important; } .icon-wrap.mall { color: #2ed573 !important; background: rgba(46,213,115,0.15) !important; } .icon-wrap.phone { color: #0984e3 !important; background: rgba(9,132,227,0.15) !important; }',
-    'gradient': '.icon-wrap { box-shadow: 0 4px 16px rgba(0,0,0,0.25) !important; color: #fff !important; border: none !important; background: transparent !important; } .icon-wrap.contacts { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; } .icon-wrap.memory { background: linear-gradient(135deg, #a29bfe, #6c5ce7) !important; } .icon-wrap.meme { background: linear-gradient(135deg, #ff6b81, #ee5a24) !important; } .icon-wrap.style { background: linear-gradient(135deg, #fdcb6e, #f0932b) !important; } .icon-wrap.settings { background: linear-gradient(135deg, #636e72, #b2bec3) !important; } .icon-wrap.diary { background: linear-gradient(135deg, #f5efe6, #e8d5c4) !important; color: #d4a574 !important; } .icon-wrap.favorite { background: linear-gradient(135deg, #55efc4, #00b894) !important; } .icon-wrap.period { background: linear-gradient(135deg, #FFB6C1, #E75480) !important; } .icon-wrap.video { background: linear-gradient(135deg, #b2bec3, #636e72) !important; } .icon-wrap.letter { background: linear-gradient(135deg, #6495ED, #4169E1) !important; } .icon-wrap.mall { background: linear-gradient(135deg, #7bed9f, #2ed573) !important; } .icon-wrap.phone { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; }',
-    'monochrome': '.icon-wrap { background: rgba(255,255,255,0.06) !important; border: 1px solid rgba(255,255,255,0.08) !important; color: rgba(255,255,255,0.7) !important; border-radius: 8px !important; backdrop-filter: none !important; box-shadow: none !important; } .icon-wrap.contacts { color: #fff !important; border-color: rgba(255,255,255,0.2) !important; } .icon-wrap.memory { color: #a29bfe !important; border-color: rgba(162,155,254,0.2) !important; } .icon-wrap.meme { color: #ff6b81 !important; border-color: rgba(255,107,129,0.2) !important; } .icon-wrap.style { color: #fdcb6e !important; border-color: rgba(253,203,110,0.2) !important; } .icon-wrap.settings { color: #888 !important; } .icon-wrap.diary { color: #d4a574 !important; border-color: rgba(212,165,116,0.3) !important; } .icon-wrap.favorite { color: #55efc4 !important; border-color: rgba(85,239,196,0.3) !important; } .icon-wrap.period { color: #E75480 !important; border-color: rgba(231,84,128,0.3) !important; } .icon-wrap.video { color: #b2bec3 !important; border-color: rgba(178,190,195,0.3) !important; } .icon-wrap.letter { color: #6495ED !important; border-color: rgba(100,149,237,0.3) !important; } .icon-wrap.mall { color: #2ed573 !important; border-color: rgba(46,213,115,0.3) !important; } .icon-wrap.phone { color: #0984e3 !important; border-color: rgba(9,132,227,0.3) !important; }',
-    'neon': '.icon-wrap { background: rgba(0,0,0,0.5) !important; border: 1.5px solid !important; box-shadow: 0 0 20px rgba(0,0,0,0.3) !important; color: #fff !important; backdrop-filter: none !important; } .icon-wrap.contacts { border-color: #74b9ff !important; box-shadow: 0 0 20px rgba(116,185,255,0.15) !important; } .icon-wrap.memory { border-color: #a29bfe !important; box-shadow: 0 0 20px rgba(162,155,254,0.15) !important; } .icon-wrap.meme { border-color: #ff6b81 !important; box-shadow: 0 0 20px rgba(255,107,129,0.15) !important; } .icon-wrap.style { border-color: #fdcb6e !important; box-shadow: 0 0 20px rgba(253,203,110,0.15) !important; } .icon-wrap.settings { border-color: #fd79a8 !important; box-shadow: 0 0 20px rgba(253,121,168,0.15) !important; } .icon-wrap.diary { border-color: #d4a574 !important; box-shadow: 0 0 20px rgba(212,165,116,0.15) !important; } .icon-wrap.favorite { border-color: #55efc4 !important; box-shadow: 0 0 20px rgba(85,239,196,0.15) !important; } .icon-wrap.period { border-color: #E75480 !important; box-shadow: 0 0 20px rgba(231,84,128,0.15) !important; } .icon-wrap.video { border-color: #b2bec3 !important; box-shadow: 0 0 20px rgba(178,190,195,0.15) !important; } .icon-wrap.letter { border-color: #6495ED !important; box-shadow: 0 0 20px rgba(100,149,237,0.15) !important; } .icon-wrap.mall { border-color: #2ed573 !important; box-shadow: 0 0 20px rgba(46,213,115,0.15) !important; } .icon-wrap.phone { border-color: #0984e3 !important; box-shadow: 0 0 20px rgba(9,132,227,0.15) !important; }',
-    'flat': '.icon-wrap { border-radius: 12px !important; color: #fff !important; box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important; border: none !important; backdrop-filter: none !important; background: transparent !important; } .icon-wrap.contacts { background: #0984e3 !important; } .icon-wrap.memory { background: #6c5ce7 !important; } .icon-wrap.meme { background: #ff6b81 !important; } .icon-wrap.style { background: #f0932b !important; } .icon-wrap.settings { background: #636e72 !important; } .icon-wrap.diary { background: #d4a574 !important; } .icon-wrap.favorite { background: #55efc4 !important; } .icon-wrap.period { background: #E75480 !important; } .icon-wrap.video { background: #636e72 !important; } .icon-wrap.letter { background: #6495ED !important; } .icon-wrap.mall { background: #2ed573 !important; } .icon-wrap.phone { background: #0984e3 !important; }',
-    'ios': '.icon-wrap { background: rgba(255,255,255,0.06) !important; border-radius: 18px !important; border: 1px solid rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.75) !important; box-shadow: 0 2px 12px rgba(0,0,0,0.15) !important; backdrop-filter: blur(4px) !important; -webkit-backdrop-filter: blur(4px) !important; } .icon-wrap.contacts { background: rgba(116,185,255,0.15) !important; color: #74b9ff !important; } .icon-wrap.memory { background: rgba(162,155,254,0.15) !important; color: #a29bfe !important; } .icon-wrap.meme { background: rgba(255,107,129,0.15) !important; color: #ff6b81 !important; } .icon-wrap.style { background: rgba(253,203,110,0.15) !important; color: #fdcb6e !important; } .icon-wrap.settings { background: rgba(178,190,195,0.1) !important; color: #b2bec3 !important; } .icon-wrap.diary { background: rgba(212,165,116,0.15) !important; color: #d4a574 !important; } .icon-wrap.favorite { background: rgba(85,239,196,0.15) !important; color: #55efc4 !important; } .icon-wrap.period { background: rgba(231,84,128,0.15) !important; color: #E75480 !important; } .icon-wrap.video { background: rgba(178,190,195,0.1) !important; color: #b2bec3 !important; } .icon-wrap.letter { background: rgba(100,149,237,0.15) !important; color: #6495ED !important; } .icon-wrap.mall { background: rgba(46,213,115,0.15) !important; color: #2ed573 !important; } .icon-wrap.phone { background: rgba(9,132,227,0.15) !important; color: #0984e3 !important; }',
-    'pixel': '.icon-wrap { background: rgba(255,255,255,0.04) !important; border: 2px solid rgba(255,255,255,0.08) !important; border-radius: 4px !important; color: rgba(255,255,255,0.6) !important; font-size: 18px !important; backdrop-filter: none !important; box-shadow: none !important; } .icon-wrap.contacts { border-color: #74b9ff !important; color: #74b9ff !important; } .icon-wrap.memory { border-color: #a29bfe !important; color: #a29bfe !important; } .icon-wrap.meme { border-color: #ff6b81 !important; color: #ff6b81 !important; } .icon-wrap.style { border-color: #fdcb6e !important; color: #fdcb6e !important; } .icon-wrap.settings { border-color: #636e72 !important; color: #636e72 !important; } .icon-wrap.diary { border-color: #d4a574 !important; color: #d4a574 !important; } .icon-wrap.favorite { border-color: #55efc4 !important; color: #55efc4 !important; } .icon-wrap.period { border-color: #E75480 !important; color: #E75480 !important; } .icon-wrap.video { border-color: #b2bec3 !important; color: #b2bec3 !important; } .icon-wrap.letter { border-color: #6495ED !important; color: #6495ED !important; } .icon-wrap.mall { border-color: #2ed573 !important; color: #2ed573 !important; } .icon-wrap.phone { border-color: #0984e3 !important; color: #0984e3 !important; }',
-    'skeuo': '.icon-wrap { background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)) !important; border-radius: 16px !important; box-shadow: 4px 4px 12px rgba(0,0,0,0.3), -2px -2px 8px rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.7) !important; backdrop-filter: none !important; border: none !important; } .icon-wrap.contacts { color: #74b9ff !important; } .icon-wrap.memory { color: #a29bfe !important; } .icon-wrap.meme { color: #ff6b81 !important; } .icon-wrap.style { color: #fdcb6e !important; } .icon-wrap.settings { color: #b2bec3 !important; } .icon-wrap.diary { color: #d4a574 !important; } .icon-wrap.favorite { color: #55efc4 !important; } .icon-wrap.period { color: #E75480 !important; } .icon-wrap.video { color: #b2bec3 !important; } .icon-wrap.letter { color: #6495ED !important; } .icon-wrap.mall { color: #2ed573 !important; } .icon-wrap.phone { color: #0984e3 !important; }',
-    'macaron': '.icon-wrap { border-radius: 16px !important; color: #fff !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; border: none !important; backdrop-filter: none !important; background: transparent !important; } .icon-wrap.contacts { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; } .icon-wrap.memory { background: linear-gradient(135deg, #a29bfe, #6c5ce7) !important; } .icon-wrap.meme { background: linear-gradient(135deg, #ff6b81, #ee5a24) !important; } .icon-wrap.style { background: linear-gradient(135deg, #fdcb6e, #f0932b) !important; } .icon-wrap.settings { background: linear-gradient(135deg, #fd79a8, #e84393) !important; } .icon-wrap.diary { background: linear-gradient(135deg, #f5efe6, #e8d5c4) !important; color: #d4a574 !important; } .icon-wrap.favorite { background: linear-gradient(135deg, #55efc4, #00b894) !important; } .icon-wrap.period { background: linear-gradient(135deg, #FFB6C1, #E75480) !important; } .icon-wrap.video { background: linear-gradient(135deg, #b2bec3, #636e72) !important; } .icon-wrap.letter { background: linear-gradient(135deg, #6495ED, #4169E1) !important; } .icon-wrap.mall { background: linear-gradient(135deg, #7bed9f, #2ed573) !important; } .icon-wrap.phone { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; }',
-    'dark-premium': '.icon-wrap { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 14px !important; color: rgba(255,255,255,0.6) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important; backdrop-filter: none !important; } .icon-wrap.contacts { background: rgba(116,185,255,0.12) !important; color: #74b9ff !important; border-color: rgba(116,185,255,0.15) !important; } .icon-wrap.memory { background: rgba(162,155,254,0.12) !important; color: #a29bfe !important; border-color: rgba(162,155,254,0.15) !important; } .icon-wrap.meme { background: rgba(255,107,129,0.12) !important; color: #ff6b81 !important; border-color: rgba(255,107,129,0.15) !important; } .icon-wrap.style { background: rgba(253,203,110,0.12) !important; color: #fdcb6e !important; border-color: rgba(253,203,110,0.15) !important; } .icon-wrap.settings { background: rgba(178,190,195,0.08) !important; color: #b2bec3 !important; border-color: rgba(178,190,195,0.08) !important; } .icon-wrap.diary { background: rgba(212,165,116,0.12) !important; color: #d4a574 !important; border-color: rgba(212,165,116,0.15) !important; } .icon-wrap.favorite { background: rgba(85,239,196,0.12) !important; color: #55efc4 !important; border-color: rgba(85,239,196,0.15) !important; } .icon-wrap.period { background: rgba(231,84,128,0.12) !important; color: #E75480 !important; border-color: rgba(231,84,128,0.15) !important; } .icon-wrap.video { background: rgba(178,190,195,0.08) !important; color: #b2bec3 !important; border-color: rgba(178,190,195,0.08) !important; } .icon-wrap.letter { background: rgba(100,149,237,0.12) !important; color: #6495ED !important; border-color: rgba(100,149,237,0.15) !important; } .icon-wrap.mall { background: rgba(46,213,115,0.12) !important; color: #2ed573 !important; border-color: rgba(46,213,115,0.15) !important; } .icon-wrap.phone { background: rgba(9,132,227,0.12) !important; color: #0984e3 !important; border-color: rgba(9,132,227,0.15) !important; }'
+    'glass': '.icon-wrap { background: rgba(255,255,255,0.08) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border: 1px solid rgba(255,255,255,0.12) !important; box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important; color: rgba(255,255,255,0.85) !important; } .icon-wrap.contacts { color: #74b9ff !important; } .icon-wrap.memory { color: #a29bfe !important; } .icon-wrap.meme { color: #ff6b81 !important; } .icon-wrap.style { color: #fdcb6e !important; } .icon-wrap.settings { color: #b2bec3 !important; } .icon-wrap.diary { color: #d4a574 !important; background: rgba(245,239,230,0.15) !important; } .icon-wrap.favorite { color: #55efc4 !important; background: rgba(85,239,196,0.15) !important; } .icon-wrap.period { color: #E75480 !important; background: rgba(231,84,128,0.15) !important; } .icon-wrap.anniversary { color: #ff9ff3 !important; background: rgba(255,159,243,0.15) !important; } .icon-wrap.video { color: #b2bec3 !important; background: rgba(178,190,195,0.15) !important; } .icon-wrap.letter { color: #6495ED !important; background: rgba(100,149,237,0.15) !important; } .icon-wrap.mall { color: #2ed573 !important; background: rgba(46,213,115,0.15) !important; } .icon-wrap.phone { color: #0984e3 !important; background: rgba(9,132,227,0.15) !important; }',
+    'gradient': '.icon-wrap { box-shadow: 0 4px 16px rgba(0,0,0,0.25) !important; color: #fff !important; border: none !important; background: transparent !important; } .icon-wrap.contacts { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; } .icon-wrap.memory { background: linear-gradient(135deg, #a29bfe, #6c5ce7) !important; } .icon-wrap.meme { background: linear-gradient(135deg, #ff6b81, #ee5a24) !important; } .icon-wrap.style { background: linear-gradient(135deg, #fdcb6e, #f0932b) !important; } .icon-wrap.settings { background: linear-gradient(135deg, #636e72, #b2bec3) !important; } .icon-wrap.diary { background: linear-gradient(135deg, #f5efe6, #e8d5c4) !important; color: #d4a574 !important; } .icon-wrap.favorite { background: linear-gradient(135deg, #55efc4, #00b894) !important; } .icon-wrap.period { background: linear-gradient(135deg, #FFB6C1, #E75480) !important; } .icon-wrap.anniversary { background: linear-gradient(135deg, #ff9ff3, #ee5a6f) !important; } .icon-wrap.video { background: linear-gradient(135deg, #b2bec3, #636e72) !important; } .icon-wrap.letter { background: linear-gradient(135deg, #6495ED, #4169E1) !important; } .icon-wrap.mall { background: linear-gradient(135deg, #7bed9f, #2ed573) !important; } .icon-wrap.phone { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; }',
+    'monochrome': '.icon-wrap { background: rgba(255,255,255,0.06) !important; border: 1px solid rgba(255,255,255,0.08) !important; color: rgba(255,255,255,0.7) !important; border-radius: 8px !important; backdrop-filter: none !important; box-shadow: none !important; } .icon-wrap.contacts { color: #fff !important; border-color: rgba(255,255,255,0.2) !important; } .icon-wrap.memory { color: #a29bfe !important; border-color: rgba(162,155,254,0.2) !important; } .icon-wrap.meme { color: #ff6b81 !important; border-color: rgba(255,107,129,0.2) !important; } .icon-wrap.style { color: #fdcb6e !important; border-color: rgba(253,203,110,0.2) !important; } .icon-wrap.settings { color: #888 !important; } .icon-wrap.diary { color: #d4a574 !important; border-color: rgba(212,165,116,0.3) !important; } .icon-wrap.favorite { color: #55efc4 !important; border-color: rgba(85,239,196,0.3) !important; } .icon-wrap.period { color: #E75480 !important; border-color: rgba(231,84,128,0.3) !important; } .icon-wrap.anniversary { color: #ff9ff3 !important; border-color: rgba(255,159,243,0.3) !important; } .icon-wrap.video { color: #b2bec3 !important; border-color: rgba(178,190,195,0.3) !important; } .icon-wrap.letter { color: #6495ED !important; border-color: rgba(100,149,237,0.3) !important; } .icon-wrap.mall { color: #2ed573 !important; border-color: rgba(46,213,115,0.3) !important; } .icon-wrap.phone { color: #0984e3 !important; border-color: rgba(9,132,227,0.3) !important; }',
+    'neon': '.icon-wrap { background: rgba(0,0,0,0.5) !important; border: 1.5px solid !important; box-shadow: 0 0 20px rgba(0,0,0,0.3) !important; color: #fff !important; backdrop-filter: none !important; } .icon-wrap.contacts { border-color: #74b9ff !important; box-shadow: 0 0 20px rgba(116,185,255,0.15) !important; } .icon-wrap.memory { border-color: #a29bfe !important; box-shadow: 0 0 20px rgba(162,155,254,0.15) !important; } .icon-wrap.meme { border-color: #ff6b81 !important; box-shadow: 0 0 20px rgba(255,107,129,0.15) !important; } .icon-wrap.style { border-color: #fdcb6e !important; box-shadow: 0 0 20px rgba(253,203,110,0.15) !important; } .icon-wrap.settings { border-color: #fd79a8 !important; box-shadow: 0 0 20px rgba(253,121,168,0.15) !important; } .icon-wrap.diary { border-color: #d4a574 !important; box-shadow: 0 0 20px rgba(212,165,116,0.15) !important; } .icon-wrap.favorite { border-color: #55efc4 !important; box-shadow: 0 0 20px rgba(85,239,196,0.15) !important; } .icon-wrap.period { border-color: #E75480 !important; box-shadow: 0 0 20px rgba(231,84,128,0.15) !important; } .icon-wrap.anniversary { border-color: #ff9ff3 !important; box-shadow: 0 0 20px rgba(255,159,243,0.15) !important; } .icon-wrap.video { border-color: #b2bec3 !important; box-shadow: 0 0 20px rgba(178,190,195,0.15) !important; } .icon-wrap.letter { border-color: #6495ED !important; box-shadow: 0 0 20px rgba(100,149,237,0.15) !important; } .icon-wrap.mall { border-color: #2ed573 !important; box-shadow: 0 0 20px rgba(46,213,115,0.15) !important; } .icon-wrap.phone { border-color: #0984e3 !important; box-shadow: 0 0 20px rgba(9,132,227,0.15) !important; }',
+    'flat': '.icon-wrap { border-radius: 12px !important; color: #fff !important; box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important; border: none !important; backdrop-filter: none !important; background: transparent !important; } .icon-wrap.contacts { background: #0984e3 !important; } .icon-wrap.memory { background: #6c5ce7 !important; } .icon-wrap.meme { background: #ff6b81 !important; } .icon-wrap.style { background: #f0932b !important; } .icon-wrap.settings { background: #636e72 !important; } .icon-wrap.diary { background: #d4a574 !important; } .icon-wrap.favorite { background: #55efc4 !important; } .icon-wrap.period { background: #E75480 !important; } .icon-wrap.anniversary { background: #ee5a6f !important; } .icon-wrap.video { background: #636e72 !important; } .icon-wrap.letter { background: #6495ED !important; } .icon-wrap.mall { background: #2ed573 !important; } .icon-wrap.phone { background: #0984e3 !important; }',
+    'ios': '.icon-wrap { background: rgba(255,255,255,0.06) !important; border-radius: 18px !important; border: 1px solid rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.75) !important; box-shadow: 0 2px 12px rgba(0,0,0,0.15) !important; backdrop-filter: blur(4px) !important; -webkit-backdrop-filter: blur(4px) !important; } .icon-wrap.contacts { background: rgba(116,185,255,0.15) !important; color: #74b9ff !important; } .icon-wrap.memory { background: rgba(162,155,254,0.15) !important; color: #a29bfe !important; } .icon-wrap.meme { background: rgba(255,107,129,0.15) !important; color: #ff6b81 !important; } .icon-wrap.style { background: rgba(253,203,110,0.15) !important; color: #fdcb6e !important; } .icon-wrap.settings { background: rgba(178,190,195,0.1) !important; color: #b2bec3 !important; } .icon-wrap.diary { background: rgba(212,165,116,0.15) !important; color: #d4a574 !important; } .icon-wrap.favorite { background: rgba(85,239,196,0.15) !important; color: #55efc4 !important; } .icon-wrap.period { background: rgba(231,84,128,0.15) !important; color: #E75480 !important; } .icon-wrap.anniversary { background: rgba(255,159,243,0.15) !important; color: #ff9ff3 !important; }.icon-wrap.video { background: rgba(178,190,195,0.1) !important; color: #b2bec3 !important; } .icon-wrap.letter { background: rgba(100,149,237,0.15) !important; color: #6495ED !important; } .icon-wrap.mall { background: rgba(46,213,115,0.15) !important; color: #2ed573 !important; } .icon-wrap.phone { background: rgba(9,132,227,0.15) !important; color: #0984e3 !important; }',
+    'pixel': '.icon-wrap { background: rgba(255,255,255,0.04) !important; border: 2px solid rgba(255,255,255,0.08) !important; border-radius: 4px !important; color: rgba(255,255,255,0.6) !important; font-size: 18px !important; backdrop-filter: none !important; box-shadow: none !important; } .icon-wrap.contacts { border-color: #74b9ff !important; color: #74b9ff !important; } .icon-wrap.memory { border-color: #a29bfe !important; color: #a29bfe !important; } .icon-wrap.meme { border-color: #ff6b81 !important; color: #ff6b81 !important; } .icon-wrap.style { border-color: #fdcb6e !important; color: #fdcb6e !important; } .icon-wrap.settings { border-color: #636e72 !important; color: #636e72 !important; } .icon-wrap.diary { border-color: #d4a574 !important; color: #d4a574 !important; } .icon-wrap.favorite { border-color: #55efc4 !important; color: #55efc4 !important; } .icon-wrap.period { border-color: #E75480 !important; color: #E75480 !important; } .icon-wrap.anniversary { border-color: #ff9ff3 !important; color: #ff9ff3 !important; } .icon-wrap.video { border-color: #b2bec3 !important; color: #b2bec3 !important; } .icon-wrap.letter { border-color: #6495ED !important; color: #6495ED !important; } .icon-wrap.mall { border-color: #2ed573 !important; color: #2ed573 !important; } .icon-wrap.phone { border-color: #0984e3 !important; color: #0984e3 !important; }',
+    'skeuo': '.icon-wrap { background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)) !important; border-radius: 16px !important; box-shadow: 4px 4px 12px rgba(0,0,0,0.3), -2px -2px 8px rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.7) !important; backdrop-filter: none !important; border: none !important; } .icon-wrap.contacts { color: #74b9ff !important; } .icon-wrap.memory { color: #a29bfe !important; } .icon-wrap.meme { color: #ff6b81 !important; } .icon-wrap.style { color: #fdcb6e !important; } .icon-wrap.settings { color: #b2bec3 !important; } .icon-wrap.diary { color: #d4a574 !important; } .icon-wrap.favorite { color: #55efc4 !important; } .icon-wrap.period { color: #E75480 !important; } .icon-wrap.anniversary { color: #ff9ff3 !important; } .icon-wrap.video { color: #b2bec3 !important; } .icon-wrap.letter { color: #6495ED !important; } .icon-wrap.mall { color: #2ed573 !important; } .icon-wrap.phone { color: #0984e3 !important; }',
+    'macaron': '.icon-wrap { border-radius: 16px !important; color: #fff !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; border: none !important; backdrop-filter: none !important; background: transparent !important; } .icon-wrap.contacts { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; } .icon-wrap.memory { background: linear-gradient(135deg, #a29bfe, #6c5ce7) !important; } .icon-wrap.meme { background: linear-gradient(135deg, #ff6b81, #ee5a24) !important; } .icon-wrap.style { background: linear-gradient(135deg, #fdcb6e, #f0932b) !important; } .icon-wrap.settings { background: linear-gradient(135deg, #fd79a8, #e84393) !important; } .icon-wrap.diary { background: linear-gradient(135deg, #f5efe6, #e8d5c4) !important; color: #d4a574 !important; } .icon-wrap.favorite { background: linear-gradient(135deg, #55efc4, #00b894) !important; } .icon-wrap.period { background: linear-gradient(135deg, #FFB6C1, #E75480) !important; } .icon-wrap.anniversary { background: linear-gradient(135deg, #ff9ff3, #ee5a6f) !important; } .icon-wrap.video { background: linear-gradient(135deg, #b2bec3, #636e72) !important; } .icon-wrap.letter { background: linear-gradient(135deg, #6495ED, #4169E1) !important; } .icon-wrap.mall { background: linear-gradient(135deg, #7bed9f, #2ed573) !important; } .icon-wrap.phone { background: linear-gradient(135deg, #74b9ff, #0984e3) !important; }',
+    'dark-premium': '.icon-wrap { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 14px !important; color: rgba(255,255,255,0.6) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important; backdrop-filter: none !important; } .icon-wrap.contacts { background: rgba(116,185,255,0.12) !important; color: #74b9ff !important; border-color: rgba(116,185,255,0.15) !important; } .icon-wrap.memory { background: rgba(162,155,254,0.12) !important; color: #a29bfe !important; border-color: rgba(162,155,254,0.15) !important; } .icon-wrap.meme { background: rgba(255,107,129,0.12) !important; color: #ff6b81 !important; border-color: rgba(255,107,129,0.15) !important; } .icon-wrap.style { background: rgba(253,203,110,0.12) !important; color: #fdcb6e !important; border-color: rgba(253,203,110,0.15) !important; } .icon-wrap.settings { background: rgba(178,190,195,0.08) !important; color: #b2bec3 !important; border-color: rgba(178,190,195,0.08) !important; } .icon-wrap.diary { background: rgba(212,165,116,0.12) !important; color: #d4a574 !important; border-color: rgba(212,165,116,0.15) !important; } .icon-wrap.favorite { background: rgba(85,239,196,0.12) !important; color: #55efc4 !important; border-color: rgba(85,239,196,0.15) !important; } .icon-wrap.period { background: rgba(231,84,128,0.12) !important; color: #E75480 !important; border-color: rgba(231,84,128,0.15) !important; } .icon-wrap.anniversary { background: rgba(255,159,243,0.12) !important; color: #ff9ff3 !important; border-color: rgba(255,159,243,0.15) !important; } .icon-wrap.video { background: rgba(178,190,195,0.08) !important; color: #b2bec3 !important; border-color: rgba(178,190,195,0.08) !important; } .icon-wrap.letter { background: rgba(100,149,237,0.12) !important; color: #6495ED !important; border-color: rgba(100,149,237,0.15) !important; } .icon-wrap.mall { background: rgba(46,213,115,0.12) !important; color: #2ed573 !important; border-color: rgba(46,213,115,0.15) !important; } .icon-wrap.phone { background: rgba(9,132,227,0.12) !important; color: #0984e3 !important; border-color: rgba(9,132,227,0.15) !important; }'
   };
   var css = STYLE_CSS[styleId] || STYLE_CSS['glass'];
   var styleTag = document.createElement('style');
@@ -15775,13 +18992,19 @@ function init() {
         if (CONFIG.userAvatar) applyUserAvatar(CONFIG.userAvatar);
         else applyUserAvatar(null);
     } catch (e) { console.error('美化应用失败:', e); }
+    // ⭐ 延迟应用样式，等 DOM 和角色渲染都就绪后再注入
+setTimeout(function() {
     try {
         applyIconStyle(CONFIG.iconStyle || 'glass');
         applyBubbleStyle(CONFIG.bubbleStyle || 'default');
         applyFontSettings();
-applyCustomFont(CONFIG.fontFamily || 'default');
+        applyCustomFont(CONFIG.fontFamily || 'default');
         applyTheme(CONFIG.theme || 'dark');
-    } catch (e) { console.error('样式应用失败:', e); }
+        console.log('🎨 样式已应用:', CONFIG.iconStyle, CONFIG.bubbleStyle, CONFIG.theme);
+    } catch (e) {
+        console.error('样式应用失败:', e);
+    }
+}, 100);
     try {
         loadTemperature();
         loadFontSize();
@@ -15942,13 +19165,18 @@ try { setTimeout(function() { checkAutoLetters(); }, 8000); } catch (e) {
     }
 
 // ⭐ 数据加载完成后，重新渲染一次（防止时序问题）
+
 setTimeout(function() {
-  console.log('🔄 延迟重渲染，防止空白...');
-  try { updateChatTitle(); } catch (e) {}
-  try { renderContacts(); } catch (e) {}
-  try { renderRoleManager(); } catch (e) {}
-  try { renderDiaryAll(); } catch (e) {}
-  try { updateHeartDisplay(); } catch (e) {}
+    console.log('🔄 延迟重渲染，防止空白...');
+    try { updateChatTitle(); } catch (e) {}
+    try { renderContacts(); } catch (e) {}
+    try { renderRoleManager(); } catch (e) {}
+    try { renderDiaryAll(); } catch (e) {}
+    try { updateHeartDisplay(); } catch (e) {}
+
+    // ⭐ 新增：重渲染后再次应用样式，防止被覆盖
+    try { applyIconStyle(CONFIG.iconStyle || 'glass'); } catch (e) {}
+    try { applyBubbleStyle(CONFIG.bubbleStyle || 'default'); } catch (e) {}
 }, 1500);
 
 // ⭐ 延迟恢复字体（防止时序问题）
@@ -16044,6 +19272,8 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast('⭐ 收藏屋开发中...');
         }
 else if (app === 'video') openVideoLibrary(); else if (app === 'period') openPeriodScreen();
+
+else if (app === 'anniversary') openAnniversaryScreen();
 
 else if (app === 'letter') openLetterScreen();
 
