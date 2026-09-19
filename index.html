@@ -2117,7 +2117,11 @@
     background: var(--bg-card);
     border-radius: 12px;
     box-shadow: 0 1px 4px var(--shadow-color);
+    overflow: hidden;
+    box-sizing: border-box;
+    max-width: 100%;
 }
+
 .main-moment-header {
     display: flex;
     align-items: center;
@@ -2392,23 +2396,14 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    padding-right: 4px;
-}
-
-.comment-reply-input input {
-    flex: 1 1 0;
     min-width: 0;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.comment-reply.m-input button {
-    flex: 0 oment0 auto;
-    white-com-space: nowrap;
+    padding-right: 2px;
 }
 
 .comment-reply-input input {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 0;
     padding: 6px 12px;
     border: 1px solid var(--border-color);
     border-radius: 14px;
@@ -2417,11 +2412,16 @@
     font-size: 13px;
     outline: none;
     font-family: inherit;
+    box-sizing: border-box;
 }
+
 .comment-reply-input input:focus {
     border-color: #07c160;
 }
+
 .comment-reply-input button {
+    flex: 0 0 auto;
+    min-width: 56px;
     padding: 6px 14px;
     border: none;
     border-radius: 14px;
@@ -2430,8 +2430,10 @@
     font-size: 13px;
     cursor: pointer;
     font-family: inherit;
-    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+    box-sizing: border-box;
 }
+
 .comment-reply-input button:active {
     transform: scale(0.95);
 }
@@ -2461,6 +2463,9 @@
     background: var(--bg-secondary);
     border-radius: 8px;
     padding: 10px 14px;
+    overflow: hidden;
+    box-sizing: border-box;
+    max-width: 100%;
 }
 
 .moment-comment {
@@ -2471,6 +2476,8 @@
     word-break: break-word;
     overflow: hidden;
     box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .moment-comment + .moment-comment {
@@ -2492,7 +2499,56 @@
     display: flex;
     gap: 8px;
     animation: fadeInUp 0.2s ease;
+    width: 100%;
+:    max-width: 100%;
+    box -sizing: border-box;
+    min-width14: 0;
+    padding-rightpx: 2px;
 }
+
+.main-moment-input-area input {
+    flex;
+: 1    1 auto;
+    min-width: 0;
+    width: 0;
+    padding: 9px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size outline: none;
+    font-family: inherit;
+    transition: 0.15s;
+    box-sizing: border-box;
+}
+
+.main-moment-input-area input:focus {
+    border-color: #07c160;
+    background: var(--bg-card);
+}
+
+.main-moment-input-area button {
+    flex: 0 0 auto;
+    min-width: 60px;
+    padding: 9px 18px;
+    border: none;
+    border-radius: 20px;
+    background: #07c160;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.15s;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.main-moment-input-area button:active {
+    transform: scale(0.96);
+    background: #06b355;
+}
+
 .main-moment-input-area input {
     flex: 1;
     padding: 9px 14px;
