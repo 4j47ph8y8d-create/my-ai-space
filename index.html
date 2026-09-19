@@ -790,6 +790,31 @@
     line-height: 1.5;
 }
 
+.anni-form-field select {
+    width: 100%;
+    padding: 11px 14px;
+    background: #F4F2F7;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    font-size: 14px;
+    color: #4A4558;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23B8A5C7' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+}
+
+.anni-form-field select:focus {
+    border-color: #B8A5C7;
+    background-color: #FFFFFF;
+}
+
 /* 图标选择 */
 .anni-icon-picker {
     display: grid;
@@ -6074,6 +6099,11 @@
         <div class="anni-form-handle"></div>
         <div class="anni-form-title" id="anniFormTitle">添加纪念日</div>
 
+<div class="anni-form-field" id="anniFormRoleWrap">
+            <label>属于哪个角色</label>
+            <select id="anniFormRole"></select>
+        </div>
+
         <div class="anni-form-field">
             <label>纪念日名字</label>
             <input type="text" id="anniFormName" placeholder="如：相遇纪念日" maxlength="20">
@@ -9291,7 +9321,7 @@ abilityBlock += '如果你特别喜欢某件商品，可以告诉用户你喜欢
   }
 
 // ===== 注入今天的纪念日 =====
-    var todayAnniversaries = getTodayAnniversaries();
+   var todayAnniversaries = getTodayAnniversaries(role.id);
     if (todayAnniversaries.length > 0) {
         var anniLines = [];
         anniLines.push('【今天是一个特别的日子】');
@@ -15701,8 +15731,13 @@ function renderAnniversaryMineList() {
             '<div class="item-info">' +
                 '<div class="item-name">' + escapeHtml(item.name || '纪念日') + '</div>' +
                 '<div class="item-date">' + dateDisplay +
-                    (item.repeat !== false ? '<span class="repeat-tag">每年</span>' : '') +
-                '</div>' +
+    (item.repeat !== false ? '<span class="repeat-tag">每年</span>' : '') +
+    (function() {
+        if (roles.length <= 1) return '';
+        var r = roles.find(function(x) { return x.id === item.roleId; });
+        return r ? '<span class="repeat-tag" style="border-color:#D4C5E0;">' + escapeHtml(r.name) + '</span>' : '';
+    })() +
+'</div>' +
             '</div>' +
             '<div class="item-actions">' +
                 '<button class="btn-edit" data-id="' + item.id + '" title="编辑"><i class="fas fa-pen"></i></button>' +
@@ -15776,6 +15811,30 @@ function openAnniForm(id) {
         o.classList.remove('active');
     });
 
+// 填充角色下拉框
+    var roleWrap = document.getElementById('anniFormRoleWrap');
+    var roleSelect = document.getElementById('anniFormRole');
+    if (roleWrap && roleSelect) {
+        roleSelect.innerHTML = '';
+        if (!roles || roles.length <= 1) {
+            // 只有一个角色（或没有）→ 隐藏下拉框
+            roleWrap.style.display = 'none';
+            if (roles && roles.length === 1) {
+                roleSelect.dataset.onlyRoleId = roles[0].id;
+            }
+        } else {
+            roleWrap.style.display = '';
+            roles.forEach(function(r) {
+                var opt = document.createElement('option');
+                opt.value = r.id;
+                opt.textContent = r.name || '未命名角色';
+                roleSelect.appendChild(opt);
+            });
+            // 默认选中当前角色
+            if (currentRoleId) roleSelect.value = currentRoleId;
+        }
+    }
+
     if (id) {
         var item = CONFIG.anniversaries.find(function(x) { return x.id === id; });
         if (!item) return;
@@ -15785,6 +15844,10 @@ function openAnniForm(id) {
         dateEl.value = item.date || '';
         noteEl.value = item.note || '';
         moodEl.value = item.mood || '';
+// 回填角色
+        if (roleSelect && item.roleId) {
+            roleSelect.value = item.roleId;
+        }
         repeatEl.checked = item.repeat !== false;
 
         var icon = item.icon || 'fa-heart';
@@ -15817,6 +15880,20 @@ function saveAnniForm() {
     var mood = document.getElementById('anniFormMood').value.trim();
     var repeat = document.getElementById('anniFormRepeat').checked;
 
+// 获取所属角色
+    var roleSelect = document.getElementById('anniFormRole');
+    var roleWrap = document.getElementById('anniFormRoleWrap');
+    var roleId = null;
+    if (roleWrap && roleWrap.style.display === 'none') {
+        // 单角色模式
+        roleId = roleSelect ? roleSelect.dataset.onlyRoleId : null;
+    } else {
+        roleId = roleSelect ? roleSelect.value : null;
+    }
+    if (!roleId && roles && roles.length > 0) {
+        roleId = roles[0].id;
+    }
+
     var iconEl = document.querySelector('#anniIconPicker .anni-icon-option.active');
     var icon = iconEl ? iconEl.dataset.icon : 'fa-heart';
 
@@ -15835,6 +15912,7 @@ function saveAnniForm() {
             item.mood = mood;
             item.repeat = repeat;
             item.icon = icon;
+item.roleId = roleId;
         }
         showToast('已更新');
     } else {
@@ -15847,6 +15925,7 @@ function saveAnniForm() {
             mood: mood,
             repeat: repeat,
             icon: icon,
+            roleId: roleId,
             createdAt: new Date().toISOString()
         };
         CONFIG.anniversaries.push(newItem);
@@ -16508,16 +16587,35 @@ function diffDays(from, to) {
 }
 
 /* ------- 获取所有纪念日（后续会接入真实数据，现在先用空数组） ------- */
+
 function getAllAnniversaries() {
-    // 数据结构：[{ id, name, date: 'YYYY-MM-DD' 或 'MM-DD', repeat: true/false, icon }]
     if (!CONFIG.anniversaries || !Array.isArray(CONFIG.anniversaries)) {
         CONFIG.anniversaries = [];
     }
+
+    // 一次性迁移：给没有 roleId 的老数据自动绑定第一个角色
+    var defaultRoleId = (roles && roles.length > 0) ? roles[0].id : null;
+    var migrated = false;
+
+    if (defaultRoleId) {
+        CONFIG.anniversaries.forEach(function(item) {
+            if (!item.roleId) {
+                item.roleId = defaultRoleId;
+                migrated = true;
+            }
+        });
+        if (migrated) {
+            console.log('📦 纪念日数据已迁移：老数据已绑定到角色「' +
+                (roles[0].name || '未命名') + '」');
+            saveAllData();
+        }
+    }
+
     return CONFIG.anniversaries;
 }
 
-/* ---------- 获取今天的所有纪念日 ---------- */
-function getTodayAnniversaries() {
+/* ---------- 获取今天的所有纪念日（可传入 roleId 只取该角色的） ---------- */
+function getTodayAnniversaries(roleId) {
     if (!CONFIG.anniversaries || !Array.isArray(CONFIG.anniversaries)) return [];
 
     var today = new Date();
@@ -16528,6 +16626,11 @@ function getTodayAnniversaries() {
     var result = [];
 
     CONFIG.anniversaries.forEach(function(item) {
+        // 如果指定了 roleId，就只取属于该角色的
+        if (roleId && item.roleId && item.roleId !== roleId) return;
+        // 如果指定了 roleId，但这条没有 roleId，也跳过（老数据不匹配）
+        if (roleId && !item.roleId) return;
+
         var parts = (item.date || '').split('-');
         if (parts.length !== 3) return;
 
@@ -16536,12 +16639,10 @@ function getTodayAnniversaries() {
         var iday = parseInt(parts[2]);
 
         if (item.repeat !== false) {
-            // 每年重复：只看月和日
             if (im === todayMonth && iday === todayDay) {
                 result.push(item);
             }
         } else {
-            // 单次：年月日全等
             if (iy === todayYear && im === todayMonth && iday === todayDay) {
                 result.push(item);
             }
