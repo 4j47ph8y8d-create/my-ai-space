@@ -8077,6 +8077,18 @@ function saveImageConfigForMain(key, value) {
     });
 }
 
+function deleteImageConfigFromMain(key) {
+    return openPhoneImageConfigDB_Main().then(function(db) {
+        return new Promise(function(resolve) {
+            var tx = db.transaction('config', 'readwrite');
+            var store = tx.objectStore('config');
+            var req = store.delete(key);
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); resolve(); };
+        });
+    });
+}
+
 // ===== Blob 转 Base64 =====
 function blobToBase64Main(blob) {
     return new Promise(function(resolve, reject) {
@@ -8085,6 +8097,71 @@ function blobToBase64Main(blob) {
         reader.onerror = reject;
         reader.readAsDataURL(blob);
     });
+}
+
+// ============================================================
+// 图片质检：判断生成的图是否合格
+// ============================================================
+async function checkSelfieQuality(base64Image, role) {
+    try {
+        // 读取 qwen-vl 的 API Key（跟图片生成共用同一个 Key）
+        var apiKey = await loadImageConfigForMain('imageApiKey');
+        if (!apiKey) {
+            console.warn('⚠️ 未配置图片 API Key，跳过质检');
+            return { pass: true, reason: 'no_api_key' };
+        }
+
+        var promptText = '请判断这张图片是否符合以下要求，只回答 PASS 或 FAIL。\n\n' +
+            '要求：\n' +
+            '1. 图中只有一个人物（不是多人合影）\n' +
+            '2. 人物是正脸或微侧脸（眼睛看向镜头，不是背影、闭眼、低头）\n' +
+            '3. 人物性别是「' + (role && role.persona && role.persona.indexOf('女') !== -1 ? '女性' : '男性') + '」\n' +
+            '4. 图片清晰、无明显变形（脸没有歪、手没有畸形）\n' +
+            '5. 画面是一个正常的生活场景（不是纯色背景、不是抽象图）\n\n' +
+            '如果全部满足，回答：PASS\n' +
+            '如果有任何一项不满足，回答：FAIL: 原因\n\n' +
+            '只输出 PASS 或 FAIL 开头的内容，不要其他解释。';
+
+        var resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify({
+                model: 'qwen-vl-plus',
+                messages: [{
+                    role: 'user',
+                    content: [
+                        { type: 'image_url', image_url: { url: base64Image } },
+                        { type: 'text', text: promptText }
+                    ]
+                }],
+                max_tokens: 100
+            }),
+            cache: 'no-store'
+        });
+
+        if (!resp.ok) {
+            console.warn('⚠️ 质检 API 调用失败，默认通过');
+            return { pass: true, reason: 'api_error' };
+        }
+
+        var data = await resp.json();
+        var result = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+        result = result.trim();
+
+        if (result.toUpperCase().indexOf('PASS') === 0) {
+            console.log('✅ 自拍质检通过');
+            return { pass: true, reason: 'ok' };
+        } else {
+            console.log('❌ 自拍质检未通过:', result);
+            return { pass: false, reason: result };
+        }
+    } catch (e) {
+        console.warn('⚠️ 质检异常，默认通过:', e.message);
+        return { pass: true, reason: 'exception' };
+    }
 }
 
 // ===== 读取指定角色的所有参考图（返回数组） =====
@@ -8107,13 +8184,16 @@ async function loadAllRefImagesForRole(roleId) {
 }
 
 // ===== 从衣柜选衣服 + 读取衣服图片 =====
+
 async function selectOutfitForSelfie(roleId, userMessage, recentMessages) {
     // 1. 读衣柜
     var wardrobeKey = 'phone_data_' + roleId;
     var raw = localStorage.getItem(wardrobeKey);
     if (!raw) return null;
+
     var data;
     try { data = JSON.parse(raw); } catch(e) { return null; }
+
     var wardrobe = data.wardrobe || [];
     if (wardrobe.length === 0) return null;
 
@@ -8148,18 +8228,41 @@ async function selectOutfitForSelfie(roleId, userMessage, recentMessages) {
 
     var user = '【对话上下文】\n' + context + '\n\n请输出序号（只输出数字）：';
 
+    var selected = null;
+
     try {
         var result = await callAIForMomentReply(sys, user, 200);
         var idx = parseInt((result || '').trim().match(/\d+/));
         if (!isNaN(idx) && idx >= 1 && idx <= wardrobe.length) {
-            console.log('👔 AI 选择了第 ' + idx + ' 套：' + wardrobe[idx - 1].name + '（场景：' + wardrobe[idx - 1].scene + '）');
-            return wardrobe[idx - 1];
+            selected = wardrobe[idx - 1];
+            console.log('👔 AI 选择了第 ' + idx + ' 套：' + selected.name + '（场景：' + selected.scene + '）');
         }
     } catch(e) {
         console.warn('AI 选衣服失败:', e && e.message);
     }
-    console.log('👔 无法判断，默认用第 1 套');
-    return wardrobe[0];
+
+    if (!selected) {
+        console.log('👔 无法判断，默认用第 1 套');
+        selected = wardrobe[0];
+    }
+
+    // ⭐ 关键修复：从 IndexedDB 读衣服图片，塞进 selected.image
+    if (selected.imageId) {
+        try {
+            selected.image = await loadWardrobeImageForSelfie(selected.imageId);
+            if (selected.image) {
+                console.log('👔 衣服图已加载，大小：' + (selected.image.length / 1024).toFixed(1) + ' KB');
+            } else {
+                console.warn('⚠️ 衣服图未找到（IndexedDB 里没有）:', selected.imageId);
+            }
+        } catch(e) {
+            console.warn('⚠️ 衣服图加载失败:', e && e.message);
+        }
+    } else {
+        console.warn('⚠️ 这套衣服没有 imageId（可能是老数据）:', selected.name);
+    }
+
+    return selected;
 }
 
 function isVoiceTrigger(text) {
@@ -8399,10 +8502,17 @@ function createMessageRow(msg, role) {
 
     // ========== 处理自拍消息 ==========
     else if (msg.type === 'selfie') {
-        contentHtml = '<div class="selfie-bubble" data-selfie-key="' + (msg.imageStorageKey || '') + '">' +
-            '<div class="selfie-loading">📸 正在加载照片...</div>' +
-            '</div>';
-    }
+    contentHtml = '<div class="selfie-bubble" data-selfie-key="' + (msg.imageStorageKey || '') + '">' +
+        '<div class="selfie-loading">📸 正在加载照片...</div>' +
+        '</div>' +
+        '<div class="selfie-actions" style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end;">' +
+        '<button class="selfie-regen-btn" data-selfie-regen="' + msg.id + '" ' +
+        'style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);' +
+        'color:var(--text-secondary);font-size:11px;padding:4px 10px;border-radius:12px;cursor:pointer;font-family:inherit;">' +
+        '<i class="fas fa-redo"></i> 重新生成' +
+        '</button>' +
+        '</div>';
+}
 
     // ========== 处理语音消息 ==========
     else if (isVoiceBubble) {
@@ -8641,6 +8751,55 @@ function setupMessageEventDelegation() {
                 return;
             }
         }
+
+// ========== 自拍重新生成 ==========
+if (target && target.dataset && target.dataset.selfieRegen) {
+    var selfieMsgId = target.dataset.selfieRegen;
+    var role = getCurrentRole();
+    if (!role) return;
+
+    // 找到这条消息
+    var selfieMsg = role.messages.find(function(m) { return m.id === selfieMsgId; });
+    if (!selfieMsg) return;
+
+    // 二次确认
+    if (!confirm('重新生成这张自拍？会消耗一次图片额度。')) return;
+
+    // 找到这张图之前的用户消息（用于 prompt 参考）
+    var msgIdx = role.messages.findIndex(function(m) { return m.id === selfieMsgId; });
+    var userMsgContent = '';
+    for (var i = msgIdx - 1; i >= 0; i--) {
+        if (role.messages[i].role === 'user') {
+            userMsgContent = role.messages[i].content;
+            break;
+        }
+    }
+
+    // 删除旧消息
+    role.messages.splice(msgIdx, 1);
+
+    // 删除旧图片（IndexedDB）
+    if (selfieMsg.imageStorageKey) {
+        try {
+            deleteImageConfigFromMain(selfieMsg.imageStorageKey);
+            delete _selfieImageCache[selfieMsg.imageStorageKey];
+        } catch(e) {}
+    }
+
+    immediateSaveAllData();
+    renderMessages();
+
+    // 提示
+    showToast('🔄 正在重新生成...');
+
+    // 重新生成
+    setTimeout(function() {
+        generateChatSelfie(role, userMsgContent);
+    }, 500);
+
+    return;
+}
+
         var giftCard = e.target.closest('.gift-card');
         if (giftCard) {
             var productName = giftCard.dataset.productName || '礼物';
@@ -11592,15 +11751,31 @@ async function callWanSelfieAPI(apiKey, refList, prompt, selectedOutfit) {
         var totalImages = personImgCount + 1;
         finalPrompt =
             '╔══════════════════════════════════════╗\n' +
-            '║  IMAGE ROLES (STRICTLY FOLLOW)        ║\n' +
+            '║ IMAGE ROLES (STRICTLY FOLLOW) ║\n' +
             '╚══════════════════════════════════════╝\n' +
             'Image 1 to ' + personImgCount + ' (人物参考): Use ONLY for face, gender, body proportions, physique, height, and hairstyle.\n' +
-            '⚠️ CRITICAL: IGNORE ALL CLOTHING in images 1-' + personImgCount + '. Do NOT copy any outfit from these images.\n\n' +
+'⚠️ CRITICAL: IGNORE ALL CLOTHING in images 1-' + personImgCount + '. Do NOT copy any outfit from these images.\n' +
+
+'⚠️⚠️⚠️ CRITICAL - POSE RULE ⚠️⚠️⚠️\n' +
+'DO NOT copy the pose, framing, or camera angle from ANY reference image.\n' +
+'The reference images may show: standing straight, full-body, front-facing, catalog-style pose, bird-eye view, top-down angle. You MUST IGNORE all of these.\n' +
+'DO NOT generate: full-body shots, top-down/bird-eye views, standing-straight poses, fashion-catalog compositions.\n' +
+'The reference images are for IDENTITY ONLY: face, hairstyle, gender, body proportions (height/shoulder ratio). NOTHING ELSE.\n\n' +
+'✅ WHAT TO GENERATE INSTEAD:\n' +
+'- A NATURAL CASUAL SELFIE, like a real person holding their phone\n' +
+'- Camera at CHEST or FACE level (NOT above the head, NOT bird-eye)\n' +
+'- Composition: close-up (face+shoulders) OR half-body (waist up) - your choice\n' +
+'- Relaxed, spontaneous pose - not standing stiffly\n\n' +
             'Image ' + totalImages + ' (衣服参考): This is the ONLY source of clothing.\n' +
-            '⚠️ The character MUST wear EXACTLY the outfit shown in image ' + totalImages + ' — identical color, fabric, design, cut, details.\n' +
-            '⚠️ Do NOT replace it with anything else. Do NOT use the outfit from images 1-' + personImgCount + '.\n\n' +
+            '⚠️ The character MUST wear EXACTLY the outfit shown in image ' + totalImages + ' --- identical color, fabric, design, cut, details.\n' +
+            '⚠️ Do NOT replace it with anything else.\n\n' +
+            '【画面风格 - 核心要求】\n' +
+            '- 这是一张【真实的手机自拍】，不是服装展示图、不是写真、不是模特图\n' +
+            '- 构图自然随意：可以是特写（脸+肩），可以是半身（腰以上），也可以是大半身\n' +
+            '- 就像真人随意拿起手机拍一张，不刻意摆姿势，不刻意展示衣服\n' +
+            '- 衣服只需部分可见即可，不需要完整展示\n\n' +
             'SCENE: ' + prompt + '\n\n' +
-            'OUTPUT: A realistic selfie of the person (face + body from images 1-' + personImgCount + ') wearing the exact outfit from image ' + totalImages + ', in the described scene.';
+            'OUTPUT: A natural, casual phone selfie. Composition is free - close-up, half-body, or upper-body are all fine. Do NOT force a full-body shot. The clothing only needs to be partially visible.';
         console.log('📝 最终 prompt:', finalPrompt.substring(0, 200) + '...');
     } else {
         finalPrompt = 'STRICT REFERENCE: Image 1 to ' + filteredList.length + ' = character references: keep the same face, gender, body type, hairstyle. SCENE: ' + prompt;
@@ -11654,21 +11829,24 @@ async function callWanSelfieAPI(apiKey, refList, prompt, selectedOutfit) {
 }
 
 // ===== 完整流程：生成自拍并插入消息 =====
+
 async function generateChatSelfie(role, userMessage) {
     console.log('📸 开始生成自拍，角色：' + role.name + ' (id=' + role.id + ')');
 
     try {
-        // 1. 严格读取当前角色的【所有】参考图
+        // 1. 读取参考图
         var refList = await loadAllRefImagesForRole(role.id);
         if (refList.length === 0) {
             console.warn('⚠️ 角色 ' + role.name + ' 没有参考图，无法生成');
-            addMessageToRole(role.id, 'assistant', '我还没给你看过我长什么样呢...先去「他的手机 → 设置 → 我的参考照片」上传几张吧？');
+            addMessageToRole(role.id, 'assistant',
+                '我还没给你看过我长什么样呢...先去「他的手机 → 设置 → 我的参考照片」上传几张吧？');
             renderMessages();
             return;
         }
+
         console.log('✅ 读取到 ' + refList.length + ' 张参考图');
 
-        // ⭐ 新增：从衣柜选一套衣服
+        // 2. 选衣服
         var selectedOutfit = null;
         try {
             selectedOutfit = await selectOutfitForSelfie(role.id, userMessage, role.messages || []);
@@ -11676,51 +11854,83 @@ async function generateChatSelfie(role, userMessage) {
             console.warn('选衣服失败:', e && e.message);
         }
 
-        if (selectedOutfit) {
-            console.log('👔 使用衣服：「' + selectedOutfit.name + '」（' + selectedOutfit.scene + '）');
-        } else {
-            console.log('👔 衣柜为空，AI 自由发挥衣服');
-        }
-
-        // 2. AI 生成 prompt（把选中的衣服信息传进去）
-        var imagePrompt = await generateSelfiePrompt(role, userMessage, refList, selectedOutfit);
-        if (!imagePrompt) {
-            console.warn('⚠️ prompt 生成失败');
-            return;
-        }
-        console.log('📝 自拍 prompt:', imagePrompt);
-
-        // 3. 调 wan2.7-image-pro
+        // 3. 读 API Key
         var apiKey = await loadImageConfigForMain('imageApiKey');
         if (!apiKey) {
             console.warn('⚠️ 未配置百炼图片 API Key');
-            addMessageToRole(role.id, 'assistant', '相机好像坏了...你检查一下「他的手机 → 设置 → 百炼图片 API Key」？');
+            addMessageToRole(role.id, 'assistant',
+                '相机好像坏了...你检查一下「他的手机 → 设置 → 百炼图片 API Key」？');
             renderMessages();
             return;
         }
 
-        var imageUrl = await callWanSelfieAPI(apiKey, refList, imagePrompt, selectedOutfit);
-        if (!imageUrl) {
-            console.warn('⚠️ 图片生成失败');
+        // ========== 关键改动：最多试 2 次 ==========
+        var MAX_ATTEMPTS = 2;
+        var finalBase64 = null;
+        var lastPrompt = '';
+
+        for (var attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            console.log('📸 第 ' + attempt + ' 次尝试生成');
+
+            // 生成 prompt（第 2 次尝试时，加一句"更严格"的提示）
+            var extraStrict = (attempt > 1)
+                ? '\n\n⚠️ 特别注意：必须是单人、正脸看镜头、清晰图片。绝不能是多人合影、侧脸、背影、闭眼。'
+                : '';
+            var imagePrompt = await generateSelfiePrompt(role, userMessage, refList, selectedOutfit);
+            if (!imagePrompt) {
+                console.warn('⚠️ prompt 生成失败');
+                continue;
+            }
+            imagePrompt += extraStrict;
+            lastPrompt = imagePrompt;
+
+            // 调 API
+            var imageUrl = await callWanSelfieAPI(apiKey, refList, imagePrompt, selectedOutfit);
+            if (!imageUrl) {
+                console.warn('⚠️ 图片生成失败');
+                continue;
+            }
+
+            // 下载图片
+            var imgResp = await fetch(imageUrl);
+            var blob = await imgResp.blob();
+            var base64 = await blobToBase64Main(blob);
+            console.log('✅ 第 ' + attempt + ' 次图片生成成功，大小：' + (blob.size / 1024).toFixed(1) + ' KB');
+
+            // ⭐ 质检
+            var quality = await checkSelfieQuality(base64, role);
+            if (quality.pass) {
+                finalBase64 = base64;
+                console.log('✅ 第 ' + attempt + ' 次通过质检');
+                break;
+            } else {
+                console.warn('❌ 第 ' + attempt + ' 次未通过质检：' + quality.reason);
+                if (attempt < MAX_ATTEMPTS) {
+                    console.log('🔄 准备重试...');
+                } else {
+                    // 最后一次都没过 → 用 fallback：直接使用这张（不让用户空等）
+                    console.log('⚠️ 重试次数用尽，使用最后一张');
+                    finalBase64 = base64;
+                }
+            }
+        }
+
+        if (!finalBase64) {
+            console.warn('⚠️ 所有尝试都失败');
+            addMessageToRole(role.id, 'assistant', '手滑了，照片糊了...下次再给你拍吧');
+            renderMessages();
             return;
         }
-        console.log('✅ 图片生成成功');
 
-        // 4. 下载图片转 base64
-        var imgResp = await fetch(imageUrl);
-        var blob = await imgResp.blob();
-        var base64 = await blobToBase64Main(blob);
-        console.log('✅ 图片已下载，大小：' + (blob.size / 1024).toFixed(1) + ' KB');
-
-        // 5. 存 IndexedDB
+        // 4. 存 IndexedDB
         var msgId = 'selfie_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-        await saveImageConfigForMain('chat_selfie_' + msgId, base64);
-        // ⭐ 立即存入内存缓存，避免首次渲染时闪一下
-        _selfieImageCache['chat_selfie_' + msgId] = base64;
+        await saveImageConfigForMain('chat_selfie_' + msgId, finalBase64);
+        _selfieImageCache['chat_selfie_' + msgId] = finalBase64;
 
-        // 6. 插入消息
+        // 5. 插入消息
         var r = roles.find(function(x) { return x.id === role.id; });
         if (!r) return;
+
         r.messages.push({
             id: msgId,
             role: 'assistant',
@@ -11731,7 +11941,8 @@ async function generateChatSelfie(role, userMessage) {
             hasAudio: false,
             audioUrl: null,
             audioDuration: 0,
-            voiceRequested: false
+            voiceRequested: false,
+            imagePrompt: lastPrompt
         });
 
         immediateSaveAllData();
