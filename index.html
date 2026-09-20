@@ -11726,7 +11726,8 @@ async function generateSelfiePrompt(role, userMessage, refList, selectedOutfit) 
         console.log('📸 自拍 prompt 已生成:', cleaned);
         return cleaned;
     } catch(e) {
-        console.error('生成自拍 prompt 失败:', e);
+       console.error('生成自拍 prompt 失败:', e && e.message ? e.message : String(e));
+console.error('完整错误:', e);
         return null;
     }
 }
@@ -11761,6 +11762,12 @@ async function callWanSelfieAPI(apiKey, refList, prompt, selectedOutfit) {
 'The reference images may show: standing straight, full-body, front-facing, catalog-style pose, bird-eye view, top-down angle. You MUST IGNORE all of these.\n' +
 'DO NOT generate: full-body shots, top-down/bird-eye views, standing-straight poses, fashion-catalog compositions.\n' +
 'The reference images are for IDENTITY ONLY: face, hairstyle, gender, body proportions (height/shoulder ratio). NOTHING ELSE.\n\n' +
+'⚠️⚠️⚠️ CRITICAL RULE ABOUT CAMERA ANGLE ⚠️⚠️⚠️\n' +
+'- The camera MUST be at CHEST LEVEL or FACE LEVEL, held by the person in the photo.\n' +
+'- The camera MUST NOT be above the head. NO bird-eye view. NO top-down angle. NO looking-down-at-person composition.\n' +
+'- The person is holding the phone in front of themselves. The phone screen faces the person.\n' +
+'- Natural selfie angle: eye-level, slightly below eye-level, or chest-level.\n' +
+'- FORBIDDEN: high-angle shot, overhead shot, top view, looking down at the subject.\n\n' +
 '✅ WHAT TO GENERATE INSTEAD:\n' +
 '- A NATURAL CASUAL SELFIE, like a real person holding their phone\n' +
 '- Camera at CHEST or FACE level (NOT above the head, NOT bird-eye)\n' +
@@ -11781,19 +11788,19 @@ async function callWanSelfieAPI(apiKey, refList, prompt, selectedOutfit) {
         finalPrompt = 'STRICT REFERENCE: Image 1 to ' + filteredList.length + ' = character references: keep the same face, gender, body type, hairstyle. SCENE: ' + prompt;
     }
 
-    // 4. 加入 prompt
-    contentArray.push({ text: finalPrompt });
+    // 4. 加入 prompt（只有一个 text）
+        contentArray.push({ text: finalPrompt });
 
-    // 5. 加入人物参考图
-    filteredList.forEach(function(item) {
-        contentArray.push({ image: item.img });
-    });
+        // 5. 加入人物参考图
+        filteredList.forEach(function(item) {
+            contentArray.push({ image: item.img });
+        });
 
-    // 6. 加入衣服参考图
-    if (selectedOutfit && selectedOutfit.image) {
-        contentArray.push({ image: selectedOutfit.image });
-        console.log('👔 已加入衣服参考图：「' + selectedOutfit.name + '」');
-    }
+        // 6. 加入衣服参考图
+        if (selectedOutfit && selectedOutfit.image) {
+            contentArray.push({ image: selectedOutfit.image });
+            console.log('👔 已加入衣服参考图：「' + selectedOutfit.name + '」');
+        }
 
     console.log('📤 传给模型 ' + (contentArray.length - 1) + ' 张参考图（' + filteredList.length + ' 人物 + ' + (selectedOutfit && selectedOutfit.image ? 1 : 0) + ' 衣服）');
 
