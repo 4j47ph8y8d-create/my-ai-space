@@ -6177,7 +6177,11 @@
 
         <div class="anni-form-field">
             <label>当时的心情</label>
-            <textarea id="anniFormMood" placeholder="写点什么吧..." maxlength="200"></textarea>
+<textarea id="anniFormMood" placeholder="写点什么吧..." maxlength="200"></textarea>
+<div style="font-size:11px;color:#B8A5C7;margin-top:4px;line-height:1.5;">
+    💡 建议用「角色名」来写，避免用「你/我/他」<br>
+    例如：「TA第一次主动叫我XX」
+</div>
         </div>
 
         <div class="anni-form-field">
@@ -9578,11 +9582,12 @@ abilityBlock += '如果你特别喜欢某件商品，可以告诉用户你喜欢
                 desc += ' 它的意义是：' + anni.note.trim();
             }
 
-            // ⭐ 关键：把"谁对谁做了什么"单独明确出来
+// 简单明了地告诉 AI 这个纪念日是什么
             if (anni.mood && anni.mood.trim()) {
-                desc += '\n  ⚠️ 关于这个纪念日的【真实事件】：' + anni.mood.trim();
-                desc += '\n  ⚠️ 上面这句是用户视角写的（"你"指你"' + role.name + '"，"我"指用户）。请你在理解时，把"你"替换成"我（' + role.name + '）"，把"我"替换成"用户"。也就是说，真实情况是：' + reversePronouns(anni.mood.trim()) + '。';
+                desc += '\n  【当时的心情/事件】' + anni.mood.trim();
             }
+
+           
 
             anniLines.push('• ' + desc);
         });
@@ -16891,20 +16896,6 @@ function getAllAnniversaries() {
     }
 
     return CONFIG.anniversaries;
-}
-
-// 把用户视角的代词"你/我"转换成 AI 视角的表述
-// 例如："你第一次主动叫我老婆" → "我第一次主动叫用户老婆"
-function reversePronouns(text) {
-    if (!text) return text;
-    // 先做占位替换，避免"你→我"和"我→你"互相覆盖
-    var temp = text
-        .replace(/你/g, '{{TGT_YOU}}')
-        .replace(/我/g, '{{TGT_ME}}');
-    temp = temp
-        .replace(/\{\{TGT_YOU\}\}/g, '我')
-        .replace(/\{\{TGT_ME\}\}/g, '用户');
-    return temp;
 }
 
 /* ---------- 获取今天的所有纪念日（可传入 roleId 只取该角色的） ---------- */
