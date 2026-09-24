@@ -6566,7 +6566,7 @@
             <div class="temp-header"><span class="temp-label" style="font-size:13px;"><i class="fas fa-database" style="color:#6c5ce7;"></i> 存储用量</span><span class="temp-value" id="storageStatus" style="font-size:13px;">计算中...</span></div>
             <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin:3px 0 2px;"><span id="storageMemeCount">表情包：0 张</span><span id="storageSize">已用：0 KB</span><span id="storageRemain">剩余：0 KB</span></div>
             <div style="width:100%;height:5px;background:var(--border-color);border-radius:4px;overflow:hidden;margin-top:3px;"><div id="storageProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#a29bfe,#6c5ce7);border-radius:4px;transition:width 0.5s ease;"></div></div>
-            <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;opacity:0.6;">📦 IndexedDB 存储上限约 50MB</div>
+            <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;opacity:0.6;">localStorage + IndexedDB 合计约 55MB </div>
         </div>
         <div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:13px;color:var(--text-primary);"><i class="fas fa-image" style="color:#07c160;"></i> 相册权限</span><span id="permissionStatus" style="font-size:11px;color:var(--text-secondary);">已允许</span></div><button id="resetPermissionBtn" style="width:100%;margin-top:6px;padding:6px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:#e74c3c;font-size:12px;cursor:pointer;transition:0.15s;"><i class="fas fa-undo-alt"></i> 重新请求相册权限</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">点击后重新弹出权限申请，不会影响聊天记录和角色数据</div></div>
         <div class="setting-group" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:10px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><span style="font-size:13px;color:var(--text-primary);"><i class="fas fa-database" style="color:#6c5ce7;"></i> 数据管理</span><span style="font-size:10px;color:var(--text-secondary);">导入/导出</span></div><button id="dataManageBtn" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:12px;cursor:pointer;transition:0.15s;display:flex;align-items:center;justify-content:center;gap:6px;"><i class="fas fa-arrow-right"></i> 打开数据管理</button><div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">备份或恢复所有数据，支持分类导出</div></div>
@@ -7385,40 +7385,60 @@ function tagRoleTimestamps() {
 
 function immediateSaveAllData() {
     try {
-        // ⭐ 关键：保存前给所有角色打时间戳
+        // ⭐ 保存前给所有角色打时间戳
         tagRoleTimestamps();
-        // ===== 1. 先保存到本地 =====
 
+        // ===== 1. 剥离消息 + 图片，写 IndexedDB =====
+        roles.forEach(function(r) {
+            // 消息
+            if (Array.isArray(r.messages) && r.messages.length > 0) {
+                saveRoleMessagesToIDB(r.id, r.messages);
+            }
+            // 头像
+            if (r.avatar) {
+                saveRoleAvatarToIDB(r.id, r.avatar);
+            }
+            // 聊天背景
+            if (r.chatBg) {
+                saveRoleChatBgToIDB(r.id, r.chatBg);
+            }
+        });
+
+        // ===== 2. 主数据（不含消息）写 localStorage =====
         var configToSave = JSON.parse(JSON.stringify(CONFIG));
         if (configToSave.heart) delete configToSave.heart.recoveryTimer;
-        
-        // 壁纸特殊处理（存到 IndexedDB，不存到 LocalStorage）
+
         var wallpaperFlag = configToSave.wallpaper ? 'saved' : '';
         configToSave.wallpaper = wallpaperFlag;
-        
+
         var data = {
             config: configToSave,
             roles: roles.map(function(r) { return deepCloneRole(r); }),
             currentRoleId: currentRoleId
         };
+
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
 
-// ⭐ 新增：同步写入 IndexedDB
-    idbSet('ds_multirole_v2', data).catch(function(e) {
-      console.error('IndexedDB 写入失败:', e);
-    });
+        // 同步写 IndexedDB（主数据）
+        idbSet('ds_multirole_v2', data).catch(function(e) {
+            console.error('主数据 IndexedDB 写入失败:', e);
+        });
 
         saveMemeData().catch(function(e) { console.error('表情包保存失败:', e); });
-        
-        // ===== 2. 同步到云端 =====
+
+        // ===== 3. 云端同步（含消息，保持完整） =====
         var token = localStorage.getItem('dream_token');
         if (token) {
             var cloudData = {
                 config: configToSave,
-                roles: roles.map(function(r) { return deepCloneRole(r); }),
+                roles: roles.map(function(r) {
+                    var clone = deepCloneRole(r);
+                    clone.messages = r.messages || [];  // 云端保留完整消息
+                    return clone;
+                }),
                 diaries: CONFIG.diaries || []
             };
-            
+
             fetch(API_BASE + '/data/save', {
                 method: 'POST',
                 headers: {
@@ -7431,14 +7451,13 @@ function immediateSaveAllData() {
             .then(function(result) {
                 if (result.success) {
                     console.log('☁️ 数据已同步到云端 (版本: ' + result.version + ')');
-                } else {
-                    console.error('☁️ 云端同步失败:', result.error);
                 }
             })
             .catch(function(e) {
-                console.error('☁️ 云端同步网络错误:', e);
+                console.error('☁️ 云端同步失败:', e);
             });
         }
+
     } catch (e) {
         console.error('保存数据失败:', e);
     }
@@ -7452,50 +7471,60 @@ function debouncedSaveAllData() {
 function saveAllData() {
     try {
         tagRoleTimestamps();
+
+        // ⭐ 消息 + 图片剥离，单独写 IndexedDB
+        roles.forEach(function(r) {
+            if (Array.isArray(r.messages) && r.messages.length > 0) {
+                saveRoleMessagesToIDB(r.id, r.messages);
+            }
+            if (r.avatar) {
+                saveRoleAvatarToIDB(r.id, r.avatar);
+            }
+            if (r.chatBg) {
+                saveRoleChatBgToIDB(r.id, r.chatBg);
+            }
+        });
+
         var configToSave = JSON.parse(JSON.stringify(CONFIG));
         if (configToSave.heart) delete configToSave.heart.recoveryTimer;
+
         var wallpaperFlag = configToSave.wallpaper ? 'saved' : '';
         configToSave.wallpaper = wallpaperFlag;
-        var data = { config: configToSave, roles: roles.map(function(r) { return deepCloneRole(r); }), currentRoleId: currentRoleId };
-        localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
 
-// ⭐ 新增：同步写入 IndexedDB
-    idbSet('ds_multirole_v2', data).catch(function(e) {
-      console.error('IndexedDB 写入失败:', e);
-    });
+        var data = {
+            config: configToSave,
+            roles: roles.map(function(r) { return deepCloneRole(r); }),
+            currentRoleId: currentRoleId
+        };
+
+        localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+        idbSet('ds_multirole_v2', data).catch(function(e) {
+            console.error('IndexedDB 写入失败:', e);
+        });
 
     } catch (e) {
         console.error('保存数据失败:', e);
     }
+
     saveMemeData().catch(function(e) { console.error('表情包保存失败:', e); });
 }
 
 function deepCloneRole(role) {
     if (!role) return null;
+
     var clone = {
-        id: role.id, name: role.name, avatar: role.avatar || '', chatBg: role.chatBg || '',
+        id: role.id, name: role.name,
+        avatar: '',      // ⭐ 不再放进 localStorage
+        chatBg: '',      // ⭐ 不再放进 localStorage
         persona: role.persona || '', background: role.background || '', style: role.style || '',
         extra: role.extra || '', messages: [], memory: [], heartData: null,
         createdAt: role.createdAt || new Date().toISOString(), extendedState: null,
         voiceId: role.voiceId || '',
-        lastModified: role.lastModified || 0  // ⭐ 保留时间戳
+        lastModified: role.lastModified || 0
     };
-    if (Array.isArray(role.messages)) {
-        clone.messages = role.messages.map(function(m) {
-            return {
-                id: m.id || generateId(),
-                role: m.role,
-                content: m.content,
-                type: m.type || 'text',
-                time: m.time || new Date().toISOString(),
-                giftData: m.giftData || undefined,
-                hasAudio: m.hasAudio || false,
-                audioUrl: m.audioUrl || null,
-                audioDuration: m.audioDuration || 0,
-                voiceRequested: m.voiceRequested || false
-            };
-        });
-    }
+
+    // ⭐ 消息不再放进 clone 里，单独存 IndexedDB
+    // clone.messages 保持空数组
     if (Array.isArray(role.memory)) {
         clone.memory = role.memory.map(function(m) {
             if (typeof m === 'string') return { text: m };
@@ -7524,35 +7553,123 @@ function deepCloneRole(role) {
 } 
 
 function initLoadAllData() {
-  return loadAllDataAsync().then(function(data) {
-    if (!data) {
-      console.log('📦 没有主数据，全新初始化');
-      loadAllData();
-      return;
-    }
-    console.log('📦 从 IndexedDB 读到主数据');
-    // ⭐ 判断：IndexedDB 和 LocalStorage 哪个数据更多（防止覆盖）
-    var lsRaw = localStorage.getItem('ds_multirole_v2');
-    var lsData = null;
-    try { lsData = lsRaw ? JSON.parse(lsRaw) : null; } catch(e) {}
+    return loadAllDataAsync().then(function(data) {
+        if (!data) {
+            console.log('📦 没有主数据，全新初始化');
+            loadAllData();
+            // 初始化后异步加载消息
+            setTimeout(loadAllMessagesFromIDB, 100);
+            return;
+        }
 
-    var idbCount = (data.roles || []).length;
-    var lsCount = lsData ? (lsData.roles || []).length : 0;
+        console.log('📦 从 IndexedDB 读到主数据');
 
-    if (lsCount > idbCount) {
-      console.log('⚠️ LocalStorage 数据更多（' + lsCount + ' > ' + idbCount + '），保留 LocalStorage');
-      loadAllData();
-      return;
-    }
+        var lsRaw = localStorage.getItem('ds_multirole_v2');
+        var lsData = null;
+        try { lsData = lsRaw ? JSON.parse(lsRaw) : null; } catch(e) {}
 
-    // IndexedDB 数据 >= LocalStorage，用 IndexedDB 的
-    console.log('✅ 用 IndexedDB 数据（' + idbCount + ' 个角色）');
-    localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
-    loadAllData();
-  }).catch(function(e) {
-    console.error('❌ 异步加载失败，走兜底:', e);
-    loadAllData();
-  });
+        var idbCount = (data.roles || []).length;
+        var lsCount = lsData ? (lsData.roles || []).length : 0;
+
+        if (lsCount > idbCount) {
+            console.log('⚠️ LocalStorage 数据更多，保留 LocalStorage');
+            loadAllData();
+        } else {
+            console.log('✅ 用 IndexedDB 数据（' + idbCount + ' 个角色）');
+            localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+            loadAllData();
+        }
+
+        // ⭐ 加载完成后，异步从 IndexedDB 补充消息
+        setTimeout(loadAllMessagesFromIDB, 100);
+
+    }).catch(function(e) {
+        console.error('❌ 异步加载失败，走兜底:', e);
+        loadAllData();
+        setTimeout(loadAllMessagesFromIDB, 100);
+    });
+}
+
+// ⭐ 从 IndexedDB 加载每个角色的消息、头像、聊天背景
+function loadAllMessagesFromIDB() {
+    if (!Array.isArray(roles) || roles.length === 0) return;
+
+    var promises = roles.map(function(role) {
+        var tasks = [];
+
+        // 消息
+        if (!Array.isArray(role.messages) || role.messages.length === 0) {
+            tasks.push(
+                loadRoleMessagesFromIDB(role.id).then(function(msgs) {
+                    if (msgs.length > 0) {
+                        role.messages = msgs;
+                        console.log('📥 已加载 ' + role.name + ' 的消息（' + msgs.length + ' 条）');
+                    }
+                })
+            );
+        }
+
+        // 头像
+        if (!role.avatar) {
+            tasks.push(
+                loadRoleAvatarFromIDB(role.id).then(function(avatar) {
+                    if (avatar) {
+                        role.avatar = avatar;
+                        console.log('📥 已加载 ' + role.name + ' 的头像');
+                    }
+                })
+            );
+        }
+
+        // 聊天背景
+        if (!role.chatBg) {
+            tasks.push(
+                loadRoleChatBgFromIDB(role.id).then(function(bg) {
+                    if (bg) {
+                        role.chatBg = bg;
+                        console.log('📥 已加载 ' + role.name + ' 的聊天背景');
+                    }
+                })
+            );
+        }
+
+        return Promise.all(tasks);
+    });
+
+    Promise.all(promises).then(function() {
+    console.log('✅ 所有角色资源加载完成');
+
+    // ⭐ 延迟渲染，确保 DOM 和界面都就绪
+    setTimeout(function() {
+        try {
+            var role = getCurrentRole();
+            if (role) {
+                applyChatBgForRole(role);
+                // ⭐ 强制刷新聊天背景的 DOM
+                var bgLayer = document.getElementById('chatBgLayer');
+                if (bgLayer && role.chatBg) {
+                    bgLayer.style.backgroundImage = 'url(' + role.chatBg + ')';
+                    bgLayer.style.backgroundSize = 'cover';
+                    bgLayer.style.backgroundPosition = 'center';
+                    console.log('🖼️ 已应用聊天背景');
+                } else if (bgLayer && CONFIG.chatBg) {
+                    bgLayer.style.backgroundImage = 'url(' + CONFIG.chatBg + ')';
+                    bgLayer.style.backgroundSize = 'cover';
+                    bgLayer.style.backgroundPosition = 'center';
+                }
+            }
+        } catch(e) { console.warn('应用聊天背景失败:', e); }
+
+        try { applyAvatars(); } catch(e) {}
+        try { renderMessages(); } catch(e) {}
+        try { renderContacts(); } catch(e) {}
+        try { renderRoleManager(); } catch(e) {}
+        try { renderDiaryAll(); } catch(e) {}
+    }, 200);
+
+}).catch(function(e) {
+    console.error('加载资源失败:', e);
+});
 }
 
 function loadAllData() {
@@ -13606,6 +13723,56 @@ function idbGet(key) {
   });
 }
 
+// 读某个角色的消息列表
+function loadRoleMessagesFromIDB(roleId) {
+    return idbGet('role_messages_' + roleId).then(function(msgs) {
+        return Array.isArray(msgs) ? msgs : [];
+    }).catch(function() {
+        return [];
+    });
+}
+
+// 读角色头像（从 IndexedDB）
+function loadRoleAvatarFromIDB(roleId) {
+    return idbGet('role_avatar_' + roleId).then(function(data) {
+        return typeof data === 'string' ? data : '';
+    }).catch(function() { return ''; });
+}
+
+// 写角色头像（到 IndexedDB）
+function saveRoleAvatarToIDB(roleId, dataUrl) {
+    if (!dataUrl) {
+        return idbDelete('role_avatar_' + roleId).catch(function() {});
+    }
+    return idbSet('role_avatar_' + roleId, dataUrl).catch(function(e) {
+        console.error('头像写入 IndexedDB 失败 [' + roleId + ']:', e);
+    });
+}
+
+// 读角色聊天背景（从 IndexedDB）
+function loadRoleChatBgFromIDB(roleId) {
+    return idbGet('role_chatbg_' + roleId).then(function(data) {
+        return typeof data === 'string' ? data : '';
+    }).catch(function() { return ''; });
+}
+
+// 写角色聊天背景（到 IndexedDB）
+function saveRoleChatBgToIDB(roleId, dataUrl) {
+    if (!dataUrl) {
+        return idbDelete('role_chatbg_' + roleId).catch(function() {});
+    }
+    return idbSet('role_chatbg_' + roleId, dataUrl).catch(function(e) {
+        console.error('聊天背景写入 IndexedDB 失败 [' + roleId + ']:', e);
+    });
+}
+
+// 写某个角色的消息列表
+function saveRoleMessagesToIDB(roleId, messages) {
+    return idbSet('role_messages_' + roleId, messages || []).catch(function(e) {
+        console.error('消息写入 IndexedDB 失败 [' + roleId + ']:', e);
+    });
+}
+
 // 写一个 key
 function idbSet(key, value) {
   return openMainDB().then(function(db) {
@@ -13811,80 +13978,94 @@ function loadMemeData() {
 }
 
 function getStorageUsage() {
-  // ===== 1. 统计 LocalStorage =====
-  var lsSize = 0;
-  var lsDetails = {};
-  try {
-    for (var key in localStorage) {
-      if (localStorage.hasOwnProperty(key)) {
-        var len = (localStorage[key] || '').length + key.length;
-        lsSize += len;
-        lsDetails[key] = Math.round(len / 1024);
-      }
-    }
-  } catch (e) {}
+    // ===== 1. 统计 localStorage =====
+    var lsSize = 0;
+    var lsDetails = {};
+    try {
+        for (var key in localStorage) {
+            if (localStorage.hasOwnProperty(key)) {
+                var len = (localStorage[key] || '').length + key.length;
+                lsSize += len;
+                lsDetails[key] = Math.round(len / 1024);
+            }
+        }
+    } catch (e) {}
 
-  // ===== 2. 统计 IndexedDB（表情包 + 图片 + 视频）=====
-  return openMemeDB().then(function(db) {
-    var idbSize = 0;
-    var memeCount = 0;
+    // ===== 2. 统计 IndexedDB（只统计主数据库 LunarReverieDB） =====
+    return openMainDB().then(function(db) {
+        return new Promise(function(resolve) {
+            if (!db.objectStoreNames.contains('data')) {
+                db.close();
+                resolve({
+                    lsSize: lsSize, lsSizeKB: Math.round(lsSize / 1024),
+                    idbSize: 0, idbSizeKB: 0,
+                    totalKB: Math.round(lsSize / 1024),
+                    totalLimitKB: 55 * 1024,
+                    memeCount: memes ? memes.length : 0
+                });
+                return;
+            }
 
-    // 表情包
-    var memeTx = db.transaction('memes', 'readonly');
-    var memeStore = memeTx.objectStore('memes');
+            var idbSize = 0;
+            var idbDetails = {};
+            var tx = db.transaction('data', 'readonly');
+            var store = tx.objectStore('data');
+            var cursor = store.openCursor();
 
-    return new Promise(function(resolve) {
-      var cursor = memeStore.openCursor();
-      cursor.onsuccess = function(e) {
-        var c = e.target.result;
-        if (c) {
-          idbSize += JSON.stringify(c.value).length;
-          memeCount++;
-          c.continue();
-        } else { resolve(); }
-      };
-      cursor.onerror = function() { resolve(); };
-    }).then(function() {
-      // 分类
-      var catTx = db.transaction('categories', 'readonly');
-      var catStore = catTx.objectStore('categories');
-      return new Promise(function(resolve) {
-        var cursor = catStore.openCursor();
-        cursor.onsuccess = function(e) {
-          var c = e.target.result;
-          if (c) {
-            idbSize += JSON.stringify(c.value).length;
-            c.continue();
-          } else { resolve(); }
+            cursor.onsuccess = function(e) {
+                var c = e.target.result;
+                if (c) {
+                    var size = JSON.stringify(c.value).length;
+                    idbSize += size;
+
+                    // 分类统计
+                    var k = c.value.key || '';
+                    var label = k;
+                    if (k.indexOf('role_messages_') === 0) label = '聊天记录';
+                    else if (k.indexOf('role_avatar_') === 0) label = '角色头像';
+                    else if (k.indexOf('role_chatbg_') === 0) label = '聊天背景';
+                    else if (k === 'ds_multirole_v2') label = '主数据';
+                    else if (k === 'user_moments_v1') label = '用户朋友圈';
+                    else if (k === 'moment_notifications_v1') label = '朋友圈通知';
+
+                    idbDetails[label] = (idbDetails[label] || 0) + Math.round(size / 1024);
+
+                    c.continue();
+                } else {
+                    db.close();
+                    resolve({
+                        lsSize: lsSize,
+                        lsSizeKB: Math.round(lsSize / 1024),
+                        idbSize: idbSize,
+                        idbSizeKB: Math.round(idbSize / 1024),
+                        idbDetails: idbDetails,
+                        totalKB: Math.round((lsSize + idbSize) / 1024),
+                        totalLimitKB: 55 * 1024,
+                        memeCount: memes ? memes.length : 0
+                    });
+                }
+            };
+            cursor.onerror = function() {
+                db.close();
+                resolve({
+                    lsSize: lsSize, lsSizeKB: Math.round(lsSize / 1024),
+                    idbSize: 0, idbSizeKB: 0,
+                    totalKB: Math.round(lsSize / 1024),
+                    totalLimitKB: 55 * 1024,
+                    memeCount: memes ? memes.length : 0
+                });
+            };
+        });
+    }).catch(function(e) {
+        console.error('存储统计失败:', e);
+        return {
+            lsSize: lsSize, lsSizeKB: Math.round(lsSize / 1024),
+            idbSize: 0, idbSizeKB: 0,
+            totalKB: Math.round(lsSize / 1024),
+            totalLimitKB: 55 * 1024,
+            memeCount: memes ? memes.length : 0
         };
-        cursor.onerror = function() { resolve(); };
-      });
-    }).then(function() {
-      db.close();
-      return {
-        lsSize: lsSize,
-        lsSizeKB: Math.round(lsSize / 1024),
-        lsDetails: lsDetails,
-        idbSize: idbSize,
-        idbSizeKB: Math.round(idbSize / 1024),
-        memeCount: memeCount,
-        totalKB: Math.round((lsSize + idbSize) / 1024),
-        // 上限用 LocalStorage 的 5MB（因为大部分数据在 localStorage）
-        lsLimitKB: 5 * 1024
-      };
     });
-  }).catch(function(e) {
-    return {
-      lsSize: lsSize,
-      lsSizeKB: Math.round(lsSize / 1024),
-      lsDetails: lsDetails,
-      idbSize: 0,
-      idbSizeKB: 0,
-      memeCount: 0,
-      totalKB: Math.round(lsSize / 1024),
-      lsLimitKB: 5 * 1024
-    };
-  });
 }
 
 // 调试用：查看详细用量（控制台输入 showStorageDetail()）
@@ -13906,53 +14087,56 @@ window.showStorageDetail = function() {
 };
 
 function updateStorageDisplay() {
-  getStorageUsage().then(function(usage) {
-    var statusEl = document.getElementById('storageStatus');
-    var countEl = document.getElementById('storageMemeCount');
-    var sizeEl = document.getElementById('storageSize');
-    var remainEl = document.getElementById('storageRemain');
-    var progressEl = document.getElementById('storageProgressBar');
+    getStorageUsage().then(function(usage) {
+        var statusEl = document.getElementById('storageStatus');
+        var countEl = document.getElementById('storageMemeCount');
+        var sizeEl = document.getElementById('storageSize');
+        var remainEl = document.getElementById('storageRemain');
+        var progressEl = document.getElementById('storageProgressBar');
 
-    // 百分比基于 LocalStorage 的 5MB 上限
-    var pct = Math.min(100, Math.round((usage.lsSizeKB / usage.lsLimitKB) * 100));
+        // ⭐ 新逻辑：按总量百分比算
+        var pct = Math.min(100, Math.round((usage.totalKB / usage.totalLimitKB) * 100));
 
-    if (statusEl) {
-      if (pct > 80) {
-        statusEl.textContent = '⚠️ 空间紧张 (' + pct + '%)';
-        statusEl.style.color = '#ff6b6b';
-      } else if (pct > 60) {
-        statusEl.textContent = '⚡ 使用中 (' + pct + '%)';
-        statusEl.style.color = '#fdcb6e';
-      } else {
-        statusEl.textContent = '✅ 空间充足 (' + pct + '%)';
-        statusEl.style.color = '#07c160';
-      }
-    }
+        if (statusEl) {
+            if (pct > 80) {
+                statusEl.textContent = '⚠️ 空间紧张 (' + pct + '%)';
+                statusEl.style.color = '#ff6b6b';
+            } else if (pct > 60) {
+                statusEl.textContent = '⚡ 使用中 (' + pct + '%)';
+                statusEl.style.color = '#fdcb6e';
+            } else {
+                statusEl.textContent = '✅ 空间充足 (' + pct + '%)';
+                statusEl.style.color = '#07c160';
+            }
+        }
 
-    if (countEl) {
-      countEl.textContent = '表情包：' + usage.memeCount + ' 张';
-    }
+        if (countEl) {
+            countEl.textContent = '表情包：' + usage.memeCount + ' 张';
+        }
 
-    if (sizeEl) {
-      sizeEl.textContent = '已用：' + usage.totalKB + ' KB';
-    }
+        // ⭐ 显示明细：localStorage + IndexedDB
+        if (sizeEl) {
+            var lsMB = (usage.lsSizeKB / 1024).toFixed(2);
+            var idbMB = (usage.idbSizeKB / 1024).toFixed(2);
+            sizeEl.textContent = '已用：' + lsMB + ' MB + ' + idbMB + ' MB';
+        }
 
-    if (remainEl) {
-      var remain = Math.max(0, usage.lsLimitKB - usage.lsSizeKB);
-      remainEl.textContent = '剩余：' + remain + ' KB';
-    }
+        if (remainEl) {
+            var remainMB = ((usage.totalLimitKB - usage.totalKB) / 1024).toFixed(2);
+            remainEl.textContent = '剩余：' + remainMB + ' MB';
+        }
 
-    if (progressEl) {
-      progressEl.style.width = pct + '%';
-      if (pct > 80) {
-        progressEl.style.background = 'linear-gradient(90deg, #ff6b6b, #ee5a24)';
-      } else if (pct > 60) {
-        progressEl.style.background = 'linear-gradient(90deg, #fdcb6e, #f0932b)';
-      } else {
-        progressEl.style.background = 'linear-gradient(90deg, #a29bfe, #6c5ce7)';
-      }
-    }
-  });
+        if (progressEl) {
+            progressEl.style.width = pct + '%';
+            if (pct > 80) {
+                progressEl.style.background = 'linear-gradient(90deg, #ff6b6b, #ee5a24)';
+            } else if (pct > 60) {
+                progressEl.style.background = 'linear-gradient(90deg, #fdcb6e, #f0932b)';
+            } else {
+                progressEl.style.background = 'linear-gradient(90deg, #a29bfe, #6c5ce7)';
+            }
+        }
+    });
 }
 
 async function fetchModelsFromRelay() {
@@ -14173,6 +14357,11 @@ function openChat(fromContacts) {
     }
     updateChatTitle();
     renderMessages();
+    // ⭐ 应用聊天背景
+    try {
+        var _bgRole = getCurrentRole();
+        if (_bgRole) applyChatBgForRole(_bgRole);
+    } catch(e) {}
     if (document.getElementById('contactsScreen').classList.contains('open')) { renderContacts(); }
     if (CONFIG.heart.floatingEnabled !== false) { setTimeout(showFloatingHeart, 300); }
 }
