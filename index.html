@@ -7536,7 +7536,7 @@ function deepCloneRole(role) {
     }
     if (role.extendedState) {
         clone.extendedState = {
-            lifeLogs: role.extendedState.lifeLogs ? role.extendedState.lifeLogs.slice() : [],
+           
             lastActiveMessage: role.extendedState.lastActiveMessage ? { time: role.extendedState.lastActiveMessage.time, content: role.extendedState.lastActiveMessage.content, topic: role.extendedState.lastActiveMessage.topic } : { time: null, content: '', topic: '' },
             intimacy: role.extendedState.intimacy || 0,
             offlineMessageHistory: role.extendedState.offlineMessageHistory ? role.extendedState.offlineMessageHistory.slice() : [],
@@ -10461,7 +10461,7 @@ function updateContextMemory(role, userMessage, aiReply) {
 
 function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMode) {
     var state = role.extendedState || {};
-    var lifeLogs = (state.lifeLogs || []).filter(function(log) { return !log.sent; });
+   
     var contextMem = state.contextMemory || { lastTopic: '', lastUserEmotion: '', lastUserMessage: '' };
     var summary = state.contextSummary || '你们还没有深入聊过，ta好像还在了解你。';
     var intimacyLevel = getIntimacyLevel(intimacy);
@@ -10486,11 +10486,7 @@ function buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMo
         prompt += '【上次聊的话题】\n你们聊到了「' + contextMem.lastTopic + '」' + (contextMem.lastUserEmotion ? '，用户当时的情绪是「' + contextMem.lastUserEmotion + '」' : '') + '\n\n';
     }
 
-    if (isLifeLogMode && lifeLogs.length > 0) {
-        prompt += '【你的生活片段】\n你可以从中选1件分享给用户：\n';
-        lifeLogs.forEach(function(log) { prompt += '- ' + log.emoji + ' ' + log.content + '\n'; });
-        prompt += '\n';
-    }
+   
 
     prompt += '【语气指南】\n' + getIntimacyStyle(intimacy) + '\n\n';
     prompt += '【任务】\n给用户发一条消息，像真人一样自然。要求：\n';
@@ -10529,11 +10525,7 @@ function generateActiveMessage(role) {
     var lastUserTime = state.lastUserMessageTime || CONFIG.lastChatVisit[role.id] || 0;
     var timeSinceLastUser = now - lastUserTime;
     var isLifeLogMode = timeSinceLastUser > CONSTANTS.OFFLINE_THRESHOLD;
-    if (isLifeLogMode) {
-        var logs = state.lifeLogs || [];
-        var unsentLogs = logs.filter(function(log) { return !log.sent; });
-        if (unsentLogs.length === 0) { generateLifeLog(role); }
-    }
+   
     var systemPrompt = buildActiveMessagePrompt(role, timeSinceLastUser, intimacy, isLifeLogMode);
     var userPrompt = '（用户没有说话，你想对ta说什么？）';
     var controller = new AbortController();
@@ -10590,7 +10582,7 @@ function generateFallbackMessage(role) {
     var baseMsg = messages[Math.floor(Math.random() * messages.length)];
     var finalMsg = baseMsg;
     if (isLifeLogMode) {
-        var lifeLogs = (state.lifeLogs || []).filter(function(log) { return !log.sent; });
+       
         if (lifeLogs.length > 0) {
             var log = lifeLogs[0];
             log.sent = true;
@@ -10600,34 +10592,6 @@ function generateFallbackMessage(role) {
     state.lastActiveMessage = { time: new Date().toISOString(), content: finalMsg, topic: state.contextMemory ? state.contextMemory.lastTopic : '日常' };
     debouncedSaveAllData();
     return finalMsg;
-}
-
-function generateLifeLog(role) {
-    if (!role || !role.extendedState) return null;
-    var now = new Date();
-    var today = now.toDateString();
-    var logsToday = role.extendedState.lifeLogs.filter(function(log) { return new Date(log.date).toDateString() === today; });
-    if (logsToday.length >= 2) return null;
-    var logTypes = [
-        { emoji: '☕️', templates: ['今天路过咖啡店，看到橱窗里摆着你喜欢的甜点', '早上泡了一杯咖啡，想起了你喝咖啡时的样子'] },
-        { emoji: '📚', templates: ['整理书架时翻到一本你觉得会喜欢的书', '今天读了一本小说，里面有个角色很像你'] },
-        { emoji: '🌅', templates: ['今天傍晚的夕阳特别美，好想和你一起看', '清晨醒来，窗外有鸟叫，想到了你'] },
-        { emoji: '🎵', templates: ['今天听到一首歌，歌词让我想起你', '单曲循环了一首歌，是你上次推荐的那首'] },
-        { emoji: '🌸', templates: ['路过花店，看到你最喜欢的那种花', '今天天气很好，想起了和你一起散步的下午'] },
-        { emoji: '🌙', templates: ['今晚的月亮特别圆，你看到了吗', '深夜睡不着，在想你现在在做什么'] },
-        { emoji: '🍜', templates: ['今天做了你上次说想吃的菜', '路过一家店，想起了你说过想一起去'] },
-        { emoji: '💭', templates: ['今天突然想起你说过的一句话', '发呆的时候，脑子里全是你'] }
-    ];
-    var intimacy = role.extendedState.intimacy || 0;
-    var logType;
-    if (intimacy > 60) logType = logTypes[Math.floor(Math.random() * logTypes.length)];
-    else if (intimacy > 30) { var midTypes = logTypes.slice(0, 6); logType = midTypes[Math.floor(Math.random() * midTypes.length)]; }
-    else { var lowTypes = logTypes.slice(2, 5); logType = lowTypes[Math.floor(Math.random() * lowTypes.length)]; }
-    var template = logType.templates[Math.floor(Math.random() * logType.templates.length)];
-    var log = { date: now.toISOString(), emoji: logType.emoji, content: template, sent: false };
-    role.extendedState.lifeLogs.push(log);
-    debouncedSaveAllData();
-    return log;
 }
 
 function checkAndSendActiveMessage(role) {
