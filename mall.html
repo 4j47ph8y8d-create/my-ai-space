@@ -1088,6 +1088,70 @@ function getApiKeyFromMain() {
     return '';
 }
 
+// ⭐ 从主应用读取完整 API 配置（支持直连/中转/联网）
+function getAIConfigFromMain() {
+    try {
+        var raw = localStorage.getItem('ds_multirole_v2');
+        if (raw) {
+            var data = JSON.parse(raw);
+            var cfg = data.config || {};
+            var mode = cfg.accessMode || 'direct';
+
+            var apiKey, endpoint, model;
+            if (mode === 'direct') {
+                apiKey = cfg.apiKey;
+                endpoint = 'https://api.deepseek.com/v1';
+                model = cfg.model || 'deepseek-v4-pro';
+            } else if (mode === 'relay') {
+                apiKey = cfg.relayApiKey || cfg.apiKey;
+                endpoint = cfg.relayEndpoint;
+                model = cfg.relayModel || 'gpt-3.5-turbo';
+            } else if (mode === 'websearch') {
+                apiKey = cfg.websearchApiKey;
+                endpoint = cfg.websearchEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+                model = cfg.websearchModel || 'qwen-plus';
+            }
+
+            return { apiKey: apiKey, endpoint: endpoint, model: model };
+        }
+    } catch (_) {}
+    return null;
+}
+
+// ⭐ 统一的 AI 调用
+function callMainAI(systemPrompt, userMessage, maxTokens) {
+    var cfg = getAIConfigFromMain();
+    if (!cfg || !cfg.apiKey || !cfg.endpoint) {
+        return Promise.reject(new Error('未配置 API'));
+    }
+
+    var url = cfg.endpoint.replace(/\/+$/, '') + '/chat/completions';
+
+    return fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + cfg.apiKey
+        },
+        body: JSON.stringify({
+            model: cfg.model,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userMessage }
+            ],
+            temperature: 0.85,
+            max_tokens: maxTokens || 150
+        })
+    }).then(function(resp) {
+        if (!resp.ok) throw new Error('API 错误 ' + resp.status);
+        return resp.json();
+    }).then(function(data) {
+        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (!reply) throw new Error('未获取到回复');
+        return reply.trim();
+    });
+}
+
 function getModelFromMain() {
     try {
         var raw = localStorage.getItem('ds_multirole_v2');
@@ -1103,38 +1167,106 @@ function getRoleById(roleId) {
     return mallRoles.find(function(r) { return r.id === roleId; }) || null;
 }
 
-// ===== 读写商城数据（存到主应用的 ds_multirole_v2 中） =====
-function loadMallData() {
+// ⭐ 商城专用的 IndexedDB 读写（防止被主应用覆盖）
+function openMallIDB() {
+    return new Promise(function(resolve, reject) {
+        var request = indexedDB.open('LunarReverieDB', 1);
+        request.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('data')) {
+                db.createObjectStore('data', { keyPath: 'key' });
+            }
+        };
+        request.onsuccess = function(e) { resolve(e.target.result); };
+        request.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+function mallIdbSet(key, value) {
+    return openMallIDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            if (!db.objectStoreNames.contains('data')) { db.close(); resolve(); return; }
+            var tx = db.transaction('data', 'readwrite');
+            var store = tx.objectStore('data');
+            var req = store.put({ key: key, value: value, updatedAt: Date.now() });
+            req.onsuccess = function() { db.close(); resolve(); };
+            req.onerror = function() { db.close(); reject(req.error); };
+        });
+    });
+}
+
+// ⭐ 读主数据（localStorage 优先，空则读 IndexedDB）
+function readMainData() {
     try {
         var raw = localStorage.getItem('ds_multirole_v2');
-        if (raw) {
-            var data = JSON.parse(raw);
-            if (data.mall) {
-                mallBalance = data.mall.balance !== undefined ? data.mall.balance : MALL_CONFIG.initialBalance;
-                mallCart = data.mall.cart || [];
-                mallOrders = data.mall.orders || [];
-                mallRechargeHistory = data.mall.rechargeHistory || [];
-                mallAiGiftReceived = data.mall.aiGiftReceived || [];
-                if (data.mall.shoppingTogether) {
-                    Object.assign(mallShoppingTogether, data.mall.shoppingTogether);
-                    if (mallShoppingTogether.roleId) {
-                        var roles = loadRolesFromMain();
-                        var role = roles.find(function(r) { return r.id === mallShoppingTogether.roleId; });
-                        if (role) {
-                            mallShoppingTogether.roleData = role;
-                            mallShoppingTogether.roleName = role.name;
-                        } else {
-                            mallShoppingTogether.isActive = false;
-                            mallShoppingTogether.roleId = null;
-                            mallShoppingTogether.roleName = '';
-                            mallShoppingTogether.roleData = null;
-                        }
+        if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return null;
+}
+
+// ⭐ 云同步
+function syncMallToCloud() {
+    var token = localStorage.getItem('dream_token');
+    if (!token) return;
+
+    var data = readMainData();
+    if (!data) return;
+
+    var cloudData = {
+        config: data.config || {},
+        roles: data.roles || [],
+        diaries: (data.config && data.config.diaries) || [],
+        mall: data.mall || {}
+    };
+
+    fetch('https://my-ai-space-production.up.railway.app/api/data/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(cloudData)
+    }).then(function(res) { return res.json(); })
+      .then(function(result) {
+          if (result.success) {
+              console.log('☁️ 商城数据已同步到云端');
+          }
+      }).catch(function(e) {
+          console.error('☁️ 商城云端同步失败:', e);
+      });
+}
+
+// ===== 读写商城数据（存到主应用的 ds_multirole_v2 中） =====
+
+function loadMallData() {
+    try {
+        var data = readMainData();
+        if (data && data.mall) {
+            mallBalance = data.mall.balance !== undefined ? data.mall.balance : MALL_CONFIG.initialBalance;
+            mallCart = data.mall.cart || [];
+            mallOrders = data.mall.orders || [];
+            mallRechargeHistory = data.mall.rechargeHistory || [];
+            mallAiGiftReceived = data.mall.aiGiftReceived || [];
+            if (data.mall.shoppingTogether) {
+                Object.assign(mallShoppingTogether, data.mall.shoppingTogether);
+                if (mallShoppingTogether.roleId) {
+                    var roles = loadRolesFromMain();
+                    var role = roles.find(function(r) { return r.id === mallShoppingTogether.roleId; });
+                    if (role) {
+                        mallShoppingTogether.roleData = role;
+                        mallShoppingTogether.roleName = role.name;
+                    } else {
+                        mallShoppingTogether.isActive = false;
+                        mallShoppingTogether.roleId = null;
+                        mallShoppingTogether.roleName = '';
+                        mallShoppingTogether.roleData = null;
                     }
                 }
-                return;
             }
+            return;
         }
     } catch (_) {}
+
     mallBalance = MALL_CONFIG.initialBalance;
     mallCart = [];
     mallOrders = [];
@@ -1146,7 +1278,9 @@ function saveMallData() {
     try {
         var raw = localStorage.getItem('ds_multirole_v2');
         var data = raw ? JSON.parse(raw) : {};
+
         if (!data.mall) data.mall = {};
+
         data.mall.balance = mallBalance;
         data.mall.cart = mallCart;
         data.mall.orders = mallOrders;
@@ -1161,28 +1295,41 @@ function saveMallData() {
             isActive: mallShoppingTogether.isActive,
             pendingProduct: mallShoppingTogether.pendingProduct,
         };
+
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+
+        // ⭐ 同步写 IndexedDB（防止被主应用覆盖）
+        mallIdbSet('ds_multirole_v2', data).catch(function(e) {
+            console.error('商城 IndexedDB 写入失败:', e);
+        });
+
+        // ⭐ 同步到云端
+        syncMallToCloud();
+
     } catch (_) {}
 }
 
 // ===== 更新主应用心跳和记忆 =====
+
 function saveHeartDataToMain(roleId, heartData) {
     try {
         var raw = localStorage.getItem('ds_multirole_v2');
-        if (raw) {
-            var data = JSON.parse(raw);
-            var role = data.roles.find(function(r) { return r.id === roleId; });
-            if (role) {
-                if (!role.heartData) role.heartData = {};
-                role.heartData.value = heartData.value || 65;
-                role.heartData.peakValue = heartData.peakValue || 65;
-                role.heartData.restingValue = heartData.restingValue || 65;
-                role.heartData.recentTrigger = heartData.recentTrigger || '收到礼物 💕';
-                if (heartData.signature) role.heartData.signature = heartData.signature;
-                localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
-                return true;
-            }
-        }
+        if (!raw) return false;
+        var data = JSON.parse(raw);
+        var role = data.roles.find(function(r) { return r.id === roleId; });
+        if (!role) return false;
+
+        if (!role.heartData) role.heartData = {};
+        role.heartData.value = heartData.value || 65;
+        role.heartData.peakValue = heartData.peakValue || 65;
+        role.heartData.restingValue = heartData.restingValue || 65;
+        role.heartData.recentTrigger = heartData.recentTrigger || '收到礼物 💕';
+        if (heartData.signature) role.heartData.signature = heartData.signature;
+
+        localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+        mallIdbSet('ds_multirole_v2', data).catch(function() {});
+        syncMallToCloud();
+        return true;
     } catch (_) {}
     return false;
 }
@@ -1190,20 +1337,28 @@ function saveHeartDataToMain(roleId, heartData) {
 function addMemoryToMain(roleId, text) {
     try {
         var raw = localStorage.getItem('ds_multirole_v2');
-        if (raw) {
-            var data = JSON.parse(raw);
-            var role = data.roles.find(function(r) { return r.id === roleId; });
-            if (role) {
-                if (!Array.isArray(role.memory)) role.memory = [];
-                var exists = role.memory.some(function(m) {
-                    return m.text && m.text.indexOf(text.substring(0, 10)) !== -1;
-                });
-                if (!exists) {
-                    role.memory.push({ text: text, sourceMessageId: 'gift_' + Date.now() });
-                    localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
-                    return true;
-                }
-            }
+        if (!raw) return false;
+        var data = JSON.parse(raw);
+        var role = data.roles.find(function(r) { return r.id === roleId; });
+        if (!role) return false;
+
+        if (!Array.isArray(role.memory)) role.memory = [];
+
+        var exists = role.memory.some(function(m) {
+            return m.text && m.text.indexOf(text.substring(0, 10)) !== -1;
+        });
+
+        if (!exists) {
+            role.memory.push({
+                text: text,
+                level: 'core',
+                sourceMessageId: 'gift_' + Date.now(),
+                timestamp: Date.now()
+            });
+            localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+            mallIdbSet('ds_multirole_v2', data).catch(function() {});
+            syncMallToCloud();
+            return true;
         }
     } catch (_) {}
     return false;
@@ -1215,25 +1370,42 @@ function loadMallProducts() {
     if (!grid) return;
 
     fetch('./products.json').then(function(resp) {
-        if (!resp.ok) throw new Error('加载失败');
-        return resp.json();
-    }).then(function(data) {
-        mallProducts = data.products || [];
-        renderMallProducts();
-        updateMallUI();
-    }).catch(function(e) {
-        console.error('加载商品失败:', e);
-        mallProducts = [
-            { id: 'default_1', name: '纯白衬衫', price: 129, image: '', description: '新疆纯棉制造，柔软舒适', tag: '生活' },
-            { id: 'default_2', name: '真丝睡裙', price: 169, image: '', description: '真蚕丝，柔软舒适', tag: '家居' },
-            { id: 'default_3', name: '情侣拖鞋', price: 49, image: '', description: 'EVA材质，防滑耐磨', tag: '情侣' },
-            { id: 'default_4', name: '手工陶瓷杯', price: 89, image: '', description: '手作质感，独一无二', tag: '生活' },
-            { id: 'default_5', name: '木质香薰', price: 65, image: '', description: '雪松与白麝香', tag: '家居' },
-        ];
-        renderMallProducts();
-        updateMallUI();
-        showToast('📦 已加载备用商品');
-    });
+    if (!resp.ok) throw new Error('加载失败');
+    return resp.json();
+}).then(function(data) {
+    mallProducts = data.products || [];
+    // ⭐ 写入主数据，让主应用能看到商品列表
+    saveProductsToMain();
+    renderMallProducts();
+    updateMallUI();
+}).catch(function(e) {
+    console.error('加载商品失败:', e);
+    mallProducts = [
+        { id: 'default_1', name: '纯白衬衫', price: 129, image: '', description: '新疆纯棉制造，柔软舒适', tag: '生活' },
+        { id: 'default_2', name: '真丝睡裙', price: 169, image: '', description: '真蚕丝，柔软舒适', tag: '家居' },
+        { id: 'default_3', name: '情侣拖鞋', price: 49, image: '', description: 'EVA材质，防滑耐磨', tag: '情侣' },
+        { id: 'default_4', name: '手工陶瓷杯', price: 89, image: '', description: '手作质感，独一无二', tag: '生活' },
+        { id: 'default_5', name: '木质香薰', price: 65, image: '', description: '雪松与白麝香', tag: '家居' },
+    ];
+    saveProductsToMain();
+    renderMallProducts();
+    updateMallUI();
+    showToast('📦 已加载备用商品');
+});
+}
+
+// ⭐ 把商品列表写入主数据
+function saveProductsToMain() {
+    try {
+        var raw = localStorage.getItem('ds_multirole_v2');
+        var data = raw ? JSON.parse(raw) : {};
+        if (!data.mall) data.mall = {};
+        data.mall.products = mallProducts;
+        localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+        console.log('📦 商品列表已同步到主应用，共 ' + mallProducts.length + ' 件');
+    } catch(e) {
+        console.error('同步商品列表失败:', e);
+    }
 }
 
 function renderMallProducts() {
@@ -1370,62 +1542,96 @@ function executePurchase(product, qty, note, mode, targetRole, totalPrice) {
 }
 
 // ===== 同步礼物到主应用 =====
+
 function syncGiftToMainApp(role, product, qty, note, totalPrice) {
     try {
         var raw = localStorage.getItem('ds_multirole_v2');
         if (!raw) return;
+
         var data = JSON.parse(raw);
-        
-        var targetRole = data.roles.find(function(r) { return r.id === role.id; });
-        if (!targetRole) {
-            console.warn('⚠️ 主应用中未找到角色:', role.name);
-            return;
-        }
-        
-        if (!Array.isArray(targetRole.messages)) targetRole.messages = [];
-        
-        var exists = targetRole.messages.some(function(m) {
-            return m.type === 'gift' && 
-                   m.giftData && 
-                   m.giftData.productName === product.name &&
-                   m.giftData.note === note;
+
+        // ⭐ 从 IndexedDB 读消息
+        openMallIDB().then(function(db) {
+            var tx = db.transaction('data', 'readonly');
+            var store = tx.objectStore('data');
+            var req = store.get('role_messages_' + role.id);
+
+            req.onsuccess = function() {
+                var msgs = req.result ? req.result.value : [];
+                if (!Array.isArray(msgs)) msgs = [];
+
+                // 去重
+                var exists = msgs.some(function(m) {
+                    return m.type === 'gift' &&
+                        m.giftData &&
+                        m.giftData.productName === product.name &&
+                        m.giftData.note === note;
+                });
+
+                if (exists) {
+                    db.close();
+                    console.log('⏭️ 礼物已存在，跳过');
+                    return;
+                }
+
+                var giftMessage = {
+                    id: 'gift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                    role: 'user',
+                    content: '💝 送了「' + product.name + '」给 ' + role.name + (note ? '（附言：' + note + '）' : ''),
+                    type: 'gift',
+                    time: new Date().toISOString(),
+                    giftData: {
+                        productName: product.name,
+                        price: product.price,
+                        qty: qty || 1,
+                        note: note || '',
+                        fromName: '你',
+                        toName: role.name,
+                        fromId: 'user',
+                        toId: role.id,
+                        totalPrice: totalPrice || product.price * (qty || 1)
+                    },
+                    hasAudio: false,
+                    audioUrl: null,
+                    audioDuration: 0,
+                    voiceRequested: false
+                };
+
+                msgs.push(giftMessage);
+
+                // ⭐ 写回 IndexedDB
+                var writeTx = db.transaction('data', 'readwrite');
+                var writeStore = writeTx.objectStore('data');
+                writeStore.put({
+                    key: 'role_messages_' + role.id,
+                    value: msgs,
+                    updatedAt: Date.now()
+                });
+
+                writeTx.oncomplete = function() {
+                    db.close();
+                    console.log('✅ 礼物已写入 IndexedDB:', product.name, '→', role.name);
+                };
+                writeTx.onerror = function() {
+                    db.close();
+                    console.error('❌ 礼物写入失败');
+                };
+            };
+
+            req.onerror = function() {
+                db.close();
+                console.error('读取消息失败');
+            };
         });
-        
-        if (exists) {
-            console.log('⏭️ 礼物已存在，跳过重复添加');
-            return;
-        }
-        
-        var giftMessage = {
-            id: 'gift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            role: 'user',
-            content: '💝 送了「' + product.name + '」给 ' + role.name + (note ? '（附言：' + note + '）' : ''),
-            type: 'gift',
-            time: new Date().toISOString(),
-            giftData: {
-                productName: product.name,
-                price: product.price,
-                qty: qty || 1,
-                note: note || '',
-                fromName: '你',
-                toName: role.name,
-                fromId: 'user',
-                toId: role.id,
-                totalPrice: totalPrice || product.price * (qty || 1)
-            },
-            hasAudio: false,
-            audioUrl: null,
-            audioDuration: 0,
-            voiceRequested: false
-        };
-        targetRole.messages.push(giftMessage);
-        
+
+        // 未读红点 + 云端同步
         if (!data.config) data.config = {};
         if (!data.config.unreadCount) data.config.unreadCount = {};
         data.config.unreadCount[role.id] = (data.config.unreadCount[role.id] || 0) + 1;
-        
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
-        console.log('✅ 礼物已同步到主应用:', product.name, '→', role.name);
+        mallIdbSet('ds_multirole_v2', data).catch(function() {});
+        syncMallToCloud();
+
     } catch (e) {
         console.error('同步礼物到主应用失败:', e);
     }
@@ -1550,50 +1756,50 @@ function getPersonalityFallback(role) {
 }
 
 // ===== 礼物回复（AI 生成，符合人设） =====
+
 function triggerGiftChatReply(role, product, note) {
-    var apiKey = getApiKeyFromMain();
-    if (!apiKey) {
+    var cfg = getAIConfigFromMain();
+    if (!cfg || !cfg.apiKey) {
         var fallbackReplies = getPersonalityFallback(role);
         var reply = fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)];
         showToast('💬 ' + role.name + '：' + reply);
         saveReplyToMainApp(role, reply);
         return;
     }
-    
-    var model = getModelFromMain();
+
+    // ⭐ 加更多上下文：记忆、背景
+    var memoryText = '';
+    if (Array.isArray(role.memory) && role.memory.length > 0) {
+        memoryText = '\n【你记得关于用户的事】\n' +
+            role.memory.slice(0, 10).map(function(m) {
+                return '• ' + (m.text || m);
+            }).join('\n') + '\n';
+    }
+
     var systemPrompt = '你正在扮演「' + role.name + '」。用户刚刚送了你一份礼物。\n' +
         '角色人设：' + (role.persona || '一个温柔体贴的人') + '\n' +
-        '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n\n' +
+        '角色背景：' + (role.background || '') + '\n' +
+        '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n' +
+        (role.extra ? '补充：' + role.extra + '\n' : '') +
+        memoryText + '\n' +
         '要求：\n' +
         '1. 用第一人称「我」说话，完全代入角色\n' +
         '2. 根据你的性格和与用户的关系自然回应\n' +
         '3. 不要用"哇""天哪"这种夸张的词（除非你人设就是这样）\n' +
         '4. 控制在 2-3 句话，口语化，像真人聊天\n' +
-        '5. 不要说"谢谢你"这种生硬的词，换成更自然的表达';
-    
-    var giftMessage = '用户送给你：' + product.name + (note ? '（附言：' + note + '）' : '');
-    
-    fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({
-            model: model,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: giftMessage }
-            ],
-            temperature: 0.85,
-            max_tokens: 150,
-        })
-    }).then(function(resp) {
-        if (!resp.ok) throw new Error('API 错误');
-        return resp.json();
-    }).then(function(data) {
-        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (reply) {
-            showToast('💬 ' + role.name + '：' + reply.substring(0, 50) + (reply.length > 50 ? '...' : ''));
-            saveReplyToMainApp(role, reply);
-        }
+        '5. 不要说"谢谢你"这种生硬的词，换成更自然的表达\n' +
+        '6. 如果角色性格是傲娇/高冷，可以假装不在意但实际很在意\n' +
+        '7. 可以提到这件商品如何符合你的喜好\n' +
+        '8. 不要用 emoji（如果人设不用的话）';
+
+    var giftMessage = '用户送给你：' + product.name +
+        (note ? '（附言：' + note + '）' : '') +
+        '\n商品信息：¥' + product.price + '，' + (product.description || '') +
+        '\n请用你的性格自然回应。';
+
+    callMainAI(systemPrompt, giftMessage, 150).then(function(reply) {
+        showToast('💬 ' + role.name + '：' + reply.substring(0, 50) + (reply.length > 50 ? '...' : ''));
+        saveReplyToMainApp(role, reply);
     }).catch(function(e) {
         console.log('送礼回复失败:', e);
         var fallback = getPersonalityFallback(role);
@@ -1604,45 +1810,70 @@ function triggerGiftChatReply(role, product, note) {
 }
 
 // ===== 保存AI回复到主应用 =====
+
 function saveReplyToMainApp(role, reply) {
     try {
-        var raw = localStorage.getItem('ds_multirole_v2');
-        if (!raw) return;
-        var data = JSON.parse(raw);
-        
-        var targetRole = data.roles.find(function(r) { return r.id === role.id; });
-        if (!targetRole) return;
-        
-        if (!Array.isArray(targetRole.messages)) targetRole.messages = [];
-        
-        var exists = targetRole.messages.some(function(m) {
-            return m.role === 'assistant' && m.content === reply;
+        openMallIDB().then(function(db) {
+            var tx = db.transaction('data', 'readonly');
+            var store = tx.objectStore('data');
+            var req = store.get('role_messages_' + role.id);
+
+            req.onsuccess = function() {
+                var msgs = req.result ? req.result.value : [];
+                if (!Array.isArray(msgs)) msgs = [];
+
+                var exists = msgs.some(function(m) {
+                    return m.role === 'assistant' && m.content === reply;
+                });
+
+                if (exists) {
+                    db.close();
+                    return;
+                }
+
+                var replyMessage = {
+                    id: 'reply_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                    role: 'assistant',
+                    content: reply,
+                    type: 'text',
+                    time: new Date().toISOString(),
+                    hasAudio: false,
+                    audioUrl: null,
+                    audioDuration: 0,
+                    voiceRequested: false
+                };
+
+                msgs.push(replyMessage);
+
+                var writeTx = db.transaction('data', 'readwrite');
+                var writeStore = writeTx.objectStore('data');
+                writeStore.put({
+                    key: 'role_messages_' + role.id,
+                    value: msgs,
+                    updatedAt: Date.now()
+                });
+
+                writeTx.oncomplete = function() {
+                    db.close();
+                    console.log('✅ AI回复已写入 IndexedDB');
+                };
+            };
+
+            req.onerror = function() { db.close(); };
         });
-        
-        if (exists) {
-            console.log('⏭️ 回复已存在，跳过');
-            return;
+
+        // 未读 + 云端
+        var raw = localStorage.getItem('ds_multirole_v2');
+        if (raw) {
+            var data = JSON.parse(raw);
+            if (!data.config) data.config = {};
+            if (!data.config.unreadCount) data.config.unreadCount = {};
+            data.config.unreadCount[role.id] = (data.config.unreadCount[role.id] || 0) + 1;
+            localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
+            mallIdbSet('ds_multirole_v2', data).catch(function() {});
+            syncMallToCloud();
         }
-        
-        var replyMessage = {
-            id: 'reply_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-            role: 'assistant',
-            content: reply,
-            type: 'text',
-            time: new Date().toISOString(),
-            hasAudio: false,
-            audioUrl: null,
-            audioDuration: 0,
-            voiceRequested: false
-        };
-        targetRole.messages.push(replyMessage);
-        
-        if (!data.config) data.config = {};
-        if (!data.config.unreadCount) data.config.unreadCount = {};
-        data.config.unreadCount[role.id] = (data.config.unreadCount[role.id] || 0) + 1;
-        
-        localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
-        console.log('✅ AI回复已存入主应用:', reply.substring(0, 30) + '...');
+
     } catch (e) {
         console.error('保存AI回复失败:', e);
     }
@@ -1883,9 +2114,10 @@ function updateMallUI() {
 // ============================================================
 
 // ===== 生成符合人设的开场白 =====
+
 function generateShoppingGreeting(role) {
-    var apiKey = getApiKeyFromMain();
-    if (!apiKey) {
+    var cfg = getAIConfigFromMain();
+    if (!cfg || !cfg.apiKey) {
         var fallbacks = [
             '今天想和你一起逛逛 💕',
             '好久没逛街了，和你一起真好',
@@ -1894,35 +2126,19 @@ function generateShoppingGreeting(role) {
         ];
         return Promise.resolve(fallbacks[Math.floor(Math.random() * fallbacks.length)]);
     }
-    
-    var model = getModelFromMain();
+
     var systemPrompt = '你正在扮演「' + role.name + '」。用户邀请你一起逛商城。\n' +
         '角色人设：' + (role.persona || '一个温柔体贴的人') + '\n' +
+        '角色背景：' + (role.background || '') + '\n' +
         '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n\n' +
         '要求：\n' +
         '1. 用第一人称「我」说话，完全代入角色\n' +
         '2. 说一句自然的口语化开场白，表达你愿意一起逛\n' +
         '3. 不要说"你好""很高兴"这种生硬的话\n' +
         '4. 控制在 1-2 句话，像真人一样自然';
-    
-    return fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({
-            model: model,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: '我们一起去逛商城吧' }
-            ],
-            temperature: 0.85,
-            max_tokens: 80,
-        })
-    }).then(function(resp) {
-        if (!resp.ok) throw new Error('API 错误');
-        return resp.json();
-    }).then(function(data) {
-        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        return reply ? reply.trim() : null;
+
+    return callMainAI(systemPrompt, '我们一起去逛商城吧', 80).then(function(reply) {
+        return reply;
     }).catch(function(e) {
         console.log('生成开场白失败:', e);
         return null;
@@ -2028,21 +2244,23 @@ function renderScMessages() {
 }
 
 // ===== 生成陪逛回复（含商品列表 + 人设） =====
+
 function generateScReply(userMessage, mentionedProduct) {
     var role = scCurrentRole;
-    var apiKey = getApiKeyFromMain();
-    
+    var cfg = getAIConfigFromMain();
+
+    // 商品列表
     var productListText = '';
     if (mallProducts.length > 0) {
         productListText = '\n【商城商品列表】\n';
         mallProducts.forEach(function(p) {
-            productListText += '• "' + p.name + '" ¥' + p.price + '（' + (p.description || '') + '）\n';
+            productListText += '• 「' + p.name + '」¥' + p.price + '（' + (p.description || '') + '）\n';
         });
-        productListText += '\n你可以根据你的性格，从这些商品中选一件你喜欢的推荐给用户。';
+        productListText += '\n你可以根据你的性格，从这些商品中选一件你喜欢的推荐给用户。\n';
         productListText += '如果你特别喜欢某件商品，可以告诉用户你想要它。\n';
     }
-    
-    if (!apiKey) {
+
+    if (!cfg || !cfg.apiKey) {
         return new Promise(function(resolve) {
             var fallbacks = [
                 { text: '嗯嗯，我在听你说 💕', product: mentionedProduct || null },
@@ -2058,70 +2276,50 @@ function generateScReply(userMessage, mentionedProduct) {
                 });
             } else if (userMessage.indexOf('喜欢什么') !== -1 || userMessage.indexOf('想要什么') !== -1 || userMessage.indexOf('推荐') !== -1) {
                 var randomProduct = mallProducts[Math.floor(Math.random() * mallProducts.length)];
-                var reply = '我觉得那个' + randomProduct.name + '不错，你觉得呢？';
-                resolve({ text: reply, product: randomProduct });
+                resolve({ text: '我觉得那个' + randomProduct.name + '不错，你觉得呢？', product: randomProduct });
             } else {
                 resolve(fallbacks[Math.floor(Math.random() * fallbacks.length)]);
             }
         });
     }
-    
-    var model = getModelFromMain();
+
+    // ⭐ 加更多上下文
+    var memoryText = '';
+    if (Array.isArray(role.memory) && role.memory.length > 0) {
+        memoryText = '\n【你记得关于用户的事】\n' +
+            role.memory.slice(0, 10).map(function(m) {
+                return '• ' + (m.text || m);
+            }).join('\n') + '\n';
+    }
+
     var systemPrompt = '你正在扮演「' + role.name + '」，和用户一起逛商城。\n' +
         '角色人设：' + (role.persona || '一个温柔体贴的人') + '\n' +
+        '角色背景：' + (role.background || '') + '\n' +
         '说话风格：' + (role.style || '温柔细腻，像真人聊天一样自然') + '\n' +
-        '其他设定：' + (role.extra || '') + '\n\n' +
+        '其他设定：' + (role.extra || '') + '\n' +
+        memoryText + '\n' +
         '【当前场景】你们正在逛商城，用户可以随时和你聊天。\n' +
         '【重要】\n' +
         '1. 用第一人称「我」说话，完全代入角色\n' +
         '2. 根据你的性格自然回应，不要说模板话\n' +
         '3. 如果用户问你喜欢什么，从商品列表里选一件表达你的喜好\n' +
         '4. 控制在一段话左右，口语化，像真人聊天\n' +
+        '5. 结合你对用户的记忆，说话要有针对性和亲密感\n' +
         productListText +
         (mentionedProduct ? '\n用户提到了商品：「' + mentionedProduct.name + '」\n你可以表达你对这件商品的真实看法，根据你的性格来。' : '');
-    
-    return fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({
-            model: model,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userMessage || '我们正在逛商城呢' }
-            ],
-            temperature: 0.85,
-            max_tokens: 150,
-        }),
-    }).then(function(resp) {
-        if (!resp.ok) throw new Error('API 错误');
-        return resp.json();
-    }).then(function(data) {
-        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (reply) {
-            var product = mentionedProduct;
-            if (!product) {
-                var productNames2 = mallProducts.map(function(p) { return p.name; });
-                for (var j = 0; j < productNames2.length; j++) {
-                    if (reply.indexOf(productNames2[j]) !== -1) {
-                        product = mallProducts.find(function(p) { return p.name === productNames2[j]; });
-                        break;
-                    }
-                }
-            }
-            var likeKeywords = ['好喜欢', '想要', '适合', '好看', '漂亮', '心动', '好想', '这个好'];
-            var hasLike = false;
-            for (var k = 0; k < likeKeywords.length; k++) {
-                if (reply.indexOf(likeKeywords[k]) !== -1) {
-                    hasLike = true;
+
+    return callMainAI(systemPrompt, userMessage || '我们正在逛商城呢', 150).then(function(reply) {
+        var product = mentionedProduct;
+        if (!product) {
+            var productNames2 = mallProducts.map(function(p) { return p.name; });
+            for (var j = 0; j < productNames2.length; j++) {
+                if (reply.indexOf(productNames2[j]) !== -1) {
+                    product = mallProducts.find(function(p) { return p.name === productNames2[j]; });
                     break;
                 }
             }
-            if (hasLike && !product && mallProducts.length > 0 && Math.random() > 0.6) {
-                product = mallProducts[Math.floor(Math.random() * mallProducts.length)];
-            }
-            return { text: reply, product: product };
         }
-        throw new Error('未获取到回复');
+        return { text: reply, product: product };
     }).catch(function(e) {
         console.error('生成回复失败:', e);
         return { text: '嗯...我在想 💕', product: null };
@@ -2374,8 +2572,10 @@ function init() {
     loadMallData();
     loadRolesFromMain();
     loadMallProducts();
+
     updateMallUI();
 
+setTimeout(saveProductsToMain, 1000); // ⭐ 1秒后同步商品到主数据
     initShoppingChat();
 
     if (mallShoppingTogether.isActive && mallShoppingTogether.roleId) {
