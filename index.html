@@ -7412,10 +7412,11 @@ function immediateSaveAllData() {
         configToSave.wallpaper = wallpaperFlag;
 
         var data = {
-            config: configToSave,
-            roles: roles.map(function(r) { return deepCloneRole(r); }),
-            currentRoleId: currentRoleId
-        };
+    config: configToSave,
+    roles: roles.map(function(r) { return deepCloneRole(r); }),
+    currentRoleId: currentRoleId,
+    mall: CONFIG.mall || {}
+};
 
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
 
@@ -7680,6 +7681,10 @@ function loadAllData() {
     } catch (_) { savedData = null; }
     if (savedData && savedData.roles && Array.isArray(savedData.roles) && savedData.roles.length > 0) {
         CONFIG = savedData.config || {};
+// ⭐ 从主数据同步 mall 到 CONFIG
+if (savedData.mall) {
+    CONFIG.mall = savedData.mall;
+}
         if (!CONFIG.unreadCount) CONFIG.unreadCount = {};
         if (!CONFIG.timeMode) CONFIG.timeMode = 'HH:MM';
         if (!CONFIG.fontSize) CONFIG.fontSize = 'medium';
@@ -9545,7 +9550,12 @@ function getPeriodStatusForAI() {
 function buildSystemPrompt(role) {
     // ===== 新增：加载商品列表 =====
     var productList = [];
-    try {
+try {
+    // ⭐ 优先从 CONFIG.mall 读
+    if (CONFIG.mall && Array.isArray(CONFIG.mall.products) && CONFIG.mall.products.length > 0) {
+        productList = CONFIG.mall.products;
+    } else {
+        // 兜底从 localStorage 读
         var raw = localStorage.getItem('ds_multirole_v2');
         if (raw) {
             var data = JSON.parse(raw);
@@ -9553,7 +9563,8 @@ function buildSystemPrompt(role) {
                 productList = data.mall.products;
             }
         }
-    } catch (_) {}
+    }
+} catch (_) {}
     
     // 如果没有商品，用默认商品
     if (productList.length === 0) {
@@ -9630,8 +9641,16 @@ abilityBlock += '如果你特别喜欢某件商品，可以告诉用户你喜欢
     abilityBlock += '• 不要每句话都加，只在"很想用表情包表达"的时候用。\n';
     abilityBlock += '• 可用表情包举例：' + memes.slice(0, 5).map(function(m) { return '「' + m.name + '」'; }).join('、') + ' 等\n';
 }
-    abilityBlock += '• 如果很想表达心意，可以在回复末尾加上 [送礼：商品名称]\n';
-    abilityBlock += '• 这些是加分项，不是必须做的，不强行使用。';
+    abilityBlock += '【💝 关于送礼】\n';
+abilityBlock += '以下场景你会想送礼物给用户：\n';
+abilityBlock += '• 用户心情不好，你想哄 TA 开心\n';
+abilityBlock += '• 用户提到喜欢某件商品（比如"这个好可爱""我想要那个"）\n';
+abilityBlock += '• 纪念日、节日、特殊日子\n';
+abilityBlock += '• 你突然很想表达心意\n';
+abilityBlock += '• 用户最近辛苦了，你想奖励 TA\n';
+abilityBlock += '送礼时，在回复末尾加上 [送礼：商品名称]（名称必须和上面商品列表中的名字完全一致）。\n';
+abilityBlock += '⚠️ 不要每句话都送，只在真的想表达心意时用。\n';
+abilityBlock += '⚠️ 不要连着送，一个对话里送一次就够了。';
     parts.push(abilityBlock);
     
     // 5. 语音规则：大幅精简，只保留触发条件（不要塞满“规则条”）
