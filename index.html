@@ -18836,21 +18836,41 @@ function createInlinePlayer(audioUrl) {
     drawer.appendChild(wrapper);
 }
 
-document.getElementById('dataExportBtn').addEventListener('click', function() {
+document.getElementById('dataExportBtn').addEventListener('click', async function() {
     var exportType = getSelectedExportType();
+
+    showToast('📦 正在打包数据...');
+
+    // ⭐ 从 IndexedDB 读完整的角色数据
+    async function getFullRole(role) {
+        var full = deepCloneRole(role);
+        // 从 IndexedDB 读消息
+        full.messages = await loadRoleMessagesFromIDB(role.id).catch(function() {
+            return role.messages || [];
+        });
+        // 从 IndexedDB 读头像
+        full.avatar = await loadRoleAvatarFromIDB(role.id).catch(function() {
+            return role.avatar || '';
+        });
+        // 从 IndexedDB 读聊天背景
+        full.chatBg = await loadRoleChatBgFromIDB(role.id).catch(function() {
+            return role.chatBg || '';
+        });
+        return full;
+    }
+
     var exportData = {
         exportTime: new Date().toISOString(),
-        version: '4.0',
+        version: '4.0-full',
         type: exportType
     };
 
-    switch(exportType) {
-        case 'all':
+    try {
+        if (exportType === 'all') {
             exportData.config = JSON.parse(JSON.stringify(CONFIG));
-            exportData.roles = roles.map(function(r) { return deepCloneRole(r); });
+            exportData.roles = await Promise.all(roles.map(getFullRole));
             exportData.diaries = CONFIG.diaries || [];
-            break;
-        case 'settings':
+        } else if (exportType === 'settings') {
             exportData.config = {
                 wallpaper: CONFIG.wallpaper,
                 chatBg: CONFIG.chatBg,
@@ -18867,66 +18887,91 @@ document.getElementById('dataExportBtn').addEventListener('click', function() {
                     signature: CONFIG.heart.signature
                 }
             };
-            break;
-        case 'roles':
-            exportData.roles = roles.map(function(r) {
-                var clone = deepCloneRole(r);
-                clone.messages = [];
-                clone.memory = [];
-                return clone;
-            });
-            break;
-        case 'chats':
-            exportData.roles = roles.map(function(r) {
-                var clone = {
+        } else if (exportType === 'roles') {
+            exportData.roles = await Promise.all(roles.map(async function(r) {
+                var full = await getFullRole(r);
+                full.messages = [];
+                full.memory = [];
+                return full;
+            }));
+        } else if (exportType === 'chats') {
+            exportData.roles = await Promise.all(roles.map(async function(r) {
+                var msgs = await loadRoleMessagesFromIDB(r.id).catch(function() {
+                    return [];
+                });
+                return {
                     id: r.id,
                     name: r.name,
-                    messages: r.messages ? r.messages.slice() : [],
-                    memory: r.memory ? r.memory.slice() : []
+                    messages: msgs,
+                    memory: r.memory || []
                 };
-                return clone;
-            });
-            break;
-        case 'diaries':
+            }));
+        } else if (exportType === 'diaries') {
             exportData.diaries = CONFIG.diaries || [];
-            break;
-        case 'selected':
+        } else if (exportType === 'selected') {
             var selectedIds = getSelectedRoleIds();
-            exportData.roles = roles.filter(function(r) { return selectedIds.indexOf(r.id) !== -1; }).map(function(r) { return deepCloneRole(r); });
-            exportData.diaries = (CONFIG.diaries || []).filter(function(d) { return selectedIds.indexOf(d.roleId) !== -1; });
-            break;
-        default:
-            exportData.roles = roles.map(function(r) { return deepCloneRole(r); });
+            var selectedRoles = roles.filter(function(r) {
+                return selectedIds.indexOf(r.id) !== -1;
+            });
+            exportData.roles = await Promise.all(selectedRoles.map(getFullRole));
+            exportData.diaries = (CONFIG.diaries || []).filter(function(d) {
+                return selectedIds.indexOf(d.roleId) !== -1;
+            });
+        } else {
+            exportData.roles = await Promise.all(roles.map(getFullRole));
             exportData.diaries = CONFIG.diaries || [];
-            break;
-    }
+        }
 
-    var json = JSON.stringify(exportData, null, 2);
-    var blob = new Blob([json], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var link = document.createElement('a');
-    link.href = url;
-    var filename = '梦女空间数据_' + exportType + '_' + new Date().toISOString().slice(0,10) + '.json';
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    showToast('✅ 数据已导出: ' + filename);
-    closeDataModal();
+        // ⭐ 生成文件
+        var json = JSON.stringify(exportData, null, 2);
+        var blob = new Blob([json], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        var filename = '梦女空间数据_' + exportType + '_' + new Date().toISOString().slice(0, 10) + '.json';
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        var sizeKB = Math.round(json.length / 1024);
+        showToast('✅ 数据已导出（' + sizeKB + ' KB）');
+
+        // ⭐ 详细日志
+        console.log('📦 导出完成：');
+        console.log('  文件：' + filename);
+        console.log('  大小：' + sizeKB + ' KB');
+        if (exportData.roles) {
+            exportData.roles.forEach(function(r) {
+                console.log('  【' + r.name + '】');
+                console.log('    messages: ' + (r.messages || []).length + ' 条');
+                console.log('    avatar: ' + (r.avatar ? '有 ' + r.avatar.length + ' 字符' : '空'));
+                console.log('    chatBg: ' + (r.chatBg ? '有 ' + r.chatBg.length + ' 字符' : '空'));
+            });
+        }
+        console.log('  diaries: ' + ((exportData.diaries || []).length) + ' 篇');
+
+        closeDataModal();
+    } catch(e) {
+        console.error('导出失败:', e);
+        showToast('❌ 导出失败: ' + e.message);
+    }
 });
 
 document.getElementById('dataImportBtn').addEventListener('click', function() {
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
-    input.onchange = function(e) {
+    input.onchange = async function(e) {
         var file = e.target.files[0];
         if (!file) return;
+
         var reader = new FileReader();
-        reader.onload = function(ev) {
+        reader.onload = async function(ev) {
             try {
                 var imported = JSON.parse(ev.target.result);
+
                 if (!imported.roles && !imported.diaries && !imported.config) {
                     showToast('❌ 无效的数据文件，请检查');
                     return;
@@ -18940,8 +18985,34 @@ document.getElementById('dataImportBtn').addEventListener('click', function() {
 
                 if (!confirm(confirmMsg)) return;
 
+                showToast('📦 正在导入，请稍候...');
+
                 var importType = imported.type || 'all';
 
+                // ⭐ 打开 IndexedDB
+                var db = await new Promise(function(resolve, reject) {
+                    var req = indexedDB.open('LunarReverieDB', 1);
+                    req.onupgradeneeded = function(e) {
+                        var d = e.target.result;
+                        if (!d.objectStoreNames.contains('data')) {
+                            d.createObjectStore('data', { keyPath: 'key' });
+                        }
+                    };
+                    req.onsuccess = function(e) { resolve(e.target.result); };
+                    req.onerror = function(e) { reject(e.target.error); };
+                });
+
+                async function idbPut(key, value) {
+                    return new Promise(function(resolve, reject) {
+                        var tx = db.transaction('data', 'readwrite');
+                        var store = tx.objectStore('data');
+                        var req = store.put({ key: key, value: value, updatedAt: Date.now() });
+                        req.onsuccess = function() { resolve(); };
+                        req.onerror = function() { reject(req.error); };
+                    });
+                }
+
+                // ===== 导入美化设置 =====
                 if (importType === 'settings' || imported.config) {
                     if (imported.config) {
                         if (imported.config.wallpaper !== undefined) CONFIG.wallpaper = imported.config.wallpaper;
@@ -18958,69 +19029,97 @@ document.getElementById('dataImportBtn').addEventListener('click', function() {
                             if (imported.config.heart.floatingEnabled !== undefined) CONFIG.heart.floatingEnabled = imported.config.heart.floatingEnabled;
                             if (imported.config.heart.signature) CONFIG.heart.signature = imported.config.heart.signature;
                         }
-                        if (CONFIG.chatBg) applyChatBg(CONFIG.chatBg);
-                        if (CONFIG.userAvatar) applyUserAvatar(CONFIG.userAvatar);
-                        applyIconStyle(CONFIG.iconStyle || 'glass');
-                        applyBubbleStyle(CONFIG.bubbleStyle || 'default');
-                        applyTheme(CONFIG.theme || 'dark');
-                        updateHeartDisplay();
-                        showToast('✅ 美化设置已导入');
                     }
-                    if (imported.roles && Array.isArray(imported.roles) && imported.roles.length > 0) {
-                        roles = imported.roles;
-                        currentRoleId = roles[0] ? roles[0].id : null;
-                        roles.forEach(function(r) {
-                            if (!r.id) r.id = generateId();
-                            if (!r.messages) r.messages = [];
-                            if (!r.memory) r.memory = [];
-                            if (!r.heartData) r.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' };
-                            initRoleExtendedState(r);
-                        });
-                        CONFIG.lastChatVisit = {};
-                        CONFIG.lastAiMessageTime = {};
-                        CONFIG.sleepMode = {};
-                        roles.forEach(function(r) {
-                            CONFIG.lastChatVisit[r.id] = 0;
-                            CONFIG.lastAiMessageTime[r.id] = 0;
-                            CONFIG.sleepMode[r.id] = false;
-                        });
-                        showToast('✅ 已导入 ' + roles.length + ' 个角色');
-                    }
-                } else {
-                    if (imported.config) {
-                        var oldApiKey = CONFIG.apiKey;
-                        var oldRelayApiKey = CONFIG.relayApiKey;
-                        var oldTtsApiKey = CONFIG.voice.apiKey;
-                        CONFIG = imported.config;
-                        CONFIG.apiKey = oldApiKey || CONFIG.apiKey;
-                        CONFIG.relayApiKey = oldRelayApiKey || CONFIG.relayApiKey;
-                        if (CONFIG.voice) CONFIG.voice.apiKey = oldTtsApiKey || CONFIG.voice.apiKey;
-                    }
-                    if (imported.roles && Array.isArray(imported.roles)) {
-                        roles = imported.roles;
-                        roles.forEach(function(r) {
-                            if (!r.id) r.id = generateId();
-                            if (!r.messages) r.messages = [];
-                            if (!r.memory) r.memory = [];
-                            if (!r.heartData) r.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' };
-                            initRoleExtendedState(r);
-                        });
-                        currentRoleId = roles[0] ? roles[0].id : null;
-                        CONFIG.lastChatVisit = {};
-                        CONFIG.lastAiMessageTime = {};
-                        CONFIG.sleepMode = {};
-                        roles.forEach(function(r) {
-                            CONFIG.lastChatVisit[r.id] = 0;
-                            CONFIG.lastAiMessageTime[r.id] = 0;
-                            CONFIG.sleepMode[r.id] = false;
-                        });
-                    }
-                    if (imported.diaries && Array.isArray(imported.diaries)) {
-                        CONFIG.diaries = imported.diaries;
-                    }
-                    showToast('✅ 完整数据已导入');
+                    if (CONFIG.chatBg) applyChatBg(CONFIG.chatBg);
+                    if (CONFIG.userAvatar) applyUserAvatar(CONFIG.userAvatar);
+                    applyIconStyle(CONFIG.iconStyle || 'glass');
+                    applyBubbleStyle(CONFIG.bubbleStyle || 'default');
+                    applyTheme(CONFIG.theme || 'dark');
+                    updateHeartDisplay();
+                    showToast('✅ 美化设置已导入');
                 }
 
+                // ===== 导入角色 =====
+                if (imported.roles && Array.isArray(imported.roles) && imported.roles.length > 0) {
+                    var totalMsgs = 0, totalAvatars = 0, totalBgs = 0;
+
+                    // ⭐ 先把消息、头像、背景写进 IndexedDB
+                    for (var i = 0; i < imported.roles.length; i++) {
+                        var r = imported.roles[i];
+                        if (!r.id) r.id = generateId();
+
+                        // 消息
+                        if (r.messages && r.messages.length > 0) {
+                            await idbPut('role_messages_' + r.id, r.messages);
+                            totalMsgs += r.messages.length;
+                        }
+                        // 头像
+                        if (r.avatar) {
+                            await idbPut('role_avatar_' + r.id, r.avatar);
+                            totalAvatars++;
+                        }
+                        // 聊天背景
+                        if (r.chatBg) {
+                            await idbPut('role_chatbg_' + r.id, r.chatBg);
+                            totalBgs++;
+                        }
+                    }
+
+                    // ⭐ 再把角色元信息放回内存（不含消息、头像、背景）
+                    roles = imported.roles.map(function(r) {
+                        var clean = {
+                            id: r.id || generateId(),
+                            name: r.name || '未命名',
+                            avatar: '',
+                            chatBg: '',
+                            persona: r.persona || '',
+                            background: r.background || '',
+                            style: r.style || '',
+                            extra: r.extra || '',
+                            voiceId: r.voiceId || '',
+                            messages: [],
+                            memory: r.memory || [],
+                            heartData: r.heartData || { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' },
+                            createdAt: r.createdAt || new Date().toISOString(),
+                            extendedState: r.extendedState || null,
+                            lastModified: r.lastModified || 0
+                        };
+                        initRoleExtendedState(clean);
+                        return clean;
+                    });
+
+                    currentRoleId = roles[0] ? roles[0].id : null;
+
+                    CONFIG.lastChatVisit = {};
+                    CONFIG.lastAiMessageTime = {};
+                    CONFIG.sleepMode = {};
+                    roles.forEach(function(r) {
+                        CONFIG.lastChatVisit[r.id] = 0;
+                        CONFIG.lastAiMessageTime[r.id] = 0;
+                        CONFIG.sleepMode[r.id] = false;
+                    });
+
+                    db.close();
+                    showToast('✅ 已导入 ' + roles.length + ' 个角色（' +
+                        totalMsgs + ' 条消息 / ' + totalAvatars + ' 个头像 / ' +
+                        totalBgs + ' 个背景）');
+                } else if (imported.config || imported.diaries) {
+                    // 只导设置或日记
+                    if (imported.roles && imported.roles.length === 0) {
+                        showToast('⚠️ 文件里没有角色数据');
+                    }
+                }
+
+                // ===== 导入日记 =====
+                if (imported.diaries && Array.isArray(imported.diaries)) {
+                    CONFIG.diaries = imported.diaries;
+                } else if (imported.config && imported.config.diaries) {
+                    CONFIG.diaries = imported.config.diaries;
+                }
+
+                if (!CONFIG.diaries) CONFIG.diaries = [];
+
+                // ===== 保存 + 重新渲染 =====
                 saveAllData();
                 renderContacts();
                 renderRoleManager();
@@ -19032,12 +19131,18 @@ document.getElementById('dataImportBtn').addEventListener('click', function() {
                 applyIconStyle(CONFIG.iconStyle || 'glass');
                 applyBubbleStyle(CONFIG.bubbleStyle || 'default');
                 applyTheme(CONFIG.theme || 'dark');
+
+                // ⭐ 重新加载所有消息
+                loadAllMessagesFromIDB();
+
                 closeDataModal();
                 closeSettings();
 
+                showToast('✅ 数据已导入完成，请查看聊天记录');
+
             } catch (err) {
                 console.error('导入失败:', err);
-                showToast('❌ 导入失败，文件格式错误: ' + err.message);
+                showToast('❌ 导入失败: ' + err.message);
             }
         };
         reader.readAsText(file);
