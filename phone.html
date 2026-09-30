@@ -959,6 +959,43 @@ function saveMainData(data) {
     try { localStorage.setItem('ds_multirole_v2', JSON.stringify(data)); } catch(e) {}
 }
 
+// ⭐ 从 IndexedDB 读某个角色的消息
+function loadRoleMessagesFromIDB(roleId) {
+    return new Promise(function(resolve) {
+        var req = indexedDB.open('LunarReverieDB', 1);
+        req.onsuccess = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('data')) {
+                db.close(); resolve([]); return;
+            }
+            var tx = db.transaction('data', 'readonly');
+            var store = tx.objectStore('data');
+            var getReq = store.get('role_messages_' + roleId);
+            getReq.onsuccess = function() {
+                db.close();
+                var msgs = getReq.result ? getReq.result.value : [];
+                resolve(Array.isArray(msgs) ? msgs : []);
+            };
+            getReq.onerror = function() { db.close(); resolve([]); };
+        };
+        req.onerror = function() { resolve([]); };
+    });
+}
+
+// ⭐ 读角色完整数据（含从 IndexedDB 补的消息）
+function getRoleWithMessages(roleId) {
+    var main = getMainData();
+    var role = main.roles.find(function(r) { return r.id === roleId; });
+    if (!role) return Promise.resolve(null);
+
+    return loadRoleMessagesFromIDB(roleId).then(function(msgs) {
+        if (msgs.length > 0) {
+            role.messages = msgs;
+        }
+        return role;
+    });
+}
+
 // ========== 手机数据 ==========
 
 function getPhoneData(roleId) {
@@ -1673,19 +1710,35 @@ function enterRole(roleId) {
     var role = main.roles.find(function(r) { return r.id === roleId; });
     if (!role) return;
     currentRoleId = roleId;
-    currentRole = role;
-    phoneData = getPhoneData(roleId);
 
-    document.getElementById('roleSelectScreen').classList.remove('active');
-    document.getElementById('lockScreen').classList.add('active');
-    updateLockScreen();
-    updatePasswordDots();
+    // ⭐ 异步从 IndexedDB 补消息
+    getRoleWithMessages(roleId).then(function(fullRole) {
+        if (fullRole) {
+            currentRole = fullRole;
+        } else {
+            currentRole = role;
+        }
+        phoneData = getPhoneData(roleId);
 
-    // 异步加载聊天记录
-    ensureChatsLoaded(roleId, phoneData).catch(function(e) { console.error(e); });
+        document.getElementById('roleSelectScreen').classList.remove('active');
+        document.getElementById('lockScreen').classList.add('active');
+        updateLockScreen();
+        updatePasswordDots();
 
-    tryExtractBirthday(currentRole, phoneData).catch(function() {});
-    tryChangePasswordByAI(currentRole, phoneData).catch(function() {});
+        ensureChatsLoaded(roleId, phoneData).catch(function(e) { console.error(e); });
+
+        tryExtractBirthday(currentRole, phoneData).catch(function() {});
+        tryChangePasswordByAI(currentRole, phoneData).catch(function() {});
+    }).catch(function(e) {
+        console.error('加载角色消息失败:', e);
+        currentRole = role;
+        phoneData = getPhoneData(roleId);
+
+        document.getElementById('roleSelectScreen').classList.remove('active');
+        document.getElementById('lockScreen').classList.add('active');
+        updateLockScreen();
+        updatePasswordDots();
+    });
 }
 
 function updateLockScreen() {
