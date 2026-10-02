@@ -9676,7 +9676,7 @@ abilityBlock += '⚠️ 不要连着送，一个对话里送一次就够了。';
   }
 
 // ===== 注入今天的纪念日 =====
-   var todayAnniversaries = getTodayAnniversaries(role.id);
+    var todayAnniversaries = getTodayAnniversaries(role.id);
     if (todayAnniversaries.length > 0) {
         var anniLines = [];
         anniLines.push('【今天是一个特别的日子】');
@@ -9698,6 +9698,10 @@ abilityBlock += '⚠️ 不要连着送，一个对话里送一次就够了。';
 
             var daysTogether = Math.max(0, Math.round((today - origin) / (24 * 60 * 60 * 1000)));
 
+            // ⭐ 这两个变量之前丢了，现在补回来
+            var anniName = anni.name || '纪念日';
+            var yearCount = today.getFullYear() - originYear;
+
             var desc = '';
             if (anni.repeat !== false) {
                 if (yearCount > 0) {
@@ -9718,12 +9722,9 @@ abilityBlock += '⚠️ 不要连着送，一个对话里送一次就够了。';
                 desc += ' 它的意义是：' + anni.note.trim();
             }
 
-// 简单明了地告诉 AI 这个纪念日是什么
             if (anni.mood && anni.mood.trim()) {
                 desc += '\n  【当时的心情/事件】' + anni.mood.trim();
             }
-
-           
 
             anniLines.push('• ' + desc);
         });
