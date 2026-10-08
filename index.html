@@ -19840,7 +19840,10 @@ setTimeout(function() {
     // ⭐ 新增：重渲染后再次应用样式，防止被覆盖
     try { applyIconStyle(CONFIG.iconStyle || 'glass'); } catch (e) {}
     try { applyBubbleStyle(CONFIG.bubbleStyle || 'default'); } catch (e) {}
-}, 1500);
+    // 👇 加上这两行，强制恢复字体和主题
+    try { applyCustomFont(CONFIG.fontFamily || 'default'); } catch (e) {}
+    try { applyTheme(CONFIG.theme || 'dark'); } catch (e) {}
+ }, 1500);
 
 // ⭐ 延迟恢复字体（防止时序问题）
   setTimeout(function() {
