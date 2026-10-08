@@ -6748,6 +6748,8 @@
     var isAppDataLoaded = false; // 标记：App 数据是否加载完毕
     var isAnimationFinished = false; // 标记：动画是否播放完毕
 
+window.__animationStartTime = Date.now();
+
     (function initLoadingAnimation() {
         var canvas = document.getElementById('canvas');
         if (!canvas) return;
@@ -20108,19 +20110,25 @@ setTimeout(function() {
     console.error('通话系统初始化失败:', e);
 }
 
-// ===== 强制停留 2 秒，然后再检测是否满足关闭条件 =====
+// ===== 强制定时：从页面加载那一刻起，至少显示 4 秒 =====
 console.log('🕒 数据加载完成，等待动画播完...');
-var loadStartTime = Date.now();
+
+// ⭐ 关键：记录的是「页面开始加载」的时间，不是 init 执行的时刻
+var ANIMATION_START_TIME = window.__animationStartTime || Date.now();
+var MIN_SHOW_MS = 4000; // 至少显示 4 秒
+
 var forceCloseInterval = setInterval(function() {
     var loadingScreen = document.getElementById('appLoadingScreen');
     if (!loadingScreen) {
         clearInterval(forceCloseInterval);
         return;
     }
-    var timePassed = Date.now() - loadStartTime;
+
+    var timePassed = Date.now() - ANIMATION_START_TIME;
     var animDone = (typeof isAnimationFinished !== 'undefined' && isAnimationFinished);
-    if (timePassed > 3000 && animDone) {
-        console.log('✅ 条件满足，关闭加载动画');
+
+    if (timePassed > MIN_SHOW_MS && animDone) {
+        console.log('✅ 条件满足，关闭加载动画（显示时长: ' + Math.round(timePassed/1000) + 's）');
         loadingScreen.style.opacity = '0';
         loadingScreen.style.visibility = 'hidden';
         setTimeout(function() {
@@ -20128,9 +20136,9 @@ var forceCloseInterval = setInterval(function() {
         }, 800);
         clearInterval(forceCloseInterval);
     } else {
-        console.log('⏳ 等待中... 时间: ' + Math.round(timePassed/1000) + 's, 动画: ' + (animDone ? '已播完' : '播放中'));
+        console.log('⏳ 等待中... 时间: ' + Math.round(timePassed/1000) + 's / ' + (MIN_SHOW_MS/1000) + 's, 动画: ' + (animDone ? '已播完' : '播放中'));
     }
-}, 300);
+}, 200);
 
 // ===== 启动时按时间戳合并云端数据 =====
     var token = localStorage.getItem('dream_token');
