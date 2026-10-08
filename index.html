@@ -5636,6 +5636,24 @@
 </head>
 
 <body>
+
+<!-- 👇 加载动画遮罩层（App 启动时先显示这个） 👇 -->
+    <div id="appLoadingScreen" style="
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        background: #05010a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.8s ease, visibility 0.8s;
+    ">
+        <canvas id="canvas" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1;"></canvas>
+        <div class="loading-text" id="loadingText" style="position: relative; z-index: 2; color: rgba(220, 180, 255, 0.8); font-size: 15px; letter-spacing: 5px; margin-top: 70vh; text-align: center; min-height: 24px; text-shadow: 0 0 15px rgba(180, 100, 255, 0.6); transition: opacity 0.5s ease;"></div>
+    </div>
+    <!-- 👆 加载动画结束 👆 -->
+
     <!-- ============================================================
 🌙 登录界面（含注册切换）
 ============================================================ -->
@@ -6723,6 +6741,165 @@
     <div class="longpress-menu" id="longpressMenu"><button class="menu-item" data-action="quote"><i class="fas fa-quote-left"></i> 引用回复</button><button class="menu-item danger" data-action="delete"><i class="fas fa-trash-alt"></i> 删除消息</button></div>
 </div>
 <script>
+
+// ==========================================
+    // 🎬 启动加载动画（粒子球 + 乱码打字）
+    // ==========================================
+    var isAppDataLoaded = false; // 标记：App 数据是否加载完毕
+    var isAnimationFinished = false; // 标记：动画是否播放完毕
+
+    (function initLoadingAnimation() {
+        var canvas = document.getElementById('canvas');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var width, height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        var centerX = function() { return width / 2; };
+        var centerY = function() { return height / 2 - 60; };
+
+        // 核心粒子球
+        var coreParticles = [];
+        var CORE_COUNT = 400;
+        var layers = [
+            { radius: 45, minSize: 1.5, maxSize: 2.5, color: 'rgba(240, 200, 255, 0.95)', speed: 1.0 },
+            { radius: 75, minSize: 1.0, maxSize: 2.0, color: 'rgba(190, 130, 255, 0.6)', speed: 0.7 },
+            { radius: 100, minSize: 0.6, maxSize: 1.5, color: 'rgba(130, 80, 220, 0.25)', speed: 0.4 }
+        ];
+        layers.forEach(function(layer) {
+            var count = Math.floor(CORE_COUNT / layers.length);
+            for (var i = 0; i < count; i++) {
+                var theta = Math.random() * Math.PI * 2;
+                var phi = Math.acos((Math.random() * 2) - 1);
+                var r = layer.radius;
+                var x = r * Math.sin(phi) * Math.cos(theta);
+                var y = r * Math.sin(phi) * Math.sin(theta);
+                var z = r * Math.cos(phi);
+                var size = layer.minSize + Math.random() * (layer.maxSize - layer.minSize);
+                coreParticles.push({ baseX: x, baseY: y, baseZ: z, size: size, color: layer.color, speed: layer.speed });
+            }
+        });
+
+        // 飞入粒子
+        var flyParticles = [];
+        var FLY_COUNT = 45;
+        function spawnFlyParticle() {
+            var angle = Math.random() * Math.PI * 2;
+            var distance = 400 + Math.random() * 300;
+            return {
+                x: centerX() + Math.cos(angle) * distance,
+                y: centerY() + Math.sin(angle) * distance,
+                vx: -Math.cos(angle) * (0.2 + Math.random() * 0.4),
+                vy: -Math.sin(angle) * (0.2 + Math.random() * 0.4),
+                size: 0.3 + Math.random() * 2.5,
+                alpha: 0.5 + Math.random() * 0.5,
+                absorbed: false,
+                absorbedScale: 1
+            };
+        }
+        for (var i = 0; i < FLY_COUNT; i++) flyParticles.push(spawnFlyParticle());
+
+        var angleY = 0, breathScale = 1, breathDir = 1;
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            var cx = centerX(), cy = centerY();
+            breathScale += breathDir * 0.002;
+            if (breathScale > 1.08) breathDir = -1;
+            if (breathScale < 0.92) breathDir = 1;
+            angleY += 0.005;
+
+            var sortedCore = coreParticles.slice().sort(function(a, b) {
+                return (a.baseZ * Math.cos(angleY) - a.baseX * Math.sin(angleY)) - (b.baseZ * Math.cos(angleY) - b.baseX * Math.sin(angleY));
+            });
+
+            sortedCore.forEach(function(p) {
+                var curAngle = angleY * p.speed;
+                var cosA = Math.cos(curAngle), sinA = Math.sin(curAngle);
+                var x = p.baseX * cosA - p.baseZ * sinA;
+                var z = p.baseX * sinA + p.baseZ * cosA;
+                var y = p.baseY;
+                x *= breathScale; y *= breathScale; z *= breathScale;
+                var scale = 400 / (400 + z);
+                ctx.beginPath();
+                ctx.arc(cx + x * scale, cy + y * scale, p.size * scale, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                if (p.size > 1.8 && z < 0) { ctx.shadowBlur = 18; ctx.shadowColor = 'rgba(220, 160, 255, 0.8)'; }
+                else { ctx.shadowBlur = 0; }
+            });
+
+            flyParticles.forEach(function(p, index) {
+                if (p.absorbed) {
+                    p.absorbedScale -= 0.03;
+                    if (p.absorbedScale <= 0) flyParticles[index] = spawnFlyParticle();
+                    else {
+                        var curX = p.x + (cx - p.x) * (1 - p.absorbedScale);
+                        var curY = p.y + (cy - p.y) * (1 - p.absorbedScale);
+                        ctx.beginPath();
+                        ctx.arc(curX, curY, p.size * p.absorbedScale, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(230, 180, 255, ' + (p.alpha * p.absorbedScale) + ')';
+                        ctx.fill();
+                    }
+                    return;
+                }
+                var dx = cx - p.x, dy = cy - p.y;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 70) { p.absorbed = true; return; }
+                var accel = 0.005 + (1 - dist / 500) * 0.02;
+                p.vx += (dx / dist) * accel; p.vy += (dy / dist) * accel;
+                p.x += p.vx; p.y += p.vy;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(240, 200, 255, ' + p.alpha + ')';
+                ctx.fill();
+            });
+
+            var coreGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 110 * breathScale);
+            coreGlow.addColorStop(0, 'rgba(200, 140, 255, 0.12)');
+            coreGlow.addColorStop(0.5, 'rgba(130, 80, 200, 0.04)');
+            coreGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.beginPath();
+            ctx.arc(cx, cy, 110 * breathScale, 0, Math.PI * 2);
+            ctx.fillStyle = coreGlow;
+            ctx.fill();
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // 乱码打字
+        var textEl = document.getElementById('loadingText');
+        var targetText = "正在进入你的梦境...";
+        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*";
+        var progress = 0, scrambleCount = 0;
+
+        function typeScramble() {
+            var result = "";
+            for (var i = 0; i < targetText.length; i++) {
+                if (i < progress) result += targetText[i];
+                else if (i === progress) result += chars[Math.floor(Math.random() * chars.length)];
+                else result += " ";
+            }
+            textEl.textContent = result;
+            scrambleCount++;
+            if (scrambleCount % 10 === 0) progress++;
+
+            if (progress <= targetText.length) {
+                requestAnimationFrame(typeScramble);
+            } else {
+                isAnimationFinished = true;
+            
+            }
+        }
+        setTimeout(typeScramble, 800);
+    })();
+
  const API_BASE = 'https://lunar-reverie.top/api';
 // ============================================================
 //  🚀 梦女空间 v4.0 - 多模型 + 百炼语音版
@@ -18839,39 +19016,28 @@ function createInlinePlayer(audioUrl) {
 
 document.getElementById('dataExportBtn').addEventListener('click', async function() {
     var exportType = getSelectedExportType();
+    showToast('📦 正在打包全量数据...');
 
-    showToast('📦 正在打包数据...');
-
-    // ⭐ 从 IndexedDB 读完整的角色数据
+    // 从 IndexedDB 读完整的角色数据（现有逻辑保留）
     async function getFullRole(role) {
         var full = deepCloneRole(role);
-        // 从 IndexedDB 读消息
-        full.messages = await loadRoleMessagesFromIDB(role.id).catch(function() {
-            return role.messages || [];
-        });
-        // 从 IndexedDB 读头像
-        full.avatar = await loadRoleAvatarFromIDB(role.id).catch(function() {
-            return role.avatar || '';
-        });
-        // 从 IndexedDB 读聊天背景
-        full.chatBg = await loadRoleChatBgFromIDB(role.id).catch(function() {
-            return role.chatBg || '';
-        });
+        full.messages = await loadRoleMessagesFromIDB(role.id).catch(function() { return role.messages || []; });
+        full.avatar = await loadRoleAvatarFromIDB(role.id).catch(function() { return role.avatar || ''; });
+        full.chatBg = await loadRoleChatBgFromIDB(role.id).catch(function() { return role.chatBg || ''; });
         return full;
     }
 
     var exportData = {
         exportTime: new Date().toISOString(),
-        version: '4.0-full',
+        version: '5.0-全局导出',
         type: exportType
     };
 
     try {
-        if (exportType === 'all') {
-            exportData.config = JSON.parse(JSON.stringify(CONFIG));
-            exportData.roles = await Promise.all(roles.map(getFullRole));
-            exportData.diaries = CONFIG.diaries || [];
-        } else if (exportType === 'settings') {
+        // ==========================================
+        // 1. 导出基础设置 (设置)
+        // ==========================================
+        if (exportType === 'settings') {
             exportData.config = {
                 wallpaper: CONFIG.wallpaper,
                 chatBg: CONFIG.chatBg,
@@ -18882,54 +19048,103 @@ document.getElementById('dataExportBtn').addEventListener('click', async functio
                 theme: CONFIG.theme,
                 fontSize: CONFIG.fontSize,
                 fontWeight: CONFIG.fontWeight,
+                fontFamily: CONFIG.fontFamily, // ⭐ 补上字体
                 heart: {
                     color: CONFIG.heart.color,
                     floatingEnabled: CONFIG.heart.floatingEnabled,
                     signature: CONFIG.heart.signature
                 }
             };
-        } else if (exportType === 'roles') {
+            // 顺便带上壁纸数据（壁纸存在 IndexedDB，需要异步读）
+            exportData.wallpaperData = await loadWallpaperFromIndexedDB().catch(function() { return null; });
+        } 
+        // ==========================================
+        // 2. 导出角色相关（包含聊天、记忆、头像、背景）
+        // ==========================================
+        else if (exportType === 'roles') {
             exportData.roles = await Promise.all(roles.map(async function(r) {
                 var full = await getFullRole(r);
                 full.messages = [];
                 full.memory = [];
                 return full;
             }));
-        } else if (exportType === 'chats') {
+        } 
+        // ==========================================
+        // 3. 导出聊天记录+记忆
+        // ==========================================
+        else if (exportType === 'chats') {
             exportData.roles = await Promise.all(roles.map(async function(r) {
-                var msgs = await loadRoleMessagesFromIDB(r.id).catch(function() {
-                    return [];
-                });
-                return {
-                    id: r.id,
-                    name: r.name,
-                    messages: msgs,
-                    memory: r.memory || []
-                };
+                var msgs = await loadRoleMessagesFromIDB(r.id).catch(function() { return []; });
+                return { id: r.id, name: r.name, messages: msgs, memory: r.memory || [] };
             }));
-        } else if (exportType === 'diaries') {
+        } 
+        // ==========================================
+        // 4. 导出日记 + 信件 + 表情包 + 朋友圈
+        // ==========================================
+        else if (exportType === 'diaries') {
             exportData.diaries = CONFIG.diaries || [];
-        } else if (exportType === 'selected') {
+            exportData.letters = CONFIG.letters || []; // ⭐ 补上信件
+        } 
+        // ==========================================
+        // 5. 导出选中角色（包含完整信息）
+        // ==========================================
+        else if (exportType === 'selected') {
             var selectedIds = getSelectedRoleIds();
-            var selectedRoles = roles.filter(function(r) {
-                return selectedIds.indexOf(r.id) !== -1;
-            });
+            var selectedRoles = roles.filter(function(r) { return selectedIds.indexOf(r.id) !== -1; });
             exportData.roles = await Promise.all(selectedRoles.map(getFullRole));
-            exportData.diaries = (CONFIG.diaries || []).filter(function(d) {
-                return selectedIds.indexOf(d.roleId) !== -1;
-            });
-        } else {
+            exportData.diaries = (CONFIG.diaries || []).filter(function(d) { return selectedIds.indexOf(d.roleId) !== -1; });
+            exportData.letters = (CONFIG.letters || []).filter(function(l) { return selectedIds.indexOf(l.roleId) !== -1; });
+        } 
+        // ==========================================
+        // 6. 全部数据（包含所有素材）
+        // ==========================================
+        else {
+            // 基础数据
+            exportData.config = JSON.parse(JSON.stringify(CONFIG));
             exportData.roles = await Promise.all(roles.map(getFullRole));
             exportData.diaries = CONFIG.diaries || [];
+            exportData.letters = CONFIG.letters || [];
+
+            // ⭐ 补上漏掉的：表情包
+            exportData.memeCategories = memeCategories || [];
+            exportData.memes = memes || [];
+
+            // ⭐ 补上漏掉的：用户朋友圈 + 通知
+            exportData.userMoments = loadUserMoments();
+            exportData.notifications = loadNotifications();
+
+            // ⭐ 补上漏掉的：壁纸数据（存储在 IndexedDB）
+            exportData.wallpaperData = await loadWallpaperFromIndexedDB().catch(function() { return null; });
+
+            // ⭐ 补上漏掉的：按角色存储的手机数据（phone_data_xxx）
+            exportData.phoneData = {};
+            for (var i = 0; i < roles.length; i++) {
+                var key = 'phone_data_' + roles[i].id;
+                var raw = localStorage.getItem(key);
+                if (raw) {
+                    try { exportData.phoneData[roles[i].id] = JSON.parse(raw); } catch(e) {}
+                }
+            }
+            
+            // ⭐ 补上漏掉的：其他索引（用户动态ID、朋友圈图片ID等）
+            exportData.idbExtras = {};
+            var keys = await idbKeys().catch(function() { return []; });
+            for (var k = 0; k < keys.length; k++) {
+                if (keys[k].indexOf('user_moment_image_') === 0 || keys[k].indexOf('chat_selfie_') === 0) {
+                    exportData.idbExtras[keys[k]] = await idbGet(keys[k]).catch(function() { return null; });
+                }
+            }
         }
 
-        // ⭐ 生成文件
+        // ==========================================
+        // 生成 JSON 文件并下载
+        // ==========================================
         var json = JSON.stringify(exportData, null, 2);
         var blob = new Blob([json], { type: 'application/json' });
         var url = URL.createObjectURL(blob);
         var link = document.createElement('a');
         link.href = url;
-        var filename = '梦女空间数据_' + exportType + '_' + new Date().toISOString().slice(0, 10) + '.json';
+        var filename = '梦女空间全量备份_' + exportType + '_' + new Date().toISOString().slice(0, 10) + '.json';
         link.download = filename;
         document.body.appendChild(link);
         link.click();
@@ -18938,22 +19153,9 @@ document.getElementById('dataExportBtn').addEventListener('click', async functio
 
         var sizeKB = Math.round(json.length / 1024);
         showToast('✅ 数据已导出（' + sizeKB + ' KB）');
-
-        // ⭐ 详细日志
-        console.log('📦 导出完成：');
-        console.log('  文件：' + filename);
-        console.log('  大小：' + sizeKB + ' KB');
-        if (exportData.roles) {
-            exportData.roles.forEach(function(r) {
-                console.log('  【' + r.name + '】');
-                console.log('    messages: ' + (r.messages || []).length + ' 条');
-                console.log('    avatar: ' + (r.avatar ? '有 ' + r.avatar.length + ' 字符' : '空'));
-                console.log('    chatBg: ' + (r.chatBg ? '有 ' + r.chatBg.length + ' 字符' : '空'));
-            });
-        }
-        console.log('  diaries: ' + ((exportData.diaries || []).length) + ' 篇');
-
+        console.log('📦 全量导出完成，大小：' + sizeKB + ' KB');
         closeDataModal();
+
     } catch(e) {
         console.error('导出失败:', e);
         showToast('❌ 导出失败: ' + e.message);
@@ -19611,17 +19813,40 @@ menuStyle.textContent = `
 document.head.appendChild(menuStyle);
 
 // ========== 初始化 ==========
+
 function init() {
+        // ===== 1. 检查登录状态 =====
+        var loggedIn = localStorage.getItem('dream_user_logged_in');
 
-// ===== 检查登录状态 =====
-    if (!checkLoginStatus()) {
-        console.log('🔒 等待登录...');
-        return;
-    }
+        if (!loggedIn || loggedIn !== 'true') {
+            // 👉 未登录：等动画播完，显示登录界面
+            console.log('🔒 未登录，等待用户登录...');
+            isAppDataLoaded = false; // 阻止加载动画提前消失
 
-    initLoadAllData().catch(function(e) {
-  console.error('❌ 加载数据失败:', e);
-});
+            var waitLogin = setInterval(function() {
+                if (isAnimationFinished) {
+                    clearInterval(waitLogin);
+                    var loadingScreen = document.getElementById('appLoadingScreen');
+                    if (loadingScreen) {
+                        loadingScreen.style.opacity = '0';
+                        loadingScreen.style.visibility = 'hidden';
+                        setTimeout(function() {
+                            if (loadingScreen.parentNode) loadingScreen.parentNode.removeChild(loadingScreen);
+                        }, 800);
+                    }
+                    if (typeof showLoginScreen === 'function') showLoginScreen();
+                }
+            }, 100);
+            return; // 未登录，不执行后面的主程序加载
+        }
+
+        // 👉 已登录：正常加载主程序
+        console.log('✅ 已登录，加载主程序...');
+        
+        initLoadAllData().catch(function(e) {
+            console.error('❌ 加载数据失败:', e);
+        });
+
     try {
         loadMemeData().then(function() {
             updateStorageDisplay();
@@ -19868,6 +20093,30 @@ setTimeout(function() {
         }
     } catch (e) {
         console.error('通话系统初始化失败:', e);
+
+// ==========================================
+        // 👇 终极关闭逻辑：不再依赖变量，直接强行关闭 👇
+        // ==========================================
+        var forceCloseInterval = setInterval(function() {
+            // 检查动画的遮罩层是否还在
+            var loadingScreen = document.getElementById('appLoadingScreen');
+            if (!loadingScreen) {
+                clearInterval(forceCloseInterval);
+                return;
+            }
+            
+            // 如果遮罩层还在，就检查一下动画是否播完了
+            if (typeof isAnimationFinished !== 'undefined' && isAnimationFinished) {
+                // 动画播完了，立刻关闭
+                loadingScreen.style.opacity = '0';
+                loadingScreen.style.visibility = 'hidden';
+                setTimeout(function() {
+                    if (loadingScreen.parentNode) loadingScreen.parentNode.removeChild(loadingScreen);
+                }, 800);
+                clearInterval(forceCloseInterval);
+                console.log('✅ 加载动画已关闭，进入主界面');
+            }
+        }, 300); // 每 0.3 秒检查一次
     }
 
 // ===== 启动时按时间戳合并云端数据 =====
