@@ -11,6 +11,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-me';
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+// 托管前端静态文件（让域名能直接打开网页）
+app.use(express.static('/var/www/my-ai-space'));
 app.use(express.static(__dirname));
 
 const MONGODB_URI = process.env.MONGODB_URI;
