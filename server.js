@@ -1,3 +1,5 @@
+const https = require('https');
+const fs = require('fs');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -369,8 +371,17 @@ app.get('/api/test', (req, res) => {
     res.json({ message: '后端连接成功！' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ 服务器运行在端口 ${PORT}`);
-    console.log(`🔗 健康检查: /health`);
+const httpsOptions = {
+  key: fs.readFileSync('/etc/letsencrypt/live/lunar-reverie.top/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/lunar-reverie.top/fullchain.pem')
+};
+
+// 保持原来的 3000 端口（内网/测试用）
+app.listen(3000, () => {
+  console.log('HTTP Server running on port 3000');
+});
+
+// 新增 HTTPS 443 端口（对外服务）
+https.createServer(httpsOptions, app).listen(443, () => {
+  console.log('HTTPS Server running on port 443');
 });
