@@ -19815,8 +19815,21 @@ document.head.appendChild(menuStyle);
 // ========== 初始化 ==========
 
 function init() {
+        // ⭐ 强制显示加载动画，并把登录界面藏起来
+        var loadingScreen = document.getElementById('appLoadingScreen');
+        if (loadingScreen) {
+            loadingScreen.style.display = 'flex';
+            loadingScreen.style.opacity = '1';
+            loadingScreen.style.visibility = 'visible';
+        }
+        var loginScreen = document.getElementById('loginScreen');
+        if (loginScreen) {
+            loginScreen.style.display = 'none';
+        }
+
         // ===== 1. 检查登录状态 =====
         var loggedIn = localStorage.getItem('dream_user_logged_in');
+    
 
         if (!loggedIn || loggedIn !== 'true') {
             // 👉 未登录：等动画播完，显示登录界面
@@ -20116,7 +20129,7 @@ setTimeout(function() {
             var animDone = (typeof isAnimationFinished !== 'undefined' && isAnimationFinished);
 
             // ⭐ 两个条件都满足，才关闭
-            if (timePassed > 2000 && animDone) {
+            if (timePassed > 3000 && animDone) {
                 console.log('✅ 条件满足，关闭加载动画');
                 loadingScreen.style.opacity = '0';
                 loadingScreen.style.visibility = 'hidden';
