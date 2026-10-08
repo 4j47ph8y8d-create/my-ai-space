@@ -3,6 +3,13 @@
 //  关键原则：只缓存静态资源，API 请求直接放行
 // ============================================================
 
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.keys().then((keyList) => {
+      return Promise.all(keyList.map((key) => caches.delete(key)));
+    })
+  );
+});
 const CACHE_NAME = 'lunar-reverie-v3';
 const STATIC_ASSETS = [
     '/',
