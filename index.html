@@ -20095,29 +20095,40 @@ setTimeout(function() {
         console.error('通话系统初始化失败:', e);
 
 // ==========================================
-        // 👇 终极关闭逻辑：不再依赖变量，直接强行关闭 👇
+        // 👇 终极控制：强制停留 2 秒，然后再检测是否满足关闭条件 👇
         // ==========================================
+        console.log('🕒 数据加载完成，等待动画播完...');
+        
+        // 记录开始等待的时间
+        var loadStartTime = Date.now();
+        
         var forceCloseInterval = setInterval(function() {
-            // 检查动画的遮罩层是否还在
             var loadingScreen = document.getElementById('appLoadingScreen');
             if (!loadingScreen) {
                 clearInterval(forceCloseInterval);
                 return;
             }
+
+            // 条件1：时间够了吗？（强制至少等 2 秒）
+            var timePassed = Date.now() - loadStartTime;
             
-            // 如果遮罩层还在，就检查一下动画是否播完了
-            if (typeof isAnimationFinished !== 'undefined' && isAnimationFinished) {
-                // 动画播完了，立刻关闭
+            // 条件2：打字机播完了吗？
+            var animDone = (typeof isAnimationFinished !== 'undefined' && isAnimationFinished);
+
+            // ⭐ 两个条件都满足，才关闭
+            if (timePassed > 2000 && animDone) {
+                console.log('✅ 条件满足，关闭加载动画');
                 loadingScreen.style.opacity = '0';
                 loadingScreen.style.visibility = 'hidden';
                 setTimeout(function() {
                     if (loadingScreen.parentNode) loadingScreen.parentNode.removeChild(loadingScreen);
                 }, 800);
                 clearInterval(forceCloseInterval);
-                console.log('✅ 加载动画已关闭，进入主界面');
+            } else {
+                console.log('⏳ 等待中... 时间: ' + Math.round(timePassed/1000) + 's, 动画: ' + (animDone ? '已播完' : '播放中'));
             }
         }, 300); // 每 0.3 秒检查一次
-    }
+}
 
 // ===== 启动时按时间戳合并云端数据 =====
     var token = localStorage.getItem('dream_token');
