@@ -20100,48 +20100,37 @@ setTimeout(function() {
     console.log('✅ 语音按需触发（用户说「发语音」等触发词时生成语音条）');
 // 初始化通话系统
     try {
-        if (typeof CallController !== 'undefined' && typeof initCallSystem === 'function') {
-            initCallSystem();
-            console.log('通话系统已初始化');
-        }
-    } catch (e) {
-        console.error('通话系统初始化失败:', e);
-
-// ==========================================
-        // 👇 终极控制：强制停留 2 秒，然后再检测是否满足关闭条件 👇
-        // ==========================================
-        console.log('🕒 数据加载完成，等待动画播完...');
-        
-        // 记录开始等待的时间
-        var loadStartTime = Date.now();
-        
-        var forceCloseInterval = setInterval(function() {
-            var loadingScreen = document.getElementById('appLoadingScreen');
-            if (!loadingScreen) {
-                clearInterval(forceCloseInterval);
-                return;
-            }
-
-            // 条件1：时间够了吗？（强制至少等 2 秒）
-            var timePassed = Date.now() - loadStartTime;
-            
-            // 条件2：打字机播完了吗？
-            var animDone = (typeof isAnimationFinished !== 'undefined' && isAnimationFinished);
-
-            // ⭐ 两个条件都满足，才关闭
-            if (timePassed > 3000 && animDone) {
-                console.log('✅ 条件满足，关闭加载动画');
-                loadingScreen.style.opacity = '0';
-                loadingScreen.style.visibility = 'hidden';
-                setTimeout(function() {
-                    if (loadingScreen.parentNode) loadingScreen.parentNode.removeChild(loadingScreen);
-                }, 800);
-                clearInterval(forceCloseInterval);
-            } else {
-                console.log('⏳ 等待中... 时间: ' + Math.round(timePassed/1000) + 's, 动画: ' + (animDone ? '已播完' : '播放中'));
-            }
-        }, 300); // 每 0.3 秒检查一次
+    if (typeof CallController !== 'undefined' && typeof initCallSystem === 'function') {
+        initCallSystem();
+        console.log('通话系统已初始化');
+    }
+} catch (e) {
+    console.error('通话系统初始化失败:', e);
 }
+
+// ===== 强制停留 2 秒，然后再检测是否满足关闭条件 =====
+console.log('🕒 数据加载完成，等待动画播完...');
+var loadStartTime = Date.now();
+var forceCloseInterval = setInterval(function() {
+    var loadingScreen = document.getElementById('appLoadingScreen');
+    if (!loadingScreen) {
+        clearInterval(forceCloseInterval);
+        return;
+    }
+    var timePassed = Date.now() - loadStartTime;
+    var animDone = (typeof isAnimationFinished !== 'undefined' && isAnimationFinished);
+    if (timePassed > 3000 && animDone) {
+        console.log('✅ 条件满足，关闭加载动画');
+        loadingScreen.style.opacity = '0';
+        loadingScreen.style.visibility = 'hidden';
+        setTimeout(function() {
+            if (loadingScreen.parentNode) loadingScreen.parentNode.removeChild(loadingScreen);
+        }, 800);
+        clearInterval(forceCloseInterval);
+    } else {
+        console.log('⏳ 等待中... 时间: ' + Math.round(timePassed/1000) + 's, 动画: ' + (animDone ? '已播完' : '播放中'));
+    }
+}, 300);
 
 // ===== 启动时按时间戳合并云端数据 =====
     var token = localStorage.getItem('dream_token');
