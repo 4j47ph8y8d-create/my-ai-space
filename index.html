@@ -7688,17 +7688,15 @@ function deepCloneRole(role) {
 
     var clone = {
         id: role.id, name: role.name,
-        avatar: '',      // ⭐ 不再放进 localStorage
-        chatBg: '',      // ⭐ 不再放进 localStorage
+        avatar: role.avatar || '',       // 图片上云
+        chatBg: role.chatBg || '',       // 图片上云
         persona: role.persona || '', background: role.background || '', style: role.style || '',
-        extra: role.extra || '', messages: [], memory: [], heartData: null,
+        extra: role.extra || '', messages: role.messages || [], memory: [], heartData: null,
         createdAt: role.createdAt || new Date().toISOString(), extendedState: null,
         voiceId: role.voiceId || '',
         lastModified: role.lastModified || 0
     };
 
-    // ⭐ 消息不再放进 clone 里，单独存 IndexedDB
-    // clone.messages 保持空数组
     if (Array.isArray(role.memory)) {
         clone.memory = role.memory.map(function(m) {
             if (typeof m === 'string') return { text: m };
