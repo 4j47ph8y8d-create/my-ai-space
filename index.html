@@ -19807,7 +19807,7 @@ function init() {
                         loadingScreen.style.opacity = '0';
                         loadingScreen.style.visibility = 'hidden';
                         setTimeout(function() {
-                            if (loadingScreen.parentNode) loadingScreen.parentNode.removeChild(loadingScreen);
+                            loadingScreen.style.pointerEvents = 'none';
                         }, 800);
                     }
                     if (typeof showLoginScreen === 'function') showLoginScreen();
@@ -20093,7 +20093,7 @@ var forceCloseInterval = setInterval(function() {
         loadingScreen.style.opacity = '0';
         loadingScreen.style.visibility = 'hidden';
         setTimeout(function() {
-            if (loadingScreen.parentNode) loadingScreen.parentNode.removeChild(loadingScreen);
+            loadingScreen.style.pointerEvents = 'none';
         }, 800);
         clearInterval(forceCloseInterval);
     } else {
