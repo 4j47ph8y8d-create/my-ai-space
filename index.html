@@ -7650,6 +7650,39 @@ function saveAllData() {
     saveMemeData().catch(function(e) { console.error('表情包保存失败:', e); });
 }
 
+// 压缩 dataURL 到指定最大宽高（保持宽高比），JPEG 质量 0.7
+function compressDataUrl(dataUrl, maxW, maxH) {
+    return new Promise(function(resolve) {
+        if (!dataUrl || typeof dataUrl !== "string" || dataUrl.indexOf("data:") !== 0) {
+            resolve(dataUrl || "");
+            return;
+        }
+        var img = new Image();
+        img.onload = function() {
+            var w = img.width, h = img.height;
+            if (w > maxW || h > maxH) {
+                var r = Math.min(maxW / w, maxH / h);
+                w = Math.round(w * r);
+                h = Math.round(h * r);
+            }
+            var canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            try {
+                resolve(canvas.toDataURL("image/jpeg", 0.7));
+            } catch (e) {
+                resolve(dataUrl);
+            }
+        };
+        img.onerror = function() { resolve(dataUrl); };
+        img.src = dataUrl;
+    });
+}
+
 function deepCloneRole(role) {
     if (!role) return null;
 
