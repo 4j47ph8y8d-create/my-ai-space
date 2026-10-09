@@ -7523,7 +7523,7 @@ function tagRoleTimestamps() {
     });
 }
 
-function immediateSaveAllData() {
+async function immediateSaveAllData() {
     try {
         // ⭐ 保存前给所有角色打时间戳
         tagRoleTimestamps();
@@ -7544,12 +7544,27 @@ function immediateSaveAllData() {
             }
         });
 
+        // ===== 1.5 上传前压缩图片（仅压缩上传副本，不动本地） =====
+        if (CONFIG.wallpaper && CONFIG.wallpaper !== 'saved' && CONFIG.wallpaper.indexOf('data:') === 0) {
+            CONFIG.wallpaper = await compressDataUrl(CONFIG.wallpaper, 1280, 720);
+        }
+        if (CONFIG.userAvatar && CONFIG.userAvatar.indexOf('data:') === 0) {
+            CONFIG.userAvatar = await compressDataUrl(CONFIG.userAvatar, 200, 200);
+        }
+        for (var ci = 0; ci < roles.length; ci++) {
+            var _r = roles[ci];
+            if (_r.avatar && _r.avatar.indexOf('data:') === 0) {
+                _r.avatar = await compressDataUrl(_r.avatar, 200, 200);
+            }
+            if (_r.chatBg && _r.chatBg.indexOf('data:') === 0) {
+                _r.chatBg = await compressDataUrl(_r.chatBg, 1280, 720);
+            }
+        }
+
         // ===== 2. 主数据（不含消息）写 localStorage =====
         var configToSave = JSON.parse(JSON.stringify(CONFIG));
         if (configToSave.heart) delete configToSave.heart.recoveryTimer;
 
-        var wallpaperFlag = configToSave.wallpaper ? 'saved' : '';
-        configToSave.wallpaper = wallpaperFlag;
 
         var data = {
     config: configToSave,
@@ -7580,7 +7595,7 @@ function immediateSaveAllData() {
                 diaries: CONFIG.diaries || []
             };
 
-            fetch(API_BASE + '/data/save', {
+            await fetch(API_BASE + '/data/save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -7648,6 +7663,7 @@ function saveAllData() {
     }
 
     saveMemeData().catch(function(e) { console.error('表情包保存失败:', e); });
+    debouncedSaveAllData();
 }
 
 // 压缩 dataURL 到指定最大宽高（保持宽高比），JPEG 质量 0.7
