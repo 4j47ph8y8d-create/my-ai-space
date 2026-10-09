@@ -5638,21 +5638,68 @@
 <body>
 
 <!-- 👇 加载动画遮罩层（App 启动时先显示这个） 👇 -->
-    <div id="appLoadingScreen" style="
-        position: fixed;
-        inset: 0;
-        z-index: 999999;
-        background: #05010a;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        transition: opacity 0.8s ease, visibility 0.8s;
-    ">
-        <canvas id="canvas" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1;"></canvas>
-        <div class="loading-text" id="loadingText" style="position: relative; z-index: 2; color: rgba(220, 180, 255, 0.8); font-size: 15px; letter-spacing: 5px; margin-top: 70vh; text-align: center; min-height: 24px; text-shadow: 0 0 15px rgba(180, 100, 255, 0.6); transition: opacity 0.5s ease;"></div>
+
+<div id="appLoadingScreen" style="
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    background: #05010a;
+    overflow: hidden;
+    transition: opacity 0.8s ease, visibility 0.8s;
+">
+    <!-- 流星层 -->
+    <div id="lr-meteor-layer" style="position:absolute;inset:0;pointer-events:none;"></div>
+
+    <!-- 中央打字层 -->
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:10;">
+        <div id="lr-typing-text" style="
+            font-family: 'Courier New', 'Menlo', monospace;
+            font-size: 18px;
+            color: rgba(220, 200, 255, 0.9);
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(180, 120, 255, 0.6), 0 0 20px rgba(140, 80, 220, 0.3);
+            white-space: nowrap;
+            min-height: 24px;
+        "></div>
     </div>
-    <!-- 👆 加载动画结束 👆 -->
+</div>
+
+<style>
+@keyframes lr-meteorFly {
+    0%   { transform: translateY(0); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { transform: translateY(-120vh); opacity: 0; }
+}
+@keyframes lr-cursorBlink {
+    0%, 50%   { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+.lr-meteor {
+    position: absolute;
+    width: 1.5px;
+    height: 80px;
+    background: linear-gradient(to top,
+        rgba(220, 200, 255, 0) 0%,
+        rgba(200, 170, 255, 0.4) 30%,
+        rgba(240, 220, 255, 0.95) 90%,
+        #ffffff 100%);
+    border-radius: 2px;
+    filter: drop-shadow(0 0 4px rgba(200, 170, 255, 0.8));
+    will-change: transform, opacity;
+}
+.lr-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: rgba(220, 200, 255, 0.9);
+    margin-left: 4px;
+    vertical-align: middle;
+    box-shadow: 0 0 8px rgba(180, 120, 255, 0.8);
+    animation: lr-cursorBlink 0.9s step-end infinite;
+}
+</style>
+<!-- 👆 加载动画结束 👆 -->
 
     <!-- ============================================================
 🌙 登录界面（含注册切换）
@@ -6743,164 +6790,78 @@
 <script>
 
 // ==========================================
-    // 🎬 启动加载动画（粒子球 + 乱码打字）
-    // ==========================================
-    var isAppDataLoaded = false; // 标记：App 数据是否加载完毕
-    var isAnimationFinished = false; // 标记：动画是否播放完毕
-
+// 🎬 启动加载动画（流星 + 乱码打字）
+// ==========================================
+var isAppDataLoaded = false;
+var isAnimationFinished = false;
 window.__animationStartTime = Date.now();
 
-    (function initLoadingAnimation() {
-        var canvas = document.getElementById('canvas');
-        if (!canvas) return;
-        var ctx = canvas.getContext('2d');
-        var width, height;
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
+(function initLrLoader() {
+    // ---- 1. 生成流星 ----
+    var meteorLayer = document.getElementById('lr-meteor-layer');
+    if (meteorLayer) {
+        var meteorCount = 40;
+        for (var i = 0; i < meteorCount; i++) {
+            (function() {
+                var meteor = document.createElement('div');
+                meteor.className = 'lr-meteor';
+                meteor.style.left = (Math.random() * 100) + '%';
+                meteor.style.bottom = (-100 - Math.random() * 200) + 'px';
+                meteor.style.height = (40 + Math.random() * 80) + 'px';
+                var duration = 3 + Math.random() * 5;
+                meteor.style.animation = 'lr-meteorFly ' + duration + 's linear infinite';
+                meteor.style.animationDelay = (Math.random() * 8) + 's';
+                meteor.style.opacity = 0.3 + Math.random() * 0.7;
+                meteorLayer.appendChild(meteor);
+            })();
         }
-        window.addEventListener('resize', resize);
-        resize();
+    }
 
-        var centerX = function() { return width / 2; };
-        var centerY = function() { return height / 2 - 60; };
+    // ---- 2. 打字机 ----
+    var typingEl = document.getElementById('lr-typing-text');
+    if (!typingEl) return;
 
-        // 核心粒子球
-        var coreParticles = [];
-        var CORE_COUNT = 400;
-        var layers = [
-            { radius: 45, minSize: 1.5, maxSize: 2.5, color: 'rgba(240, 200, 255, 0.95)', speed: 1.0 },
-            { radius: 75, minSize: 1.0, maxSize: 2.0, color: 'rgba(190, 130, 255, 0.6)', speed: 0.7 },
-            { radius: 100, minSize: 0.6, maxSize: 1.5, color: 'rgba(130, 80, 220, 0.25)', speed: 0.4 }
-        ];
-        layers.forEach(function(layer) {
-            var count = Math.floor(CORE_COUNT / layers.length);
-            for (var i = 0; i < count; i++) {
-                var theta = Math.random() * Math.PI * 2;
-                var phi = Math.acos((Math.random() * 2) - 1);
-                var r = layer.radius;
-                var x = r * Math.sin(phi) * Math.cos(theta);
-                var y = r * Math.sin(phi) * Math.sin(theta);
-                var z = r * Math.cos(phi);
-                var size = layer.minSize + Math.random() * (layer.maxSize - layer.minSize);
-                coreParticles.push({ baseX: x, baseY: y, baseZ: z, size: size, color: layer.color, speed: layer.speed });
-            }
-        });
+    var targetText = '正在进入梦境...';
+    var scrambleChars = '!<>-_\\/[]{}—=+*^?#';
+    var currentIndex = 0;
+    var scrambleCount = 0;
 
-        // 飞入粒子
-        var flyParticles = [];
-        var FLY_COUNT = 45;
-        function spawnFlyParticle() {
-            var angle = Math.random() * Math.PI * 2;
-            var distance = 400 + Math.random() * 300;
-            return {
-                x: centerX() + Math.cos(angle) * distance,
-                y: centerY() + Math.sin(angle) * distance,
-                vx: -Math.cos(angle) * (0.2 + Math.random() * 0.4),
-                vy: -Math.sin(angle) * (0.2 + Math.random() * 0.4),
-                size: 0.3 + Math.random() * 2.5,
-                alpha: 0.5 + Math.random() * 0.5,
-                absorbed: false,
-                absorbedScale: 1
-            };
+    // 光标
+    var cursor = document.createElement('span');
+    cursor.className = 'lr-cursor';
+    typingEl.appendChild(cursor);
+
+    function typeStep() {
+        if (currentIndex >= targetText.length) {
+            // 打完了，只留光标
+            typingEl.textContent = targetText;
+            typingEl.appendChild(cursor);
+            isAnimationFinished = true;
+            return;
         }
-        for (var i = 0; i < FLY_COUNT; i++) flyParticles.push(spawnFlyParticle());
 
-        var angleY = 0, breathScale = 1, breathDir = 1;
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
-            var cx = centerX(), cy = centerY();
-            breathScale += breathDir * 0.002;
-            if (breathScale > 1.08) breathDir = -1;
-            if (breathScale < 0.92) breathDir = 1;
-            angleY += 0.005;
-
-            var sortedCore = coreParticles.slice().sort(function(a, b) {
-                return (a.baseZ * Math.cos(angleY) - a.baseX * Math.sin(angleY)) - (b.baseZ * Math.cos(angleY) - b.baseX * Math.sin(angleY));
-            });
-
-            sortedCore.forEach(function(p) {
-                var curAngle = angleY * p.speed;
-                var cosA = Math.cos(curAngle), sinA = Math.sin(curAngle);
-                var x = p.baseX * cosA - p.baseZ * sinA;
-                var z = p.baseX * sinA + p.baseZ * cosA;
-                var y = p.baseY;
-                x *= breathScale; y *= breathScale; z *= breathScale;
-                var scale = 400 / (400 + z);
-                ctx.beginPath();
-                ctx.arc(cx + x * scale, cy + y * scale, p.size * scale, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
-                if (p.size > 1.8 && z < 0) { ctx.shadowBlur = 18; ctx.shadowColor = 'rgba(220, 160, 255, 0.8)'; }
-                else { ctx.shadowBlur = 0; }
-            });
-
-            flyParticles.forEach(function(p, index) {
-                if (p.absorbed) {
-                    p.absorbedScale -= 0.03;
-                    if (p.absorbedScale <= 0) flyParticles[index] = spawnFlyParticle();
-                    else {
-                        var curX = p.x + (cx - p.x) * (1 - p.absorbedScale);
-                        var curY = p.y + (cy - p.y) * (1 - p.absorbedScale);
-                        ctx.beginPath();
-                        ctx.arc(curX, curY, p.size * p.absorbedScale, 0, Math.PI * 2);
-                        ctx.fillStyle = 'rgba(230, 180, 255, ' + (p.alpha * p.absorbedScale) + ')';
-                        ctx.fill();
-                    }
-                    return;
-                }
-                var dx = cx - p.x, dy = cy - p.y;
-                var dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 70) { p.absorbed = true; return; }
-                var accel = 0.005 + (1 - dist / 500) * 0.02;
-                p.vx += (dx / dist) * accel; p.vy += (dy / dist) * accel;
-                p.x += p.vx; p.y += p.vy;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(240, 200, 255, ' + p.alpha + ')';
-                ctx.fill();
-            });
-
-            var coreGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 110 * breathScale);
-            coreGlow.addColorStop(0, 'rgba(200, 140, 255, 0.12)');
-            coreGlow.addColorStop(0.5, 'rgba(130, 80, 200, 0.04)');
-            coreGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            ctx.beginPath();
-            ctx.arc(cx, cy, 110 * breathScale, 0, Math.PI * 2);
-            ctx.fillStyle = coreGlow;
-            ctx.fill();
-
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        // 乱码打字
-        var textEl = document.getElementById('loadingText');
-        var targetText = "正在进入你的梦境...";
-        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*";
-        var progress = 0, scrambleCount = 0;
-
-        function typeScramble() {
-            var result = "";
-            for (var i = 0; i < targetText.length; i++) {
-                if (i < progress) result += targetText[i];
-                else if (i === progress) result += chars[Math.floor(Math.random() * chars.length)];
-                else result += " ";
-            }
-            textEl.textContent = result;
-            scrambleCount++;
-            if (scrambleCount % 10 === 0) progress++;
-
-            if (progress <= targetText.length) {
-                requestAnimationFrame(typeScramble);
+        var result = '';
+        for (var i = 0; i < targetText.length; i++) {
+            if (i < currentIndex) {
+                result += targetText[i];
+            } else if (i === currentIndex) {
+                result += scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
             } else {
-                isAnimationFinished = true;
-            
+                result += ' ';
             }
         }
-        setTimeout(typeScramble, 800);
-    })();
+        typingEl.textContent = result;
+        typingEl.appendChild(cursor);
+
+        scrambleCount++;
+        if (scrambleCount % 4 === 0) {
+            currentIndex++;
+        }
+        setTimeout(typeStep, 60);
+    }
+
+    setTimeout(typeStep, 400);
+})();
 
  const API_BASE = 'https://lunar-reverie.top/api';
 // ============================================================
