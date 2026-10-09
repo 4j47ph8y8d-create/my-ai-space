@@ -1,86 +1,73 @@
 // ============================================================
-//  LunarReverie Service Worker
-//  关键原则：只缓存静态资源，API 请求直接放行
+// Service Worker —— 只缓存静态资源，不缓存 HTML
 // ============================================================
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.keys().then((keyList) => {
-      return Promise.all(keyList.map((key) => caches.delete(key)));
-    })
-  );
-});
-const CACHE_NAME = 'lunar-reverie-v3';
-const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/phone.html',
-    '/manifest.json',
-    '/icon.PNG'
-];
+var CACHE_NAME = 'lunar-reverie-static-v1';
 
-// 安装：缓存静态资源
+// 安装时，不预缓存任何东西（避免缓存旧 html）
 self.addEventListener('install', function(event) {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(function(cache) {
-            return cache.addAll(STATIC_ASSETS).catch(function(e) {
-                console.warn('部分静态资源缓存失败:', e);
-            });
-        })
-    );
     self.skipWaiting();
 });
 
-// 激活：清理旧缓存
+// 激活时，清理掉所有旧缓存
 self.addEventListener('activate', function(event) {
     event.waitUntil(
         caches.keys().then(function(names) {
             return Promise.all(
-                names.filter(function(name) {
-                    return name !== CACHE_NAME;
-                }).map(function(name) {
-                    return caches.delete(name);
+                names.map(function(name) {
+                    if (name !== CACHE_NAME) {
+                        return caches.delete(name);
+                    }
                 })
             );
+        }).then(function() {
+            return self.clients.claim();
         })
     );
-    self.clients.claim();
 });
 
-// 请求拦截：只缓存静态资源，API 请求全部放行
+// 拦截请求
 self.addEventListener('fetch', function(event) {
-    var url = event.request.url;
-    var method = event.request.method;
+    var request = event.request;
+    var url = new URL(request.url);
 
-    // ⭐ 关键：以下请求全部放行，SW 不拦截
-    // 1. 所有非 GET 请求（POST/PUT/DELETE 等）
-    // 2. 阿里云百炼（图片生成）
-    // 3. DeepSeek API
-    // 4. 同域的 /api/ 路径（你的后端）
-    // 5. 所有跨域请求
-    // 6. 阿里云 OSS（图片下载）
-    if (method !== 'GET' ||
-        url.includes('api.deepseek.com') ||
-        url.includes('dashscope.aliyuncs.com') ||
-        url.includes('aliyuncs.com') ||
-        url.includes('/api/') ||
-        !url.startsWith(self.location.origin)) {
-        return;  // 不调用 respondWith，浏览器直接请求
+    // ⭐ 关键：HTML 永远走网络，不走缓存
+    // 只要不是 GET，或者不是同源的，直接放过
+    if (request.method !== 'GET') {
+        return;
     }
 
-    // 静态资源：网络优先，失败时用缓存
+    // html、js、json 这些要每次从网络拉，避免"看到旧版本"
+    var pathname = url.pathname.toLowerCase();
+    if (
+        pathname.endsWith('.html') ||
+        pathname.endsWith('/') ||
+        pathname === '/' ||
+        pathname.endsWith('index.html') ||
+        pathname.endsWith('.js') ||
+        pathname.endsWith('.json')
+    ) {
+        // 不做任何缓存，直接走网络
+        return;
+    }
+
+    // 图片、字体、音频、css 这些可以走缓存（提高加载速度）
     event.respondWith(
-        fetch(event.request).then(function(response) {
-            if (response && response.status === 200) {
+        caches.match(request).then(function(cached) {
+            if (cached) return cached;
+
+            return fetch(request).then(function(response) {
+                // 只缓存成功的、同源的
+                if (!response || response.status !== 200 || response.type !== 'basic') {
+                    return response;
+                }
+
                 var responseClone = response.clone();
                 caches.open(CACHE_NAME).then(function(cache) {
-                    cache.put(event.request, responseClone);
+                    cache.put(request, responseClone);
                 });
-            }
-            return response;
-        }).catch(function() {
-            return caches.match(event.request).then(function(cached) {
-                return cached || new Response('离线', { status: 503 });
+
+                return response;
             });
         })
     );
