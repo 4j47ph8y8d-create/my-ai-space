@@ -4,6 +4,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
@@ -31,6 +33,8 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
     nickname: { type: String, default: '' },
+    resetCode: { type: String, default: '' },
+    resetCodeExpires: { type: Date, default: null },
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -47,6 +51,18 @@ UserSchema.methods.comparePassword = async function(password) {
 };
 
 const User = mongoose.model('User', UserSchema);
+
+// ===== 邮件发送器 =====
+const mailer = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '465', 10),
+    secure: true,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    }
+});
+
 
 // ===== 用户数据模型（禁用乐观锁版本控制） =====
 const UserDataSchema = new mongoose.Schema({
@@ -302,6 +318,70 @@ app.post('/api/auth/login', async (req, res) => {
     } catch (error) {
         console.error('登录错误:', error);
         res.status(500).json({ error: '登录失败，请稍后重试' });
+    }
+});
+
+// ===== 忘记密码：请求验证码 =====
+app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: '请填写邮箱' });
+
+        const user = await User.findOne({ email: String(email).toLowerCase() });
+        // 无论用户是否存在，都返回成功，避免暴露注册状态
+        if (!user) {
+            return res.json({ success: true });
+        }
+
+        const code = String(Math.floor(100000 + Math.random() * 900000));
+        user.resetCode = code;
+        user.resetCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 分钟
+        await user.save();
+
+        await mailer.sendMail({
+            from: '"LunarReverie" <' + process.env.SMTP_USER + '>',
+            to: user.email,
+            subject: '【LunarReverie】密码重置验证码',
+            text: '你的验证码是：' + code + '，10 分钟内有效。如果这不是你本人操作，请忽略这封邮件。',
+            html: '<p>你的验证码是：<b style="font-size:18px;">' + code + '</b></p><p>10 分钟内有效。如果这不是你本人操作，请忽略这封邮件。</p>'
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('发送验证码失败:', error);
+        res.status(500).json({ error: '发送失败，请稍后重试' });
+    }
+});
+
+// ===== 忘记密码：重置密码 =====
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { email, code, newPassword } = req.body;
+        if (!email || !code || !newPassword) {
+            return res.status(400).json({ error: '请填写完整信息' });
+        }
+        if (String(newPassword).length < 6) {
+            return res.status(400).json({ error: '密码至少 6 位' });
+        }
+
+        const user = await User.findOne({ email: String(email).toLowerCase() });
+        if (!user) return res.status(400).json({ error: '验证码错误或已过期' });
+        if (!user.resetCode || user.resetCode !== String(code)) {
+            return res.status(400).json({ error: '验证码错误或已过期' });
+        }
+        if (!user.resetCodeExpires || user.resetCodeExpires.getTime() < Date.now()) {
+            return res.status(400).json({ error: '验证码错误或已过期' });
+        }
+
+        user.password = newPassword;
+        user.resetCode = '';
+        user.resetCodeExpires = null;
+        await user.save();
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('重置密码失败:', error);
+        res.status(500).json({ error: '重置失败，请稍后重试' });
     }
 });
 

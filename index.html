@@ -5762,7 +5762,7 @@
                     <label style="font-size:12px;color:rgba(255,255,255,0.3);display:flex;align-items:center;gap:6px;cursor:pointer;">
                         <input type="checkbox" id="rememberMe" style="accent-color:rgba(255,255,255,0.3);width:14px;height:14px;cursor:pointer;"> 记住我
                     </label>
-                    <a href="#" style="font-size:12px;color:rgba(255,255,255,0.2);text-decoration:none;cursor:pointer;">忘记密码</a>
+                    <a href="#" id="forgotPwEntry" style="font-size:12px;color:rgba(255,255,255,0.45);text-decoration:none;cursor:pointer;transition:0.3s;" onmouseenter="this.style.color='rgba(255,255,255,0.7)'" onmouseleave="this.style.color='rgba(255,255,255,0.45)'">忘记密码</a>
                 </div>
                 <button id="loginBtn" style="width:100%;padding:13px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.7);font-size:15px;font-weight:500;cursor:pointer;transition:0.3s;margin-top:4px;font-family:inherit;letter-spacing:2px;" onmouseenter="this.style.background='rgba(255,255,255,0.14)';this.style.color='rgba(255,255,255,0.9)'" onmouseleave="this.style.background='rgba(255,255,255,0.08)';this.style.color='rgba(255,255,255,0.7)'">登入梦境</button>
                 <div style="text-align:center;margin-top:10px;">
@@ -5771,6 +5771,28 @@
                 </div>
             </div>
         </div>
+
+            <!-- ===== 忘记密码模态框 ===== -->
+            <div id="forgotPwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+                <div style="background:#0a0710;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;max-width:360px;width:100%;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                        <span style="font-size:15px;color:rgba(255,255,255,0.85);font-weight:600;">找回密码</span>
+                        <span id="forgotPwClose" style="cursor:pointer;color:rgba(255,255,255,0.4);font-size:20px;line-height:1;">×</span>
+                    </div>
+                    <div id="forgotStep1">
+                        <label style="font-size:11px;color:rgba(255,255,255,0.4);display:block;margin-bottom:6px;">账号邮箱</label>
+                        <input type="email" id="forgotEmail" placeholder="your@dream.com" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:rgba(255,255,255,0.85);font-size:14px;outline:none;box-sizing:border-box;">
+                        <button id="forgotSendCodeBtn" style="width:100%;margin-top:14px;padding:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.8);font-size:14px;cursor:pointer;">发送验证码</button>
+                    </div>
+                    <div id="forgotStep2" style="display:none;">
+                        <label style="font-size:11px;color:rgba(255,255,255,0.4);display:block;margin-bottom:6px;">6 位验证码</label>
+                        <input type="text" id="forgotCode" maxlength="6" placeholder="123456" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:rgba(255,255,255,0.85);font-size:14px;outline:none;box-sizing:border-box;letter-spacing:6px;text-align:center;">
+                        <label style="font-size:11px;color:rgba(255,255,255,0.4);display:block;margin:14px 0 6px;">新密码</label>
+                        <input type="password" id="forgotNewPwd" placeholder="至少 6 位" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:rgba(255,255,255,0.85);font-size:14px;outline:none;box-sizing:border-box;">
+                        <button id="forgotResetBtn" style="width:100%;margin-top:16px;padding:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.8);font-size:14px;cursor:pointer;">重置密码</button>
+                    </div>
+                </div>
+            </div>
 
         <!-- ===== 注册表单 ===== -->
         <div id="registerForm" style="display:none;">
@@ -6970,6 +6992,113 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ----- 忘记密码 -----
+    (function() {
+        var entry = document.getElementById('forgotPwEntry');
+        var modal = document.getElementById('forgotPwModal');
+        var closeBtn = document.getElementById('forgotPwClose');
+        var sendBtn = document.getElementById('forgotSendCodeBtn');
+        var resetBtn = document.getElementById('forgotResetBtn');
+        var step1 = document.getElementById('forgotStep1');
+        var step2 = document.getElementById('forgotStep2');
+        var emailInput = document.getElementById('forgotEmail');
+        var codeInput = document.getElementById('forgotCode');
+        var pwdInput = document.getElementById('forgotNewPwd');
+
+        if (!entry || !modal) return;
+
+        function openModal() {
+            modal.style.display = 'flex';
+            if (step1) step1.style.display = 'block';
+            if (step2) step2.style.display = 'none';
+            if (emailInput) emailInput.value = '';
+            if (codeInput) codeInput.value = '';
+            if (pwdInput) pwdInput.value = '';
+        }
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        entry.addEventListener('click', function(e) {
+            e.preventDefault();
+            openModal();
+        });
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+        if (sendBtn) {
+            sendBtn.addEventListener('click', function() {
+                var email = (emailInput.value || '').trim();
+                if (!email) { if (typeof showToast === 'function') showToast('请填写邮箱'); return; }
+                sendBtn.disabled = true;
+                sendBtn.textContent = '发送中...';
+                fetch(API_BASE + '/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = '发送验证码';
+                    if (res && res.success) {
+                        if (step1) step1.style.display = 'none';
+                        if (step2) step2.style.display = 'block';
+                        if (typeof showToast === 'function') showToast('验证码已发送，请查收邮件');
+                    } else {
+                        if (typeof showToast === 'function') showToast((res && res.error) || '发送失败');
+                    }
+                })
+                .catch(function() {
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = '发送验证码';
+                    if (typeof showToast === 'function') showToast('网络错误');
+                });
+            });
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                var email = (emailInput.value || '').trim();
+                var code = (codeInput.value || '').trim();
+                var pwd = (pwdInput.value || '').trim();
+                if (!email || !code || !pwd) {
+                    if (typeof showToast === 'function') showToast('请填写完整信息');
+                    return;
+                }
+                if (pwd.length < 6) {
+                    if (typeof showToast === 'function') showToast('密码至少 6 位');
+                    return;
+                }
+                resetBtn.disabled = true;
+                resetBtn.textContent = '重置中...';
+                fetch(API_BASE + '/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, code: code, newPassword: pwd })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    resetBtn.disabled = false;
+                    resetBtn.textContent = '重置密码';
+                    if (res && res.success) {
+                        if (typeof showToast === 'function') showToast('密码已重置，请用新密码登录');
+                        closeModal();
+                        var lp = document.getElementById('loginEmail');
+                        if (lp) lp.value = email;
+                    } else {
+                        if (typeof showToast === 'function') showToast((res && res.error) || '重置失败');
+                    }
+                })
+                .catch(function() {
+                    resetBtn.disabled = false;
+                    resetBtn.textContent = '重置密码';
+                    if (typeof showToast === 'function') showToast('网络错误');
+                });
+            });
+        }
+    })();
+
+
     // ----- 注册逻辑 -----
     var registerBtn = document.getElementById('registerBtn');
 if (registerBtn) {
@@ -7656,8 +7785,6 @@ function saveAllData() {
         var configToSave = JSON.parse(JSON.stringify(CONFIG));
         if (configToSave.heart) delete configToSave.heart.recoveryTimer;
 
-        var wallpaperFlag = configToSave.wallpaper ? 'saved' : '';
-        configToSave.wallpaper = wallpaperFlag;
 
         var data = {
             config: configToSave,
@@ -22941,18 +23068,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 var cloudData = result.data;
                 
                 if (cloudData.config) {
-                    var oldApiKey = CONFIG.apiKey;
-                    var oldRelayApiKey = CONFIG.relayApiKey;
-                    var oldTtsApiKey = CONFIG.voice && CONFIG.voice.apiKey;
-                    
-                    CONFIG = Object.assign({}, CONFIG, cloudData.config);
-                    
-                    CONFIG.apiKey = oldApiKey || CONFIG.apiKey;
-                    CONFIG.relayApiKey = oldRelayApiKey || CONFIG.relayApiKey;
-                    if (CONFIG.voice) {
-                        CONFIG.voice.apiKey = oldTtsApiKey || CONFIG.voice.apiKey;
-                    }
+                var oldApiKey = CONFIG.apiKey;
+                var oldRelayApiKey = CONFIG.relayApiKey;
+                var oldTtsApiKey = CONFIG.voice && CONFIG.voice.apiKey;
+                var _keepWallpaper = CONFIG.wallpaper;
+                var _keepUserAvatar = CONFIG.userAvatar;
+
+                CONFIG = Object.assign({}, CONFIG, cloudData.config);
+
+                if (_keepWallpaper && typeof _keepWallpaper === 'string' && _keepWallpaper.indexOf('data:') === 0) {
+                    CONFIG.wallpaper = _keepWallpaper;
                 }
+                if (_keepUserAvatar && typeof _keepUserAvatar === 'string' && _keepUserAvatar.indexOf('data:') === 0) {
+                    CONFIG.userAvatar = _keepUserAvatar;
+                }
+                CONFIG.apiKey = oldApiKey || CONFIG.apiKey;
+                CONFIG.relayApiKey = oldRelayApiKey || CONFIG.relayApiKey;
+                if (CONFIG.voice) {
+                    CONFIG.voice.apiKey = oldTtsApiKey || CONFIG.voice.apiKey;
+                }
+            }
                 
                if (cloudData.roles && cloudData.roles.length > 0) {
                     if (roles.length === 0) {
