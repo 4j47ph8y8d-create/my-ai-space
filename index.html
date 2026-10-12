@@ -7352,6 +7352,7 @@ var CONFIG = {
         pitch: 1.0
     },
     wallpaper: '', chatBg: '', userAvatar: '',
+    wallet: { balance: 0, transactions: [] },
     iconStyle: 'glass', bubbleStyle: 'default', timeMode: 'HH:MM', permission: null,
     temperature: 0.9, fontSize: 'medium', fontWeight: 'regular', splitEnabled: true,
     theme: 'dark', pinnedContacts: [],
@@ -14759,6 +14760,67 @@ var periodDeleteTarget = null;
 // 💌 信箱 - 页面控制
 // ============================================================
 
+function renderWallet() {
+    var wallet = (CONFIG && CONFIG.wallet) || { balance: 0, transactions: [] };
+    var balanceEl = document.getElementById('walletBalance');
+    if (balanceEl) {
+        balanceEl.textContent = '¥ ' + (wallet.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+    var listEl = document.getElementById('walletList');
+    if (!listEl) return;
+    var txs = (wallet.transactions || []).slice().sort(function(a, b) { return (b.ts || 0) - (a.ts || 0); });
+    if (txs.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center; color:#d97706; font-size:13px; padding:40px 0; opacity:0.7;">还没有收支记录</div>';
+        return;
+    }
+    var typeMap = {
+        'ai_transfer': { label: '角色转账', color: '#16a34a' },
+        'recharge_to_mall': { label: '充值商城币', color: '#ea580c' },
+        'gift_out': { label: '送出礼物', color: '#ea580c' },
+        'purchase': { label: '商城消费', color: '#ea580c' }
+    };
+    listEl.innerHTML = txs.map(function(tx) {
+        var info = typeMap[tx.type] || { label: tx.type || '其他', color: '#a16207' };
+        var amt = tx.amount || 0;
+        var sign = amt >= 0 ? '+' : '';
+        var amtStr = sign + '¥ ' + Math.abs(amt).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        var dateStr = '';
+        try {
+            var d = new Date(tx.ts || Date.now());
+            var hh = d.getHours(); if (hh < 10) hh = '0' + hh;
+            var mm = d.getMinutes(); if (mm < 10) mm = '0' + mm;
+            dateStr = (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + hh + ':' + mm;
+        } catch (e) {}
+        return '<div style="background:#ffffff; border-radius:14px; padding:14px 16px; margin-bottom:10px; box-shadow:0 2px 8px rgba(251,191,36,0.12);">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+            '<div>' +
+            '<div style="font-size:14px; color:#78350f; font-weight:600;">' + info.label + '</div>' +
+            '<div style="font-size:11px; color:#a16207; margin-top:3px;">' + (tx.note || '') + '</div>' +
+            '</div>' +
+            '<div style="font-size:15px; font-weight:700; color:' + info.color + ';">' + amtStr + '</div>' +
+            '</div>' +
+            '<div style="font-size:10px; color:#c2410c; margin-top:6px; opacity:0.6;">' + dateStr + '</div>' +
+            '</div>';
+    }).join('');
+}
+
+function openWalletPanel() {
+    var overlay = document.getElementById('walletOverlay');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    renderWallet();
+    var closeBtn = document.getElementById('walletCloseBtn');
+    if (closeBtn && !closeBtn.dataset.bound) {
+        closeBtn.dataset.bound = '1';
+        closeBtn.addEventListener('click', closeWalletPanel);
+    }
+}
+
+function closeWalletPanel() {
+    var overlay = document.getElementById('walletOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
 function openLetterScreen() {
   document.getElementById('launcherScreen').classList.add('hidden');
   document.getElementById('chatScreen').classList.remove('open');
@@ -20399,6 +20461,7 @@ else if (app === 'video') openVideoLibrary(); else if (app === 'period') openPer
 else if (app === 'anniversary') openAnniversaryScreen();
 
 else if (app === 'letter') openLetterScreen();
+        else if (app === 'wallet') openWalletPanel();
 
         else showToast('📱 功能开发中~');
     });
@@ -23147,6 +23210,24 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- ========== 通话系统 HTML ========== -->
 
 <!-- 来电弹窗 -->
+<!-- ====== 钱包面板 ====== -->
+<div id="walletOverlay" style="display:none; position:fixed; inset:0; background:#fffbeb; z-index:10000; flex-direction:column;">
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:60px 20px 16px;">
+        <div id="walletCloseBtn" style="font-size:22px; color:#f59e0b; cursor:pointer; padding:8px 12px;">&larr;</div>
+        <div style="font-size:16px; color:#78350f; font-weight:600;">我的钱包</div>
+        <div style="width:44px;"></div>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:0 20px 24px;">
+        <div style="background:linear-gradient(135deg,#fde047,#fb923c); border-radius:20px; padding:24px 22px; box-shadow:0 8px 24px rgba(251,146,60,0.25); margin-bottom:22px;">
+            <div style="font-size:12px; color:rgba(120,53,15,0.75); letter-spacing:1px;">当前余额</div>
+            <div id="walletBalance" style="font-size:34px; font-weight:700; color:#78350f; margin-top:8px; font-variant-numeric:tabular-nums;">¥ 0.00</div>
+            <div style="font-size:11px; color:rgba(120,53,15,0.6); margin-top:6px;">虚拟货币，由角色转账获得</div>
+        </div>
+        <div style="font-size:13px; color:#92400e; font-weight:600; margin-bottom:12px; padding-left:4px;">收支记录</div>
+        <div id="walletList"></div>
+    </div>
+</div>
+
 <div id="incomingCallOverlay">
     <div class="incoming-card" id="incomingCard">
         <div class="avatar-wrap" id="incomingAvatar">
