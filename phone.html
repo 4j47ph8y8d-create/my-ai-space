@@ -1168,6 +1168,7 @@ body {
                 <button id="asCancelBtn" style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:14px;">关闭</button>
                 <button id="asSaveBtn" style="flex:2; padding:12px; border-radius:10px; border:none; background:#d4af37; color:#000; font-size:14px; font-weight:600;">保存</button>
             </div>
+            <div id="asClearBtn" style="text-align:center; margin-top:16px; color:#e74c3c; font-size:12px; cursor:pointer; padding:6px;">清空资产档案</div>
         </div>
     </div>
 
@@ -3162,8 +3163,13 @@ function buildRandomAssets(scale, industries, tpl) {
     var unit = tpl === 'ancient' ? '两' : '¥';
     var fmt = function(n) { return Math.round(n).toLocaleString(); };
 
-    // 控股公司 / 情报网络 / 区域掌控，按档位取一个合理区间
-    var mul = {small: 1, mid: 10, rich: 100, tycoon: 1000}[scale] || 10;
+    // 控股公司数量按档位给合理范围
+    var companyRange = {
+        small: [1, 5],
+        mid: [3, 15],
+        rich: [10, 40],
+        tycoon: [30, 80]
+    }[scale] || [3, 15];
 
     var cards, breakdown, monthlyFlow, dimensions;
 
@@ -3199,20 +3205,17 @@ function buildRandomAssets(scale, industries, tpl) {
             '情报': '情报网络'
         };
         var usedIndustries = (industries || []).slice(0, 2);
-        cards = [{ label: '本月收入', value: '¥ ' + fmt(total * 0.05) }];
+        cards = [
+            { label: '本月收入', value: '¥ ' + fmt(total * 0.05) },
+            { label: '控股公司', value: Math.round(companyRange[0] + Math.random() * (companyRange[1] - companyRange[0])) + ' 家' }
+        ];
         usedIndustries.forEach(function(ind) {
             var label = indMap[ind] || ind;
             var val = Math.round(total * (0.05 + Math.random() * 0.15));
             cards.push({ label: label, value: '¥ ' + fmt(val) });
         });
-        while (cards.length < 4) {
-            if (cards.length === 1) {
-                cards.push({ label: '控股公司', value: Math.round(20 * mul + Math.random() * 80 * mul) + ' 家' });
-            } else if (cards.length === 2) {
-                cards.push({ label: '投资组合', value: '¥ ' + fmt(total * (0.3 + Math.random() * 0.2)) });
-            } else {
-                cards.push({ label: '现金流', value: '¥ ' + fmt(total * 0.12) });
-            }
+        if (cards.length < 4) {
+            cards.push({ label: '现金流', value: '¥ ' + fmt(total * 0.12) });
         }
         cards = cards.slice(0, 4);
         breakdown = [
@@ -3598,6 +3601,20 @@ function saveAssetsSettings(roleId) {
     });
     var closeBtn = document.getElementById('asCancelBtn');
     if (closeBtn) closeBtn.addEventListener('click', closeAssetsSettingsPanel);
+
+    var clearBtn = document.getElementById('asClearBtn');
+    if (clearBtn && !clearBtn.dataset.bound) {
+        clearBtn.dataset.bound = '1';
+        clearBtn.addEventListener('click', function() {
+            var rid = panel.dataset.roleId;
+            if (!rid) return;
+            if (!confirm('确定要清空资产档案吗？清空后需要重新创建。')) return;
+            stopAssetsTicker();
+            try { localStorage.removeItem('assets_data_' + rid); } catch (e) {}
+            closeAssetsSettingsPanel();
+            setTimeout(function() { openAssetsApp(); }, 100);
+        });
+    }
 })();
 
 function openWardrobeApp() {
