@@ -669,6 +669,134 @@ body {
         }
 
 
+        /* ===== 资产图表 ===== */
+        .assets-chart-wrap {
+            margin-bottom: 22px;
+        }
+        .assets-chart-title {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+        .assets-ring {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            margin: 0 auto;
+            position: relative;
+        }
+        .assets-ring::after {
+            content: '';
+            position: absolute;
+            inset: 22px;
+            border-radius: 50%;
+            background: #0a0a0a;
+        }
+        .assets-ring::before {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 1px dashed rgba(255,255,255,0.07);
+            pointer-events: none;
+        }
+        .assets-ring-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .assets-ring-center .num {
+            font-size: 20px;
+            color: var(--assets-accent);
+            font-weight: 700;
+        }
+        .assets-ring-center .sub {
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 2px;
+        }
+        .assets-ring-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            margin-top: 14px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+        .assets-ring-legend span {
+            display: flex;
+            align-items: center;
+            padding: 0 4px;
+        }
+        .assets-ring-legend .pct {
+            margin-left: auto;
+            color: var(--assets-accent);
+            font-weight: 600;
+        }
+        .assets-ring-legend .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        .assets-bars-wrap {
+            position: relative;
+            padding-bottom: 16px;
+            background-image: linear-gradient(to top, rgba(255,255,255,0.045) 1px, transparent 1px);
+            background-size: 100% 25%;
+            background-position: 0 100%;
+        }
+        .assets-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 100px;
+            padding: 0 4px;
+            position: relative;
+            z-index: 1;
+        }
+        .assets-bars .bar {
+            flex: 1;
+            background: linear-gradient(to top, rgba(255,255,255,0.05), var(--assets-accent));
+            border-radius: 3px 3px 0 0;
+            min-height: 2px;
+        }
+        .assets-bars-labels {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            gap: 4px;
+            padding: 0 4px;
+            height: 14px;
+        }
+        .assets-bars-labels span {
+            flex: 1;
+            text-align: center;
+            font-size: 9px;
+            color: rgba(255,255,255,0.35);
+            line-height: 14px;
+        }
+        .assets-radar {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+        }
+        .assets-radar svg {
+            width: 100%;
+            height: 100%;
+        }
+
+
 </style>
 </head>
 <body>
@@ -945,6 +1073,21 @@ body {
         </div>
         <div class="assets-cards" id="assetsCards"></div>
         <div class="assets-stream-title">实时流水</div>
+            <div class="assets-chart-wrap">
+                <div class="assets-chart-title">资产构成</div>
+                <div class="assets-ring" id="assetsRing"></div>
+            </div>
+            <div class="assets-chart-wrap">
+                <div class="assets-chart-title">近 12 月流入</div>
+                <div class="assets-bars-wrap">
+                <div class="assets-bars" id="assetsBars"></div>
+                <div class="assets-bars-labels" id="assetsBarsLabels"></div>
+            </div>
+            </div>
+            <div class="assets-chart-wrap">
+                <div class="assets-chart-title">势力维度</div>
+                <div class="assets-radar" id="assetsRadar"></div>
+            </div>
         <div class="assets-stream" id="assetsStream"></div>
     </div>
         <!-- ====== 资产初始化面板 ====== -->
@@ -2761,6 +2904,136 @@ function renderAssets(data) {
         }).join('');
     }
 
+    // ===== 资产构成圆环 =====
+    (function() {
+        var ringEl = document.getElementById('assetsRing');
+        if (!ringEl) return;
+        var colors = ['#d4af37', '#4a8fe0', '#a97bff', '#3fb27f', '#e07b4a'];
+        var breakdown = data.breakdown;
+        if (!breakdown || !breakdown.length) {
+            breakdown = [
+                { label: '产业', percent: 32 },
+                { label: '不动产', percent: 26 },
+                { label: '投资', percent: 22 },
+                { label: '现金', percent: 20 }
+            ];
+        }
+        var acc = 0;
+        var segs = [];
+        breakdown.forEach(function(item, i) {
+            var start = acc;
+            var end = acc + item.percent;
+            segs.push(colors[i % colors.length] + ' ' + start + '% ' + end + '%');
+            acc = end;
+        });
+        if (acc < 100) segs.push('rgba(255,255,255,0.06) ' + acc + '% 100%');
+        ringEl.style.background = 'conic-gradient(' + segs.join(', ') + ')';
+        var center = ringEl.querySelector('.assets-ring-center');
+        if (!center) {
+            center = document.createElement('div');
+            center.className = 'assets-ring-center';
+            ringEl.appendChild(center);
+        }
+        var top = breakdown[0];
+        breakdown.forEach(function(item) { if (item.percent > top.percent) top = item; });
+        center.innerHTML = '<div class="num">' + top.percent + '%</div><div class="sub">' + top.label + '</div>';
+        var legend = ringEl.parentElement.querySelector('.assets-ring-legend');
+        if (!legend) {
+            legend = document.createElement('div');
+            legend.className = 'assets-ring-legend';
+            ringEl.parentElement.appendChild(legend);
+        }
+        legend.innerHTML = breakdown.map(function(item, i) {
+            return '<span><i class="dot" style="background:' + colors[i % colors.length] + '"></i>' + item.label + '<b class="pct">' + item.percent + '%</b></span>';
+        }).join('');
+    })();
+
+    // ===== 近 12 月流入柱状 =====
+    (function() {
+        var barsEl = document.getElementById('assetsBars');
+        if (!barsEl) return;
+        var flow = data.monthlyFlow;
+        if (!flow || flow.length !== 12) {
+            flow = [];
+            for (var i = 0; i < 12; i++) flow.push(Math.round(40 + Math.random() * 60));
+        }
+        var max = Math.max.apply(null, flow);
+        barsEl.innerHTML = flow.map(function(v) {
+            var h = Math.max(2, Math.round((v / max) * 100));
+            return '<div class="bar" style="height:' + h + '%"></div>';
+        }).join('');
+        var labelsEl = document.getElementById('assetsBarsLabels');
+        if (labelsEl) {
+            var labels = ['11月','12月','1月','2月','3月','4月','5月','6月','7月','8月','9月','10月'];
+            labelsEl.innerHTML = labels.map(function(l) {
+                return '<span>' + l + '</span>';
+            }).join('');
+        }
+    })();
+
+    // ===== 势力维度雷达 =====
+    (function() {
+        var radarEl = document.getElementById('assetsRadar');
+        if (!radarEl) return;
+        var dims = data.dimensions || { '资本': 80, '情报': 70, '武力': 60, '科技': 75, '政治': 65 };
+        var keys = Object.keys(dims);
+        var n = keys.length;
+        if (n < 3) return;
+        var cx = 120, cy = 120, r = 78;
+        var points = [];
+        var angles = [];
+        for (var i = 0; i < n; i++) {
+            var angle = -Math.PI / 2 + i * 2 * Math.PI / n;
+            angles.push(angle);
+            var v = Math.max(0.18, Math.min(1, (dims[keys[i]] || 0) / 100));
+            points.push([cx + Math.cos(angle) * r * v, cy + Math.sin(angle) * r * v]);
+        }
+        var polyStr = points.map(function(p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+
+        var gridStr = '';
+        [1, 0.75, 0.5, 0.25].forEach(function(scale, idx) {
+            var opacity = 0.06 + (1 - idx / 4) * 0.04;
+            var g = [];
+            for (var i = 0; i < n; i++) {
+                g.push((cx + Math.cos(angles[i]) * r * scale).toFixed(1) + ',' + (cy + Math.sin(angles[i]) * r * scale).toFixed(1));
+            }
+            gridStr += '<polygon points="' + g.join(' ') + '" fill="none" stroke="rgba(255,255,255,' + opacity.toFixed(2) + ')" stroke-width="1"/>';
+        });
+
+        // 从中心到每个顶点的轴线
+        var axisStr = '';
+        for (var i = 0; i < n; i++) {
+            axisStr += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.cos(angles[i]) * r).toFixed(1) + '" y2="' + (cy + Math.sin(angles[i]) * r).toFixed(1) + '" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';
+        }
+
+        // 顶点小圆点
+        var dotsStr = '';
+        points.forEach(function(p) {
+            dotsStr += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="2.6" fill="currentColor"/>';
+        });
+
+        // 顶点标签（维度名 + 数值）
+        var labelsStr = '';
+        for (var i = 0; i < n; i++) {
+            var lx = cx + Math.cos(angles[i]) * (r + 16);
+            var ly = cy + Math.sin(angles[i]) * (r + 16);
+            var anchor = 'middle';
+            if (Math.cos(angles[i]) > 0.3) anchor = 'start';
+            else if (Math.cos(angles[i]) < -0.3) anchor = 'end';
+            labelsStr += '<text x="' + lx.toFixed(1) + '" y="' + (ly - 2).toFixed(1) + '" text-anchor="' + anchor + '" font-size="10" fill="rgba(255,255,255,0.55)">' + keys[i] + '</text>';
+            labelsStr += '<text x="' + lx.toFixed(1) + '" y="' + (ly + 10).toFixed(1) + '" text-anchor="' + anchor + '" font-size="9" fill="rgba(255,255,255,0.3)">' + (dims[keys[i]] || 0) + '</text>';
+        }
+
+        var svg = '<svg viewBox="0 0 240 240">' +
+            gridStr + axisStr +
+            '<polygon points="' + polyStr + '" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+            dotsStr + labelsStr +
+            '<circle cx="' + cx + '" cy="' + cy + '" r="2" fill="currentColor" fill-opacity="0.6"/>' +
+            '</svg>';
+        radarEl.style.color = 'var(--assets-accent)';
+        radarEl.innerHTML = svg;
+    })();
+
     var streamEl = document.getElementById('assetsStream');
     if (streamEl && data.transactions) {
         streamEl.innerHTML = data.transactions.slice(0, 20).map(function(r) {
@@ -2794,31 +3067,132 @@ function showAssetsInit(roleId) {
     if (streamEl) streamEl.innerHTML = '';
 }
 
+function buildRandomAssets(scale, industries, tpl) {
+    tpl = tpl || 'modern';
+    var baseByScale = {
+        small: [500000, 2000000],
+        mid: [5000000, 30000000],
+        rich: [50000000, 500000000],
+        tycoon: [800000000, 8000000000]
+    };
+    var range = baseByScale[scale] || baseByScale.mid;
+    var total = Math.round(range[0] + Math.random() * (range[1] - range[0]));
+    var unit = tpl === 'ancient' ? '两' : '¥';
+    var fmt = function(n) { return Math.round(n).toLocaleString(); };
+
+    // 控股公司 / 情报网络 / 区域掌控，按档位取一个合理区间
+    var mul = {small: 1, mid: 10, rich: 100, tycoon: 1000}[scale] || 10;
+
+    var cards, breakdown, monthlyFlow, dimensions;
+
+    if (tpl === 'ancient') {
+        cards = [
+            { label: '田产', value: fmt(total * 0.35) + ' 两' },
+            { label: '商铺', value: fmt(total * 0.28) + ' 两' },
+            { label: '宅院', value: fmt(total * 0.2) + ' 两' },
+            { label: '银两', value: fmt(total * 0.17) + ' 两' }
+        ];
+        breakdown = [
+            { label: '田产', percent: 35 },
+            { label: '商铺', percent: 28 },
+            { label: '宅院', percent: 20 },
+            { label: '银两', percent: 17 }
+        ];
+        dimensions = {
+            '财力': Math.round(50 + Math.random() * 40),
+            '人脉': Math.round(40 + Math.random() * 50),
+            '武力': Math.round(30 + Math.random() * 60),
+            '名望': Math.round(40 + Math.random() * 50),
+            '谋略': Math.round(50 + Math.random() * 40)
+        };
+    } else {
+        var indMap = {
+            '能源': '能源资产',
+            '地产': '地产估值',
+            '金融': '金融持仓',
+            '科技': '科技资产',
+            '军工': '军工订单',
+            '医药': '医药投资',
+            '文化': '文化资产',
+            '情报': '情报网络'
+        };
+        var usedIndustries = (industries || []).slice(0, 2);
+        cards = [{ label: '本月收入', value: '¥ ' + fmt(total * 0.05) }];
+        usedIndustries.forEach(function(ind) {
+            var label = indMap[ind] || ind;
+            var val = Math.round(total * (0.05 + Math.random() * 0.15));
+            cards.push({ label: label, value: '¥ ' + fmt(val) });
+        });
+        while (cards.length < 4) {
+            if (cards.length === 1) {
+                cards.push({ label: '控股公司', value: Math.round(20 * mul + Math.random() * 80 * mul) + ' 家' });
+            } else if (cards.length === 2) {
+                cards.push({ label: '投资组合', value: '¥ ' + fmt(total * (0.3 + Math.random() * 0.2)) });
+            } else {
+                cards.push({ label: '现金流', value: '¥ ' + fmt(total * 0.12) });
+            }
+        }
+        cards = cards.slice(0, 4);
+        breakdown = [
+            { label: '核心产业', percent: 32 },
+            { label: '跨境资本', percent: 24 },
+            { label: '不动产', percent: 18 },
+            { label: '军工科技', percent: 14 },
+            { label: '其他', percent: 12 }
+        ];
+        dimensions = {
+            '资本': Math.round(50 + Math.random() * 40),
+            '情报': Math.round(40 + Math.random() * 50),
+            '武力': Math.round(30 + Math.random() * 60),
+            '科技': Math.round(40 + Math.random() * 50),
+            '政治': Math.round(40 + Math.random() * 50)
+        };
+    }
+
+    monthlyFlow = [];
+    for (var i = 0; i < 12; i++) {
+        monthlyFlow.push(Math.round(30 + Math.random() * 70));
+    }
+
+    var txPool = tpl === 'ancient' ? [
+        { label: '售茶得银', sign: 1 },
+        { label: '置办田产', sign: -1 },
+        { label: '商铺进账', sign: 1 },
+        { label: '修缮宅院', sign: -1 },
+        { label: '字画添置', sign: -1 }
+    ] : [
+        { label: '股票分红', sign: 1 },
+        { label: '稀有资源采购', sign: -1 },
+        { label: '控股公司分红', sign: 1 },
+        { label: '区域武装补给', sign: -1 },
+        { label: '跨境资金归集', sign: 1 }
+    ];
+    var transactions = txPool.map(function(item) {
+        var base = total * (0.001 + Math.random() * 0.004);
+        return { t: Date.now(), label: item.label, delta: item.sign * Math.round(base) };
+    });
+
+    return {
+        template: tpl,
+        theme: 'gold',
+        scale: scale,
+        unit: unit,
+        total: total,
+        initialTotal: total,
+        lastTick: Date.now(),
+        industries: industries || [],
+        cards: cards,
+        breakdown: breakdown,
+        dimensions: dimensions,
+        monthlyFlow: monthlyFlow,
+        transactions: transactions
+    };
+}
+
 function createDefaultAssets(roleId) {
     if (!roleId) return;
-    var data = {
-        roleName: '',
-        template: 'modern',
-        theme: 'gold',
-        scale: 'mid',
-        unit: '¥',
-        total: 12845600,
-        initialTotal: 12845600,
-        lastTick: Date.now(),
-        cards: [
-            { label: '本月收入', value: '¥ 2,400,000' },
-            { label: '控股公司', value: '128 家' },
-            { label: '情报网络', value: '4,700 节点' },
-            { label: '区域掌控', value: '98.7%' }
-        ],
-        transactions: [
-            { t: Date.now(), label: '股票分红', delta: 24000 },
-            { t: Date.now(), label: '稀有资源采购', delta: -85000 },
-            { t: Date.now(), label: '控股公司分红', delta: 89000 },
-            { t: Date.now(), label: '区域武装补给', delta: -37000 },
-            { t: Date.now(), label: '跨境资金归集', delta: 59500 }
-        ]
-    };
+    var data = buildRandomAssets('mid', [], 'modern');
+    data.roleName = '';
     try {
         var raw = localStorage.getItem('ds_multirole_v2');
         var main = raw ? JSON.parse(raw) : null;
@@ -2933,19 +3307,9 @@ function generateAssetsFromPanel(roleId) {
         }
     } catch (e) {}
 
-    var data = {
-        roleName: roleName,
-        template: tpl,
-        theme: 'gold',
-        scale: scale,
-        unit: unit,
-        total: total,
-        initialTotal: total,
-        lastTick: Date.now(),
-        industries: industries,
-        cards: cards,
-        transactions: transactions
-    };
+    var data = buildRandomAssets(scale, industries, tpl);
+    data.roleName = roleName;
+    data.theme = 'gold';
 
     saveAssetsData(roleId, data);
     closeAssetsInitPanel();
@@ -3060,25 +3424,29 @@ function saveAssetsSettings(roleId) {
     var data = getAssetsData(roleId);
     if (!data) return;
 
-    if (panel.dataset.selectedScale) data.scale = panel.dataset.selectedScale;
+    var newScale = panel.dataset.selectedScale || data.scale;
+    var newTheme = panel.dataset.selectedTheme || data.theme;
 
     var inds = [];
     panel.querySelectorAll('.as-ind-btn').forEach(function(b) {
         if (b.dataset.on === '1') inds.push(b.dataset.ind);
     });
-    data.industries = inds;
 
-    if (panel.dataset.selectedTheme) data.theme = panel.dataset.selectedTheme;
+    var scaleChanged = (newScale !== data.scale);
 
-    // 按新档位重算 total
-    var baseByScale = {
-        small: [500000, 2000000],
-        mid: [5000000, 30000000],
-        rich: [50000000, 500000000],
-        tycoon: [800000000, 8000000000]
-    };
-    var range = baseByScale[data.scale] || baseByScale.mid;
-    data.total = Math.round(range[0] + Math.random() * (range[1] - range[0]));
+    if (scaleChanged) {
+        // 档位变了，重新生成资产数字，但保留角色名、主题、产业
+        var rebuilt = buildRandomAssets(newScale, inds, data.template || 'modern');
+        rebuilt.roleName = data.roleName || '';
+        rebuilt.theme = newTheme;
+        rebuilt.industries = inds;
+        data = rebuilt;
+    } else {
+        // 档位没变，只更新用户改的字段
+        data.scale = newScale;
+        data.industries = inds;
+        data.theme = newTheme;
+    }
 
     saveAssetsData(roleId, data);
     closeAssetsSettingsPanel();
