@@ -1058,7 +1058,7 @@ body {
 <!-- ====== 资产 App ====== -->
 <div id="assetsApp" class="screen app-screen">
     <div class="assets-header">
-        <button class="assets-back" data-close="assetsApp"><i class="fas fa-chevron-left"></i></button>
+        <button class="assets-back" id="assetsBackBtn" data-close="assetsApp"><i class="fas fa-chevron-left"></i></button>
         <div class="assets-title" id="assetsTitle">资产</div>
         <div class="assets-theme-btn" id="assetsThemeBtn"><i class="fas fa-sliders-h"></i></div>
     </div>
@@ -2867,6 +2867,87 @@ function saveWardrobe(roleId, wardrobe) {
     localStorage.setItem(key, JSON.stringify(d));
 }
 
+var __assetsTicker = {
+    roleId: null,
+    totalTimer: null,
+    streamTimer: null,
+    saveTimer: null,
+    data: null
+};
+
+function startAssetsTicker(roleId, data) {
+    stopAssetsTicker();
+    if (!roleId || !data) return;
+    __assetsTicker.roleId = roleId;
+    __assetsTicker.data = data;
+
+    // 每 400ms 波动一次总资产
+    __assetsTicker.totalTimer = setInterval(function() {
+        var d = __assetsTicker.data;
+        if (!d) return;
+        var delta = d.total * (Math.random() - 0.5) * 0.00016;
+        d.total = Math.max(0, d.total + delta);
+        var totalEl = document.getElementById('assetsTotal');
+        if (totalEl) {
+            totalEl.textContent = (d.unit || '¥') + ' ' + d.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+    }, 400);
+
+    // 每 2.5 秒追加一条流水
+    __assetsTicker.streamTimer = setInterval(function() {
+        var d = __assetsTicker.data;
+        if (!d || !d.transactions) return;
+        var tpl = d.template || 'modern';
+        var pool = tpl === 'ancient' ? [
+            { label: '售茶得银', sign: 1 },
+            { label: '置办田产', sign: -1 },
+            { label: '商铺进账', sign: 1 },
+            { label: '修缮宅院', sign: -1 }
+        ] : [
+            { label: '股票分红', sign: 1 },
+            { label: '稀有资源采购', sign: -1 },
+            { label: '控股公司分红', sign: 1 },
+            { label: '区域武装补给', sign: -1 },
+            { label: '跨境资金归集', sign: 1 }
+        ];
+        var pick = pool[Math.floor(Math.random() * pool.length)];
+        var amt = Math.round(d.total * (0.001 + Math.random() * 0.004));
+        d.transactions.unshift({ t: Date.now(), label: pick.label, delta: pick.sign * amt });
+        if (d.transactions.length > 20) d.transactions.length = 20;
+        var streamEl = document.getElementById('assetsStream');
+        if (streamEl) {
+            streamEl.innerHTML = d.transactions.slice(0, 20).map(function(r) {
+                var cls = r.delta >= 0 ? 'plus' : 'minus';
+                var sign = r.delta >= 0 ? '+' : '';
+                return '<div class="assets-stream-row">' +
+                    '<span class="label">' + r.label + '</span>' +
+                    '<span class="delta ' + cls + '">' + sign + Math.round(r.delta).toLocaleString() + '</span>' +
+                    '</div>';
+            }).join('');
+        }
+    }, 2500);
+
+    // 每 30 秒持久化一次
+    __assetsTicker.saveTimer = setInterval(function() {
+        var d = __assetsTicker.data;
+        if (d && __assetsTicker.roleId) {
+            saveAssetsData(__assetsTicker.roleId, d);
+        }
+    }, 30000);
+}
+
+function stopAssetsTicker() {
+    if (__assetsTicker.totalTimer) { clearInterval(__assetsTicker.totalTimer); __assetsTicker.totalTimer = null; }
+    if (__assetsTicker.streamTimer) { clearInterval(__assetsTicker.streamTimer); __assetsTicker.streamTimer = null; }
+    if (__assetsTicker.saveTimer) { clearInterval(__assetsTicker.saveTimer); __assetsTicker.saveTimer = null; }
+    // 离开时立刻保存
+    if (__assetsTicker.data && __assetsTicker.roleId) {
+        saveAssetsData(__assetsTicker.roleId, __assetsTicker.data);
+    }
+    __assetsTicker.roleId = null;
+    __assetsTicker.data = null;
+}
+
 function openAssetsApp() {
     openApp('assetsApp');
     var roleId = (typeof currentRoleId !== 'undefined' && currentRoleId) ? currentRoleId : null;
@@ -2875,6 +2956,7 @@ function openAssetsApp() {
     var data = roleId ? getAssetsData(roleId) : null;
     if (data) {
         renderAssets(data);
+        startAssetsTicker(roleId, data);
     } else {
         showAssetsInit(roleId);
     }
@@ -3188,6 +3270,16 @@ function buildRandomAssets(scale, industries, tpl) {
         transactions: transactions
     };
 }
+
+(function bindAssetsBack() {
+    var btn = document.getElementById('assetsBackBtn');
+    if (btn && !btn.dataset.tickerBound) {
+        btn.dataset.tickerBound = '1';
+        btn.addEventListener('click', function() {
+            stopAssetsTicker();
+        });
+    }
+})();
 
 function createDefaultAssets(roleId) {
     if (!roleId) return;
