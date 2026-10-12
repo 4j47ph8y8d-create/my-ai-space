@@ -1096,11 +1096,12 @@ body {
                 <div style="font-size:15px; margin-bottom:18px; color:rgba(255,255,255,0.85);">创建资产档案</div>
 
                 <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-bottom:8px;">资产气质</div>
-                <div style="display:flex; gap:8px; margin-bottom:16px;">
-                    <button class="ai-tpl-btn active" data-tpl="modern" style="flex:1; padding:10px; border-radius:10px; border:1px solid #d4af37; background:rgba(212,175,55,0.1); color:#d4af37; font-size:13px;">现代</button>
-                    <button class="ai-tpl-btn" data-tpl="ancient" style="flex:1; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">古代</button>
-                <button class="ai-tpl-btn" data-tpl="future" style="flex:1; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">未来</button>
-                </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+                <button class="ai-tpl-btn active" data-tpl="modern" style="flex:1 1 calc(50% - 4px); padding:10px; border-radius:10px; border:1px solid #d4af37; background:rgba(212,175,55,0.1); color:#d4af37; font-size:13px;">现代</button>
+                <button class="ai-tpl-btn" data-tpl="ancient" style="flex:1 1 calc(50% - 4px); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">古代</button>
+                <button class="ai-tpl-btn" data-tpl="future" style="flex:1 1 calc(50% - 4px); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">未来</button>
+                <button class="ai-tpl-btn" data-tpl="custom" style="flex:1 1 calc(50% - 4px); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">自定义</button>
+            </div>
 
                 <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-bottom:8px;">资产档位</div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
@@ -1130,6 +1131,29 @@ body {
         </div>
 
 </div>
+    <!-- ====== 自定义资产面板 ====== -->
+    <div id="assetsCustomOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10000; align-items:center; justify-content:center; padding:12px;">
+        <div style="background:#0f0f0f; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:18px; max-width:100%; width:100%; color:#fff; max-height:85vh; overflow-y:auto;">
+            <div style="font-size:15px; margin-bottom:18px; color:rgba(255,255,255,0.85);">自定义资产档案</div>
+
+            <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-bottom:10px;">卡片（4 张）</div>
+            <div id="customCards"></div>
+
+            <div style="font-size:12px; color:rgba(255,255,255,0.45); margin:20px 0 10px;">圆环（5 段，百分比合计需为 100）</div>
+            <div id="customBreakdown"></div>
+            <div id="customBreakdownHint" style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:6px; text-align:right;">合计：0%</div>
+
+            <div style="font-size:12px; color:rgba(255,255,255,0.45); margin:20px 0 10px;">雷达（5 项，0-100）</div>
+            <div id="customDimensions"></div>
+
+            <div style="display:flex; gap:10px; margin-top:22px;">
+                <button id="customCancelBtn" style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:14px;">取消</button>
+                <button id="customConfirmBtn" style="flex:2; padding:12px; border-radius:10px; border:none; background:#d4af37; color:#000; font-size:14px; font-weight:600;">生成</button>
+            </div>
+        </div>
+    </div>
+
+
 
 
     <!-- ====== 资产设定面板 ====== -->
@@ -3449,6 +3473,221 @@ function toggleInitBtnStyle(btn, active) {
     }
 }
 
+function renderCustomRows() {
+    var cardsWrap = document.getElementById('customCards');
+    var bdWrap = document.getElementById('customBreakdown');
+    var dimWrap = document.getElementById('customDimensions');
+
+    var rowStyle = 'display:flex; gap:8px; margin-bottom:8px;';
+    var inputStyle = 'flex:1 1 0; min-width:0; padding:8px 10px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:rgba(255,255,255,0.85); font-size:13px; outline:none; box-sizing:border-box;';
+    var inputNumStyle = 'flex:0 0 90px; padding:8px 10px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:rgba(255,255,255,0.85); font-size:13px; outline:none; box-sizing:border-box;';
+    var placeholderName = '名称';
+    var placeholderNum = '数值';
+
+    if (cardsWrap && !cardsWrap.dataset.rendered) {
+        var html = '';
+        for (var i = 0; i < 4; i++) {
+            html += '<div style="' + rowStyle + '">' +
+                '<input class="cc-name" type="text" placeholder="' + placeholderName + '" style="' + inputStyle + '">' +
+                '<input class="cc-val" type="text" placeholder="' + placeholderNum + '" style="' + inputNumStyle + '">' +
+                '</div>';
+        }
+        cardsWrap.innerHTML = html;
+        cardsWrap.dataset.rendered = '1';
+    }
+
+    if (bdWrap && !bdWrap.dataset.rendered) {
+        var html2 = '';
+        for (var j = 0; j < 5; j++) {
+            html2 += '<div style="' + rowStyle + '">' +
+                '<input class="cb-name" type="text" placeholder="' + placeholderName + '" style="' + inputStyle + '">' +
+                '<input class="cb-pct" type="number" placeholder="%" min="0" max="100" style="' + inputNumStyle + '">' +
+                '</div>';
+        }
+        bdWrap.innerHTML = html2;
+        bdWrap.dataset.rendered = '1';
+
+        bdWrap.addEventListener('input', function() {
+            var sum = 0;
+            bdWrap.querySelectorAll('.cb-pct').forEach(function(inp) {
+                sum += Number(inp.value) || 0;
+            });
+            var hint = document.getElementById('customBreakdownHint');
+            if (hint) {
+                hint.textContent = '合计：' + sum + '%';
+                hint.style.color = (sum === 100) ? 'rgba(255,255,255,0.5)' : '#e74c3c';
+            }
+        });
+    }
+
+    if (dimWrap && !dimWrap.dataset.rendered) {
+        var html3 = '';
+        for (var k = 0; k < 5; k++) {
+            html3 += '<div style="' + rowStyle + '">' +
+                '<input class="cd-name" type="text" placeholder="' + placeholderName + '" style="' + inputStyle + '">' +
+                '<input class="cd-val" type="number" placeholder="0-100" min="0" max="100" style="' + inputNumStyle + '">' +
+                '</div>';
+        }
+        dimWrap.innerHTML = html3;
+        dimWrap.dataset.rendered = '1';
+    }
+}
+
+function openCustomPanel() {
+    var panel = document.getElementById('assetsCustomOverlay');
+    if (!panel) return;
+    panel.style.display = 'flex';
+    renderCustomRows();
+
+    // 默认提示
+    var hint = document.getElementById('customBreakdownHint');
+    if (hint) {
+        hint.textContent = '合计：0%';
+        hint.style.color = '#e74c3c';
+    }
+}
+
+function closeCustomPanel() {
+    var panel = document.getElementById('assetsCustomOverlay');
+    if (panel) panel.style.display = 'none';
+}
+
+function generateFromCustomPanel(roleId) {
+    if (!roleId) return;
+    var panel = document.getElementById('assetsCustomOverlay');
+    if (!panel) return;
+
+    // 读卡片（4 行）
+    var cards = [];
+    panel.querySelectorAll('#customCards > div').forEach(function(row) {
+        var nameInp = row.querySelector('.cc-name');
+        var valInp = row.querySelector('.cc-val');
+        var name = (nameInp && nameInp.value || '').trim();
+        var val = (valInp && valInp.value || '').trim();
+        if (name) cards.push({ label: name, value: val || '—' });
+    });
+
+    // 读圆环（5 行）
+    var breakdown = [];
+    var bdSum = 0;
+    panel.querySelectorAll('#customBreakdown > div').forEach(function(row) {
+        var nameInp = row.querySelector('.cb-name');
+        var pctInp = row.querySelector('.cb-pct');
+        var name = (nameInp && nameInp.value || '').trim();
+        var pct = Number(pctInp && pctInp.value) || 0;
+        if (name) {
+            breakdown.push({ label: name, percent: pct });
+            bdSum += pct;
+        }
+    });
+
+    // 读雷达（5 行）
+    var dimensions = {};
+    panel.querySelectorAll('#customDimensions > div').forEach(function(row) {
+        var nameInp = row.querySelector('.cd-name');
+        var valInp = row.querySelector('.cd-val');
+        var name = (nameInp && nameInp.value || '').trim();
+        var val = Number(valInp && valInp.value) || 0;
+        if (name) dimensions[name] = Math.max(0, Math.min(100, val));
+    });
+
+    // 校验圆环
+    if (breakdown.length >= 2 && bdSum !== 100) {
+        if (!confirm('圆环百分比合计 ' + bdSum + '%，不是 100%，是否继续？')) return;
+    }
+
+    // 兜底
+    if (cards.length === 0) {
+        cards = [
+            { label: '资产一', value: '—' },
+            { label: '资产二', value: '—' }
+        ];
+    }
+    if (breakdown.length === 0) {
+        breakdown = [
+            { label: '资产一', percent: 50 },
+            { label: '资产二', percent: 50 }
+        ];
+    }
+    if (Object.keys(dimensions).length < 3) {
+        dimensions = { '资本': 60, '情报': 60, '武力': 60, '科技': 60, '政治': 60 };
+    }
+
+    // total：把卡片里的数字加起来（如果都是数字）
+    var total = 0;
+    cards.forEach(function(c) {
+        var n = Number(String(c.value).replace(/[^0-9.]/g, ''));
+        if (!isNaN(n)) total += n;
+    });
+    if (total <= 0) total = 10000000;
+
+    var monthlyFlow = [];
+    for (var i = 0; i < 12; i++) {
+        monthlyFlow.push(Math.round(30 + Math.random() * 70));
+    }
+
+    var transactions = [
+        { t: Date.now(), label: '资产变动一', delta: Math.round(total * 0.002) },
+        { t: Date.now(), label: '资产变动二', delta: -Math.round(total * 0.003) },
+        { t: Date.now(), label: '资产变动三', delta: Math.round(total * 0.001) },
+        { t: Date.now(), label: '资产变动四', delta: -Math.round(total * 0.0015) },
+        { t: Date.now(), label: '资产变动五', delta: Math.round(total * 0.002) }
+    ];
+
+    var roleName = '';
+    try {
+        var raw = localStorage.getItem('ds_multirole_v2');
+        var main = raw ? JSON.parse(raw) : null;
+        if (main && main.roles) {
+            var r = main.roles.find(function(x) { return x.id === roleId; });
+            if (r) roleName = r.name || '';
+        }
+    } catch (e) {}
+
+    var data = {
+        roleName: roleName,
+        template: 'custom',
+        theme: 'gold',
+        scale: 'mid',
+        unit: '¥',
+        total: total,
+        initialTotal: total,
+        lastTick: Date.now(),
+        industries: [],
+        cards: cards.slice(0, 4),
+        breakdown: breakdown,
+        dimensions: dimensions,
+        monthlyFlow: monthlyFlow,
+        transactions: transactions
+    };
+
+    saveAssetsData(roleId, data);
+    closeCustomPanel();
+    closeAssetsInitPanel();
+    renderAssets(data);
+    if (typeof startAssetsTicker === 'function') {
+        startAssetsTicker(roleId, data);
+    }
+}
+
+(function bindCustomPanel() {
+    var panel = document.getElementById('assetsCustomOverlay');
+    if (!panel || panel.dataset.bound === '1') return;
+    panel.dataset.bound = '1';
+
+    var cancelBtn = document.getElementById('customCancelBtn');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeCustomPanel);
+
+    var confirmBtn = document.getElementById('customConfirmBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            var initPanel = document.getElementById('assetsInitOverlay');
+            var roleId = initPanel ? initPanel.dataset.roleId : '';
+            if (roleId) generateFromCustomPanel(roleId);
+        });
+    }
+})();
+
 function generateAssetsFromPanel(roleId) {
     var panel = document.getElementById('assetsInitOverlay');
     if (!panel || !roleId) return;
@@ -3524,6 +3763,10 @@ function generateAssetsFromPanel(roleId) {
 
     panel.querySelectorAll('.ai-tpl-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
+            if (btn.dataset.tpl === 'custom') {
+                openCustomPanel();
+                return;
+            }
             panel.querySelectorAll('.ai-tpl-btn').forEach(function(b) { toggleInitBtnStyle(b, false); });
             toggleInitBtnStyle(btn, true);
             panel.dataset.selectedTpl = btn.dataset.tpl;
