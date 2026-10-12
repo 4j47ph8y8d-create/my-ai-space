@@ -9919,6 +9919,14 @@ try {
     parts.push('你也是这样，该用表情包的时候就用，不该用的时候就不用。');
     parts.push('不要机械地每句话都加，也不要刻意回避。');
     parts.push('');
+
+    // ===== 理解用户消息：不要假设重复 =====
+    parts.push('【理解用户消息】');
+    parts.push('看到用户发「呜呜呜」「啊啊啊」「哈哈哈」这类叠词或语气词时，这是他在表达情绪，不是说了很多次。');
+    parts.push('不要假设用户重复发送了同一句话，除非历史里真的出现了两条一模一样的用户消息。');
+    parts.push('如果用户只发了一条消息，你要当成一条来回应。');
+    parts.push('');
+
     // 1. 角色身份铁律（放在最前面，压住 AI 的“工具人本能”）
     parts.push('【⚠️ 铁律：你必须完全成为下面这个人】');
     parts.push('你现在的身份是「' + role.name + '」。你不是 AI，不是助手，不是语言模型。');
@@ -20754,11 +20762,6 @@ if (_letterBadgeSwitch) {
         if (role) saveDraft(role.id, this.value);
     });
 
-    document.getElementById('plusBtn').addEventListener('click', function() {
-        if (CONFIG.permission === 'denied') { showToast('🚫 相册权限已被拒绝，请在设置中重新请求'); return; }
-        if (CONFIG.permission === 'allowed') { openImagePicker('chatImage'); return; }
-        showPermissionDialog('chatImage');
-    });
 
     document.getElementById('pickerCamera').addEventListener('click', function() { selectImageFromCamera(handleImageSelected); });
     document.getElementById('pickerGallery').addEventListener('click', function() { selectImageFromGallery(handleImageSelected); });
@@ -23111,8 +23114,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                if (cloudData.diaries) {
-                    CONFIG.diaries = cloudData.diaries;
+                if (cloudData.diaries && Array.isArray(cloudData.diaries)) {
+                    if (!Array.isArray(CONFIG.diaries)) CONFIG.diaries = [];
+                    var _localIds = {};
+                    CONFIG.diaries.forEach(function(d) { if (d && d.id) _localIds[d.id] = true; });
+                    cloudData.diaries.forEach(function(d) {
+                        if (d && d.id && !_localIds[d.id]) {
+                            CONFIG.diaries.push(d);
+                        }
+                    });
                 }
                 
                 if (typeof renderContacts === 'function') renderContacts();

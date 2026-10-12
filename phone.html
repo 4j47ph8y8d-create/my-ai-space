@@ -552,6 +552,122 @@ body {
 
 /* Toast */
 .toast { position: fixed; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 9999; backdrop-filter: blur(10px); }
+        /* ===== 资产 App ===== */
+        #assetsApp {
+            background: #0a0a0a;
+            color: #fff;
+            flex-direction: column;
+            --assets-accent: #d4af37;
+        }
+        .assets-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 54px 18px 14px;
+            flex-shrink: 0;
+        }
+        .assets-back,
+        .assets-theme-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.8);
+            font-size: 22px;
+            cursor: pointer;
+            padding: 10px 14px;
+            line-height: 1;
+            border-radius: 10px;
+        }
+        .assets-back:active,
+        .assets-theme-btn:active {
+            background: rgba(255,255,255,0.08);
+        }
+        .assets-title {
+            font-size: 16px;
+            color: rgba(255,255,255,0.85);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .assets-body {
+            flex: 1;
+            padding: 8px 22px 24px;
+            overflow-y: auto;
+        }
+        .assets-total-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 6px;
+            letter-spacing: 2px;
+        }
+        .assets-total {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--assets-accent);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            line-height: 1.1;
+        }
+        .assets-indicators {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 22px;
+        }
+        .assets-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 22px;
+        }
+        .assets-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+        .assets-card-label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 6px;
+        }
+        .assets-card-value {
+            font-size: 16px;
+            color: var(--assets-accent);
+            font-variant-numeric: tabular-nums;
+        }
+        .assets-stream-title {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .assets-stream {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .assets-stream-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+        }
+        .assets-stream-row .label {
+            color: rgba(255,255,255,0.7);
+        }
+        .assets-stream-row .delta.plus {
+            color: #4caf50;
+        }
+        .assets-stream-row .delta.minus {
+            color: #e74c3c;
+        }
+
+
 </style>
 </head>
 <body>
@@ -632,6 +748,10 @@ body {
                 <div class="icon icon-wardrobe"><i class="fas fa-tshirt"></i></div>
                 <div class="label">衣柜</div>
             </div>
+        <div class="app-icon" data-app="assets">
+            <div class="icon icon-assets"><i class="fas fa-chart-line"></i></div>
+            <div class="label">资产</div>
+        </div>
         </div>
 
         <!-- Dock 栏：微信、设置、浏览器 -->
@@ -806,6 +926,107 @@ body {
     </div>
 
     <!-- ========== 设置 ========== -->
+<!-- ====== 资产 App ====== -->
+<div id="assetsApp" class="screen app-screen">
+    <div class="assets-header">
+        <button class="assets-back" data-close="assetsApp"><i class="fas fa-chevron-left"></i></button>
+        <div class="assets-title" id="assetsTitle">资产</div>
+        <div class="assets-theme-btn" id="assetsThemeBtn"><i class="fas fa-sliders-h"></i></div>
+    </div>
+    <div class="assets-body">
+        <div class="assets-total-label">总资产</div>
+        <div class="assets-total" id="assetsTotal">¥ 0.00</div>
+        <div class="assets-indicators" id="assetsIndicators">
+            <span>24H +0.00%</span>
+            <span>排名 —</span>
+            <span>风险 —</span>
+            <span>增速 —</span>
+        </div>
+        <div class="assets-cards" id="assetsCards"></div>
+        <div class="assets-stream-title">实时流水</div>
+        <div class="assets-stream" id="assetsStream"></div>
+    </div>
+        <!-- ====== 资产初始化面板 ====== -->
+        <div id="assetsInitOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+            <div style="background:#0f0f0f; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:22px; max-width:380px; width:100%; color:#fff; max-height:85vh; overflow-y:auto;">
+                <div style="font-size:15px; margin-bottom:18px; color:rgba(255,255,255,0.85);">创建资产档案</div>
+
+                <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-bottom:8px;">资产气质</div>
+                <div style="display:flex; gap:8px; margin-bottom:16px;">
+                    <button class="ai-tpl-btn active" data-tpl="modern" style="flex:1; padding:10px; border-radius:10px; border:1px solid #d4af37; background:rgba(212,175,55,0.1); color:#d4af37; font-size:13px;">现代</button>
+                    <button class="ai-tpl-btn" data-tpl="ancient" style="flex:1; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">古代</button>
+                </div>
+
+                <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-bottom:8px;">资产档位</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
+                    <button class="ai-scale-btn" data-scale="small" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">小富</button>
+                    <button class="ai-scale-btn active" data-scale="mid" style="padding:10px; border-radius:10px; border:1px solid #d4af37; background:rgba(212,175,55,0.1); color:#d4af37; font-size:13px;">中产</button>
+                    <button class="ai-scale-btn" data-scale="rich" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">富豪</button>
+                    <button class="ai-scale-btn" data-scale="tycoon" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">巨富</button>
+                </div>
+
+                <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-bottom:8px;">主要产业（可多选）</div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px;">
+                    <button class="ai-ind-btn" data-ind="能源" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">能源</button>
+                    <button class="ai-ind-btn" data-ind="地产" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">地产</button>
+                    <button class="ai-ind-btn" data-ind="金融" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">金融</button>
+                    <button class="ai-ind-btn" data-ind="科技" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">科技</button>
+                    <button class="ai-ind-btn" data-ind="军工" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">军工</button>
+                    <button class="ai-ind-btn" data-ind="医药" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">医药</button>
+                    <button class="ai-ind-btn" data-ind="文化" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">文化</button>
+                    <button class="ai-ind-btn" data-ind="情报" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">情报</button>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button id="aiCancelBtn" style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:14px;">取消</button>
+                    <button id="aiConfirmBtn" style="flex:2; padding:12px; border-radius:10px; border:none; background:#d4af37; color:#000; font-size:14px; font-weight:600;">生成档案</button>
+                </div>
+            </div>
+        </div>
+
+</div>
+
+
+    <!-- ====== 资产设定面板 ====== -->
+    <div id="assetsSettingsOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:#0f0f0f; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:22px; max-width:380px; width:100%; color:#fff; max-height:85vh; overflow-y:auto;">
+            <div style="font-size:15px; margin-bottom:18px; color:rgba(255,255,255,0.85);">资产设定</div>
+
+            <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-bottom:8px;">资产档位</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
+                <button class="as-scale-btn" data-scale="small" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">小富</button>
+                <button class="as-scale-btn" data-scale="mid" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">中产</button>
+                <button class="as-scale-btn" data-scale="rich" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">富豪</button>
+                <button class="as-scale-btn" data-scale="tycoon" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:13px;">巨富</button>
+            </div>
+
+            <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-bottom:8px;">主要产业</div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;">
+                <button class="as-ind-btn" data-ind="能源" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">能源</button>
+                <button class="as-ind-btn" data-ind="地产" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">地产</button>
+                <button class="as-ind-btn" data-ind="金融" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">金融</button>
+                <button class="as-ind-btn" data-ind="科技" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">科技</button>
+                <button class="as-ind-btn" data-ind="军工" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">军工</button>
+                <button class="as-ind-btn" data-ind="医药" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">医药</button>
+                <button class="as-ind-btn" data-ind="文化" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">文化</button>
+                <button class="as-ind-btn" data-ind="情报" style="padding:6px 10px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:11px;">情报</button>
+            </div>
+
+            <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-bottom:8px;">主题色</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:20px;">
+                <button class="as-theme-btn" data-theme="gold" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:#d4af37; font-size:11px;">黑金</button>
+                <button class="as-theme-btn" data-theme="blue" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:#4a8fe0; font-size:11px;">深蓝</button>
+                <button class="as-theme-btn" data-theme="violet" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:#a97bff; font-size:11px;">紫罗兰</button>
+                <button class="as-theme-btn" data-theme="green" style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:#3fb27f; font-size:11px;">墨绿</button>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button id="asCancelBtn" style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.6); font-size:14px;">关闭</button>
+                <button id="asSaveBtn" style="flex:2; padding:12px; border-radius:10px; border:none; background:#d4af37; color:#000; font-size:14px; font-weight:600;">保存</button>
+            </div>
+        </div>
+    </div>
+
     <div id="settingsApp" class="screen app-screen">
         <div class="app-topbar">
             <button class="app-back" data-close="settingsApp"><i class="fas fa-chevron-left"></i></button>
@@ -997,6 +1218,22 @@ function getRoleWithMessages(roleId) {
 }
 
 // ========== 手机数据 ==========
+
+// ===== 资产数据（每个角色独立） =====
+function getAssetsData(roleId) {
+    var key = 'assets_data_' + roleId;
+    var raw = localStorage.getItem(key);
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch (e) { return null; }
+}
+
+function saveAssetsData(roleId, data) {
+    try {
+        localStorage.setItem('assets_data_' + roleId, JSON.stringify(data));
+    } catch (e) {
+        console.error('保存资产失败:', e);
+    }
+}
 
 function getPhoneData(roleId) {
     var key = 'phone_data_' + roleId;
@@ -2486,6 +2723,418 @@ function saveWardrobe(roleId, wardrobe) {
     localStorage.setItem(key, JSON.stringify(d));
 }
 
+function openAssetsApp() {
+    openApp('assetsApp');
+    var roleId = (typeof currentRoleId !== 'undefined' && currentRoleId) ? currentRoleId : null;
+    var _panel = document.getElementById('assetsSettingsOverlay');
+    if (_panel) _panel.dataset.roleId = roleId || '';
+    var data = roleId ? getAssetsData(roleId) : null;
+    if (data) {
+        renderAssets(data);
+    } else {
+        showAssetsInit(roleId);
+    }
+}
+
+function renderAssets(data) {
+    var appEl = document.getElementById('assetsApp');
+    if (appEl) {
+        var themeMap = {gold:'#d4af37', blue:'#4a8fe0', violet:'#a97bff', green:'#3fb27f'};
+        var accent = themeMap[data.theme] || '#d4af37';
+        appEl.style.setProperty('--assets-accent', accent);
+    }
+
+    var titleEl = document.getElementById('assetsTitle');
+    if (titleEl) titleEl.textContent = (data.roleName || '资产') + ' · 资产';
+
+    var totalEl = document.getElementById('assetsTotal');
+    if (totalEl) totalEl.textContent = (data.unit || '¥') + ' ' + (data.total || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    var cardsEl = document.getElementById('assetsCards');
+    if (cardsEl && data.cards) {
+        cardsEl.innerHTML = data.cards.map(function(c) {
+            return '<div class="assets-card">' +
+                '<div class="assets-card-label">' + c.label + '</div>' +
+                '<div class="assets-card-value">' + c.value + '</div>' +
+                '</div>';
+        }).join('');
+    }
+
+    var streamEl = document.getElementById('assetsStream');
+    if (streamEl && data.transactions) {
+        streamEl.innerHTML = data.transactions.slice(0, 20).map(function(r) {
+            var cls = r.delta >= 0 ? 'plus' : 'minus';
+            var sign = r.delta >= 0 ? '+' : '';
+            return '<div class="assets-stream-row">' +
+                '<span class="label">' + r.label + '</span>' +
+                '<span class="delta ' + cls + '">' + sign + Math.round(r.delta).toLocaleString() + '</span>' +
+                '</div>';
+        }).join('');
+    }
+}
+
+function showAssetsInit(roleId) {
+    var totalEl = document.getElementById('assetsTotal');
+    if (totalEl) totalEl.textContent = '—';
+    var cardsEl = document.getElementById('assetsCards');
+    if (cardsEl) {
+        cardsEl.innerHTML = '<div style="grid-column: 1 / -1; padding: 30px 20px; text-align: center;">' +
+            '<div style="color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 16px;">这个角色还没有资产档案</div>' +
+            '<button id="assetsCreateBtn" style="padding: 12px 24px; background: #d4af37; color: #000; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;">创建资产档案</button>' +
+            '</div>';
+        var btn = document.getElementById('assetsCreateBtn');
+        if (btn) {
+            btn.addEventListener('click', function() {
+                openAssetsInitPanel(roleId);
+            });
+        }
+    }
+    var streamEl = document.getElementById('assetsStream');
+    if (streamEl) streamEl.innerHTML = '';
+}
+
+function createDefaultAssets(roleId) {
+    if (!roleId) return;
+    var data = {
+        roleName: '',
+        template: 'modern',
+        theme: 'gold',
+        scale: 'mid',
+        unit: '¥',
+        total: 12845600,
+        initialTotal: 12845600,
+        lastTick: Date.now(),
+        cards: [
+            { label: '本月收入', value: '¥ 2,400,000' },
+            { label: '控股公司', value: '128 家' },
+            { label: '情报网络', value: '4,700 节点' },
+            { label: '区域掌控', value: '98.7%' }
+        ],
+        transactions: [
+            { t: Date.now(), label: '股票分红', delta: 24000 },
+            { t: Date.now(), label: '稀有资源采购', delta: -85000 },
+            { t: Date.now(), label: '控股公司分红', delta: 89000 },
+            { t: Date.now(), label: '区域武装补给', delta: -37000 },
+            { t: Date.now(), label: '跨境资金归集', delta: 59500 }
+        ]
+    };
+    try {
+        var raw = localStorage.getItem('ds_multirole_v2');
+        var main = raw ? JSON.parse(raw) : null;
+        if (main && main.roles) {
+            var r = main.roles.find(function(x) { return x.id === roleId; });
+            if (r) data.roleName = r.name || '';
+        }
+    } catch (e) {}
+    saveAssetsData(roleId, data);
+    renderAssets(data);
+}
+
+function openAssetsInitPanel(roleId) {
+    var panel = document.getElementById('assetsInitOverlay');
+    if (!panel) return;
+    panel.dataset.roleId = roleId || '';
+    panel.style.display = 'flex';
+    panel.querySelectorAll('.ai-tpl-btn').forEach(function(b) {
+        var active = b.dataset.tpl === 'modern';
+        b.style.borderColor = active ? '#d4af37' : 'rgba(255,255,255,0.1)';
+        b.style.background = active ? 'rgba(212,175,55,0.1)' : 'transparent';
+        b.style.color = active ? '#d4af37' : 'rgba(255,255,255,0.6)';
+    });
+    panel.querySelectorAll('.ai-scale-btn').forEach(function(b) {
+        var active = b.dataset.scale === 'mid';
+        b.style.borderColor = active ? '#d4af37' : 'rgba(255,255,255,0.1)';
+        b.style.background = active ? 'rgba(212,175,55,0.1)' : 'transparent';
+        b.style.color = active ? '#d4af37' : 'rgba(255,255,255,0.6)';
+    });
+    panel.querySelectorAll('.ai-ind-btn').forEach(function(b) {
+        b.dataset.on = '';
+        b.style.borderColor = 'rgba(255,255,255,0.1)';
+        b.style.background = 'transparent';
+        b.style.color = 'rgba(255,255,255,0.6)';
+    });
+}
+
+function closeAssetsInitPanel() {
+    var panel = document.getElementById('assetsInitOverlay');
+    if (panel) panel.style.display = 'none';
+}
+
+function toggleInitBtnStyle(btn, active) {
+    if (active) {
+        btn.style.borderColor = '#d4af37';
+        btn.style.background = 'rgba(212,175,55,0.1)';
+        btn.style.color = '#d4af37';
+    } else {
+        btn.style.borderColor = 'rgba(255,255,255,0.1)';
+        btn.style.background = 'transparent';
+        btn.style.color = 'rgba(255,255,255,0.6)';
+    }
+}
+
+function generateAssetsFromPanel(roleId) {
+    var panel = document.getElementById('assetsInitOverlay');
+    if (!panel || !roleId) return;
+
+    var tpl = 'modern';
+    var scale = 'mid';
+    var industries = [];
+    var tplBtn = panel.querySelector('.ai-tpl-btn[style*="d4af37"]');
+    if (tplBtn) tpl = tplBtn.dataset.tpl;
+    var scaleBtn = panel.querySelector('.ai-scale-btn[style*="d4af37"]');
+    if (scaleBtn) scale = scaleBtn.dataset.scale;
+    panel.querySelectorAll('.ai-ind-btn').forEach(function(b) {
+        if (b.dataset.on === '1') industries.push(b.dataset.ind);
+    });
+
+    var baseByScale = {
+        small: [500000, 2000000],
+        mid: [5000000, 30000000],
+        rich: [50000000, 500000000],
+        tycoon: [800000000, 8000000000]
+    };
+    var range = baseByScale[scale] || baseByScale.mid;
+    var total = Math.round(range[0] + Math.random() * (range[1] - range[0]));
+
+    var unit = tpl === 'ancient' ? '两' : '¥';
+    var cards;
+    if (tpl === 'ancient') {
+        cards = [
+            { label: '田产', value: Math.round(total * 0.35).toLocaleString() + ' 两' },
+            { label: '商铺', value: Math.round(total * 0.28).toLocaleString() + ' 两' },
+            { label: '宅院', value: Math.round(total * 0.2).toLocaleString() + ' 两' },
+            { label: '银两', value: Math.round(total * 0.17).toLocaleString() + ' 两' }
+        ];
+    } else {
+        cards = [
+            { label: '本月收入', value: '¥ ' + Math.round(total * 0.05).toLocaleString() },
+            { label: '控股公司', value: Math.round(20 + Math.random() * 200) + ' 家' },
+            { label: '投资组合', value: '¥ ' + Math.round(total * 0.4).toLocaleString() },
+            { label: '现金流', value: '¥ ' + Math.round(total * 0.12).toLocaleString() }
+        ];
+    }
+
+    var transactions = [
+        { t: Date.now(), label: tpl === 'ancient' ? '售茶得银' : '股票分红', delta: Math.round(total * 0.002) },
+        { t: Date.now(), label: tpl === 'ancient' ? '置办田产' : '稀有资源采购', delta: -Math.round(total * 0.005) },
+        { t: Date.now(), label: tpl === 'ancient' ? '商铺进账' : '控股公司分红', delta: Math.round(total * 0.003) },
+        { t: Date.now(), label: tpl === 'ancient' ? '修缮宅院' : '区域武装补给', delta: -Math.round(total * 0.001) },
+        { t: Date.now(), label: tpl === 'ancient' ? '字画添置' : '跨境资金归集', delta: Math.round(total * 0.002) }
+    ];
+
+    var roleName = '';
+    try {
+        var raw = localStorage.getItem('ds_multirole_v2');
+        var main = raw ? JSON.parse(raw) : null;
+        if (main && main.roles) {
+            var r = main.roles.find(function(x) { return x.id === roleId; });
+            if (r) roleName = r.name || '';
+        }
+    } catch (e) {}
+
+    var data = {
+        roleName: roleName,
+        template: tpl,
+        theme: 'gold',
+        scale: scale,
+        unit: unit,
+        total: total,
+        initialTotal: total,
+        lastTick: Date.now(),
+        industries: industries,
+        cards: cards,
+        transactions: transactions
+    };
+
+    saveAssetsData(roleId, data);
+    closeAssetsInitPanel();
+    renderAssets(data);
+}
+
+(function bindAssetsInitPanel() {
+    var panel = document.getElementById('assetsInitOverlay');
+    if (!panel || panel.dataset.bound === '1') return;
+    panel.dataset.bound = '1';
+
+    panel.querySelectorAll('.ai-tpl-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            panel.querySelectorAll('.ai-tpl-btn').forEach(function(b) { toggleInitBtnStyle(b, false); });
+            toggleInitBtnStyle(btn, true);
+        });
+    });
+    panel.querySelectorAll('.ai-scale-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            panel.querySelectorAll('.ai-scale-btn').forEach(function(b) { toggleInitBtnStyle(b, false); });
+            toggleInitBtnStyle(btn, true);
+        });
+    });
+    panel.querySelectorAll('.ai-ind-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var on = btn.dataset.on === '1';
+            btn.dataset.on = on ? '' : '1';
+            toggleInitBtnStyle(btn, !on);
+        });
+    });
+
+    var cancelBtn = document.getElementById('aiCancelBtn');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeAssetsInitPanel);
+
+    var confirmBtn = document.getElementById('aiConfirmBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            var rid = panel.dataset.roleId;
+            if (rid) generateAssetsFromPanel(rid);
+        });
+    }
+})();
+
+(function bindAssetsSettings() {
+    var panel = document.getElementById('assetsSettingsOverlay');
+    if (!panel || panel.dataset.bound === '1') return;
+    panel.dataset.bound = '1';
+
+    var openBtn = document.getElementById('assetsThemeBtn');
+    if (openBtn) {
+        openBtn.addEventListener('click', function() {
+            var rid = panel.dataset.roleId || '';
+            openAssetsSettingsPanel(rid);
+        });
+    }
+
+    var closeBtn = document.getElementById('asCancelBtn');
+    if (closeBtn) closeBtn.addEventListener('click', function() {
+        panel.style.display = 'none';
+    });
+})();
+
+
+function openAssetsSettingsPanel(roleId) {
+    var panel = document.getElementById('assetsSettingsOverlay');
+    if (!panel) return;
+    panel.dataset.roleId = roleId || '';
+    panel.style.display = 'flex';
+
+    var data = roleId ? getAssetsData(roleId) : null;
+    if (!data) return;
+
+    var accent = ({gold:'#d4af37', blue:'#4a8fe0', violet:'#a97bff', green:'#3fb27f'})[data.theme] || '#d4af37';
+    panel.dataset.accent = accent;
+
+    // 高亮档位
+    panel.querySelectorAll('.as-scale-btn').forEach(function(b) {
+        var active = b.dataset.scale === data.scale;
+        b.style.borderColor = active ? accent : 'rgba(255,255,255,0.1)';
+        b.style.background = active ? 'rgba(212,175,55,0.1)' : 'transparent';
+        b.style.color = active ? accent : 'rgba(255,255,255,0.6)';
+    });
+    panel.dataset.selectedScale = data.scale;
+    // 高亮产业
+    var inds = data.industries || [];
+    panel.querySelectorAll('.as-ind-btn').forEach(function(b) {
+        var on = inds.indexOf(b.dataset.ind) !== -1;
+        b.dataset.on = on ? '1' : '';
+        b.style.borderColor = on ? accent : 'rgba(255,255,255,0.1)';
+        b.style.background = on ? 'rgba(212,175,55,0.1)' : 'transparent';
+        b.style.color = on ? accent : 'rgba(255,255,255,0.6)';
+    });
+    // 高亮主题
+    var theme = data.theme || 'gold';
+    panel.querySelectorAll('.as-theme-btn').forEach(function(b) {
+        var active = b.dataset.theme === theme;
+        b.style.borderColor = active ? accent : 'rgba(255,255,255,0.1)';
+        b.style.background = active ? 'rgba(212,175,55,0.1)' : 'transparent';
+    });
+    panel.dataset.selectedTheme = data.theme;
+}
+
+function closeAssetsSettingsPanel() {
+    var panel = document.getElementById('assetsSettingsOverlay');
+    if (panel) panel.style.display = 'none';
+}
+
+function saveAssetsSettings(roleId) {
+    if (!roleId) return;
+    var panel = document.getElementById('assetsSettingsOverlay');
+    if (!panel) return;
+    var data = getAssetsData(roleId);
+    if (!data) return;
+
+    if (panel.dataset.selectedScale) data.scale = panel.dataset.selectedScale;
+
+    var inds = [];
+    panel.querySelectorAll('.as-ind-btn').forEach(function(b) {
+        if (b.dataset.on === '1') inds.push(b.dataset.ind);
+    });
+    data.industries = inds;
+
+    if (panel.dataset.selectedTheme) data.theme = panel.dataset.selectedTheme;
+
+    // 按新档位重算 total
+    var baseByScale = {
+        small: [500000, 2000000],
+        mid: [5000000, 30000000],
+        rich: [50000000, 500000000],
+        tycoon: [800000000, 8000000000]
+    };
+    var range = baseByScale[data.scale] || baseByScale.mid;
+    data.total = Math.round(range[0] + Math.random() * (range[1] - range[0]));
+
+    saveAssetsData(roleId, data);
+    closeAssetsSettingsPanel();
+    renderAssets(data);
+}
+
+(function bindAssetsSettingsBtns() {
+    var panel = document.getElementById('assetsSettingsOverlay');
+    if (!panel || panel.dataset.bound2 === '1') return;
+    panel.dataset.bound2 = '1';
+
+    panel.querySelectorAll('.as-scale-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            panel.querySelectorAll('.as-scale-btn').forEach(function(b) {
+                b.style.borderColor = 'rgba(255,255,255,0.1)';
+                b.style.background = 'transparent';
+                b.style.color = 'rgba(255,255,255,0.6)';
+            });
+            btn.style.borderColor = (panel.dataset.accent || '#d4af37');
+            btn.style.background = 'rgba(212,175,55,0.1)';
+            btn.style.color = (panel.dataset.accent || '#d4af37');
+            panel.dataset.selectedScale = btn.dataset.scale;
+        });
+    });
+    panel.querySelectorAll('.as-ind-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var on = btn.dataset.on === '1';
+            btn.dataset.on = on ? '' : '1';
+            btn.style.borderColor = !on ? (panel.dataset.accent || '#d4af37') : 'rgba(255,255,255,0.1)';
+            btn.style.background = !on ? 'rgba(212,175,55,0.1)' : 'transparent';
+            btn.style.color = !on ? (panel.dataset.accent || '#d4af37') : 'rgba(255,255,255,0.6)';
+        });
+    });
+    panel.querySelectorAll('.as-theme-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var themeMap = {gold:'#d4af37', blue:'#4a8fe0', violet:'#a97bff', green:'#3fb27f'};
+            var newAccent = themeMap[btn.dataset.theme] || '#d4af37';
+            panel.dataset.accent = newAccent;
+            panel.dataset.selectedTheme = btn.dataset.theme;
+            panel.querySelectorAll('.as-theme-btn').forEach(function(b) {
+                b.style.borderColor = 'rgba(255,255,255,0.1)';
+                b.style.background = 'transparent';
+            });
+            btn.style.borderColor = newAccent;
+            btn.style.background = 'rgba(212,175,55,0.1)';
+        });
+    });
+
+    var saveBtn = document.getElementById('asSaveBtn');
+    if (saveBtn) saveBtn.addEventListener('click', function() {
+        var rid = panel.dataset.roleId;
+        if (rid) saveAssetsSettings(rid);
+    });
+    var closeBtn = document.getElementById('asCancelBtn');
+    if (closeBtn) closeBtn.addEventListener('click', closeAssetsSettingsPanel);
+})();
+
 function openWardrobeApp() {
     openApp('wardrobeApp');
     renderWardrobeList();
@@ -3156,6 +3805,7 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (app === 'track') openTrack();
             else if (app === 'settings') openSettingsApp();
             else if (app === 'wardrobe') openWardrobeApp();
+            else if (app === 'assets') openAssetsApp();
         });
     });
 
