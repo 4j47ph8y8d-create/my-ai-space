@@ -3543,6 +3543,10 @@ function saveAssetsSettings(roleId) {
     saveAssetsData(roleId, data);
     closeAssetsSettingsPanel();
     renderAssets(data);
+
+    // 更新 ticker 使用最新的 data
+    if (typeof stopAssetsTicker === 'function') stopAssetsTicker();
+    if (typeof startAssetsTicker === 'function') startAssetsTicker(roleId, data);
 }
 
 (function bindAssetsSettingsBtns() {
