@@ -3745,103 +3745,6 @@
 }
 
 /* ============================================================
-
-/* ============================================================
-   💸 转账卡片（微信风格）
-   ============================================================ */
-
-.bubble-container.transfer-bubble {
-    flex: 1 !important;
-    max-width: 96% !important;
-    width: 100%;
-}
-
-.transfer-card {
-    background: linear-gradient(135deg, #FA9D3B 0%, #FA8C2B 100%);
-    border-radius: 10px;
-    padding: 14px 16px 12px 16px;
-    margin: 2px 0;
-    width: 100%;
-    position: relative;
-    color: #ffffff;
-    cursor: pointer;
-    user-select: none;
-    transition: opacity 0.15s;
-}
-
-.transfer-card:active {
-    opacity: 0.9;
-}
-
-/* 已收款状态 - 灰化 */
-.transfer-card.received {
-    background: #D6D3CE;
-    color: #6b6864;
-    cursor: default;
-}
-
-.transfer-card.received:active {
-    opacity: 1;
-}
-
-/* 顶部：转账字样 */
-.transfer-card-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 300;
-    letter-spacing: 2px;
-    opacity: 0.95;
-    margin-bottom: 6px;
-}
-
-.transfer-card-header .transfer-icon {
-    font-size: 12px;
-}
-
-/* 金额：¥ 小，数字大 */
-.transfer-card-amount {
-    font-size: 22px;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-    line-height: 1.2;
-}
-
-.transfer-card-amount .currency {
-    font-size: 14px;
-    font-weight: 400;
-    margin-right: 2px;
-}
-
-/* 底部状态 */
-.transfer-card-footer {
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px solid rgba(255,255,255,0.2);
-    font-size: 10px;
-    font-weight: 300;
-    letter-spacing: 0.5px;
-    opacity: 0.9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.transfer-card.received .transfer-card-footer {
-    border-top-color: rgba(0,0,0,0.08);
-}
-
-/* 小屏适配 */
-@media (max-width: 460px) {
-    .transfer-card {
-        padding: 12px 14px 10px 14px;
-    }
-    .transfer-card-amount {
-        font-size: 20px;
-    }
-}
-
    🩸 小月历
    ============================================================ */
 
@@ -9049,46 +8952,6 @@ function createMessageRow(msg, role) {
     }
 
     // ========== 处理图片消息 ==========
-    // ============ 处理转账消息（微信风格） ============
-    else if (msg.type === 'transfer') {
-        var td = msg.transferData || {};
-        var amount = td.amount || 0;
-        var isReceived = td.status === 'received';
-        var amountInt = Math.floor(amount);
-        var amountDec = (amount - amountInt).toFixed(2).substring(1); // ".00"
-        var amountStr = amountInt.toLocaleString() + amountDec;
-
-        var transferTimeStr = formatTime(msg.time, CONFIG.timeMode || 'HH:MM');
-
-        var cardClass = 'transfer-card' + (isReceived ? ' received' : '');
-        var statusLine = isReceived ? '已收款' : '待收款';
-        var footerHint = isReceived ? '已存入钱包' : '点击收款';
-
-        contentHtml = '<div class="' + cardClass + '" data-msg-id="' + msg.id + '">' +
-            '<div class="transfer-card-header">' +
-            '<i class="fas fa-exchange-alt transfer-icon"></i>' +
-            '<span>转账</span>' +
-            '</div>' +
-            '<div class="transfer-card-amount">' +
-            '<span class="currency">¥</span>' + amountStr +
-            '</div>' +
-            '<div class="transfer-card-footer">' +
-            '<span>' + transferTimeStr + '</span>' +
-            '<span>' + footerHint + '</span>' +
-            '</div>' +
-            '</div>';
-
-        row.innerHTML = '<div class="avatar ' + (msg.role === 'user' ? 'user' : 'bot') + '"></div>' +
-            '<div class="bubble-container transfer-bubble" style="max-width:100%;">' +
-            (transferTimeStr ? '<div class="msg-time">' + transferTimeStr + '</div>' : '') +
-            '<div class="bubble-row" style="width:100%;">' +
-            contentHtml +
-            '</div>' +
-            '</div>';
-
-        return row;
-    }
-
     else if (msg.type === 'image') {
         contentHtml = '<img src="' + msg.content + '" alt="图片" />';
     }
@@ -9584,7 +9447,6 @@ function regenerateMessage(roleId, messageId) {
         _regenerating[messageId] = false;
         hideTyping();
         reply = detectAndProcessGift(role.id, reply);
-        reply = detectAndProcessTransfer(role.id, reply);
         var segments = CONFIG.splitEnabled !== false ? splitReplyIntoMessages(reply) : [reply];
         var idx = 0;
         function sendNext() {
@@ -9714,8 +9576,6 @@ if (quotedMsg) {
     showToast('💬 正在发送...');
     addMessageToRole(role.id, 'user', finalMessage);
     renderMessages();
-    // 检测转账关键词（B 模式）
-    window.__transferKeywordHit = detectTransferKeyword(finalMessage);
     showTyping();
     
     var originalSplit = CONFIG.splitEnabled;
@@ -9735,7 +9595,6 @@ if (quotedMsg) {
         }
         
         reply = detectAndProcessGift(role.id, reply);
-        reply = detectAndProcessTransfer(role.id, reply);
         
         // ===== 清洗虚拟语音标记 =====
         function extractVoiceFromVirtualMark(text) {
@@ -9815,20 +9674,6 @@ if (quotedMsg) {
                     readMessages = {};
                     setTimeout(function() { markVisibleMessagesAsRead(); }, 300);
                 }
-                // 关键词触发转账（B 模式）
-                if (window.__transferKeywordHit && !window.__transferAlreadyTriggered) {
-                    window.__transferKeywordHit = false;
-                    setTimeout(function() {
-                        try { tryTransferByKeyword(getCurrentRole()); } catch(e) { console.log('关键词转账失败:', e); }
-                    }, 1200);
-                }
-                if (!window.__transferAlreadyTriggered) {
-                // 随机转账判定（D 模式，每天最多 3 次，20% 概率）
-                setTimeout(function() {
-                    try { tryRandomTransfer(getCurrentRole()); } catch(e) { console.log('随机转账失败:', e); }
-                }, 1500);
-                }
-                window.__transferAlreadyTriggered = false;
                 immediateSaveAllData();
                 showToast('✅ 发送成功');
                 input.disabled = false;
@@ -10396,7 +10241,6 @@ function callDeepSeekDirect(userMessage, role, voiceRequested) {
     var systemPrompt = buildSystemPrompt(role);
 // ===== 小钩子：在系统提示最后加一句温柔提醒 =====
 systemPrompt += '\n\n💡 小提示：如果需要用表情包表达情绪，就大胆用 [表情包：名称] 吧！系统会自动显示图片的～';
-systemPrompt += '\n\n💰 小提示：如果想给用户转账（比如用户要钱、你想表达心意、买礼物），就用 [转账 金额] 格式，例如 [转账 520]。系统会自动显示成转账卡片，用户点了就能收款。注意：每天最多 3 次，单次不超过 50000。';
 // ===== 小钩子结束 =====
     var recentMemoryText = '';
     if (shouldRecall) {
@@ -10684,73 +10528,6 @@ function detectAndProcessGift(roleId, reply) {
             reply = reply.replace(/\[送礼：[^\]]+\]/, '').trim();
         }
     }
-    return reply;
-}
-
-// 检测 AI 回复里的 [转账 XXX] 标记，删掉标记 + 生成转账卡片
-function detectAndProcessTransfer(roleId, reply) {
-    var role = roles.find(function(r) { return r.id === roleId; });
-    if (!role) return reply;
-
-    // 匹配所有含"转账"的方括号标记，如 [转账 520]、[转账：向你转账300元]、[转账]
-    var transferMatch = reply.match(/\[转账[^\]]*\]/);
-    if (!transferMatch) return reply;
-
-    var amount = 0;
-    // 从标记里提取第一个数字
-    var numMatch = transferMatch[0].match(/(\d+)/);
-    if (numMatch) {
-        amount = parseInt(numMatch[1], 10);
-    }
-    // 金额兜底：AI 没给金额或给的金额不合理，就随机
-    if (!amount || amount <= 0) {
-        var wealth = estimateWealth(role);
-        var min = 500;
-        var max = Math.floor(500 + wealth * 4500);
-        if (max < min) max = min;
-        amount = Math.floor((min + Math.random() * (max - min)) / 10) * 10;
-    }
-
-    // 单次上限 50000
-    if (amount > 50000) amount = 50000;
-
-    // 删掉标记文字
-    reply = reply.replace(/\[转账[^\]]*\]/g, '').trim();
-
-    // 检查今天还能不能转
-    if (!canTransferToday()) {
-        return reply;  // 今天次数用完，不加卡片
-    }
-
-    // 生成转账消息
-    var transferMsg = {
-        id: 'transfer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        role: 'assistant',
-        content: '转账给你',
-        type: 'transfer',
-        time: new Date().toISOString(),
-        transferData: {
-            amount: amount,
-            status: 'pending',
-            fromRoleId: role.id,
-            fromName: role.name
-        },
-        hasAudio: false,
-        audioUrl: null,
-        audioDuration: 0,
-        voiceRequested: false
-    };
-
-    if (!Array.isArray(role.messages)) role.messages = [];
-    role.messages.push(transferMsg);
-    recordTransferToday();
-    if (typeof saveRoleMessagesToIDB === 'function') {
-        saveRoleMessagesToIDB(role.id, role.messages);
-    }
-
-    // 标记本次回复已经转过账，避免 B/D 模式重复触发
-    window.__transferAlreadyTriggered = true;
-
     return reply;
 }
 
@@ -14320,8 +14097,7 @@ function saveRoleMessagesToIDB(roleId, messages) {
         var newMsgs = Array.isArray(messages) ? messages : [];
         var seen = {};
         var merged = [];
-        // 先放内存里的新消息（含最新状态），再放旧的，去重时新消息优先
-        newMsgs.concat(oldMsgs).forEach(function(m) {
+        oldMsgs.concat(newMsgs).forEach(function(m) {
             var k = m && m.id ? m.id : (m && m.time ? (m.time + '|' + (m.content || '')) : JSON.stringify(m));
             if (!seen[k]) { seen[k] = 1; merged.push(m); }
         });
@@ -15005,171 +14781,6 @@ var periodDeleteTarget = null;
 // ============================================================
 
 // 合并 localStorage 里的最新 wallet（防止商城改的余额被内存旧值覆盖）
-// 往钱包加钱 + 写流水（AI 转账、充值都用它）
-// type: 'ai_transfer'
-// amount: 正数
-// note: 备注（比如"来自 温柔学长"）
-// 每日转账计数
-function getTodayKey() {
-    var d = new Date();
-    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
-}
-
-// 检查今天还能不能转账（每天最多 3 次）
-function canTransferToday() {
-    if (!CONFIG.transferDailyCount) CONFIG.transferDailyCount = {};
-    var key = getTodayKey();
-    var count = CONFIG.transferDailyCount[key] || 0;
-    return count < 3;
-}
-
-// 记录今天转了一次
-function recordTransferToday() {
-    if (!CONFIG.transferDailyCount) CONFIG.transferDailyCount = {};
-    var key = getTodayKey();
-    CONFIG.transferDailyCount[key] = (CONFIG.transferDailyCount[key] || 0) + 1;
-}
-
-// 根据角色人设估算「富有程度」（0~1）
-function estimateWealth(role) {
-    var text = ((role.persona || '') + ' ' + (role.background || '') + ' ' + (role.extra || '')).toLowerCase();
-    var score = 0.4; // 默认中产
-    // 关键词判断
-    var richWords = ['总裁', '富豪', '首富', '豪门', '贵族', 'boss', 'ceo', '总裁', '有钱', '富', '少爷', '少爷', '王子', '大佬'];
-    var poorWords = ['穷', '落魄', '打工', '学生', '实习生', '贫困', '寒门', '负债'];
-    richWords.forEach(function(w) { if (text.indexOf(w) !== -1) score += 0.2; });
-    poorWords.forEach(function(w) { if (text.indexOf(w) !== -1) score -= 0.2; });
-    if (score < 0.1) score = 0.1;
-    if (score > 1) score = 1;
-    return score;
-}
-
-// 随机生成一次转账（D 模式）
-// 返回 true 表示成功发起了转账
-// 检测用户消息里有没有转账关键词（B 模式）
-function detectTransferKeyword(text) {
-    if (!text) return false;
-    var t = String(text).toLowerCase();
-    var keywords = [
-        '给我钱', '给我点钱', '给我转账', '给我发钱', '转账给我',
-        '给我发', '发钱', '发红包', '红包', '打钱', '没钱了', '没钱',
-        '借我', '借点', '缺钱', '急需钱', '给我点', '给我些',
-        'money', 'pay me', '转账'
-    ];
-    for (var i = 0; i < keywords.length; i++) {
-        if (t.indexOf(keywords[i]) !== -1) return true;
-    }
-    return false;
-}
-
-// 按关键词触发转账（B 模式）
-function tryTransferByKeyword(role) {
-    if (!role) return false;
-    if (!canTransferToday()) {
-        showToast('💸 ' + role.name + ' 今天转账次数已达上限');
-        return false;
-    }
-
-    var wealth = estimateWealth(role); // 0.1 ~ 1
-    // 金额区间：500 ~ 5000，按富有程度调整
-    var min = 500;
-    var max = Math.floor(500 + wealth * 4500); // wealth=0.1 → 950; wealth=1 → 5000
-    if (max < min) max = min;
-    var amount = Math.floor((min + Math.random() * (max - min)) / 10) * 10;
-
-    var transferMsg = {
-        id: 'transfer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        role: 'assistant',
-        content: '转账给你',
-        type: 'transfer',
-        time: new Date().toISOString(),
-        transferData: {
-            amount: amount,
-            status: 'pending',
-            fromRoleId: role.id,
-            fromName: role.name
-        },
-        hasAudio: false,
-        audioUrl: null,
-        audioDuration: 0,
-        voiceRequested: false
-    };
-
-    if (!Array.isArray(role.messages)) role.messages = [];
-    role.messages.push(transferMsg);
-    recordTransferToday();
-    if (typeof saveRoleMessagesToIDB === 'function') {
-        saveRoleMessagesToIDB(role.id, role.messages);
-    }
-    if (typeof renderMessages === 'function') renderMessages();
-    showToast('💸 ' + role.name + ' 转账 ¥' + amount.toLocaleString() + ' 给你');
-    return true;
-}
-
-function tryRandomTransfer(role) {
-    if (!role) return false;
-    if (!canTransferToday()) return false;
-    // 20% 概率
-    if (Math.random() > 0.2) return false;
-
-    var wealth = estimateWealth(role); // 0.1 ~ 1
-    // 金额区间：500 ~ 50000，按富有程度调整
-    var min = 500;
-    var max = Math.floor(500 + wealth * 49500); // wealth=0.1 → 5450; wealth=1 → 50000
-    if (max < min) max = min;
-    // 随机取整，取整到 10 元
-    var amount = Math.floor((min + Math.random() * (max - min)) / 10) * 10;
-
-    var transferMsg = {
-        id: 'transfer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        role: 'assistant',
-        content: '转账给你',
-        type: 'transfer',
-        time: new Date().toISOString(),
-        transferData: {
-            amount: amount,
-            status: 'pending',
-            fromRoleId: role.id,
-            fromName: role.name
-        },
-        hasAudio: false,
-        audioUrl: null,
-        audioDuration: 0,
-        voiceRequested: false
-    };
-
-    if (!Array.isArray(role.messages)) role.messages = [];
-    role.messages.push(transferMsg);
-    recordTransferToday();
-    if (typeof saveRoleMessagesToIDB === 'function') {
-        saveRoleMessagesToIDB(role.id, role.messages);
-    }
-    if (typeof renderMessages === 'function') renderMessages();
-    showToast('💸 ' + role.name + ' 转账 ¥' + amount.toLocaleString() + ' 给你');
-    return true;
-}
-
-function walletAdd(type, amount, note) {
-    try {
-        if (!CONFIG.wallet) CONFIG.wallet = { balance: 0, transactions: [] };
-        var w = CONFIG.wallet;
-        if (!Array.isArray(w.transactions)) w.transactions = [];
-        w.balance = (w.balance || 0) + amount;
-        w.transactions.push({
-            type: type,
-            amount: amount,
-            note: note || '',
-            ts: Date.now()
-        });
-        // 立刻保存
-        saveAllData();
-        return true;
-    } catch (e) {
-        console.error('walletAdd 失败:', e);
-        return false;
-    }
-}
-
 function mergeWalletFromStorage(configToSave) {
     try {
         var raw = localStorage.getItem('ds_multiRole_v2');
@@ -23648,52 +23259,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
 });
 
-
-// ============================================================
-// 💸 转账卡片点击收款
-// ============================================================
-document.addEventListener('DOMContentLoaded', function() {
-    var mc = document.getElementById('messageContainer');
-    if (!mc) return;
-    mc.addEventListener('click', function(e) {
-        var card = e.target.closest('.transfer-card');
-        if (!card) return;
-        if (card.classList.contains('received')) {
-            showToast('这笔转账已收款');
-            return;
-        }
-        var msgId = card.dataset.msgId;
-        if (!msgId) return;
-        var role = (typeof getCurrentRole === 'function') ? getCurrentRole() : null;
-        if (!role) return;
-        var msg = (role.messages || []).find(function(m) { return m.id === msgId; });
-        if (!msg || msg.type !== 'transfer') return;
-        var td = msg.transferData || {};
-        if (td.status === 'received') return;
-        var amt = td.amount || 0;
-
-        if (!confirm('确认收款 ¥ ' + amt.toFixed(2) + ' ？')) return;
-
-        // 1. 写入钱包
-        walletAdd('ai_transfer', amt, '来自 ' + role.name);
-
-        // 2. 改消息状态
-        td.status = 'received';
-        td.receivedAt = Date.now();
-        msg.transferData = td;
-
-        // 3. 保存到 IndexedDB
-        if (typeof saveRoleMessagesToIDB === 'function') {
-            saveRoleMessagesToIDB(role.id, role.messages);
-        }
-
-        // 4. 重新渲染
-        if (typeof renderMessages === 'function') renderMessages();
-
-        // 5. 提示
-        showToast('已收款 ¥ ' + amt.toFixed(2) + '，已存入钱包');
-    });
-});
 </script>
 
 <!-- ========== 通话系统 HTML ========== -->
