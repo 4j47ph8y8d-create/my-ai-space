@@ -888,7 +888,7 @@
             <button class="back-btn" id="exitMallBtn"><i class="fas fa-chevron-left"></i></button>
             <div class="title">街角商店</div>
             <div class="mall-actions">
-                <span class="mall-balance" id="mallBalanceDisplay">¥<span id="mallBalanceAmount">1000</span></span>
+                <span class="mall-balance" id="mallBalanceDisplay" title="钱包余额">¥<span id="mallBalanceAmount">0</span></span>
                 <button class="mall-cart-btn" id="mallCartBtn">
                     <i class="fas fa-shopping-bag"></i>
                     <span class="cart-count empty" id="mallCartCount">0</span>
@@ -950,21 +950,6 @@
         </div>
     </div>
 
-    <div class="mall-recharge-overlay" id="mallRechargeOverlay">
-        <div class="mall-recharge-panel">
-            <h3>充值</h3>
-            <p>输入金额</p>
-            <input class="recharge-input" id="rechargeInput" type="number" value="100" />
-            <div class="recharge-btns">
-                <button data-amount="50"><span class="r-amount">50</span></button>
-                <button data-amount="100"><span class="r-amount">100</span></button>
-                <button data-amount="500"><span class="r-amount">500</span></button>
-                <button data-amount="1000"><span class="r-amount">1000</span></button>
-            </div>
-            <button class="recharge-confirm" id="rechargeConfirmBtn">确认</button>
-            <button class="recharge-cancel" id="rechargeCancelBtn">取消</button>
-        </div>
-    </div>
 
     <div class="mall-role-select-overlay" id="mallRoleSelectOverlay">
         <div class="mall-role-select-panel">
@@ -1008,8 +993,7 @@ var MALL_CONFIG = {
 var mallProducts = [];
 var mallCart = [];
 var mallOrders = [];
-var mallBalance = MALL_CONFIG.initialBalance;
-var mallRechargeHistory = [];
+var mallBalance = 0; // 镜像变量，真实值来自主应用钱包
 var mallAiGiftReceived = [];
 var mallShoppingTogether = {
     roleId: null,
@@ -1242,10 +1226,10 @@ function loadMallData() {
     try {
         var data = readMainData();
         if (data && data.mall) {
-            mallBalance = data.mall.balance !== undefined ? data.mall.balance : MALL_CONFIG.initialBalance;
+            mallBalance = getWalletBalance();
             mallCart = data.mall.cart || [];
             mallOrders = data.mall.orders || [];
-            mallRechargeHistory = data.mall.rechargeHistory || [];
+    
             mallAiGiftReceived = data.mall.aiGiftReceived || [];
             if (data.mall.shoppingTogether) {
                 Object.assign(mallShoppingTogether, data.mall.shoppingTogether);
@@ -1267,10 +1251,9 @@ function loadMallData() {
         }
     } catch (_) {}
 
-    mallBalance = MALL_CONFIG.initialBalance;
+    mallBalance = getWalletBalance();
     mallCart = [];
     mallOrders = [];
-    mallRechargeHistory = [];
     mallAiGiftReceived = [];
 }
 
@@ -1281,10 +1264,8 @@ function saveMallData() {
 
         if (!data.mall) data.mall = {};
 
-        data.mall.balance = mallBalance;
         data.mall.cart = mallCart;
         data.mall.orders = mallOrders;
-        data.mall.rechargeHistory = mallRechargeHistory;
         data.mall.aiGiftReceived = mallAiGiftReceived;
         data.mall.shoppingTogether = {
             roleId: mallShoppingTogether.roleId,
@@ -1498,7 +1479,7 @@ function purchaseProduct(product, qty, note, mode) {
     if (mode === 'gift') {
         selectTargetRoleForGift(function(selectedRole) {
             if (!selectedRole) return;
-            if (mallBalance < totalPrice) { showToast('💰 余额不足，去充值吧～'); return; }
+            if (getWalletBalance() < totalPrice) { showToast('💰 钱包余额不足'); return; }
             if (!confirm('💝 送给 ' + selectedRole.name + '「' + product.name + '」×' + qty + ' 吗？\n花费 ¥' + totalPrice)) return;
             
             executePurchase(product, qty, note, mode, selectedRole, totalPrice);
@@ -1509,7 +1490,7 @@ function purchaseProduct(product, qty, note, mode) {
     // 购买模式：使用当前角色
     var currentRole = getCurrentRoleFromMain();
     if (!currentRole) { showToast('⚠️ 请先在主应用中创建角色'); return; }
-    if (mallBalance < totalPrice) { showToast('💰 余额不足，去充值吧～'); return; }
+    if (getWalletBalance() < totalPrice) { showToast('💰 钱包余额不足'); return; }
     if (!confirm('购买「' + product.name + '」×' + qty + ' 吗？\n花费 ¥' + totalPrice)) return;
     
     executePurchase(product, qty, note, mode, currentRole, totalPrice);
@@ -1517,7 +1498,11 @@ function purchaseProduct(product, qty, note, mode) {
 
 // ===== 执行购买 =====
 function executePurchase(product, qty, note, mode, targetRole, totalPrice) {
-    mallBalance -= totalPrice;
+    // 从主应用钱包扣款 + 记流水
+    var txType = (mode === 'gift') ? 'gift_out' : 'purchase';
+    var txNote = product.name;
+    walletSpend(txType, totalPrice, txNote);
+    refreshMallBalance();
     var order = {
         id: 'ORD_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
         productId: product.id, productName: product.name, productImage: product.image,
@@ -1549,6 +1534,53 @@ function executePurchase(product, qty, note, mode, targetRole, totalPrice) {
 }
 
 // ===== 同步礼物到主应用 =====
+
+// ===== 读主应用钱包余额 =====
+function getWalletBalance() {
+    try {
+        var raw = localStorage.getItem('ds_multiRole_v2');
+        if (!raw) return 0;
+        var data = JSON.parse(raw);
+        if (data && data.config && data.config.wallet) {
+            return data.config.wallet.balance || 0;
+        }
+        return 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+// ===== 扣钱包 + 记流水（同步写 localStorage） =====
+// type: 'gift_out' | 'purchase'
+// amount: 正数，代表要扣掉的金额
+function walletSpend(type, amount, note) {
+    try {
+        var raw = localStorage.getItem('ds_multiRole_v2');
+        var data = raw ? JSON.parse(raw) : {};
+        if (!data.config) data.config = {};
+        if (!data.config.wallet) data.config.wallet = { balance: 0, transactions: [] };
+        var w = data.config.wallet;
+        if (!Array.isArray(w.transactions)) w.transactions = [];
+        w.balance = (w.balance || 0) - amount;
+        w.transactions.push({
+            type: type,
+            amount: -amount,
+            note: note || '',
+            ts: Date.now()
+        });
+        localStorage.setItem('ds_multiRole_v2', JSON.stringify(data));
+        return true;
+    } catch (e) {
+        console.error('walletSpend 失败:', e);
+        return false;
+    }
+}
+
+// ===== 更新顶部余额显示 =====
+function refreshMallBalance() {
+    var el = document.getElementById('mallBalanceAmount');
+    if (el) el.textContent = getWalletBalance().toFixed(2);
+}
 
 function syncGiftToMainApp(role, product, qty, note, totalPrice) {
     try {
@@ -1990,11 +2022,11 @@ function closeCart() {
 
 // ===== 充值 =====
 function openRecharge() {
-    document.getElementById('mallRechargeOverlay').classList.add('active');
-    document.getElementById('rechargeInput').value = '100';
+    // 充值功能已移除，改为统一走主应用钱包
+    showToast('充值功能已整合到主应用钱包');
 }
 function closeRecharge() {
-    document.getElementById('mallRechargeOverlay').classList.remove('active');
+    // 空函数，保留占位避免引用报错
 }
 
 // ===== 订单列表 =====
@@ -2618,21 +2650,6 @@ setTimeout(saveProductsToMain, 1000); // ⭐ 1秒后同步商品到主数据
         if (e.target === this) closeCart();
     });
 
-    document.getElementById('mallBalanceDisplay').addEventListener('click', openRecharge);
-    document.getElementById('rechargeConfirmBtn').addEventListener('click', function() {
-        var amount = parseInt(document.getElementById('rechargeInput').value);
-        if (!amount || amount <= 0) { showToast('⚠️ 请输入有效金额'); return; }
-        mallBalance += amount;
-        mallRechargeHistory.push({ amount: amount, time: new Date().toISOString() });
-        saveMallData();
-        closeRecharge();
-        updateMallUI();
-        showToast('💰 充值成功！+¥' + amount);
-    });
-    document.getElementById('rechargeCancelBtn').addEventListener('click', closeRecharge);
-    document.querySelectorAll('.recharge-btns button').forEach(function(btn) {
-        btn.onclick = function() { document.getElementById('rechargeInput').value = btn.dataset.amount; };
-    });
 
     document.getElementById('mallInviteBtn').addEventListener('click', openRoleSelectDialog);
     document.getElementById('mallRoleSelectCancel').addEventListener('click', function() {

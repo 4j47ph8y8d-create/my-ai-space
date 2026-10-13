@@ -7717,6 +7717,7 @@ async function immediateSaveAllData() {
     mall: CONFIG.mall || {}
 };
 
+        mergeWalletFromStorage(configToSave);
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
 
         // 同步写 IndexedDB（主数据）
@@ -7795,6 +7796,7 @@ function saveAllData() {
             currentRoleId: currentRoleId
         };
 
+        mergeWalletFromStorage(configToSave);
         localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
         idbSet('ds_multirole_v2', data).catch(function(e) {
             console.error('IndexedDB 写入失败:', e);
@@ -14778,6 +14780,38 @@ var periodDeleteTarget = null;
 // 💌 信箱 - 页面控制
 // ============================================================
 
+// 合并 localStorage 里的最新 wallet（防止商城改的余额被内存旧值覆盖）
+function mergeWalletFromStorage(configToSave) {
+    try {
+        var raw = localStorage.getItem('ds_multiRole_v2');
+        if (!raw) return;
+        var d = JSON.parse(raw);
+        if (!d || !d.config || !d.config.wallet) return;
+        var lsWallet = d.config.wallet;
+        var memWallet = (CONFIG && CONFIG.wallet) || { balance: 0, transactions: [] };
+        var memTx = Array.isArray(memWallet.transactions) ? memWallet.transactions : [];
+        var lsTx = Array.isArray(lsWallet.transactions) ? lsWallet.transactions : [];
+        var allTx = memTx.concat(lsTx);
+        var seen = {};
+        var merged = [];
+        allTx.forEach(function(t) {
+            var k = (t && t.ts != null) ? String(t.ts) : JSON.stringify(t);
+            if (!seen[k]) { seen[k] = 1; merged.push(t); }
+        });
+        merged.sort(function(a, b) { return (a.ts || 0) - (b.ts || 0); });
+        // balance：谁的最新 transaction 时间更晚，就用谁的 balance
+        var memMaxTs = memTx.reduce(function(m, x) { return Math.max(m, x.ts || 0); }, 0);
+        var lsMaxTs = lsTx.reduce(function(m, x) { return Math.max(m, x.ts || 0); }, 0);
+        var finalBalance = (lsMaxTs > memMaxTs)
+            ? (lsWallet.balance != null ? lsWallet.balance : 0)
+            : (memWallet.balance != null ? memWallet.balance : 0);
+        CONFIG.wallet = { balance: finalBalance, transactions: merged };
+        if (configToSave) configToSave.wallet = CONFIG.wallet;
+    } catch (e) {
+        console.warn('mergeWalletFromStorage 失败:', e);
+    }
+}
+
 function renderWallet() {
     var wallet = (CONFIG && CONFIG.wallet) || { balance: 0, transactions: [] };
     var balanceEl = document.getElementById('walletBalance');
@@ -14792,15 +14826,17 @@ function renderWallet() {
         return;
     }
     var typeMap = {
-        'ai_transfer': { label: '角色转账', color: '#16a34a' },
-        'recharge_to_mall': { label: '充值商城币', color: '#ea580c' },
-        'gift_out': { label: '送出礼物', color: '#ea580c' },
-        'purchase': { label: '商城消费', color: '#ea580c' }
+        'ai_transfer': { label: '转账' },
+        'gift_out': { label: '送出礼物' },
+        'purchase': { label: '商城消费' },
+        'recharge': { label: '充值' }
     };
     listEl.innerHTML = txs.map(function(tx) {
-        var info = typeMap[tx.type] || { label: tx.type || '其他', color: '#a16207' };
+        var info = typeMap[tx.type] || { label: tx.type || '其他' };
         var amt = tx.amount || 0;
-        var sign = amt >= 0 ? '+' : '';
+        var isIncome = amt >= 0;
+        var sign = isIncome ? '+' : '-';
+        var amtColor = isIncome ? '#16a34a' : '#dc2626';
         var amtStr = sign + '¥ ' + Math.abs(amt).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         var dateStr = '';
         try {
@@ -14815,7 +14851,7 @@ function renderWallet() {
             '<div style="font-size:14px; color:#78350f; font-weight:600;">' + info.label + '</div>' +
             '<div style="font-size:11px; color:#a16207; margin-top:3px;">' + (tx.note || '') + '</div>' +
             '</div>' +
-            '<div style="font-size:15px; font-weight:700; color:' + info.color + ';">' + amtStr + '</div>' +
+            '<div style="font-size:15px; font-weight:700; color:' + amtColor + ';">' + amtStr + '</div>' +
             '</div>' +
             '<div style="font-size:10px; color:#c2410c; margin-top:6px; opacity:0.6;">' + dateStr + '</div>' +
             '</div>';
