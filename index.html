@@ -9816,16 +9816,19 @@ if (quotedMsg) {
                     setTimeout(function() { markVisibleMessagesAsRead(); }, 300);
                 }
                 // 关键词触发转账（B 模式）
-                if (window.__transferKeywordHit) {
+                if (window.__transferKeywordHit && !window.__transferAlreadyTriggered) {
                     window.__transferKeywordHit = false;
                     setTimeout(function() {
                         try { tryTransferByKeyword(getCurrentRole()); } catch(e) { console.log('关键词转账失败:', e); }
                     }, 1200);
                 }
+                if (!window.__transferAlreadyTriggered) {
                 // 随机转账判定（D 模式，每天最多 3 次，20% 概率）
                 setTimeout(function() {
                     try { tryRandomTransfer(getCurrentRole()); } catch(e) { console.log('随机转账失败:', e); }
                 }, 1500);
+                }
+                window.__transferAlreadyTriggered = false;
                 immediateSaveAllData();
                 showToast('✅ 发送成功');
                 input.disabled = false;
@@ -10744,6 +10747,9 @@ function detectAndProcessTransfer(roleId, reply) {
     if (typeof saveRoleMessagesToIDB === 'function') {
         saveRoleMessagesToIDB(role.id, role.messages);
     }
+
+    // 标记本次回复已经转过账，避免 B/D 模式重复触发
+    window.__transferAlreadyTriggered = true;
 
     return reply;
 }
