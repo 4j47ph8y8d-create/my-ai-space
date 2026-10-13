@@ -7927,17 +7927,16 @@ function loadAllMessagesFromIDB() {
     var promises = roles.map(function(role) {
         var tasks = [];
 
-        // 消息
-        if (!Array.isArray(role.messages) || role.messages.length === 0) {
-            tasks.push(
-                loadRoleMessagesFromIDB(role.id).then(function(msgs) {
-                    if (msgs.length > 0) {
-                        role.messages = msgs;
-                        console.log('📥 已加载 ' + role.name + ' 的消息（' + msgs.length + ' 条）');
-                    }
-                })
-            );
-        }
+        // 消息（每次都读 IndexedDB，用条数多的那份，避免漏掉商城送来的礼物）
+        tasks.push(
+            loadRoleMessagesFromIDB(role.id).then(function(msgs) {
+                var memLen = Array.isArray(role.messages) ? role.messages.length : 0;
+                if (msgs.length > memLen) {
+                    role.messages = msgs;
+                    console.log('📥 已加载 ' + role.name + ' 的消息（' + msgs.length + ' 条）');
+                }
+            })
+        );
 
         // 头像
         if (!role.avatar) {
@@ -14089,7 +14088,25 @@ function saveRoleChatBgToIDB(roleId, dataUrl) {
 
 // 写某个角色的消息列表
 function saveRoleMessagesToIDB(roleId, messages) {
-    return idbSet('role_messages_' + roleId, messages || []).catch(function(e) {
+    // 先读 IndexedDB 里的旧消息，合并去重，再写回。
+    // 防止内存里没有的消息（比如商城送礼写进去的礼物卡片）被覆盖丢失。
+    return idbGet('role_messages_' + roleId).then(function(existing) {
+        var oldMsgs = Array.isArray(existing) ? existing : [];
+        var newMsgs = Array.isArray(messages) ? messages : [];
+        var seen = {};
+        var merged = [];
+        oldMsgs.concat(newMsgs).forEach(function(m) {
+            var k = m && m.id ? m.id : (m && m.time ? (m.time + '|' + (m.content || '')) : JSON.stringify(m));
+            if (!seen[k]) { seen[k] = 1; merged.push(m); }
+        });
+        // 按 time 排序（有 time 的）
+        merged.sort(function(a, b) {
+            var ta = a && a.time ? new Date(a.time).getTime() : 0;
+            var tb = b && b.time ? new Date(b.time).getTime() : 0;
+            return ta - tb;
+        });
+        return idbSet('role_messages_' + roleId, merged);
+    }).catch(function(e) {
         console.error('消息写入 IndexedDB 失败 [' + roleId + ']:', e);
     });
 }
@@ -14653,6 +14670,7 @@ function refreshTtsCache() {
 }
 
 function openChat(fromContacts) {
+    var __r = getCurrentRole();
     fromContacts = fromContacts || false;
     isFromContacts = fromContacts;
     var role = getCurrentRole();

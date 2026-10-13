@@ -1534,10 +1534,17 @@ function executePurchase(product, qty, note, mode, targetRole, totalPrice) {
     showToast('✅ ' + (mode === 'gift' ? '🎁 已送给 ' + targetRole.name : '购买成功'));
 
     if (mode === 'gift') {
-        syncGiftToMainApp(targetRole, product, qty, note, totalPrice);
+        // 串行执行：先写礼物，写完再触发 AI 回复，避免并发写覆盖
+        var giftPromise = syncGiftToMainApp(targetRole, product, qty, note, totalPrice);
         triggerHeartSpikeForGift(targetRole, product, 'gift');
         addGiftToMemory(targetRole, product, 'user', note);
-        triggerGiftChatReply(targetRole, product, note);
+        if (giftPromise && typeof giftPromise.then === 'function') {
+            giftPromise.then(function() {
+                triggerGiftChatReply(targetRole, product, note);
+            });
+        } else {
+            triggerGiftChatReply(targetRole, product, note);
+        }
     }
 }
 
@@ -1551,6 +1558,7 @@ function syncGiftToMainApp(role, product, qty, note, totalPrice) {
         var data = JSON.parse(raw);
 
         // ⭐ 从 IndexedDB 读消息
+        return new Promise(function(resolveOuter, rejectOuter) {
         openMallIDB().then(function(db) {
             var tx = db.transaction('data', 'readonly');
             var store = tx.objectStore('data');
@@ -1611,6 +1619,7 @@ function syncGiftToMainApp(role, product, qty, note, totalPrice) {
                 writeTx.oncomplete = function() {
                     db.close();
                     console.log('✅ 礼物已写入 IndexedDB:', product.name, '→', role.name);
+                    resolveOuter(true);
                 };
                 writeTx.onerror = function() {
                     db.close();
@@ -1621,7 +1630,9 @@ function syncGiftToMainApp(role, product, qty, note, totalPrice) {
             req.onerror = function() {
                 db.close();
                 console.error('读取消息失败');
+                resolveOuter(false);
             };
+        });
         });
 
         // 未读红点 + 云端同步
