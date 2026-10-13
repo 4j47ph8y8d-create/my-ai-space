@@ -14248,7 +14248,8 @@ function saveRoleMessagesToIDB(roleId, messages) {
         var newMsgs = Array.isArray(messages) ? messages : [];
         var seen = {};
         var merged = [];
-        oldMsgs.concat(newMsgs).forEach(function(m) {
+        // 先放内存里的新消息（含最新状态），再放旧的，去重时新消息优先
+            newMsgs.concat(oldMsgs).forEach(function(m) {
             var k = m && m.id ? m.id : (m && m.time ? (m.time + '|' + (m.content || '')) : JSON.stringify(m));
             if (!seen[k]) { seen[k] = 1; merged.push(m); }
         });
@@ -15146,31 +15147,11 @@ function detectAndProcessTransfer(roleId, reply) {
 }
 
 function mergeWalletFromStorage(configToSave) {
+    // 主应用的 CONFIG.wallet 是权威，直接覆盖 configToSave
     try {
-        var raw = localStorage.getItem('ds_multiRole_v2');
-        if (!raw) return;
-        var d = JSON.parse(raw);
-        if (!d || !d.config || !d.config.wallet) return;
-        var lsWallet = d.config.wallet;
-        var memWallet = (CONFIG && CONFIG.wallet) || { balance: 0, transactions: [] };
-        var memTx = Array.isArray(memWallet.transactions) ? memWallet.transactions : [];
-        var lsTx = Array.isArray(lsWallet.transactions) ? lsWallet.transactions : [];
-        var allTx = memTx.concat(lsTx);
-        var seen = {};
-        var merged = [];
-        allTx.forEach(function(t) {
-            var k = (t && t.ts != null) ? String(t.ts) : JSON.stringify(t);
-            if (!seen[k]) { seen[k] = 1; merged.push(t); }
-        });
-        merged.sort(function(a, b) { return (a.ts || 0) - (b.ts || 0); });
-        // balance：谁的最新 transaction 时间更晚，就用谁的 balance
-        var memMaxTs = memTx.reduce(function(m, x) { return Math.max(m, x.ts || 0); }, 0);
-        var lsMaxTs = lsTx.reduce(function(m, x) { return Math.max(m, x.ts || 0); }, 0);
-        var finalBalance = (lsMaxTs > memMaxTs)
-            ? (lsWallet.balance != null ? lsWallet.balance : 0)
-            : (memWallet.balance != null ? memWallet.balance : 0);
-        CONFIG.wallet = { balance: finalBalance, transactions: merged };
-        if (configToSave) configToSave.wallet = CONFIG.wallet;
+        if (configToSave && CONFIG && CONFIG.wallet) {
+            configToSave.wallet = JSON.parse(JSON.stringify(CONFIG.wallet));
+        }
     } catch (e) {
         console.warn('mergeWalletFromStorage 失败:', e);
     }
@@ -23623,6 +23604,52 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
 });
 
+
+// ============================================================
+// 💸 转账卡片点击收款
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    var mc = document.getElementById('messageContainer');
+    if (!mc) return;
+    mc.addEventListener('click', function(e) {
+        var card = e.target.closest('.transfer-card');
+        if (!card) return;
+        if (card.classList.contains('received')) {
+            showToast('这笔转账已收款');
+            return;
+        }
+        var msgId = card.dataset.msgId;
+        if (!msgId) return;
+        var role = (typeof getCurrentRole === 'function') ? getCurrentRole() : null;
+        if (!role) return;
+        var msg = (role.messages || []).find(function(m) { return m.id === msgId; });
+        if (!msg || msg.type !== 'transfer') return;
+        var td = msg.transferData || {};
+        if (td.status === 'received') return;
+        var amt = td.amount || 0;
+
+        if (!confirm('确认收款 ¥ ' + amt.toFixed(2) + ' ？')) return;
+
+        // 1. 写入钱包
+        walletAdd('ai_transfer', amt, '来自 ' + role.name);
+
+        // 2. 改消息状态
+        td.status = 'received';
+        td.receivedAt = Date.now();
+        msg.transferData = td;
+
+        // 3. 保存到 IndexedDB
+        if (typeof saveRoleMessagesToIDB === 'function') {
+            saveRoleMessagesToIDB(role.id, role.messages);
+        }
+
+        // 4. 重新渲染
+        if (typeof renderMessages === 'function') renderMessages();
+
+        // 5. 提示
+        showToast('已收款 ¥ ' + amt.toFixed(2) + '，已存入钱包');
+    });
+});
 </script>
 
 <!-- ========== 通话系统 HTML ========== -->
