@@ -14241,19 +14241,24 @@ function saveRoleChatBgToIDB(roleId, dataUrl) {
 
 // 写某个角色的消息列表
 function saveRoleMessagesToIDB(roleId, messages) {
-    // 先读 IndexedDB 里的旧消息，合并去重，再写回。
-    // 防止内存里没有的消息（比如商城送礼写进去的礼物卡片）被覆盖丢失。
+    // 读 IndexedDB 旧消息，合并「比内存里最新消息更新」的（比如商城刚写的礼物卡片）
+    // 但 IndexedDB 里的旧消息（早于内存最新）不再合并，避免「删了又回来」「重新生成累积」
     return idbGet('role_messages_' + roleId).then(function(existing) {
         var oldMsgs = Array.isArray(existing) ? existing : [];
         var newMsgs = Array.isArray(messages) ? messages : [];
-        var seen = {};
-        var merged = [];
-        // 先放内存里的新消息（含最新状态），再放旧的，去重时新消息优先
-            newMsgs.concat(oldMsgs).forEach(function(m) {
-            var k = m && m.id ? m.id : (m && m.time ? (m.time + '|' + (m.content || '')) : JSON.stringify(m));
-            if (!seen[k]) { seen[k] = 1; merged.push(m); }
+        // 内存里最新消息的时间
+        var newestTime = 0;
+        newMsgs.forEach(function(m) {
+            var t = m && m.time ? new Date(m.time).getTime() : 0;
+            if (t > newestTime) newestTime = t;
         });
-        // 按 time 排序（有 time 的）
+        // 只保留 IndexedDB 里「比内存最新还新」的消息
+        var keepFromOld = oldMsgs.filter(function(m) {
+            var t = m && m.time ? new Date(m.time).getTime() : 0;
+            return t > newestTime;
+        });
+        var merged = newMsgs.concat(keepFromOld);
+        // 按 time 排序
         merged.sort(function(a, b) {
             var ta = a && a.time ? new Date(a.time).getTime() : 0;
             var tb = b && b.time ? new Date(b.time).getTime() : 0;
