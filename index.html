@@ -9571,7 +9571,7 @@ function regenerateMessage(roleId, messageId) {
     }
     var wasVoice = role.messages[msgIndex].voiceRequested || false;
     // Tombstone：标记删除，不真从数组移除（便于多设备同步）
-    if (msg) { msg.deletedAt = Date.now(); }
+    role.messages.splice(msgIndex, 1);  // 重新生成：真删旧回复
     saveAllData();
     renderMessages();
     showTyping();
