@@ -14944,6 +14944,7 @@ function walletAdd(type, amount, note) {
         var w = CONFIG.wallet;
         if (!Array.isArray(w.transactions)) w.transactions = [];
         w.balance = (w.balance || 0) + amount;
+        w.lastModified = Date.now();
         w.transactions.push({
             type: type,
             amount: amount,
@@ -15147,11 +15148,40 @@ function detectAndProcessTransfer(roleId, reply) {
 }
 
 function mergeWalletFromStorage(configToSave) {
-    // 主应用的 CONFIG.wallet 是权威，直接覆盖 configToSave
+    // 按 lastModified 决定 wallet 权威：谁后改的用谁的
     try {
-        if (configToSave && CONFIG && CONFIG.wallet) {
-            configToSave.wallet = JSON.parse(JSON.stringify(CONFIG.wallet));
+        var raw = localStorage.getItem('ds_multiRole_v2');
+        var lsWallet = null;
+        if (raw) {
+            try {
+                var d = JSON.parse(raw);
+                if (d && d.config && d.config.wallet) lsWallet = d.config.wallet;
+            } catch (e) {}
         }
+        var memWallet = (CONFIG && CONFIG.wallet) || { balance: 0, transactions: [] };
+
+        var memTx = Array.isArray(memWallet.transactions) ? memWallet.transactions : [];
+        var lsTx = (lsWallet && Array.isArray(lsWallet.transactions)) ? lsWallet.transactions : [];
+        var seen = {};
+        var merged = [];
+        memTx.concat(lsTx).forEach(function(t) {
+            var k = (t && t.ts != null) ? String(t.ts) : JSON.stringify(t);
+            if (!seen[k]) { seen[k] = 1; merged.push(t); }
+        });
+        merged.sort(function(a, b) { return (a.ts || 0) - (b.ts || 0); });
+
+        var memLM = memWallet.lastModified || 0;
+        var lsLM = (lsWallet && lsWallet.lastModified) ? lsWallet.lastModified : 0;
+        var finalBalance, finalLM;
+        if (lsLM > memLM) {
+            finalBalance = (lsWallet.balance != null) ? lsWallet.balance : 0;
+            finalLM = lsLM;
+        } else {
+            finalBalance = (memWallet.balance != null) ? memWallet.balance : 0;
+            finalLM = memLM;
+        }
+        CONFIG.wallet = { balance: finalBalance, transactions: merged, lastModified: finalLM };
+        if (configToSave) configToSave.wallet = CONFIG.wallet;
     } catch (e) {
         console.warn('mergeWalletFromStorage 失败:', e);
     }

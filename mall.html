@@ -1562,6 +1562,7 @@ function walletSpend(type, amount, note) {
         var w = data.config.wallet;
         if (!Array.isArray(w.transactions)) w.transactions = [];
         w.balance = (w.balance || 0) - amount;
+        w.lastModified = Date.now();
         w.transactions.push({
             type: type,
             amount: -amount,
