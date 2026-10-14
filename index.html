@@ -8214,30 +8214,11 @@ if (!CONFIG.period) CONFIG.period = {
             lastChatVisit: {}, lastAiMessageTime: {}, aiMessageCooldown: 30 * 60 * 1000,
             timeDividerThreshold: 10 * 60 * 1000, sleepMode: {}, unreadCount: {}
         };
-        var defaultRole = {
-            id: 'role_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-            name: '温柔学长', avatar: '', chatBg: '', voiceId: '',
-            persona: '25岁音乐系研究生，性格内敛细腻，喜欢弹钢琴',
-            background: '从小在江南小镇长大，家里开旧书店',
-            style: '只说对话内容，不要任何动作、表情、环境描写。用短句，像真人微信聊天一样自然分段回复。',
-            extra: '有一只叫「糯米」的白猫',
-            messages: [{ id: generateId(), role: 'assistant', content: '你好呀~ 我是温柔学长，很高兴认识你 💕', time: new Date().toISOString(), type: 'text', hasAudio: false, audioUrl: null, audioDuration: 0, voiceRequested: false }],
-            memory: [{ text: '用户喜欢被叫"小乖"' }, { text: '用户对猫毛过敏' }],
-            heartData: { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' },
-            createdAt: new Date().toISOString()
-        };
-        initRoleExtendedState(defaultRole);
-        roles = [defaultRole];
-        currentRoleId = defaultRole.id;
-        CONFIG.lastChatVisit[defaultRole.id] = 0;
-        CONFIG.lastAiMessageTime[defaultRole.id] = 0;
-        CONFIG.sleepMode[defaultRole.id] = false;
-        saveAllData();
-    }
-    if (!currentRoleId || !roles.find(function(r) { return r.id === currentRoleId; })) {
-        currentRoleId = roles[0] ? roles[0].id : null;
-    }
-    roles.forEach(function(role) {
+            roles = [];
+            currentRoleId = null;
+            // 不创建默认角色，等云端加载
+        }
+        roles.forEach(function(role) {
         if (CONFIG.lastChatVisit[role.id] === undefined) CONFIG.lastChatVisit[role.id] = 0;
         if (CONFIG.lastAiMessageTime[role.id] === undefined) CONFIG.lastAiMessageTime[role.id] = 0;
         if (CONFIG.sleepMode[role.id] === undefined) CONFIG.sleepMode[role.id] = false;
@@ -14261,6 +14242,12 @@ function saveRoleChatBgToIDB(roleId, dataUrl) {
 
 // 写某个角色的消息列表
 function saveRoleMessagesToIDB(roleId, messages) {
+    // 云端刚覆盖本地，跳过本次保存（避免空数据覆盖云端）
+    if (window.__skipNextSave) {
+        window.__skipNextSave = false;
+        console.log('⏭️ 跳过本次保存（云端刚加载）');
+        return Promise.resolve();
+    }
     // 读 IndexedDB 旧消息，合并「比内存里最新消息更新」的（比如商城刚写的礼物卡片）
     // 但 IndexedDB 里的旧消息（早于内存最新）不再合并，避免「删了又回来」「重新生成累积」
     return idbGet('role_messages_' + roleId).then(function(existing) {
@@ -23619,6 +23606,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             currentRoleId = roles[0] ? roles[0].id : null;
                         }
                         console.log('☁️ 本地为空，已从云端加载');
+                    window.__skipNextSave = true;  // 防止本地空数据覆盖云端
                     } else {
                         // ⭐ 按时间戳合并
                         var merged2 = mergeCloudDataByTimestamp(
