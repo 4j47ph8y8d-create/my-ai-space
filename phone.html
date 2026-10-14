@@ -1251,6 +1251,12 @@ body {
                     <div class="si-value" id="wallpaperStatus">默认</div>
                     <div class="si-arrow"><i class="fas fa-chevron-right"></i></div>
                 </div>
+                <div class="settings-item" id="setUserNicknameBtn">
+                    <div class="si-icon" style="background:linear-gradient(135deg,#ffb5a7,#fcd5ce);"><i class="fas fa-user-tag"></i></div>
+                    <div class="si-label">用户昵称</div>
+                    <div class="si-value" id="userNicknameStatus">未设置</div>
+                    <div class="si-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
             </div> <div class="settings-group">
                 <div class="settings-group-title">朋友圈生图</div>
                 <div class="settings-item" id="setImageApiKeyBtn">
@@ -1283,6 +1289,19 @@ body {
             </div>
         </div>
     </div>
+
+        <!-- ========== 用户昵称弹窗 ========== -->
+        <div class="overlay" id="userNicknameOverlay">
+            <div class="modal">
+                <h3>用户昵称</h3>
+                <p style="font-size:12px; color:rgba(255,255,255,0.5); margin-bottom:14px;">TA 怎么称呼你？</p>
+                <div class="form-group">
+                    <input type="text" id="userNicknameInput" placeholder="比如：小乖、宝贝" maxlength="10" />
+                </div>
+                <button class="btn-primary" id="saveUserNicknameBtn">保存</button>
+                <button class="btn-secondary" id="cancelUserNicknameBtn">取消</button>
+            </div>
+        </div>
 
     <!-- ========== 角色切换弹窗 ========== -->
     <div class="overlay" id="rolePickerOverlay">
@@ -4304,6 +4323,7 @@ function openSettingsApp() {
     if (currentRole) document.getElementById('currentRoleName').textContent = currentRole.name || '—';
     var wpStatus = document.getElementById('wallpaperStatus');
     if (wpStatus) wpStatus.textContent = phoneData.wallpaper ? '自定义' : '默认';
+        updateNicknameStatus();
 
     // 加载图片配置状态
     loadImageConfig('imageApiKey').then(function(key) {
@@ -4727,9 +4747,54 @@ function toast(msg) {
 }
 
 // ========== 事件绑定 ==========
+function updateNicknameStatus() {
+    var el = document.getElementById('userNicknameStatus');
+    if (!el) return;
+    var nickname = (phoneData && phoneData.userNickname) ? phoneData.userNickname : '';
+    el.textContent = nickname || '未设置';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // 角色选择
     renderRoleSelect();
+
+    // 用户昵称弹窗
+    var nicknameBtn = document.getElementById('setUserNicknameBtn');
+    if (nicknameBtn) {
+        nicknameBtn.addEventListener('click', function() {
+            var currentNickname = (phoneData && phoneData.userNickname) ? phoneData.userNickname : '';
+            var input = document.getElementById('userNicknameInput');
+            if (input) input.value = currentNickname;
+            document.getElementById('userNicknameOverlay').classList.add('active');
+        });
+    }
+    var saveNicknameBtn = document.getElementById('saveUserNicknameBtn');
+    if (saveNicknameBtn) {
+        saveNicknameBtn.addEventListener('click', function() {
+            var input = document.getElementById('userNicknameInput');
+            var val = input ? input.value.trim() : '';
+            if (!currentRoleId) { showToast('未选择角色'); return; }
+            if (!phoneData) phoneData = getPhoneData(currentRoleId);
+            phoneData.userNickname = val;
+            savePhoneData(currentRoleId, phoneData);
+            updateNicknameStatus();
+            document.getElementById('userNicknameOverlay').classList.remove('active');
+            showToast('已保存');
+        });
+    }
+    var cancelNicknameBtn = document.getElementById('cancelUserNicknameBtn');
+    if (cancelNicknameBtn) {
+        cancelNicknameBtn.addEventListener('click', function() {
+            document.getElementById('userNicknameOverlay').classList.remove('active');
+        });
+    }
+    var nicknameOverlay = document.getElementById('userNicknameOverlay');
+    if (nicknameOverlay) {
+        nicknameOverlay.addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('active');
+        });
+    }
+
 
     // 数字键盘
     document.querySelectorAll('.num-btn').forEach(function(btn) {
