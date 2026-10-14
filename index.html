@@ -9579,6 +9579,7 @@ function regenerateMessage(roleId, messageId) {
         hideTyping();
         reply = detectAndProcessGift(role.id, reply);
         reply = detectAndProcessTransfer(role.id, reply);
+        reply = stripRoleNamePrefix(reply, role.name);
         var segments = CONFIG.splitEnabled !== false ? splitReplyIntoMessages(reply) : [reply];
         var idx = 0;
         function sendNext() {
@@ -9756,6 +9757,7 @@ if (quotedMsg) {
             CONFIG.splitEnabled = false;
         }
         
+        reply = stripRoleNamePrefix(reply, role.name);
         var segments = CONFIG.splitEnabled !== false ? splitReplyIntoMessages(reply) : [reply];
         var idx = 0;
         
@@ -10311,6 +10313,23 @@ function retrieveRelevantMemory(role, userMessage) {
     });
     result += '\n（以上是你之前提到过的内容）';
     return result;
+}
+
+// 去掉 AI 回复里「角色名：」前缀（中文或英文冒号，含全角空格）
+function stripRoleNamePrefix(reply, roleName) {
+    if (!reply || !roleName) return reply;
+    var name = String(roleName).trim();
+    if (!name) return reply;
+    // 转义正则特殊字符
+    var escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // 匹配开头：「角色名：」「角色名:」「角色名 ：」等
+    var pattern = new RegExp('^\\s*' + escaped + '\\s*[:：]\\s*', 'i');
+    // 全局替换：每行/每段开头
+    var lines2 = reply.split(/\n/);
+    lines2 = lines2.map(function(line) {
+        return line.replace(pattern, '');
+    });
+    return lines2.join('\n');
 }
 
 function splitReplyIntoMessages(text) {
