@@ -14963,7 +14963,7 @@ var periodDeleteTarget = null;
 // ============================================================
 
 // 往钱包加钱 + 写流水
-function walletAdd(type, amount, note) {
+function walletAdd(type, amount, note, roleId) {
     try {
         if (!CONFIG.wallet) CONFIG.wallet = { balance: 0, transactions: [] };
         var w = CONFIG.wallet;
@@ -14974,6 +14974,7 @@ function walletAdd(type, amount, note) {
             type: type,
             amount: amount,
             note: note || '',
+            roleId: roleId || null,
             ts: Date.now()
         });
         saveAllData();
@@ -23686,7 +23687,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!confirm('确认收款 ¥ ' + amt.toFixed(2) + ' ？')) return;
 
         // 1. 写入钱包
-        walletAdd('ai_transfer', amt, '来自 ' + role.name);
+        walletAdd('ai_transfer', amt, '来自 ' + role.name, role.id);
 
         // 2. 改消息状态
         td.status = 'received';

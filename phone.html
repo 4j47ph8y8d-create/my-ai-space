@@ -667,6 +667,42 @@ body {
         .assets-stream-row .delta.minus {
             color: #e74c3c;
         }
+        .assets-transfer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .assets-transfer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+        }
+        .assets-transfer-main {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .assets-transfer-title {
+            color: rgba(255,255,255,0.75);
+        }
+        .assets-transfer-time {
+            color: rgba(255,255,255,0.35);
+            font-size: 10px;
+        }
+        .assets-transfer-amount {
+            color: #e74c3c;
+            font-weight: 500;
+        }
+        .assets-transfer-empty {
+            text-align: center;
+            color: rgba(255,255,255,0.35);
+            font-size: 12px;
+            padding: 16px 0;
+        }
 
 
         /* ===== 资产图表 ===== */
@@ -1088,6 +1124,10 @@ body {
                 <div class="assets-chart-title">势力维度</div>
                 <div class="assets-radar" id="assetsRadar"></div>
             </div>
+        <div class="assets-chart-wrap" id="assetsTransferWrap">
+            <div class="assets-chart-title">转账记录</div>
+            <div class="assets-transfer-list" id="assetsTransferList"></div>
+        </div>
         <div class="assets-stream" id="assetsStream"></div>
     </div>
         <!-- ====== 资产初始化面板 ====== -->
@@ -1394,7 +1434,11 @@ function getAssetsData(roleId) {
     var key = 'assets_data_' + roleId;
     var raw = localStorage.getItem(key);
     if (!raw) return null;
-    try { return JSON.parse(raw); } catch (e) { return null; }
+    try {
+        var data = JSON.parse(raw);
+        data.roleId = roleId;  // 带上 roleId，方便后续读钱包记录
+        return data;
+    } catch (e) { return null; }
 }
 
 function saveAssetsData(roleId, data) {
@@ -2988,7 +3032,82 @@ function openAssetsApp() {
     }
 }
 
+// 渲染「转账记录」（角色给用户的转账）
+function renderTransferList(data) {
+    var listEl = document.getElementById('assetsTransferList');
+    if (!listEl) return;
+    var roleId = data && data.roleId;
+    if (!roleId) { listEl.innerHTML = ''; return; }
+
+    // 读钱包流水
+    var transactions = [];
+    try {
+        var raw = localStorage.getItem('ds_multiRole_v2');
+        if (raw) {
+            var d = JSON.parse(raw);
+            if (d && d.config && d.config.wallet && Array.isArray(d.config.wallet.transactions)) {
+                transactions = d.config.wallet.transactions;
+            }
+        }
+    } catch (e) { transactions = []; }
+
+    // 筛选：ai_transfer + 属于当前角色
+    var mine = transactions.filter(function(t) {
+        return t && t.type === 'ai_transfer' && t.roleId === roleId;
+    });
+
+    // 按时间倒序，取最近 10 条
+    mine.sort(function(a, b) { return (b.ts || 0) - (a.ts || 0); });
+    mine = mine.slice(0, 10);
+
+    if (mine.length === 0) {
+        listEl.innerHTML = '<div class="assets-transfer-empty">暂无转账记录</div>';
+        return;
+    }
+
+    // 读用户昵称
+    var nickname = '';
+    try {
+        var phoneRaw = localStorage.getItem('phone_data_' + roleId);
+        if (phoneRaw) {
+            var pd = JSON.parse(phoneRaw);
+            if (pd && pd.userNickname) nickname = pd.userNickname;
+        }
+    } catch (e) {}
+    if (!nickname) nickname = '你';
+
+    // 渲染
+    listEl.innerHTML = mine.map(function(t) {
+        var amt = Math.abs(t.amount || 0);
+        var dateStr = '';
+        try {
+            var d = new Date(t.ts || Date.now());
+            var mm = d.getMonth() + 1;
+            var dd = d.getDate();
+            var hh = d.getHours(); if (hh < 10) hh = '0' + hh;
+            var mi = d.getMinutes(); if (mi < 10) mi = '0' + mi;
+            dateStr = mm + '月' + dd + '日 ' + hh + ':' + mi;
+        } catch (e) {}
+        return '<div class="assets-transfer-item">' +
+            '<div class="assets-transfer-main">' +
+            '<div class="assets-transfer-title">转账给 ' + escapeHtml(nickname) + '</div>' +
+            '<div class="assets-transfer-time">' + dateStr + '</div>' +
+            '</div>' +
+            '<div class="assets-transfer-amount">-¥ ' + amt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</div>' +
+            '</div>';
+    }).join('');
+}
+
+// escapeHtml 工具（如果 phone.html 里没有的话）
+if (typeof escapeHtml !== 'function') {
+    window.escapeHtml = function(str) {
+        if (str == null) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    };
+}
+
 function renderAssets(data) {
+    renderTransferList(data);
     var appEl = document.getElementById('assetsApp');
     if (appEl) {
         var themeMap = {gold:'#d4af37', blue:'#4a8fe0', violet:'#a97bff', green:'#3fb27f'};
