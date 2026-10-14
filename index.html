@@ -8853,7 +8853,7 @@ function renderMessages() {// ===== 修复：清理不再显示的音频播放�
     if (!Array.isArray(role.messages)) { role.messages = []; saveAllData(); }
     var container = document.getElementById('messageContainer');
     if (!container) return;
-    var msgs = role.messages || [];
+    var msgs = (role.messages || []).filter(function(m) { return !m.deletedAt; });
     applyChatBgForRole(role);
     var fragment = document.createDocumentFragment();
     var threshold = CONFIG.timeDividerThreshold || 10 * 60 * 1000;
@@ -9570,7 +9570,8 @@ function regenerateMessage(roleId, messageId) {
         });
     }
     var wasVoice = role.messages[msgIndex].voiceRequested || false;
-    role.messages.splice(msgIndex, 1);
+    // Tombstone：标记删除，不真从数组移除（便于多设备同步）
+    if (msg) { msg.deletedAt = Date.now(); }
     saveAllData();
     renderMessages();
     showTyping();
@@ -23704,6 +23705,40 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('已收款 ¥ ' + amt.toFixed(2) + '，已存入钱包');
     });
 });
+
+// ============================================================
+// 🧹 Tombstone 清理（3 天前的删除标记，真删）
+// ============================================================
+function cleanupDeletedMessages() {
+    var THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+    var now = Date.now();
+    var changed = false;
+    if (typeof roles !== 'undefined' && Array.isArray(roles)) {
+        roles.forEach(function(role) {
+            if (!Array.isArray(role.messages)) return;
+            var before = role.messages.length;
+            role.messages = role.messages.filter(function(m) {
+                if (m.deletedAt && (now - m.deletedAt) > THREE_DAYS) {
+                    return false;
+                }
+                return true;
+            });
+            if (role.messages.length !== before) changed = true;
+        });
+    }
+    if (changed && typeof saveAllData === 'function') {
+        saveAllData();
+        console.log('🧹 清理了 3 天前的删除标记消息');
+    }
+}
+
+// 启动后 3 秒清理一次（等数据加载完）
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        try { cleanupDeletedMessages(); } catch(e) { console.log('清理失败:', e); }
+    }, 3000);
+});
+
 </script>
 
 <!-- ========== 通话系统 HTML ========== -->
