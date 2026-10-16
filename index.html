@@ -10424,7 +10424,8 @@ systemPrompt += '\n\n💰 小提示：如果想给用户转账（比如用户要
         return m.type === 'text' || m.type === 'gift';
     }).map(function(m) {
         var content = m.type === 'gift' ? '（送礼消息：' + (m.giftData ? m.giftData.productName : '礼物') + '）' : m.content;
-        return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
+        if (m.quoted && m.quoted.content) { content = '（引用' + (m.quoted.name || '对方') + '：' + m.quoted.content + '）\n' + content; }
+return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
     });
     var temperature = parseFloat(CONFIG.temperature) || 0.9;
     var controller = new AbortController();
@@ -10491,7 +10492,8 @@ function callRelayAPI(userMessage, role, voiceRequested) {
         return m.type === 'text' || m.type === 'gift';
     }).map(function(m) {
         var content = m.type === 'gift' ? '（送礼消息：' + (m.giftData ? m.giftData.productName : '礼物') + '）' : m.content;
-        return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
+        if (m.quoted && m.quoted.content) { content = '（引用' + (m.quoted.name || '对方') + '：' + m.quoted.content + '）\n' + content; }
+return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
     });
     var temperature = parseFloat(CONFIG.temperature) || 0.9;
     var controller = new AbortController();
@@ -10545,7 +10547,8 @@ function callWebSearchAPI(userMessage, role, voiceRequested) {
         return m.type === 'text' || m.type === 'gift';
     }).map(function(m) {
         var content = m.type === 'gift' ? '（送礼消息：' + (m.giftData ? m.giftData.productName : '礼物') + '）' : m.content;
-        return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
+        if (m.quoted && m.quoted.content) { content = '（引用' + (m.quoted.name || '对方') + '：' + m.quoted.content + '）\n' + content; }
+return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
     });
     
     var temperature = parseFloat(CONFIG.temperature) || 0.9;
