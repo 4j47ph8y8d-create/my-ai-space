@@ -10,11 +10,9 @@ self.addEventListener('install', (e) => {
     })
   );
 });
-const CACHE_NAME = 'lunar-reverie-v3';
+const CACHE_NAME = 'lunar-reverie-v7';
 const STATIC_ASSETS = [
     '/',
-    '/index.html',
-    '/phone.html',
     '/manifest.json',
     '/icon.PNG'
 ];

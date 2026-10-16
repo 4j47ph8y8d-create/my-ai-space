@@ -3,3 +3,5 @@ node_modules/
 .env.bak
 *.bak-*
 setup18.sh
+.env.save
+check_wallet.js

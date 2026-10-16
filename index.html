@@ -7760,6 +7760,19 @@ function tagRoleTimestamps() {
 }
 
 async function immediateSaveAllData() {
+    // 并发保护：正在上传时，跳过本次
+    if (window.__savingInProgress) {
+        console.log('⏭️ 已有保存在进行中，跳过');
+        return;
+    }
+    window.__savingInProgress = true;
+    // 超时兜底：60 秒后强制释放
+    setTimeout(function() {
+        if (window.__savingInProgress) {
+            console.warn('⏰ 保存超时，强制释放锁');
+            window.__savingInProgress = false;
+        }
+    }, 60000);
     try {
         // ⭐ 保存前给所有角色打时间戳
         tagRoleTimestamps();
@@ -7821,7 +7834,7 @@ async function immediateSaveAllData() {
 
         // ===== 3. 云端同步（含消息，保持完整） =====
         var token = localStorage.getItem('dream_token');
-        if (token) {
+            if (token) {
             var cloudData = {
                 config: configToSave,
                 roles: roles.map(function(r) {
@@ -7832,6 +7845,8 @@ async function immediateSaveAllData() {
                 diaries: CONFIG.diaries || []
             };
 
+            console.log('🌐 准备 POST 到:', API_BASE + '/data/save');
+            console.log('🌐 token 前 20 字符:', token ? token.substring(0, 20) : '(无)');
             await fetch(API_BASE + '/data/save', {
                 method: 'POST',
                 headers: {
@@ -7844,15 +7859,18 @@ async function immediateSaveAllData() {
             .then(function(result) {
                 if (result.success) {
                     console.log('☁️ 数据已同步到云端 (版本: ' + result.version + ')');
+                    window.__savingInProgress = false;
                 }
             })
             .catch(function(e) {
                 console.error('☁️ 云端同步失败:', e);
+                window.__savingInProgress = false;
             });
         }
 
     } catch (e) {
         console.error('保存数据失败:', e);
+        window.__savingInProgress = false;
     }
 }
 
@@ -14964,7 +14982,12 @@ function walletAdd(type, amount, note, roleId) {
             roleId: roleId || null,
             ts: Date.now()
         });
-        saveAllData();
+        // 用异步保存（含云端同步）
+        if (typeof immediateSaveAllData === 'function') {
+            immediateSaveAllData().catch(function(e) { console.error('walletAdd 保存失败:', e); });
+        } else {
+            saveAllData();
+        }
         return true;
     } catch (e) {
         console.error('walletAdd 失败:', e);
