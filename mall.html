@@ -888,7 +888,7 @@
             <button class="back-btn" id="exitMallBtn"><i class="fas fa-chevron-left"></i></button>
             <div class="title">街角商店</div>
             <div class="mall-actions">
-                <span class="mall-balance" id="mallBalanceDisplay" title="钱包余额">¥<span id="mallBalanceAmount">0</span></span>
+                <span class="mall-balance" id="mallBalanceDisplay" title="钱包余额" style="display:none;">¥<span id="mallBalanceAmount">0</span></span>
                 <button class="mall-cart-btn" id="mallCartBtn">
                     <i class="fas fa-shopping-bag"></i>
                     <span class="cart-count empty" id="mallCartCount">0</span>
@@ -1147,6 +1147,29 @@ function getModelFromMain() {
     return 'deepseek-chat';
 }
 
+function getAIIConfigFromMain() {
+    try {
+        var raw = localStorage.getItem("ds_multiRole_v2");
+        if (!raw) return null;
+        var data = JSON.parse(raw);
+        var c = data.config || {};
+        var mode = c.accessMode || "direct";
+        var apiKey, endpoint, model;
+        if (mode === "direct") {
+            apiKey = c.apiKey;
+            endpoint = "https://api.deepseek.com/v1";
+            model = c.model || "deepseek-v4-pro";
+        } else {
+            apiKey = c.relayApiKey || c.apiKey;
+            endpoint = c.relayEndpoint || "https://shufulei.net/v1";
+            model = c.relayModel || c.model || "deepseek-v4-pro";
+        }
+        if (!apiKey || !endpoint) return null;
+        return { apiKey: apiKey, endpoint: endpoint, model: model };
+    } catch (e) {
+        return null;
+    }
+}
 function getRoleById(roleId) {
     return mallRoles.find(function(r) { return r.id === roleId; }) || null;
 }
@@ -1479,7 +1502,7 @@ function purchaseProduct(product, qty, note, mode) {
     if (mode === 'gift') {
         selectTargetRoleForGift(function(selectedRole) {
             if (!selectedRole) return;
-            if (getWalletBalance() < totalPrice) { showToast('💰 钱包余额不足'); return; }
+            
             if (!confirm('💝 送给 ' + selectedRole.name + '「' + product.name + '」×' + qty + ' 吗？\n花费 ¥' + totalPrice)) return;
             
             executePurchase(product, qty, note, mode, selectedRole, totalPrice);
@@ -1490,7 +1513,7 @@ function purchaseProduct(product, qty, note, mode) {
     // 购买模式：使用当前角色
     var currentRole = getCurrentRoleFromMain();
     if (!currentRole) { showToast('⚠️ 请先在主应用中创建角色'); return; }
-    if (getWalletBalance() < totalPrice) { showToast('💰 钱包余额不足'); return; }
+    
     if (!confirm('购买「' + product.name + '」×' + qty + ' 吗？\n花费 ¥' + totalPrice)) return;
     
     executePurchase(product, qty, note, mode, currentRole, totalPrice);
@@ -1501,7 +1524,7 @@ function executePurchase(product, qty, note, mode, targetRole, totalPrice) {
     // 从主应用钱包扣款 + 记流水
     var txType = (mode === 'gift') ? 'gift_out' : 'purchase';
     var txNote = product.name;
-    walletSpend(txType, totalPrice, txNote);
+                walletSpend(txType, totalPrice, txNote);
     refreshMallBalance();
     var order = {
         id: 'ORD_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
@@ -1974,8 +1997,8 @@ function renderCart() {
     list.innerHTML = html;
     totalEl.textContent = '¥' + total;
     balanceEl.textContent = '¥' + mallBalance;
-    checkoutBtn.disabled = mallBalance < total;
-    checkoutBtn.textContent = mallBalance < total ? '余额不足' : '结算';
+    checkoutBtn.disabled = false;
+    checkoutBtn.textContent = '结算';
 
     list.querySelectorAll('.ci-qty-btn').forEach(function(btn) {
         btn.onclick = function() { updateCartQty(btn.dataset.id, parseInt(btn.dataset.delta)); };
@@ -1989,7 +2012,7 @@ function renderCart() {
 function checkoutCart() {
     if (mallCart.length === 0) return;
     var total = mallCart.reduce(function(sum, item) { return sum + item.price * item.qty; }, 0);
-    if (mallBalance < total) { showToast('余额不足'); return; }
+    
     if (!confirm('结算购物袋？\n共 ' + mallCart.length + ' 件\n总计 ¥' + total)) return;
     mallBalance -= total;
     var role = getCurrentRoleFromMain();
@@ -2405,7 +2428,7 @@ function sendScMessage(text) {
 
 function handleBuyForHim(product) {
     if (!scCurrentRole) return;
-    if (mallBalance < product.price) {
+    if (false) {
         showToast('💰 余额不足，去充值吧～');
         return;
     }
