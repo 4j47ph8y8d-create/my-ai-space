@@ -19567,6 +19567,7 @@ async function generateVoiceForMessage(msgId, role) {
         var audioUrl;
         if (CONFIG.voice.mode === 'bailian') {
             audioUrl = await callBailianTTS(msg.content, role);
+            if (!audioUrl) { msg.hasAudio = false; renderMessages(); return; }
         } else if (CONFIG.voice.mode === 'browser') {
             speakWithBrowser(msg.content);
             return;
@@ -20276,7 +20277,7 @@ function cleanTextForTTS(text, role) {
     var cleanText = cleanTextForTTS(text, role);
     
     if (!cleanText || cleanText.trim().length === 0) {
-        cleanText = '你好，我是 ' + (role.name || 'AI') + '。';
+        return null;
     }
     
     if (cleanText.length > 500) {
