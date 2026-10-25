@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>五子棋 - LunarReverie</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #12101a;
+            --board-bg: #d2a679;
+            --board-line: #8b5a2b;
+            --neon-pink: #ff2a6d;
+            --neon-blue: #05d9e8;
+            --text: #e0e0e0;
+        }
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg); color: var(--text);
+            font-family: 'ZCOOL QingKe HuangYou', 'VT323', monospace;
+            display: flex; flex-direction: column; height: 100vh;
+            overflow: hidden;
+            align-items: center;
+        }
+        .header {
+            width: 100%; display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; box-sizing: border-box;
+            background: rgba(0,0,0,0.5); border-bottom: 2px solid #333;
+        }
+        .back-btn { background: none; border: none; color: var(--neon-blue); font-size: 24px; cursor: pointer; font-family: inherit; }
+        .title { font-size: 24px; color: var(--neon-pink); font-weight: bold; }
+        
+        /* 棋盘区域 */
+        .board-container {
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            width: 100%; padding: 10px; box-sizing: border-box;
+        }
+        .board {
+            background-color: var(--board-bg);
+            border: 6px solid #5c3a21; border-radius: 4px;
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            width: 100%; max-width: 380px; aspect-ratio: 1/1;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .cell {
+            border-right: 1px solid var(--board-line);
+            border-bottom: 1px solid var(--board-line);
+            display: flex; justify-content: center; align-items: center;
+            position: relative;
+            cursor: pointer;
+        }
+        .cell:nth-child(15n) { border-right: none; }
+        .cell:nth-last-child(-n+15) { border-bottom: none; }
+
+        /* 棋子 */
+        .piece {
+            width: 80%; height: 80%;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5), 2px 2px 4px rgba(0,0,0,0.3);
+            animation: drop 0.2s ease-out;
+        }
+        .piece.black { background: radial-gradient(circle at 30% 30%, #555, #000); }
+        .piece.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); }
+
+        @keyframes drop {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        /* 底部对话框 */
+        .chat-box {
+            width: 100%; background: #1a1a24; border-top: 2px solid #333;
+            padding: 15px 20px; box-sizing: border-box;
+            min-height: 120px; display: flex; flex-direction: column;
+        }
+        .role-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .role-avatar { width: 40px; height: 40px; border-radius: 50%; background: #333; border: 2px solid var(--neon-pink); object-fit: cover; }
+        .role-name { font-size: 18px; color: var(--neon-pink); }
+        .chat-text { font-size: 18px; color: #ccc; line-height: 1.4; flex: 1;}
+        
+        .restart-btn {
+            margin-top: 10px; background: #333; border: 2px solid #555; color: #fff;
+            padding: 8px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 16px;
+        }
+        .restart-btn:active { transform: scale(0.98); }
+
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" onclick="window.location.href='playground.html'">&lt; 返回</button>
+        <div class="title">五子棋</div>
+        <div style="width: 60px;"></div>
+    </div>
+
+    <div class="board-container">
+        <div class="board" id="board"></div>
+    </div>
+
+    <div class="chat-box">
+        <div class="role-info">
+            <!-- 这里暂时用默认头像，以后可以动态读取你画的那个小人头像 -->
+            <img src="assets/avatar/body_male.png" class="role-avatar" style="object-position: top;">
+            <div class="role-name" id="roleName">秦彻</div>
+        </div>
+        <div class="chat-text" id="chatText">“就凭你，也想赢我？”</div>
+        <button class="restart-btn" onclick="initGame()">重新开局</button>
+    </div>
+
+    <script>
+        const boardEl = document.getElementById('board');
+        const chatText = document.getElementById('chatText');
+        const BOARD_SIZE = 15;
+        let boardData = []; // 0:空, 1:黑(玩家), 2:白(AI)
+        let isPlayerTurn = true;
+        let gameOver = false;
+
+        // 角色台词库
+        const dialogues = {
+            win: ["“太弱了，这就是你的实力？”", "“再来一局？还是算了吧，没意思。”"],
+            lose: ["“有点意思，你赢了。”", "“看来……我小看你了。”"],
+            draw: ["“平局？不，这只是个开始。”"]
+        };
+
+        function initGame() {
+            boardData = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
+            isPlayerTurn = true;
+            gameOver = false;
+            boardEl.innerHTML = '';
+            chatText.innerText = "“就凭你，也想赢我？”";
+            
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    let cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    cell.addEventListener('click', () => handlePlayerMove(r, c));
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function handlePlayerMove(r, c) {
+            if (!isPlayerTurn || gameOver || boardData[r][c] !== 0) return;
+            
+            placePiece(r, c, 1);
+            isPlayerTurn = false;
+            
+            if (checkWin(r, c, 1)) {
+                gameOver = true;
+                chatText.innerText = dialogues.lose[Math.floor(Math.random() * dialogues.lose.length)];
+                return;
+            }
+            if (checkDraw()) {
+                gameOver = true;
+                chatText.innerText = dialogues.draw[0];
+                return;
+            }
+
+            // AI 回合
+            setTimeout(makeAIMove, 500);
+        }
+
+        function placePiece(r, c, player) {
+            boardData[r][c] = player;
+            const cell = boardEl.children[r * BOARD_SIZE + c];
+            let piece = document.createElement('div');
+            piece.classList.add('piece', player === 1 ? 'black' : 'white');
+            cell.appendChild(piece);
+        }
+
+        function makeAIMove() {
+            if (gameOver) return;
+            
+            // 简单 AI：寻找最佳落子点（防守或进攻）
+            let bestScore = -1;
+            let bestMove = { r: 7, c: 7 }; // 默认下中间
+
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    if (boardData[r][c] === 0) {
+                        let score = evaluatePosition(r, c, 2) * 1.2 + evaluatePosition(r, c, 1);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = { r, c };
+                        }
+                    }
+                }
+            }
+
+            placePiece(bestMove.r, bestMove.c, 2);
+            isPlayerTurn = true;
+
+            if (checkWin(bestMove.r, bestMove.c, 2)) {
+                gameOver = true;
+                chatText.innerText = dialogues.win[Math.floor(Math.random() * dialogues.win.length)];
+                return;
+            }
+            if (checkDraw()) {
+                gameOver = true;
+                chatText.innerText = dialogues.draw[0];
+            }
+        }
+
+        // 简单的评估函数（只看周围一圈）
+        function evaluatePosition(r, c, player) {
+            let score = 0;
+            const directions = [[0,1],[1,0],[1,1],[1,-1]];
+            
+            for (let [dr, dc] of directions) {
+                let count = 1;
+                // 正方向
+                for (let i = 1; i < 5; i++) {
+                    let nr = r + dr*i, nc = c + dc*i;
+                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++;
+                    else break;
+                }
+                // 反方向
+                for (let i = 1; i < 5; i++) {
+                    let nr = r - dr*i, nc = c - dc*i;
+                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++;
+                    else break;
+                }
+                if (count >= 5) score += 10000;
+                else if (count === 4) score += 1000;
+                else if (count === 3) score += 100;
+                else if (count === 2) score += 10;
+            }
+            return score;
+        }
+
+        function checkWin(r, c, player) {
+            const directions = [[0,1],[1,0],[1,1],[1,-1]];
+            for (let [dr, dc] of directions) {
+                let count = 1;
+                for (let i = 1; i < 5; i++) {
+                    let nr = r + dr*i, nc = c + dc*i;
+                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++;
+                    else break;
+                }
+                for (let i = 1; i < 5; i++) {
+                    let nr = r - dr*i, nc = c - dc*i;
+                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++;
+                    else break;
+                }
+                if (count >= 5) return true;
+            }
+            return false;
+        }
+
+        function checkDraw() {
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    if (boardData[r][c] === 0) return false;
+                }
+            }
+            return true;
+        }
+
+        // 启动
+        initGame();
+    </script>
+</body>
+</html>
