@@ -51,7 +51,7 @@
         .option-title { font-size: 20px; color: var(--neon-blue); margin-bottom: 10px; }
         
         .color-picker-row {
-            display: flex; align-items: center; gap: 15px;
+            display: flex; align-items: center; gap: 15px; margin-bottom: 15px;
         }
         .color-picker-row input[type="color"] {
             -webkit-appearance: none; border: none;
@@ -87,24 +87,24 @@
 
     <div class="options-panel">
         <div class="option-group">
-            <div class="option-title">发型</div>
+            <div class="option-title">发型选择</div>
             <div class="btn-group" id="hairStyleGroup">
                 <button class="pixel-btn active" data-val="1">发型 1</button>
                 <button class="pixel-btn" data-val="2">发型 2</button>
+                <button class="pixel-btn" data-val="3">发型 3</button>
+                <button class="pixel-btn" data-val="4">发型 4</button>
             </div>
         </div>
 
         <div class="option-group">
             <div class="option-title">颜色定制 (色盘)</div>
-            <div style="display:flex; flex-direction:column; gap:15px;">
-                <div class="color-picker-row">
-                    <span style="width: 60px;">发色</span>
-                    <input type="color" id="hairColorPicker" value="#ffffff">
-                </div>
-                <div class="color-picker-row">
-                    <span style="width: 60px;">瞳色</span>
-                    <input type="color" id="eyeColorPicker" value="#ff0000">
-                </div>
+            <div class="color-picker-row">
+                <span style="width: 60px;">发色</span>
+                <input type="color" id="hairColorPicker" value="#ffffff">
+            </div>
+            <div class="color-picker-row">
+                <span style="width: 60px;">瞳色</span>
+                <input type="color" id="eyeColorPicker" value="#ff0000">
             </div>
         </div>
     </div>
@@ -117,28 +117,42 @@
         let config = {
             hairStyle: '1',
             hairColor: '#ffffff',
-            eyeColor: '#ff0000'
+            eyeColor: '#ff0000' // 默认红瞳
         };
 
+        // 定义图层（注意：你拆分了眼睛和嘴巴，我假设命名是 eye_1.png 和 mouth_1.png）
+        // 如果你的文件名不一样，请在这里修改！
         const images = {
             body: new Image(),
-            face: new Image(),
+            eye: new Image(),
+            mouth: new Image(),
             hair: new Image()
         };
         
-        images.body.src = 'assets/avatar/body_male.png';
-        images.face.src = 'assets/avatar/face_1.png';
+        images.body.src = 'assets/avatar/body.png';
+        images.eye.src = 'assets/avatar/eye_1.png';     // 请确保你有这个文件
+        images.mouth.src = 'assets/avatar/mouth_1.png'; // 请确保你有这个文件
         images.hair.src = 'assets/avatar/hair_1.png';
 
         let loadedCount = 0;
+        const totalImages = 4;
+        
         for(let key in images) {
             images[key].onload = () => {
                 loadedCount++;
-                if(loadedCount === 3) renderAvatar();
+                if(loadedCount === totalImages) renderAvatar();
+            }
+            // 容错处理：如果某个图片没找到，也继续渲染
+            images[key].onerror = () => {
+                console.warn(`图片 ${key} 加载失败`);
+                loadedCount++;
+                if(loadedCount === totalImages) renderAvatar();
             }
         }
 
         function tintImage(img, targetColorHex, tintType) {
+            if (!img.complete || img.naturalWidth === 0) return img; 
+            
             const offCanvas = document.createElement('canvas');
             offCanvas.width = img.width;
             offCanvas.height = img.height;
@@ -146,7 +160,6 @@
             offCtx.drawImage(img, 0, 0);
             
             if (tintType === 'hair' && targetColorHex === '#ffffff') return img;
-            if (tintType === 'eye' && targetColorHex === '#ff0000' && false) return img; // 强制刷新
 
             const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
             const data = imgData.data;
@@ -163,8 +176,8 @@
 
                 if (a > 0) {
                     if (tintType === 'eye') {
-                        // 提取纯黑部分替换为瞳色
-                        if (r < 50 && g < 50 && b < 50) {
+                        // 检测黑色/深色瞳孔
+                        if (r < 60 && g < 60 && b < 60) {
                             data[i] = r_target;
                             data[i+1] = g_target;
                             data[i+2] = b_target;
@@ -183,13 +196,23 @@
 
         function renderAvatar() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(images.body, 0, 0, canvas.width, canvas.height);
-            const tintedFace = tintImage(images.face, config.eyeColor, 'eye');
-            ctx.drawImage(tintedFace, 0, 0, canvas.width, canvas.height);
+            
+            // 1. 素体
+            if(images.body.complete) ctx.drawImage(images.body, 0, 0, canvas.width, canvas.height);
+            
+            // 2. 眼睛 (染色)
+            const tintedEye = tintImage(images.eye, config.eyeColor, 'eye');
+            if(tintedEye.complete !== false) ctx.drawImage(tintedEye, 0, 0, canvas.width, canvas.height);
+            
+            // 3. 嘴巴 (不染色)
+            if(images.mouth.complete) ctx.drawImage(images.mouth, 0, 0, canvas.width, canvas.height);
+            
+            // 4. 头发 (染色)
             const tintedHair = tintImage(images.hair, config.hairColor, 'hair');
-            ctx.drawImage(tintedHair, 0, 0, canvas.width, canvas.height);
+            if(tintedHair.complete !== false) ctx.drawImage(tintedHair, 0, 0, canvas.width, canvas.height);
         }
 
+        // 绑定发型按钮
         document.querySelectorAll('#hairStyleGroup .pixel-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('#hairStyleGroup .pixel-btn').forEach(b => b.classList.remove('active'));
