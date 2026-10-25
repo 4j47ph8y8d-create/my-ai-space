@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>游乐园 - LunarReverie</title>
+    <!-- 引入方正像素字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #12101a;
+            --text-color: #e0e0e0;
+            --neon-pink: #ff2a6d;
+            --neon-blue: #05d9e8;
+            --neon-yellow: #f9f002;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            /* 像素网格背景 */
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-color);
+            /* 优先使用中文像素字体 */
+            font-family: 'ZCOOL QingKe HuangYou', 'VT323', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        /* 顶部导航栏 */
+        .top-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            max-width: 450px;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--neon-blue);
+            font-size: 28px;
+            cursor: pointer;
+            font-family: 'ZCOOL QingKe HuangYou', 'VT323', monospace;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+        .icon-btn:active { opacity: 0.7; }
+        
+        /* 设置按钮（SVG像素齿轮） */
+        .settings-btn svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--neon-yellow);
+            filter: drop-shadow(0 0 5px var(--neon-yellow));
+        }
+
+        h1 {
+            font-family: 'Press Start 2P', 'VT323', monospace;
+            font-size: 28px;
+            margin: 0;
+            color: #fff;
+            text-shadow: 3px 3px 0 var(--neon-pink), -2px -2px 0 var(--neon-blue);
+            letter-spacing: 2px;
+            text-align: center;
+        }
+        .subtitle {
+            color: #888;
+            margin-top: 15px;
+            margin-bottom: 40px;
+            font-size: 22px;
+            letter-spacing: 2px;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 450px;
+        }
+        .game-card {
+            background: #1a1a24;
+            border: 4px solid #333;
+            border-radius: 8px;
+            padding: 20px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 6px 0 #000;
+            position: relative;
+        }
+        .game-card:active {
+            transform: translateY(4px);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 2px 0 #000;
+        }
+        .game-icon-img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 15px;
+            image-rendering: pixelated; /* 强制像素边缘锐利 */
+            filter: drop-shadow(0px 6px 0px rgba(0,0,0,0.6));
+        }
+        .game-title {
+            font-size: 28px;
+            letter-spacing: 2px;
+        }
+        
+        /* 卡片霓虹灯配色 */
+        .card-pink { border-color: var(--neon-pink); box-shadow: inset 0 0 20px rgba(255,42,109,0.2), 0 6px 0 rgba(255,42,109,0.5); }
+        .card-pink .game-title { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
+        .card-yellow { border-color: var(--neon-yellow); box-shadow: inset 0 0 20px rgba(249,240,2,0.2), 0 6px 0 rgba(249,240,2,0.5); }
+        .card-yellow .game-title { color: var(--neon-yellow); text-shadow: 0 0 10px var(--neon-yellow); }
+        .card-blue { border-color: var(--neon-blue); box-shadow: inset 0 0 20px rgba(5,217,232,0.2), 0 6px 0 rgba(5,217,232,0.5); }
+        .card-blue .game-title { color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <button class="icon-btn" onclick="window.location.href='index.html'">&lt; 返回</button>
+        <button class="icon-btn settings-btn" onclick="alert('自定义形象系统开发中...')">
+            <!-- 像素风齿轮 SVG -->
+            <svg viewBox="0 0 24 24" shape-rendering="crispEdges">
+                <path d="M10 2h4v3h3v3h3v4h-3v3h3v4h-3v3h-4v-3h-3v3H6v-3H3v-4h3v-3H3V8h3V5h4v3zM9 9h6v6H9z" fill="currentColor"/>
+            </svg>
+        </button>
+    </div>
+    
+    <h1>PLAYGROUND</h1>
+    <div class="subtitle">欢迎来到游乐园</div>
+
+    <div class="game-grid">
+        <!-- 1. 五子棋 (高精棋盘) -->
+        <div class="game-card card-pink">
+            <svg class="game-icon-img" viewBox="0 0 32 32" shape-rendering="crispEdges">
+                <!-- 木质外框 -->
+                <rect x="2" y="2" width="28" height="28" fill="#5c3a21"/>
+                <rect x="4" y="4" width="24" height="24" fill="#d2a679"/>
+                <!-- 棋盘网格 -->
+                <path d="M8 4v24 M12 4v24 M16 4v24 M20 4v24 M24 4v24 M4 8h24 M4 12h24 M4 16h24 M4 20h24 M4 24h24" stroke="#8b5a2b" stroke-width="1"/>
+                <!-- 黑子 (带高光) -->
+                <rect x="10" y="10" width="4" height="4" fill="#111"/>
+                <rect x="10" y="10" width="2" height="2" fill="#555"/>
+                <!-- 白子 (带阴影) -->
+                <rect x="18" y="18" width="4" height="4" fill="#fff"/>
+                <rect x="20" y="20" width="2" height="2" fill="#ccc"/>
+                <!-- 其他棋子 -->
+                <rect x="18" y="10" width="4" height="4" fill="#111"/>
+                <rect x="10" y="18" width="4" height="4" fill="#fff"/>
+                <rect x="14" y="14" width="4" height="4" fill="#111"/>
+            </svg>
+            <div class="game-title">五子棋</div>
+        </div>
+
+        <!-- 2. 抓娃娃 (高精小熊) -->
+        <div class="game-card card-yellow">
+            <svg class="game-icon-img" viewBox="0 0 32 32" shape-rendering="crispEdges">
+                <!-- 耳朵 -->
+                <rect x="6" y="6" width="6" height="6" fill="#8b5a2b"/>
+                <rect x="8" y="8" width="2" height="2" fill="#e8b080"/>
+                <rect x="20" y="6" width="6" height="6" fill="#8b5a2b"/>
+                <rect x="22" y="8" width="2" height="2" fill="#e8b080"/>
+                <!-- 头部 -->
+                <rect x="4" y="10" width="24" height="14" fill="#a06235"/>
+                <!-- 脸部浅色区 -->
+                <rect x="6" y="14" width="20" height="10" fill="#d28b4e"/>
+                <!-- 眼睛 -->
+                <rect x="10" y="14" width="2" height="4" fill="#111"/>
+                <rect x="20" y="14" width="2" height="4" fill="#111"/>
+                <rect x="10" y="14" width="1" height="1" fill="#fff"/>
+                <rect x="20" y="14" width="1" height="1" fill="#fff"/>
+                <!-- 鼻子嘴巴 -->
+                <rect x="14" y="16" width="4" height="2" fill="#111"/>
+                <rect x="13" y="18" width="6" height="2" fill="#c06060"/>
+                <!-- 身体 -->
+                <rect x="6" y="24" width="20" height="6" fill="#8b5a2b"/>
+                <!-- 肚皮 -->
+                <rect x="10" y="24" width="12" height="6" fill="#e8b080"/>
+                <!-- 爪子 -->
+                <rect x="4" y="28" width="4" height="4" fill="#a06235"/>
+                <rect x="24" y="28" width="4" height="4" fill="#a06235"/>
+            </svg>
+            <div class="game-title">抓娃娃</div>
+        </div>
+
+        <!-- 3. 开盲盒 (高精礼物盒) -->
+        <div class="game-card card-blue">
+            <svg class="game-icon-img" viewBox="0 0 32 32" shape-rendering="crispEdges">
+                <!-- 蝴蝶结 -->
+                <rect x="6" y="4" width="8" height="4" fill="#4caf50"/>
+                <rect x="18" y="4" width="8" height="4" fill="#4caf50"/>
+                <rect x="14" y="6" width="4" height="2" fill="#4caf50"/>
+                <rect x="8" y="8" width="4" height="2" fill="#4caf50"/>
+                <rect x="20" y="8" width="4" height="2" fill="#4caf50"/>
+                <!-- 盖子 -->
+                <rect x="6" y="10" width="20" height="6" fill="#d32f2f"/>
+                <rect x="14" y="10" width="4" height="6" fill="#4caf50"/>
+                <!-- 盒子主体 -->
+                <rect x="8" y="16" width="16" height="14" fill="#d32f2f"/>
+                <!-- 阴影与高光 -->
+                <rect x="8" y="16" width="16" height="2" fill="#b71c1c"/>
+                <rect x="10" y="18" width="2" height="12" fill="#f44336"/>
+                <!-- 缎带 -->
+                <rect x="14" y="16" width="4" height="14" fill="#4caf50"/>
+                <rect x="15" y="16" width="2" height="14" fill="#8bc34a"/>
+            </svg>
+            <div class="game-title">开盲盒</div>
+        </div>
+
+        <!-- 4. 解谜 (高精放大镜) -->
+        <div class="game-card card-blue">
+            <svg class="game-icon-img" viewBox="0 0 32 32" shape-rendering="crispEdges">
+                <!-- 镜片底色 -->
+                <rect x="6" y="6" width="14" height="14" fill="#e0f7fa"/>
+                <!-- 镜片反光 -->
+                <rect x="8" y="8" width="6" height="2" fill="#fff"/>
+                <rect x="8" y="10" width="2" height="4" fill="#fff"/>
+                <!-- 镜框 -->
+                <rect x="4" y="6" width="2" height="14" fill="#607d8b"/>
+                <rect x="20" y="6" width="2" height="14" fill="#455a64"/>
+                <rect x="6" y="4" width="14" height="2" fill="#78909c"/>
+                <rect x="6" y="20" width="14" height="2" fill="#455a64"/>
+                <!-- 镜框四角 -->
+                <rect x="6" y="6" width="2" height="2" fill="#455a64"/>
+                <rect x="18" y="6" width="2" height="2" fill="#455a64"/>
+                <rect x="6" y="18" width="2" height="2" fill="#455a64"/>
+                <rect x="18" y="18" width="2" height="2" fill="#455a64"/>
+                <!-- 握把 -->
+                <rect x="20" y="20" width="4" height="4" fill="#607d8b"/>
+                <rect x="24" y="24" width="4" height="4" fill="#455a64"/>
+                <rect x="28" y="28" width="2" height="2" fill="#37474f"/>
+            </svg>
+            <div class="game-title">解谜</div>
+        </div>
+    </div>
+
+</body>
+</html>
