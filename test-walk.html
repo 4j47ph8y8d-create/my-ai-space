@@ -5,25 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>行走动画测试</title>
     <style>
-        body { background-color: #2a2a35; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; flex-direction: column; font-family: sans-serif; color: white; }
-        .stage { width: 320px; height: 320px; background: #12101a; border: 4px solid #ff2a6d; border-radius: 10px; display: flex; justify-content: center; align-items: center; position: relative; box-shadow: 0 0 20px rgba(255,42,109,0.5); }
-        #player { width: 64px; height: 128px; image-rendering: pixelated; }
+        body { background-color: #2a2a35; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; flex-direction: column; font-family: 'ZCOOL QingKe HuangYou', sans-serif; color: white; }
+        
+        /* 测试舞台，加上了浅灰色棋盘格背景，方便看清透明底 */
+        .stage { 
+            width: 320px; height: 320px; 
+            background-color: #4a4a55; 
+            background-image: linear-gradient(45deg, #3a3a45 25%, transparent 25%), linear-gradient(-45deg, #3a3a45 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #3a3a45 75%), linear-gradient(-45deg, transparent 75%, #3a3a45 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border: 4px solid #ff2a6d; border-radius: 10px; 
+            display: flex; justify-content: center; align-items: center; 
+            position: relative; box-shadow: 0 0 20px rgba(255,42,109,0.5); 
+        }
+        
+        /* 小人容器，用来放大白模 */
+        #player-box {
+            width: 96px; height: 192px;
+            position: relative;
+            display: flex; justify-content: center; align-items: flex-end;
+        }
+
+        #player { 
+            width: 100%; height: 100%; 
+            image-rendering: pixelated; 
+            object-fit: contain;
+            position: absolute;
+            bottom: 0;
+            /* 防止白模在浅色背景看不清，加一点阴影，或者你可以去掉 */
+            filter: drop-shadow(0px 4px 0px rgba(0,0,0,0.5));
+        }
+        
         h2 { margin-top: 20px; color: #05d9e8; }
+        p { color: #aaa; }
     </style>
 </head>
 <body>
     <div class="stage">
-        <img id="player" src="assets/avatar/chibi_male_walk_down_1.png">
+        <div id="player-box">
+            <!-- 默认显示第一帧 -->
+            <img id="player" src="assets/avatar/chibi_male_walk_down_1.png">
+        </div>
     </div>
     <h2>左下角像素小人测试</h2>
-    <p>如果图片没显示，说明还没传或者没拉取</p>
+    <p>（背景是透明棋盘格，方便预览白模）</p>
 
     <script>
         const player = document.getElementById('player');
         let frame = 1;
+        
+        // 预加载图片防止闪烁
+        const frames = [
+            'assets/avatar/chibi_male_walk_down_1.png',
+            'assets/avatar/chibi_male_walk_down_2.png',
+            'assets/avatar/chibi_male_walk_down_3.png',
+            'assets/avatar/chibi_male_walk_down_4.png'
+        ];
+        frames.forEach(src => { const img = new Image(); img.src = src; });
+
+        // 每 200 毫秒切换一帧
         setInterval(() => {
             frame = frame === 4 ? 1 : frame + 1;
-            player.src = `assets/avatar/chibi_male_walk_down_${frame}.png`;
+            player.src = frames[frame - 1];
         }, 200);
     </script>
 </body>
