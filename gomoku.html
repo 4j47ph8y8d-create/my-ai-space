@@ -9,7 +9,7 @@
         :root {
             --bg: #12101a;
             --board-bg: #d2a679;
-            --board-line: #8b5a2b;
+            --board-line: #5c3a21;
             --neon-pink: #ff2a6d;
             --neon-blue: #05d9e8;
             --text: #e0e0e0;
@@ -19,247 +19,386 @@
             background-color: var(--bg); color: var(--text);
             font-family: 'ZCOOL QingKe HuangYou', 'VT323', monospace;
             display: flex; flex-direction: column; height: 100vh;
-            overflow: hidden;
-            align-items: center;
+            overflow: hidden; align-items: center;
+            background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 20px 20px;
         }
-        .header {
-            width: 100%; display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 20px; box-sizing: border-box;
-            background: rgba(0,0,0,0.5); border-bottom: 2px solid #333;
-        }
-        .back-btn { background: none; border: none; color: var(--neon-blue); font-size: 24px; cursor: pointer; font-family: inherit; }
-        .title { font-size: 24px; color: var(--neon-pink); font-weight: bold; }
         
-        /* 棋盘区域 */
-        .board-container {
-            flex: 1; display: flex; justify-content: center; align-items: center;
-            width: 100%; padding: 10px; box-sizing: border-box;
+        /* 顶部/底部聊天区域 */
+        .chat-area {
+            width: 100%; display: flex; align-items: flex-start; padding: 10px 20px; box-sizing: border-box; gap: 15px;
+            height: 100px; position: relative;
         }
-        .board {
-            background-color: var(--board-bg);
-            border: 6px solid #5c3a21; border-radius: 4px;
-            display: grid;
-            grid-template-columns: repeat(15, 1fr);
-            grid-template-rows: repeat(15, 1fr);
-            width: 100%; max-width: 380px; aspect-ratio: 1/1;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            position: relative;
+        .chat-area.bottom {
+            align-items: flex-end; margin-bottom: 20px; margin-top: auto;
         }
-        .cell {
-            border-right: 1px solid var(--board-line);
-            border-bottom: 1px solid var(--board-line);
-            display: flex; justify-content: center; align-items: center;
-            position: relative;
+        
+        /* 头像框 */
+        .avatar-box {
+            width: 60px; height: 60px;
+            background: #000; border: 4px solid var(--board-line); border-radius: 8px;
+            box-shadow: inset 0 0 10px #000, 0 4px 0 rgba(0,0,0,0.5);
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+            flex-shrink: 0;
+        }
+        .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* 气泡 */
+        .bubble {
+            background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 15px; border-radius: 12px; font-size: 18px; line-height: 1.4;
+            max-width: 70%; min-height: 40px; position: relative;
+            backdrop-filter: blur(4px);
             cursor: pointer;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.3);
         }
-        .cell:nth-child(15n) { border-right: none; }
-        .cell:nth-last-child(-n+15) { border-bottom: none; }
-
-        /* 棋子 */
-        .piece {
-            width: 80%; height: 80%;
-            border-radius: 50%;
-            position: absolute;
-            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5), 2px 2px 4px rgba(0,0,0,0.3);
-            animation: drop 0.2s ease-out;
-        }
-        .piece.black { background: radial-gradient(circle at 30% 30%, #555, #000); }
-        .piece.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); }
-
-        @keyframes drop {
-            0% { transform: scale(0); }
-            100% { transform: scale(1); }
-        }
-
-        /* 底部对话框 */
-        .chat-box {
-            width: 100%; background: #1a1a24; border-top: 2px solid #333;
-            padding: 15px 20px; box-sizing: border-box;
-            min-height: 120px; display: flex; flex-direction: column;
-        }
-        .role-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .role-avatar { width: 40px; height: 40px; border-radius: 50%; background: #333; border: 2px solid var(--neon-pink); object-fit: cover; }
-        .role-name { font-size: 18px; color: var(--neon-pink); }
-        .chat-text { font-size: 18px; color: #ccc; line-height: 1.4; flex: 1;}
+        .bubble:active { transform: translateY(2px); box-shadow: none; }
         
-        .restart-btn {
-            margin-top: 10px; background: #333; border: 2px solid #555; color: #fff;
-            padding: 8px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 16px;
+        /* 气泡小尾巴 */
+        .bubble.ai-bubble::before {
+            content: ''; position: absolute; left: -8px; top: 15px;
+            border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-right: 8px solid rgba(255,255,255,0.2);
         }
-        .restart-btn:active { transform: scale(0.98); }
+        .bubble.my-bubble::after {
+            content: ''; position: absolute; right: -8px; bottom: 15px;
+            border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 8px solid rgba(255,255,255,0.2);
+        }
+        
+        .chat-area.bottom { flex-direction: row-reverse; }
 
+        /* 棋盘控制按钮 */
+        .controls {
+            display: flex; gap: 15px; margin: 5px 0 10px 0;
+        }
+        .ctrl-btn {
+            background: #333; border: 2px solid #555; color: #fff; padding: 5px 15px;
+            border-radius: 4px; font-family: inherit; font-size: 16px; cursor: pointer;
+            box-shadow: 0 3px 0 #000;
+        }
+        .ctrl-btn:active { transform: translateY(3px); box-shadow: none; }
+
+        /* 棋盘 */
+        .board-container {
+            display: flex; justify-content: center; align-items: center;
+        }
+        #boardCanvas {
+            background-color: var(--board-bg);
+            border: 8px solid var(--board-line);
+            image-rendering: pixelated;
+            width: 90vw; max-width: 380px; aspect-ratio: 1/1;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            touch-action: none;
+        }
+
+        /* 隐藏的输入框 */
+        #chatInput {
+            position: absolute; bottom: 0; left: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <button class="back-btn" onclick="window.location.href='playground.html'">&lt; 返回</button>
-        <div class="title">五子棋</div>
-        <div style="width: 60px;"></div>
-    </div>
-
-    <div class="board-container">
-        <div class="board" id="board"></div>
-    </div>
-
-    <div class="chat-box">
-        <div class="role-info">
-            <!-- 这里暂时用默认头像，以后可以动态读取你画的那个小人头像 -->
-            <img src="assets/avatar/body_male.png" class="role-avatar" style="object-position: top;">
-            <div class="role-name" id="roleName">秦彻</div>
+    <!-- 顶部 AI 聊天区 -->
+    <div class="chat-area top">
+        <div class="avatar-box">
+            <!-- 暂时用黑底，后续换成高精角色头像 -->
+            <img src="assets/avatar/body_male.png" style="filter: brightness(0.2);">
         </div>
-        <div class="chat-text" id="chatText">“就凭你，也想赢我？”</div>
-        <button class="restart-btn" onclick="initGame()">重新开局</button>
+        <div class="bubble ai-bubble" id="aiText">
+            来吧，让我看看你的棋艺。
+        </div>
     </div>
+
+    <!-- 棋盘与按钮 -->
+    <div class="controls">
+        <button class="ctrl-btn" onclick="initGame()">重新开始</button>
+        <button class="ctrl-btn" onclick="undoMove()">悔棋</button>
+    </div>
+    <div class="board-container">
+        <canvas id="boardCanvas" width="450" height="450"></canvas>
+    </div>
+
+    <!-- 底部 我的聊天区 -->
+    <div class="chat-area bottom">
+        <div class="avatar-box">
+            <!-- 你自己的头像 -->
+            <img src="assets/avatar/body_female.png" onerror="this.src='assets/avatar/body_male.png'">
+        </div>
+        <div class="bubble my-bubble" id="myText" onclick="openChatInput()">
+            点击这里，边下边聊...
+        </div>
+    </div>
+
+    <!-- 唤起系统键盘的隐形输入框 -->
+    <input type="text" id="chatInput" placeholder="输入你想说的话..." onkeydown="handleChatEnter(event)">
 
     <script>
-        const boardEl = document.getElementById('board');
-        const chatText = document.getElementById('chatText');
+        // ==================== 基础配置 ====================
+        const urlParams = new URLSearchParams(window.location.search);
+        const roleName = urlParams.get('roleName') || '秦彻';
+        
+        const canvas = document.getElementById('boardCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+
         const BOARD_SIZE = 15;
-        let boardData = []; // 0:空, 1:黑(玩家), 2:白(AI)
+        const CELL_SIZE = 450 / BOARD_SIZE;
+        let boardData = [];
         let isPlayerTurn = true;
         let gameOver = false;
+        let isAIThinking = false;
+        
+        // 历史记录用于悔棋
+        let history = []; 
 
-        // 角色台词库
-        const dialogues = {
-            win: ["“太弱了，这就是你的实力？”", "“再来一局？还是算了吧，没意思。”"],
-            lose: ["“有点意思，你赢了。”", "“看来……我小看你了。”"],
-            draw: ["“平局？不，这只是个开始。”"]
-        };
-
+        // ==================== 棋盘逻辑 ====================
         function initGame() {
             boardData = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
             isPlayerTurn = true;
             gameOver = false;
-            boardEl.innerHTML = '';
-            chatText.innerText = "“就凭你，也想赢我？”";
+            isAIThinking = false;
+            history = [];
+            drawBoard();
+            setAIText(`“来吧，让我看看你的棋艺。”`);
+        }
+
+        function drawBoard() {
+            ctx.fillStyle = '#d2a679';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#8b5a2b';
+            ctx.lineWidth = 2;
             
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                ctx.beginPath(); ctx.moveTo(CELL_SIZE / 2, i * CELL_SIZE + CELL_SIZE / 2); ctx.lineTo(canvas.width - CELL_SIZE / 2, i * CELL_SIZE + CELL_SIZE / 2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(i * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE / 2); ctx.lineTo(i * CELL_SIZE + CELL_SIZE / 2, canvas.height - CELL_SIZE / 2); ctx.stroke();
+            }
+            drawPieces();
+        }
+
+        function drawPieces() {
+            drawBoard();
             for (let r = 0; r < BOARD_SIZE; r++) {
                 for (let c = 0; c < BOARD_SIZE; c++) {
-                    let cell = document.createElement('div');
-                    cell.classList.add('cell');
-                    cell.dataset.row = r;
-                    cell.dataset.col = c;
-                    cell.addEventListener('click', () => handlePlayerMove(r, c));
-                    boardEl.appendChild(cell);
+                    if (boardData[r][c] !== 0) drawPiece(r, c, boardData[r][c]);
                 }
             }
         }
 
-        function handlePlayerMove(r, c) {
-            if (!isPlayerTurn || gameOver || boardData[r][c] !== 0) return;
-            
-            placePiece(r, c, 1);
-            isPlayerTurn = false;
-            
-            if (checkWin(r, c, 1)) {
-                gameOver = true;
-                chatText.innerText = dialogues.lose[Math.floor(Math.random() * dialogues.lose.length)];
-                return;
-            }
-            if (checkDraw()) {
-                gameOver = true;
-                chatText.innerText = dialogues.draw[0];
-                return;
-            }
+        function drawPiece(r, c, player) {
+            const x = c * CELL_SIZE + CELL_SIZE / 2;
+            const y = r * CELL_SIZE + CELL_SIZE / 2;
+            const radius = CELL_SIZE * 0.4;
 
-            // AI 回合
-            setTimeout(makeAIMove, 500);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath(); ctx.arc(x + 2, y + 2, radius, 0, Math.PI * 2); ctx.fill();
+
+            if (player === 1) {
+                ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#555'; ctx.fillRect(x - 4, y - 4, 3, 3);
+            } else {
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#ccc'; ctx.fillRect(x - 4, y - 4, 3, 3);
+            }
         }
 
-        function placePiece(r, c, player) {
-            boardData[r][c] = player;
-            const cell = boardEl.children[r * BOARD_SIZE + c];
-            let piece = document.createElement('div');
-            piece.classList.add('piece', player === 1 ? 'black' : 'white');
-            cell.appendChild(piece);
-        }
+        // 玩家下棋
+        canvas.addEventListener('click', (e) => {
+            if (!isPlayerTurn || gameOver || isAIThinking) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const c = Math.floor(x / CELL_SIZE);
+            const r = Math.floor(y / CELL_SIZE);
 
+            if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && boardData[r][c] === 0) {
+                boardData[r][c] = 1;
+                history.push({r, c, player: 1});
+                drawPieces();
+                isPlayerTurn = false;
+                
+                if (checkWin(r, c, 1)) {
+                    gameOver = true;
+                    callRealAI(`玩家赢了五子棋，对玩家说一句符合性格的话，或者不服输的话。`);
+                    return;
+                }
+                
+                // AI 思考延迟，模拟真实下棋节奏
+                isAIThinking = true;
+                setTimeout(() => {
+                    isAIThinking = false;
+                    makeAIMove();
+                }, 1200); // 1.2秒思考时间
+            }
+        });
+
+        // 简单 AI
         function makeAIMove() {
             if (gameOver) return;
-            
-            // 简单 AI：寻找最佳落子点（防守或进攻）
             let bestScore = -1;
-            let bestMove = { r: 7, c: 7 }; // 默认下中间
+            let bestMove = { r: 7, c: 7 };
 
             for (let r = 0; r < BOARD_SIZE; r++) {
                 for (let c = 0; c < BOARD_SIZE; c++) {
                     if (boardData[r][c] === 0) {
                         let score = evaluatePosition(r, c, 2) * 1.2 + evaluatePosition(r, c, 1);
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestMove = { r, c };
-                        }
+                        if (score > bestScore) { bestScore = score; bestMove = { r, c }; }
                     }
                 }
             }
 
-            placePiece(bestMove.r, bestMove.c, 2);
+            boardData[bestMove.r][bestMove.c] = 2;
+            history.push({r: bestMove.r, c: bestMove.c, player: 2});
+            drawPieces();
             isPlayerTurn = true;
 
             if (checkWin(bestMove.r, bestMove.c, 2)) {
                 gameOver = true;
-                chatText.innerText = dialogues.win[Math.floor(Math.random() * dialogues.win.length)];
+                callRealAI(`AI赢了五子棋，对玩家说一句符合性格的嘲讽或者宠溺的话。`);
                 return;
             }
-            if (checkDraw()) {
-                gameOver = true;
-                chatText.innerText = dialogues.draw[0];
+            
+            // 随机触发聊天
+            if(Math.random() > 0.6) {
+                callRealAI("你正在和玩家下五子棋，随便说一句符合你性格的话，可以是催促、调侃或者情话。");
             }
         }
 
-        // 简单的评估函数（只看周围一圈）
+        // 悔棋逻辑
+        function undoMove() {
+            if (history.length === 0 || isAIThinking || gameOver) return;
+            // 撤销两步（AI 和玩家）
+            for(let i=0; i<2; i++) {
+                if(history.length > 0) {
+                    const last = history.pop();
+                    boardData[last.r][last.c] = 0;
+                }
+            }
+            drawPieces();
+            isPlayerTurn = true;
+        }
+
         function evaluatePosition(r, c, player) {
             let score = 0;
-            const directions = [[0,1],[1,0],[1,1],[1,-1]];
-            
-            for (let [dr, dc] of directions) {
+            const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+            for (let [dr, dc] of dirs) {
                 let count = 1;
-                // 正方向
                 for (let i = 1; i < 5; i++) {
                     let nr = r + dr*i, nc = c + dc*i;
-                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++;
-                    else break;
+                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++; else break;
                 }
-                // 反方向
                 for (let i = 1; i < 5; i++) {
                     let nr = r - dr*i, nc = c - dc*i;
-                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++;
-                    else break;
+                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++; else break;
                 }
-                if (count >= 5) score += 10000;
-                else if (count === 4) score += 1000;
-                else if (count === 3) score += 100;
-                else if (count === 2) score += 10;
+                if (count >= 5) score += 10000; else if (count === 4) score += 1000; else if (count === 3) score += 100; else if (count === 2) score += 10;
             }
             return score;
         }
 
         function checkWin(r, c, player) {
-            const directions = [[0,1],[1,0],[1,1],[1,-1]];
-            for (let [dr, dc] of directions) {
+            const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+            for (let [dr, dc] of dirs) {
                 let count = 1;
                 for (let i = 1; i < 5; i++) {
                     let nr = r + dr*i, nc = c + dc*i;
-                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++;
-                    else break;
+                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++; else break;
                 }
                 for (let i = 1; i < 5; i++) {
                     let nr = r - dr*i, nc = c - dc*i;
-                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++;
-                    else break;
+                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && boardData[nr][nc] === player) count++; else break;
                 }
                 if (count >= 5) return true;
             }
             return false;
         }
 
-        function checkDraw() {
-            for (let r = 0; r < BOARD_SIZE; r++) {
-                for (let c = 0; c < BOARD_SIZE; c++) {
-                    if (boardData[r][c] === 0) return false;
+        // ==================== 聊天与 AI API 逻辑 ====================
+        
+        // 打字机效果
+        let typingTimer;
+        function setAIText(text) {
+            const el = document.getElementById('aiText');
+            el.innerText = '';
+            clearInterval(typingTimer);
+            let i = 0;
+            typingTimer = setInterval(() => {
+                if (i < text.length) {
+                    el.innerText += text.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(typingTimer);
                 }
+            }, 50); // 打字速度
+        }
+
+        // 唤起输入框
+        function openChatInput() {
+            const input = document.getElementById('chatInput');
+            input.focus();
+            document.getElementById('myText').innerText = '输入中...';
+        }
+
+        // 监听输入并发送
+        function handleChatEnter(event) {
+            if (event.key === 'Enter') {
+                const input = document.getElementById('chatInput');
+                const text = input.value.trim();
+                if (!text) return;
+                
+                document.getElementById('myText').innerText = text;
+                input.value = '';
+                input.blur();
+                
+                // 发送给 AI
+                callRealAI(`玩家对你说：“${text}”。请结合五子棋对局，简短回复。`);
             }
-            return true;
+        }
+
+        // 调用真实大模型
+        async function callRealAI(situation) {
+            let apiKey = '';
+            let endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            
+            try {
+                const raw = localStorage.getItem('ds_multiRole_v2');
+                if (raw) {
+                    const c = JSON.parse(raw).config || {};
+                    apiKey = c.apiKey;
+                    if(c.accessMode === 'relay' && c.relayEndpoint) {
+                         endpoint = c.relayEndpoint.replace(/\/+$/, '') + '/chat/completions';
+                    }
+                }
+            } catch(e) {}
+
+            if (!apiKey) {
+                setAIText(`（没配 API Key，我没法说话啦）`);
+                return;
+            }
+
+            setAIText('（思考中...）');
+            
+            const prompt = `你扮演"${roleName}"，正在陪我玩五子棋。${situation} 请用非常简短（20字以内）、符合你性格的一句话回应，不要加任何旁白。`;
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+                    body: JSON.stringify({
+                        model: 'deepseek-chat',
+                        messages: [{ role: 'user', content: prompt }],
+                        max_tokens: 50,
+                        temperature: 0.8
+                    })
+                });
+                const data = await res.json();
+                if (data.choices && data.choices[0]) {
+                    setAIText(data.choices[0].message.content.trim());
+                } else {
+                    setAIText('（他在发呆）');
+                }
+            } catch (err) {
+                setAIText('（网络断开了）');
+            }
         }
 
         // 启动
