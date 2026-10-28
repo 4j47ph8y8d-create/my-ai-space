@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园系统 - 完美镜头与空气墙</title>
+    <title>家园系统 - 角色行走测试</title>
     <style>
         body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; }
         canvas { display: block; image-rendering: pixelated; }
@@ -25,10 +25,9 @@
 
         const TILE_SIZE = 16;
         const MARGIN = 1;
-        const SCALE = 2; // 2倍视野
+        const SCALE = 2; 
         const DRAW_SIZE = TILE_SIZE * SCALE;
 
-        // 地图大小 30x30
         const MAP_COLS = 30;
         const MAP_ROWS = 30;
         const WORLD_WIDTH = MAP_COLS * DRAW_SIZE;
@@ -37,10 +36,32 @@
         let cameraX = 0;
         let cameraY = 0;
 
-        // 小人初始化在地图中间
+        // 玩家坐标
         let playerX = 15 * DRAW_SIZE;
         let playerY = 15 * DRAW_SIZE;
         let playerSpeed = 4;
+
+        // ==================== 角色动画系统 ====================
+        // 假设你的小人画布是 32x64，如果不是，请改这里
+        const CHAR_WIDTH = 32; 
+        const CHAR_HEIGHT = 64;
+
+        // 角色状态
+        let facing = 'down'; // 当前朝向：down, up, left, right
+        let animFrame = 1;   // 当前帧 (1~4)
+        let animTimer = 0;   // 计时器
+        const ANIM_SPEED = 8; // 每走几步切换一帧（数字越小动画越快）
+
+        // 预加载所有角色图片
+        const playerImages = {};
+        const dirs = ['down', 'up', 'left', 'right'];
+        for (let d of dirs) {
+            for (let i = 1; i <= 4; i++) {
+                let img = new Image();
+                img.src = `assets/avatar/chibi_male_walk_${d}_${i}.png`;
+                playerImages[`${d}_${i}`] = img;
+            }
+        }
 
         function getTilePos(col, row) {
             return { x: col * (TILE_SIZE + MARGIN), y: row * (TILE_SIZE + MARGIN) };
@@ -57,7 +78,7 @@
             ctx.fillStyle = '#12101a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 1. 摄像机跟随并限制边界
+            // 1. 摄像机边界限制
             cameraX = playerX - canvas.width / 2 + DRAW_SIZE / 2;
             cameraY = playerY - canvas.height / 2 + DRAW_SIZE / 2;
 
@@ -66,7 +87,7 @@
             if (cameraY < 0) cameraY = 0;
             if (cameraY > WORLD_HEIGHT - canvas.height) cameraY = WORLD_HEIGHT - canvas.height;
 
-            // 2. 计算当前屏幕能看到的格子范围
+            // 2. 计算屏幕可见范围
             let startCol = Math.floor(cameraX / DRAW_SIZE);
             let endCol = Math.ceil((cameraX + canvas.width) / DRAW_SIZE);
             let startRow = Math.floor(cameraY / DRAW_SIZE);
@@ -93,26 +114,34 @@
                 }
             }
 
-            // 4. 绘制小人（暂用粉色方块）
+            // 4. 绘制小人
             const playerScreenX = playerX - cameraX;
             const playerScreenY = playerY - cameraY;
-            
-            ctx.fillStyle = '#ff2a6d'; 
-            ctx.fillRect(playerScreenX, playerScreenY, DRAW_SIZE, DRAW_SIZE);
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(playerScreenX, playerScreenY, DRAW_SIZE, DRAW_SIZE);
 
-            // 屏幕中心十字
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.fillRect(canvas.width/2 - 1, canvas.height/2 - 10, 2, 20);
-            ctx.fillRect(canvas.width/2 - 10, canvas.height/2 - 1, 20, 2);
+            // 获取当前应该显示的图片
+            let currentImg = playerImages[`${facing}_${animFrame}`];
+            
+            if (currentImg && currentImg.complete) {
+                // 计算小人的绘制偏移（让脚底对齐格子底部，因为小人比格子高）
+                let drawOffsetY = DRAW_SIZE - (CHAR_HEIGHT * (DRAW_SIZE / CHAR_WIDTH));
+                // 为了让小人居中，稍微调一下 X
+                let drawOffsetX = (DRAW_SIZE - DRAW_SIZE) / 2; 
+
+                ctx.drawImage(
+                    currentImg, 
+                    playerScreenX + drawOffsetX, 
+                    playerScreenY + drawOffsetY, 
+                    DRAW_SIZE, // 宽度设为格子宽
+                    CHAR_HEIGHT * (DRAW_SIZE / CHAR_WIDTH) // 等比例缩放高度
+                );
+            }
         }
 
-        // 触摸控制变量
+        // ==================== 触摸控制 ====================
         let touchStartX = 0;
         let touchStartY = 0;
         let isDragging = false;
+        let stepCounter = 0; // 记录移动步数，用来切动画
 
         canvas.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
@@ -129,23 +158,34 @@
             let dx = currentX - touchStartX;
             let dy = currentY - touchStartY;
 
-            // 极简移动：滑动超过 15 像素，人物走一步，然后重置起点，防止瞬移
+            // 移动阈值
             if (Math.abs(dx) > 15 || Math.abs(dy) > 15) {
+                let moved = false;
+
                 if (Math.abs(dx) > Math.abs(dy)) {
-                    if (dx > 0) playerX += playerSpeed;
-                    else playerX -= playerSpeed;
+                    if (dx > 0) { playerX += playerSpeed; facing = 'right'; }
+                    else { playerX -= playerSpeed; facing = 'left'; }
                 } else {
-                    if (dy > 0) playerY += playerSpeed;
-                    else playerY -= playerSpeed;
+                    if (dy > 0) { playerY += playerSpeed; facing = 'down'; }
+                    else { playerY -= playerSpeed; facing = 'up'; }
                 }
                 
-                // 每次移动后，把起点更新为当前位置，这样就能持续滑动了
                 touchStartX = currentX;
                 touchStartY = currentY;
+                moved = true;
+
+                // === 动画切帧逻辑 ===
+                if (moved) {
+                    stepCounter++;
+                    if (stepCounter >= ANIM_SPEED) {
+                        stepCounter = 0;
+                        animFrame++;
+                        if (animFrame > 4) animFrame = 1; // 4帧循环
+                    }
+                }
             }
 
-            // === 小人边界限制（空气墙） ===
-            // 因为墙壁的厚度是 1 个格子（DRAW_SIZE），所以小人不能走到 <= 1 个格子的地方，也不能走到 >= 29 个格子的地方
+            // 空气墙限制
             const MIN_X = DRAW_SIZE;
             const MAX_X = WORLD_WIDTH - DRAW_SIZE * 2;
             const MIN_Y = DRAW_SIZE;
@@ -159,6 +199,7 @@
 
         canvas.addEventListener('touchend', () => {
             isDragging = false;
+            animFrame = 1; // 停下时恢复到第一帧
         });
 
         function gameLoop() {
