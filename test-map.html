@@ -27,7 +27,7 @@
 
         const TILE_SIZE = 16;
         const MARGIN = 1;
-        const SCALE = 3; // 放大3倍
+        const SCALE = 2; // 调整为2倍，视野更开阔
         const DRAW_SIZE = TILE_SIZE * SCALE;
 
         // 地图大小：比如 30 x 30 的格子
@@ -60,9 +60,22 @@
             ctx.fillStyle = '#12101a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 2. 摄像机视角计算：让小人永远在屏幕正中间
+// 2. 摄像机视角计算：让小人永远在屏幕正中间
             cameraX = playerX - canvas.width / 2 + DRAW_SIZE / 2;
             cameraY = playerY - canvas.height / 2 + DRAW_SIZE / 2;
+
+            // === 增加摄像机边界限制 ===
+            // 世界总大小
+            const WORLD_WIDTH = MAP_COLS * DRAW_SIZE;
+            const WORLD_HEIGHT = MAP_ROWS * DRAW_SIZE;
+
+            // 限制 X 轴：不能小于 0，也不能大于世界总宽度减去屏幕宽度
+            if (cameraX < 0) cameraX = 0;
+            if (cameraX > WORLD_WIDTH - canvas.width) cameraX = WORLD_WIDTH - canvas.width;
+
+            // 限制 Y 轴：同理
+            if (cameraY < 0) cameraY = 0;
+            if (cameraY > WORLD_HEIGHT - canvas.height) cameraY = WORLD_HEIGHT - canvas.height;
 
             // 3. 只画屏幕里能看到的格子（性能优化）
             // 算出当前屏幕能看到的地图范围
