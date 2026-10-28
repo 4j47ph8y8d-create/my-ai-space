@@ -60,9 +60,45 @@
             ctx.fillStyle = '#12101a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-// 2. 摄像机视角计算：让小人永远在屏幕正中间
-            cameraX = playerX - canvas.width / 2 + DRAW_SIZE / 2;
-            cameraY = playerY - canvas.height / 2 + DRAW_SIZE / 2;
+canvas.addEventListener('touchmove', (e) => {
+            let dx = e.touches[0].clientX - touchStartX;
+            let dy = e.touches[0].clientY - touchStartY;
+
+            // 判断手势方向
+            if (Math.abs(dx) > Math.abs(dy)) {
+                // 左右滑
+                if (dx > 10) {
+                    playerX += playerSpeed;
+                } else if (dx < -10) {
+                    playerX -= playerSpeed;
+                }
+            } else {
+                // 上下滑
+                if (dy > 10) {
+                    playerY += playerSpeed;
+                } else if (dy < -10) {
+                    playerY -= playerSpeed;
+                }
+            }
+
+            // === 新增：给小人加上空气墙 ===
+            // 小人的宽度/高度就是一个 DRAW_SIZE
+            // 地图总像素大小
+            const WORLD_WIDTH = MAP_COLS * DRAW_SIZE;
+            const WORLD_HEIGHT = MAP_ROWS * DRAW_SIZE;
+
+            // X 轴限制：左不能小于0，右不能超过世界宽度减小人宽度
+            if (playerX < 0) playerX = 0;
+            if (playerX > WORLD_WIDTH - DRAW_SIZE) playerX = WORLD_WIDTH - DRAW_SIZE;
+
+            // Y 轴限制：同理
+            if (playerY < 0) playerY = 0;
+            if (playerY > WORLD_HEIGHT - DRAW_SIZE) playerY = WORLD_HEIGHT - DRAW_SIZE;
+            
+            // 每次手指滑动后，重新把起点设到当前位置，防止累积误差
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
 
             // === 增加摄像机边界限制 ===
             // 世界总大小
