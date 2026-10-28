@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>家园系统测试</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #1a1a24; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; color: #fff; }
+        .game-container { border: 4px solid #5c3a21; box-shadow: 0 10px 30px rgba(0,0,0,0.8); background-color: #000; }
+        canvas { image-rendering: pixelated; width: 100vw; max-width: 400px; aspect-ratio: 4/3; display: block; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="mapCanvas" width="480" height="360"></canvas>
+    </div>
+    <p style="color:#05d9e8; margin-top:15px;">Kenney 素材渲染测试</p>
+
+    <script>
+        const canvas = document.getElementById('mapCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+
+        const tileset = new Image();
+        // 注意这里的路径，改成了我们约定的新路径
+        tileset.src = 'assets/furniture/kenney_indoor.png'; 
+
+        const TILE_SIZE = 16;
+        const MARGIN = 1;
+
+        function getTilePos(col, row) {
+            return { x: col * (TILE_SIZE + MARGIN), y: row * (TILE_SIZE + MARGIN) };
+        }
+
+        function drawTile(col, row, x, y, scale = 2) {
+            const pos = getTilePos(col, row);
+            ctx.drawImage(tileset, pos.x, pos.y, TILE_SIZE, TILE_SIZE, x, y, TILE_SIZE * scale, TILE_SIZE * scale);
+        }
+
+        tileset.onload = () => {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 这些坐标是我看图大概猜的，一会儿如果不对我们再调
+            const floorCol = 0, floorRow = 15; 
+            const wallCol = 3, wallRow = 11;
+
+            // 画一个 15x10 的房间
+            for (let r = 0; r < 10; r++) {
+                for (let c = 0; c < 15; c++) {
+                    let drawX = c * (TILE_SIZE * 2);
+                    let drawY = r * (TILE_SIZE * 2);
+
+                    if (r === 0 || r === 9 || c === 0 || c === 14) {
+                        drawTile(wallCol, wallRow, drawX, drawY, 2); // 墙
+                    } else {
+                        drawTile(floorCol, floorRow, drawX, drawY, 2); // 地板
+                    }
+                }
+            }
+            
+            // 随便画个大件家具测试一下（比如床）
+            drawTile(4, 1, 20, 20, 2); 
+        };
+    </script>
+</body>
+</html>
