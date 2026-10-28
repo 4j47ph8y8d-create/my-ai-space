@@ -3,18 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园系统测试</title>
+    <title>家园系统测试 - Kenney 素材</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #1a1a24; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; color: #fff; }
-        .game-container { border: 4px solid #5c3a21; box-shadow: 0 10px 30px rgba(0,0,0,0.8); background-color: #000; }
-        canvas { image-rendering: pixelated; width: 100vw; max-width: 400px; aspect-ratio: 4/3; display: block; }
+        body {
+            margin: 0; padding: 0;
+            background-color: #12101a; color: #fff;
+            font-family: 'ZCOOL QingKe HuangYou', 'VT323', monospace;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
+        }
+        .game-container {
+            border: 4px solid #5c3a21;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            background-color: #000;
+            position: relative;
+        }
+        canvas {
+            image-rendering: pixelated;
+            width: 100%; max-width: 400px; aspect-ratio: 4/3;
+            display: block;
+        }
+        .info { margin-top: 15px; color: #05d9e8; font-size: 18px;}
     </style>
 </head>
 <body>
+
     <div class="game-container">
         <canvas id="mapCanvas" width="480" height="360"></canvas>
     </div>
-    <p style="color:#05d9e8; margin-top:15px;">Kenney 素材渲染测试</p>
+    <div class="info">木地板 + 墙壁 + 家具测试</div>
 
     <script>
         const canvas = document.getElementById('mapCanvas');
@@ -22,45 +39,54 @@
         ctx.imageSmoothingEnabled = false;
 
         const tileset = new Image();
-        // 注意这里的路径，改成了我们约定的新路径
         tileset.src = 'assets/furniture/kenney_indoor.png'; 
 
         const TILE_SIZE = 16;
         const MARGIN = 1;
+        const SCALE = 2; // 放大两倍
 
         function getTilePos(col, row) {
             return { x: col * (TILE_SIZE + MARGIN), y: row * (TILE_SIZE + MARGIN) };
         }
 
-        function drawTile(col, row, x, y, scale = 2) {
+        function drawTile(col, row, x, y) {
             const pos = getTilePos(col, row);
-            ctx.drawImage(tileset, pos.x, pos.y, TILE_SIZE, TILE_SIZE, x, y, TILE_SIZE * scale, TILE_SIZE * scale);
+            ctx.drawImage(
+                tileset, 
+                pos.x, pos.y, TILE_SIZE, TILE_SIZE, 
+                x, y, TILE_SIZE * SCALE, TILE_SIZE * SCALE
+            );
         }
 
         tileset.onload = () => {
-            ctx.fillStyle = '#000';
+            // 1. 先画一个漂亮的木地板底色
+            ctx.fillStyle = '#cda87b'; // 温暖的木头色
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 这些坐标是我看图大概猜的，一会儿如果不对我们再调
-            const floorCol = 0, floorRow = 15; 
-            const wallCol = 3, wallRow = 11;
-
-            // 画一个 15x10 的房间
-            for (let r = 0; r < 10; r++) {
-                for (let c = 0; c < 15; c++) {
-                    let drawX = c * (TILE_SIZE * 2);
-                    let drawY = r * (TILE_SIZE * 2);
-
-                    if (r === 0 || r === 9 || c === 0 || c === 14) {
-                        drawTile(wallCol, wallRow, drawX, drawY, 2); // 墙
-                    } else {
-                        drawTile(floorCol, floorRow, drawX, drawY, 2); // 地板
-                    }
-                }
+            // 给地板画点网格线，看起来像木地板
+            ctx.strokeStyle = 'rgba(139, 90, 43, 0.2)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=TILE_SIZE*SCALE) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
             }
-            
-            // 随便画个大件家具测试一下（比如床）
-            drawTile(4, 1, 20, 20, 2); 
+
+            // 2. 铺四周的墙壁 (这是根据图集盲猜的坐标，可能有点歪，但能看出效果)
+            // 假设墙砖在 col 3, row 11 附近
+            const wallCol = 3, wallRow = 11;
+            for (let c = 0; c < 15; c++) {
+                drawTile(wallCol, wallRow, c * TILE_SIZE * SCALE, 0); // 上墙
+                drawTile(wallCol, wallRow, c * TILE_SIZE * SCALE, canvas.height - TILE_SIZE * SCALE); // 下墙
+            }
+            for (let r = 1; r < 10; r++) {
+                drawTile(wallCol, wallRow, 0, r * TILE_SIZE * SCALE); // 左墙
+                drawTile(wallCol, wallRow, canvas.width - TILE_SIZE * SCALE, r * TILE_SIZE * SCALE); // 右墙
+            }
+
+            // 3. 放几个家具测试 (这些坐标也是盲猜的，看看能出什么)
+            drawTile(4, 1, 60, 60); // 疑似床
+            drawTile(12, 4, 200, 100); // 疑似桌子
+            drawTile(18, 1, 300, 50); // 疑似钢琴
         };
     </script>
 </body>
