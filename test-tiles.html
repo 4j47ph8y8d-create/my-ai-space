@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图集坐标浏览器</title>
+    <style>
+        body { background: #12101a; color: #fff; font-family: monospace; margin: 0; padding: 20px; }
+        .img-wrap { position: relative; display: inline-block; }
+        /* 放大图片，保持像素锐利 */
+        img { width: 100%; max-width: 800px; image-rendering: pixelated; display: block; }
+        /* 网格线 */
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.5;}
+        .tip { color: #05d9e8; font-size: 18px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="tip">长按保存或放大查看。看着网格，告诉我你要第几行第几列！</div>
+    <div class="img-wrap">
+        <!-- 确保你的路径正确 -->
+        <img id="tileset" src="assets/furniture/kenney_indoor.png">
+        <canvas id="gridCanvas"></canvas>
+    </div>
+
+    <script>
+        const img = document.getElementById('tileset');
+        const canvas = document.getElementById('gridCanvas');
+        const ctx = canvas.getContext('2d');
+
+        img.onload = () => {
+            // 让 canvas 大小和图片显示大小一致
+            canvas.width = img.clientWidth;
+            canvas.height = img.clientHeight;
+            
+            // 图集参数：16x16，间距 1
+            const tileSize = 16;
+            const margin = 1;
+            // 计算需要放大几倍才能看清
+            const scale = canvas.width / img.naturalWidth;
+
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.6)'; // 红色网格
+            ctx.lineWidth = 1;
+
+            // 画竖线
+            for (let x = 0; x < img.naturalWidth; x += (tileSize + margin)) {
+                ctx.beginPath();
+                ctx.moveTo(x * scale, 0);
+                ctx.lineTo(x * scale, canvas.height);
+                ctx.stroke();
+            }
+
+            // 画横线
+            for (let y = 0; y < img.naturalHeight; y += (tileSize + margin)) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * scale);
+                ctx.lineTo(canvas.width, y * scale);
+                ctx.stroke();
+            }
+            
+            // 在左上角给个坐标原点提示
+            ctx.fillStyle = 'red';
+            ctx.font = '14px monospace';
+            ctx.fillText('(0,0)', 5, 15);
+        };
+    </script>
+</body>
+</html>
