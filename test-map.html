@@ -36,29 +36,29 @@
         let cameraX = 0;
         let cameraY = 0;
 
-        // 玩家坐标
         let playerX = 15 * DRAW_SIZE;
         let playerY = 15 * DRAW_SIZE;
         let playerSpeed = 4;
 
         // ==================== 角色动画系统 ====================
-        // 假设你的小人画布是 32x64，如果不是，请改这里
+        // 根据你的截图，小人应该是 32x64 (或者类似比例)
         const CHAR_WIDTH = 32; 
         const CHAR_HEIGHT = 64;
 
-        // 角色状态
-        let facing = 'down'; // 当前朝向：down, up, left, right
-        let animFrame = 1;   // 当前帧 (1~4)
-        let animTimer = 0;   // 计时器
-        const ANIM_SPEED = 8; // 每走几步切换一帧（数字越小动画越快）
+        let facing = 'down'; 
+        let animFrame = 1;   
+        let animTimer = 0;   
+        const ANIM_SPEED = 150; // 每一帧停留 150 毫秒
+        let lastTime = 0;
+        let isMoving = false; // 是否正在行走
 
-        // 预加载所有角色图片
         const playerImages = {};
         const dirs = ['down', 'up', 'left', 'right'];
+        // 【关键修复】：加了 ?v=2 强制刷新浏览器的旧图片缓存！
         for (let d of dirs) {
             for (let i = 1; i <= 4; i++) {
                 let img = new Image();
-                img.src = `assets/avatar/chibi_male_walk_${d}_${i}.png`;
+                img.src = `assets/avatar/chibi_male_walk_${d}_${i}.png?v=2`;
                 playerImages[`${d}_${i}`] = img;
             }
         }
@@ -74,11 +74,33 @@
 
         const WALL_COL = 3, WALL_ROW = 11;
 
-        function render() {
+        // 计算小人的缩放尺寸
+        // 因为你要对齐格子，小人的宽度应该差不多等于格子宽度(DRAW_SIZE)
+        // 高度按比例缩放
+        const RENDER_WIDTH = DRAW_SIZE;
+        const RENDER_HEIGHT = CHAR_HEIGHT * (DRAW_SIZE / CHAR_WIDTH);
+
+        function render(timestamp) {
+            // 动画计时器
+            if (!lastTime) lastTime = timestamp;
+            let dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            if (isMoving) {
+                animTimer += dt;
+                if (animTimer > ANIM_SPEED) {
+                    animTimer = 0;
+                    animFrame++;
+                    if (animFrame > 4) animFrame = 1;
+                }
+            } else {
+                animFrame = 1; // 停下时恢复第一帧
+            }
+
             ctx.fillStyle = '#12101a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 1. 摄像机边界限制
+            // 摄像机边界限制
             cameraX = playerX - canvas.width / 2 + DRAW_SIZE / 2;
             cameraY = playerY - canvas.height / 2 + DRAW_SIZE / 2;
 
@@ -87,7 +109,6 @@
             if (cameraY < 0) cameraY = 0;
             if (cameraY > WORLD_HEIGHT - canvas.height) cameraY = WORLD_HEIGHT - canvas.height;
 
-            // 2. 计算屏幕可见范围
             let startCol = Math.floor(cameraX / DRAW_SIZE);
             let endCol = Math.ceil((cameraX + canvas.width) / DRAW_SIZE);
             let startRow = Math.floor(cameraY / DRAW_SIZE);
@@ -96,7 +117,7 @@
             startCol = Math.max(0, startCol); endCol = Math.min(MAP_COLS, endCol);
             startRow = Math.max(0, startRow); endRow = Math.min(MAP_ROWS, endRow);
 
-            // 3. 绘制地图
+            // 绘制地图
             for (let r = startRow; r < endRow; r++) {
                 for (let c = startCol; c < endCol; c++) {
                     let screenX = c * DRAW_SIZE - cameraX;
@@ -114,39 +135,50 @@
                 }
             }
 
-            // 4. 绘制小人
+            // 绘制小人
             const playerScreenX = playerX - cameraX;
             const playerScreenY = playerY - cameraY;
 
-            // 获取当前应该显示的图片
             let currentImg = playerImages[`${facing}_${animFrame}`];
             
             if (currentImg && currentImg.complete) {
-                // 计算小人的绘制偏移（让脚底对齐格子底部，因为小人比格子高）
-                let drawOffsetY = DRAW_SIZE - (CHAR_HEIGHT * (DRAW_SIZE / CHAR_WIDTH));
-                // 为了让小人居中，稍微调一下 X
-                let drawOffsetX = (DRAW_SIZE - DRAW_SIZE) / 2; 
+                // 【关键修复】：脚底锚点对齐。
+                // 格子底部对齐小人的脚底，防止人物悬空。
+                // 因为小人比格子高，往上画一点。
+                let drawOffsetY = DRAW_SIZE - RENDER_HEIGHT + 10; // +10 是一点点微调
+                let drawOffsetX = (DRAW_SIZE - RENDER_WIDTH) / 2; // X轴居中
+
+                // 如果小人太大，可以稍微缩小一点点
+                // ctx.drawImage(currentImg, playerScreenX + drawOffsetX, playerScreenY + drawOffsetY, RENDER_WIDTH, RENDER_HEIGHT);
+
+                // 放大两倍绘制，并做居中偏移
+                const drawW = RENDER_WIDTH * 1.5; 
+                const drawH = RENDER_HEIGHT * 1.5;
+                const centerOffsetX = (drawW - DRAW_SIZE) / 2;
+                const centerOffsetY = drawH - DRAW_SIZE;
 
                 ctx.drawImage(
                     currentImg, 
-                    playerScreenX + drawOffsetX, 
-                    playerScreenY + drawOffsetY, 
-                    DRAW_SIZE, // 宽度设为格子宽
-                    CHAR_HEIGHT * (DRAW_SIZE / CHAR_WIDTH) // 等比例缩放高度
+                    playerScreenX - centerOffsetX, 
+                    playerScreenY - centerOffsetY, 
+                    drawW, 
+                    drawH
                 );
             }
+
+            requestAnimationFrame(render);
         }
 
         // ==================== 触摸控制 ====================
         let touchStartX = 0;
         let touchStartY = 0;
         let isDragging = false;
-        let stepCounter = 0; // 记录移动步数，用来切动画
 
         canvas.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
             isDragging = true;
+            isMoving = true;
         });
 
         canvas.addEventListener('touchmove', (e) => {
@@ -158,10 +190,7 @@
             let dx = currentX - touchStartX;
             let dy = currentY - touchStartY;
 
-            // 移动阈值
-            if (Math.abs(dx) > 15 || Math.abs(dy) > 15) {
-                let moved = false;
-
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
                 if (Math.abs(dx) > Math.abs(dy)) {
                     if (dx > 0) { playerX += playerSpeed; facing = 'right'; }
                     else { playerX -= playerSpeed; facing = 'left'; }
@@ -172,17 +201,6 @@
                 
                 touchStartX = currentX;
                 touchStartY = currentY;
-                moved = true;
-
-                // === 动画切帧逻辑 ===
-                if (moved) {
-                    stepCounter++;
-                    if (stepCounter >= ANIM_SPEED) {
-                        stepCounter = 0;
-                        animFrame++;
-                        if (animFrame > 4) animFrame = 1; // 4帧循环
-                    }
-                }
             }
 
             // 空气墙限制
@@ -199,16 +217,11 @@
 
         canvas.addEventListener('touchend', () => {
             isDragging = false;
-            animFrame = 1; // 停下时恢复到第一帧
+            isMoving = false; // 停止动画
         });
 
-        function gameLoop() {
-            render();
-            requestAnimationFrame(gameLoop);
-        }
-
         tileset.onload = () => {
-            gameLoop();
+            requestAnimationFrame(render);
         };
     </script>
 </body>
