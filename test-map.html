@@ -3,47 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园系统测试 - Kenney 素材</title>
+    <title>家园系统 - 全屏视图</title>
     <style>
         body {
             margin: 0; padding: 0;
-            background-color: #12101a; color: #fff;
-            font-family: 'ZCOOL QingKe HuangYou', 'VT323', monospace;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; overflow: hidden;
-        }
-        .game-container {
-            border: 4px solid #5c3a21;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            background-color: #000;
-            position: relative;
+            background-color: #12101a;
+            overflow: hidden; /* 禁止滑动，全屏沉浸 */
+            touch-action: none;
         }
         canvas {
-            image-rendering: pixelated;
-            width: 100%; max-width: 400px; aspect-ratio: 4/3;
             display: block;
+            image-rendering: pixelated; /* 像素边缘锐利 */
+            width: 100vw;
+            height: 100vh;
         }
-        .info { margin-top: 15px; color: #05d9e8; font-size: 18px;}
     </style>
 </head>
 <body>
 
-    <div class="game-container">
-        <canvas id="mapCanvas" width="480" height="360"></canvas>
-    </div>
-    <div class="info">木地板 + 墙壁 + 家具测试</div>
+    <canvas id="gameCanvas"></canvas>
 
     <script>
-        const canvas = document.getElementById('mapCanvas');
+        const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = false;
 
+        // 动态设置画布尺寸为手机屏幕大小
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
         const tileset = new Image();
+        // 确保路径正确
         tileset.src = 'assets/furniture/kenney_indoor.png'; 
 
         const TILE_SIZE = 16;
         const MARGIN = 1;
-        const SCALE = 2; // 放大两倍
+        const SCALE = 3; // 放大3倍，这样在手机上看刚刚好
+        const DRAW_SIZE = TILE_SIZE * SCALE;
 
         function getTilePos(col, row) {
             return { x: col * (TILE_SIZE + MARGIN), y: row * (TILE_SIZE + MARGIN) };
@@ -54,39 +50,51 @@
             ctx.drawImage(
                 tileset, 
                 pos.x, pos.y, TILE_SIZE, TILE_SIZE, 
-                x, y, TILE_SIZE * SCALE, TILE_SIZE * SCALE
+                x, y, DRAW_SIZE, DRAW_SIZE
             );
         }
 
         tileset.onload = () => {
-            // 1. 先画一个漂亮的木地板底色
-            ctx.fillStyle = '#cda87b'; // 温暖的木头色
+            // 1. 填充整个屏幕为底色（防止边缘露黑）
+            ctx.fillStyle = '#cda87b'; // 木头色
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 给地板画点网格线，看起来像木地板
-            ctx.strokeStyle = 'rgba(139, 90, 43, 0.2)';
+            // 画地板网格线（视觉参考）
+            ctx.strokeStyle = 'rgba(139, 90, 43, 0.15)';
             ctx.lineWidth = 1;
-            for(let i=0; i<canvas.width; i+=TILE_SIZE*SCALE) {
+            for(let i=0; i<canvas.width; i+=DRAW_SIZE) {
                 ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
             }
 
-            // 2. 铺四周的墙壁 (这是根据图集盲猜的坐标，可能有点歪，但能看出效果)
-            // 假设墙砖在 col 3, row 11 附近
+            // 2. 画墙壁（盲猜坐标：row=11, col=3）
+            // 我们沿着屏幕边缘画一圈墙
             const wallCol = 3, wallRow = 11;
-            for (let c = 0; c < 15; c++) {
-                drawTile(wallCol, wallRow, c * TILE_SIZE * SCALE, 0); // 上墙
-                drawTile(wallCol, wallRow, c * TILE_SIZE * SCALE, canvas.height - TILE_SIZE * SCALE); // 下墙
+
+            // 上边墙
+            for (let x = 0; x < canvas.width; x += DRAW_SIZE) {
+                drawTile(wallCol, wallRow, x, 0);
             }
-            for (let r = 1; r < 10; r++) {
-                drawTile(wallCol, wallRow, 0, r * TILE_SIZE * SCALE); // 左墙
-                drawTile(wallCol, wallRow, canvas.width - TILE_SIZE * SCALE, r * TILE_SIZE * SCALE); // 右墙
+            // 下边墙
+            for (let x = 0; x < canvas.width; x += DRAW_SIZE) {
+                drawTile(wallCol, wallRow, x, canvas.height - DRAW_SIZE);
+            }
+            // 左边墙
+            for (let y = DRAW_SIZE; y < canvas.height - DRAW_SIZE; y += DRAW_SIZE) {
+                drawTile(wallCol, wallRow, 0, y);
+            }
+            // 右边墙
+            for (let y = DRAW_SIZE; y < canvas.height - DRAW_SIZE; y += DRAW_SIZE) {
+                drawTile(wallCol, wallRow, canvas.width - DRAW_SIZE, y);
             }
 
-            // 3. 放几个家具测试 (这些坐标也是盲猜的，看看能出什么)
-            drawTile(4, 1, 60, 60); // 疑似床
-            drawTile(12, 4, 200, 100); // 疑似桌子
-            drawTile(18, 1, 300, 50); // 疑似钢琴
+            // 3. 测试放几个家具（坐标依然是猜的，只是为了展示比例）
+            // 床
+            drawTile(4, 1, DRAW_SIZE * 2, DRAW_SIZE * 2); 
+            // 钢琴
+            drawTile(18, 1, DRAW_SIZE * 7, DRAW_SIZE * 2); 
+            // 桌子
+            drawTile(12, 4, DRAW_SIZE * 4, DRAW_SIZE * 6); 
         };
     </script>
 </body>
