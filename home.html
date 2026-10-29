@@ -47,7 +47,7 @@
             background-color: #fffaf0;
             border-radius: 6px;
             padding: 20px;
-            min-height: 250px;
+            min-height: 280px;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
             display: flex; flex-direction: column;
             background-image: repeating-linear-gradient(transparent, transparent 29px, #e0d4c3 30px);
@@ -73,13 +73,22 @@
             background-color: #fffaf0;
         }
 
-        /* 底部翻页控制 */
+        /* 底部控制区 */
         .board-footer {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            align-items: center;
             margin-top: 20px;
             background-color: #fffaf0;
         }
         
+        .page-controls {
+            display: flex; 
+            justify-content: space-between; 
+            width: 100%;
+        }
+
         .page-btn {
             background: var(--wood-light);
             border: 2px solid var(--wood-dark);
@@ -96,6 +105,27 @@
         .page-indicator {
             font-size: 18px;
             color: #888;
+            align-self: center;
+        }
+
+        /* 进入家园大按钮 */
+        .enter-btn {
+            margin-top: 5px;
+            background: #b3003b; 
+            color: #fff; 
+            border: 3px solid var(--wood-dark); 
+            padding: 10px 40px; 
+            border-radius: 30px; 
+            font-family: inherit; 
+            font-size: 22px; 
+            box-shadow: 0 5px 0 var(--wood-dark); 
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.1s;
+        }
+        .enter-btn:active {
+            transform: translateY(5px);
+            box-shadow: none;
         }
 
         /* 图钉装饰 */
@@ -127,15 +157,19 @@
             </div>
 
             <div class="board-footer">
-                <button class="page-btn" onclick="changePage(-1)">上一页</button>
-                <div class="page-indicator" id="pageIndicator">1 / 2</div>
-                <button class="page-btn" onclick="changePage(1)">下一页</button>
+                <div class="page-controls">
+                    <button class="page-btn" onclick="changePage(-1)">上一页</button>
+                    <div class="page-indicator" id="pageIndicator">1 / 2</div>
+                    <button class="page-btn" onclick="changePage(1)">下一页</button>
+                </div>
+                
+                <button class="enter-btn" onclick="enterHome()">进入家园</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 公告数据，你可以随意增删
+        // 公告数据
         const pages = [
             {
                 title: "敬请期待",
@@ -162,6 +196,11 @@
             if (currentPage < 0) currentPage = pages.length - 1;
             if (currentPage >= pages.length) currentPage = 0;
             updatePage();
+        }
+
+        function enterHome() {
+            // 等你以后把 test-map.html 换成正式的 room.html，这里直接改名字就行
+            window.location.href = 'test-map.html'; 
         }
 
         // 初始化
