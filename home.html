@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>家园 - LunarReverie</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-cream: #fdf5e6; /* 米黄色背景 */
+            --wood-dark: #5c3a21;
+            --wood-light: #cda87b;
+            --text-dark: #3a1e0b;
+        }
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-cream);
+            font-family: 'ZCOOL QingKe HuangYou', 'VT323', monospace;
+            color: var(--text-dark);
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(255,255,255,0.8) 0%, transparent 70%),
+                linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 20px 20px;
+        }
+
+        /* 顶部返回按钮 */
+        .back-btn {
+            position: absolute; top: 20px; left: 20px;
+            background: none; border: none; color: var(--wood-dark);
+            font-size: 24px; cursor: pointer; font-family: inherit; font-weight: bold;
+        }
+
+        /* 公告板容器 */
+        .board-container {
+            width: 85%; max-width: 350px;
+            background-color: var(--wood-dark);
+            padding: 12px; /* 木质边框厚度 */
+            border-radius: 12px;
+            box-shadow: inset 4px 4px 0 rgba(255,255,255,0.1), inset -4px -4px 0 rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        /* 公告板内页（带横线的纸） */
+        .board-paper {
+            background-color: #fffaf0;
+            border-radius: 6px;
+            padding: 20px;
+            min-height: 250px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column;
+            background-image: repeating-linear-gradient(transparent, transparent 29px, #e0d4c3 30px);
+            background-position: 0 20px;
+        }
+
+        .board-title {
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+            color: #d32f2f; /* 红色标题 */
+            margin-bottom: 20px;
+            border-bottom: 2px dashed #d32f2f;
+            padding-bottom: 10px;
+            background-color: #fffaf0; /* 挡住横线 */
+        }
+
+        .board-content {
+            flex: 1;
+            font-size: 20px;
+            line-height: 30px;
+            color: #4a3b32;
+            background-color: #fffaf0;
+        }
+
+        /* 底部翻页控制 */
+        .board-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 20px;
+            background-color: #fffaf0;
+        }
+        
+        .page-btn {
+            background: var(--wood-light);
+            border: 2px solid var(--wood-dark);
+            color: var(--wood-dark);
+            padding: 5px 15px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 0 var(--wood-dark);
+        }
+        .page-btn:active { transform: translateY(2px); box-shadow: none; }
+        
+        .page-indicator {
+            font-size: 18px;
+            color: #888;
+        }
+
+        /* 图钉装饰 */
+        .pin {
+            position: absolute; top: 10px; width: 16px; height: 16px;
+            background: radial-gradient(circle at 30% 30%, #ff5c8d, #b3003b);
+            border-radius: 50%;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+        }
+        .pin.left { left: 20px; }
+        .pin.right { right: 20px; }
+    </style>
+</head>
+<body>
+
+    <button class="back-btn" onclick="window.location.href='index.html'">&lt; 返回桌面</button>
+
+    <div class="board-container">
+        <!-- 图钉装饰 -->
+        <div class="pin left"></div>
+        <div class="pin right"></div>
+
+        <div class="board-paper">
+            <div class="board-title" id="boardTitle">游乐园公告</div>
+            
+            <div class="board-content" id="boardContent">
+                这里是你和 TA 温馨的小家。<br><br>
+                目前家园系统还在建设中，敬请期待！
+            </div>
+
+            <div class="board-footer">
+                <button class="page-btn" onclick="changePage(-1)">上一页</button>
+                <div class="page-indicator" id="pageIndicator">1 / 2</div>
+                <button class="page-btn" onclick="changePage(1)">下一页</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 公告数据，你可以随意增删
+        const pages = [
+            {
+                title: "敬请期待",
+                content: "这里是你和 TA 温馨的小家。<br><br>目前家园系统正在紧张施工中，敬请期待后续的开放！"
+            },
+            {
+                title: "活动公告",
+                content: "【首发福利】<br>家园系统开放后，将上线限定盲盒与特殊家具。记得每天来游乐园赚取晶石哦！"
+            }
+        ];
+
+        let currentPage = 0;
+
+        function updatePage() {
+            const data = pages[currentPage];
+            document.getElementById('boardTitle').innerText = data.title;
+            document.getElementById('boardContent').innerHTML = data.content;
+            document.getElementById('pageIndicator').innerText = `${currentPage + 1} / ${pages.length}`;
+        }
+
+        function changePage(dir) {
+            currentPage += dir;
+            // 循环翻页
+            if (currentPage < 0) currentPage = pages.length - 1;
+            if (currentPage >= pages.length) currentPage = 0;
+            updatePage();
+        }
+
+        // 初始化
+        updatePage();
+    </script>
+</body>
+</html>
