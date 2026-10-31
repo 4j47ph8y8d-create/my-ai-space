@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园系统 - 角色行走测试</title>
+    <title>家园测试 - 经典房型</title>
     <style>
         body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; }
         canvas { display: block; image-rendering: pixelated; }
@@ -20,68 +20,57 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        const tileset = new Image();
-        tileset.src = 'assets/furniture/kenney_indoor.png'; 
+        // ==================== 加载你自己画的素材 ====================
+        const tileFloorWood = new Image(); tileFloorWood.src = 'assets/furniture/tile_floor_wood.png';
+        const tileFloorStone = new Image(); tileFloorStone.src = 'assets/furniture/tile_floor_stone2.png';
+        const tileWall = new Image(); tileWall.src = 'assets/furniture/tile_wall_basic.png';
+        const tileBaseboard = new Image(); tileBaseboard.src = 'assets/furniture/tile_wall_baseboard.png';
 
-        const TILE_SIZE = 16;
-        const MARGIN = 1;
-        const SCALE = 2; 
-        const DRAW_SIZE = TILE_SIZE * SCALE;
-
-        const MAP_COLS = 30;
-        const MAP_ROWS = 30;
-        const WORLD_WIDTH = MAP_COLS * DRAW_SIZE;
-        const WORLD_HEIGHT = MAP_ROWS * DRAW_SIZE;
+        const TILE_SIZE = 32; // 你的新素材尺寸是 32x32
+        const MAP_COLS = 25;
+        const MAP_ROWS = 20;
 
         let cameraX = 0;
         let cameraY = 0;
 
-        let playerX = 15 * DRAW_SIZE;
-        let playerY = 15 * DRAW_SIZE;
+        // 玩家坐标
+        let playerX = 10 * TILE_SIZE;
+        let playerY = 10 * TILE_SIZE;
         let playerSpeed = 4;
 
-        // ==================== 角色动画系统 ====================
-        // 根据你的截图，小人应该是 32x64 (或者类似比例)
+        // 小人素材加载
         const CHAR_WIDTH = 32; 
         const CHAR_HEIGHT = 64;
-
         let facing = 'down'; 
         let animFrame = 1;   
         let animTimer = 0;   
-        const ANIM_SPEED = 150; // 每一帧停留 150 毫秒
+        const ANIM_SPEED = 100; 
         let lastTime = 0;
-        let isMoving = false; // 是否正在行走
+        let isMoving = false; 
 
         const playerImages = {};
         const dirs = ['down', 'up', 'left', 'right'];
-        // 【关键修复】：加了 ?v=2 强制刷新浏览器的旧图片缓存！
         for (let d of dirs) {
             for (let i = 1; i <= 4; i++) {
                 let img = new Image();
-                img.src = `assets/avatar/chibi_male_walk_${d}_${i}.png?v=2`;
+                // 加个 v=4 防止缓存
+                img.src = `assets/avatar/chibi_male_walk_${d}_${i}.png?v=4`;
                 playerImages[`${d}_${i}`] = img;
             }
         }
 
-        function getTilePos(col, row) {
-            return { x: col * (TILE_SIZE + MARGIN), y: row * (TILE_SIZE + MARGIN) };
+        // ==================== 绘制地图 ====================
+        function drawTile(img, screenX, screenY) {
+            if (img.complete && img.naturalWidth > 0) {
+                ctx.drawImage(img, screenX, screenY, TILE_SIZE, TILE_SIZE);
+            } else {
+                // 如果图片没加载出来，先画个色块占位
+                ctx.fillStyle = '#555';
+                ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+            }
         }
-
-        function drawTile(col, row, screenX, screenY) {
-            const pos = getTilePos(col, row);
-            ctx.drawImage(tileset, pos.x, pos.y, TILE_SIZE, TILE_SIZE, screenX, screenY, DRAW_SIZE, DRAW_SIZE);
-        }
-
-        const WALL_COL = 3, WALL_ROW = 11;
-
-        // 计算小人的缩放尺寸
-        // 因为你要对齐格子，小人的宽度应该差不多等于格子宽度(DRAW_SIZE)
-        // 高度按比例缩放
-        const RENDER_WIDTH = DRAW_SIZE;
-        const RENDER_HEIGHT = CHAR_HEIGHT * (DRAW_SIZE / CHAR_WIDTH);
 
         function render(timestamp) {
-            // 动画计时器
             if (!lastTime) lastTime = timestamp;
             let dt = timestamp - lastTime;
             lastTime = timestamp;
@@ -94,43 +83,51 @@
                     if (animFrame > 4) animFrame = 1;
                 }
             } else {
-                animFrame = 1; // 停下时恢复第一帧
+                animFrame = 1;
             }
 
             ctx.fillStyle = '#12101a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 摄像机边界限制
-            cameraX = playerX - canvas.width / 2 + DRAW_SIZE / 2;
-            cameraY = playerY - canvas.height / 2 + DRAW_SIZE / 2;
+            // 摄像机计算
+            cameraX = playerX - canvas.width / 2 + TILE_SIZE / 2;
+            cameraY = playerY - canvas.height / 2 + TILE_SIZE / 2;
 
+            // 边界限制
+            const WORLD_WIDTH = MAP_COLS * TILE_SIZE;
+            const WORLD_HEIGHT = MAP_ROWS * TILE_SIZE;
             if (cameraX < 0) cameraX = 0;
             if (cameraX > WORLD_WIDTH - canvas.width) cameraX = WORLD_WIDTH - canvas.width;
             if (cameraY < 0) cameraY = 0;
             if (cameraY > WORLD_HEIGHT - canvas.height) cameraY = WORLD_HEIGHT - canvas.height;
 
-            let startCol = Math.floor(cameraX / DRAW_SIZE);
-            let endCol = Math.ceil((cameraX + canvas.width) / DRAW_SIZE);
-            let startRow = Math.floor(cameraY / DRAW_SIZE);
-            let endRow = Math.ceil((cameraY + canvas.height) / DRAW_SIZE);
+            let startCol = Math.max(0, Math.floor(cameraX / TILE_SIZE));
+            let endCol = Math.min(MAP_COLS, Math.ceil((cameraX + canvas.width) / TILE_SIZE));
+            let startRow = Math.max(0, Math.floor(cameraY / TILE_SIZE));
+            let endRow = Math.min(MAP_ROWS, Math.ceil((cameraY + canvas.height) / TILE_SIZE));
 
-            startCol = Math.max(0, startCol); endCol = Math.min(MAP_COLS, endCol);
-            startRow = Math.max(0, startRow); endRow = Math.min(MAP_ROWS, endRow);
-
-            // 绘制地图
+            // 核心：绘制房型
             for (let r = startRow; r < endRow; r++) {
                 for (let c = startCol; c < endCol; c++) {
-                    let screenX = c * DRAW_SIZE - cameraX;
-                    let screenY = r * DRAW_SIZE - cameraY;
+                    let screenX = c * TILE_SIZE - cameraX;
+                    let screenY = r * TILE_SIZE - cameraY;
 
-                    if (r === 0 || r === MAP_ROWS - 1 || c === 0 || c === MAP_COLS - 1) {
-                        drawTile(WALL_COL, WALL_ROW, screenX, screenY);
+                    if (r < 3) {
+                        // 上方三排：墙壁 + 踢脚线
+                        if (r < 2) {
+                            drawTile(tileWall, screenX, screenY);
+                        } else {
+                            drawTile(tileBaseboard, screenX, screenY);
+                        }
+                    } else if (r === MAP_ROWS - 1) {
+                        // 最下方一排：墙壁（或者可以作为门的位置）
+                        drawTile(tileWall, screenX, screenY);
+                    } else if (c === 0 || c === MAP_COLS - 1) {
+                        // 左右边缘：墙壁
+                        drawTile(tileWall, screenX, screenY);
                     } else {
-                        ctx.fillStyle = '#d2a679'; 
-                        ctx.fillRect(screenX, screenY, DRAW_SIZE, DRAW_SIZE);
-                        ctx.strokeStyle = 'rgba(139, 90, 43, 0.2)';
-                        ctx.lineWidth = 1;
-                        ctx.strokeRect(screenX, screenY, DRAW_SIZE, DRAW_SIZE);
+                        // 中间大面积：木地板
+                        drawTile(tileFloorWood, screenX, screenY);
                     }
                 }
             }
@@ -138,31 +135,20 @@
             // 绘制小人
             const playerScreenX = playerX - cameraX;
             const playerScreenY = playerY - cameraY;
-
             let currentImg = playerImages[`${facing}_${animFrame}`];
             
             if (currentImg && currentImg.complete) {
-                // 【关键修复】：脚底锚点对齐。
-                // 格子底部对齐小人的脚底，防止人物悬空。
-                // 因为小人比格子高，往上画一点。
-                let drawOffsetY = DRAW_SIZE - RENDER_HEIGHT + 10; // +10 是一点点微调
-                let drawOffsetX = (DRAW_SIZE - RENDER_WIDTH) / 2; // X轴居中
-
-                // 如果小人太大，可以稍微缩小一点点
-                // ctx.drawImage(currentImg, playerScreenX + drawOffsetX, playerScreenY + drawOffsetY, RENDER_WIDTH, RENDER_HEIGHT);
-
-                // 放大两倍绘制，并做居中偏移
-                const drawW = RENDER_WIDTH * 1.5; 
-                const drawH = RENDER_HEIGHT * 1.5;
-                const centerOffsetX = (drawW - DRAW_SIZE) / 2;
-                const centerOffsetY = drawH - DRAW_SIZE;
+                const RENDER_WIDTH = TILE_SIZE;
+                const RENDER_HEIGHT = CHAR_HEIGHT * (TILE_SIZE / CHAR_WIDTH);
+                const centerOffsetX = (RENDER_WIDTH - TILE_SIZE) / 2;
+                const centerOffsetY = RENDER_HEIGHT - TILE_SIZE;
 
                 ctx.drawImage(
                     currentImg, 
                     playerScreenX - centerOffsetX, 
                     playerScreenY - centerOffsetY, 
-                    drawW, 
-                    drawH
+                    RENDER_WIDTH, 
+                    RENDER_HEIGHT
                 );
             }
 
@@ -183,10 +169,8 @@
 
         canvas.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
-
             let currentX = e.touches[0].clientX;
             let currentY = e.touches[0].clientY;
-
             let dx = currentX - touchStartX;
             let dy = currentY - touchStartY;
 
@@ -198,16 +182,15 @@
                     if (dy > 0) { playerY += playerSpeed; facing = 'down'; }
                     else { playerY -= playerSpeed; facing = 'up'; }
                 }
-                
                 touchStartX = currentX;
                 touchStartY = currentY;
             }
 
-            // 空气墙限制
-            const MIN_X = DRAW_SIZE;
-            const MAX_X = WORLD_WIDTH - DRAW_SIZE * 2;
-            const MIN_Y = DRAW_SIZE;
-            const MAX_Y = WORLD_HEIGHT - DRAW_SIZE * 2;
+            // 空气墙限制（卡在墙壁里面）
+            const MIN_X = TILE_SIZE;
+            const MAX_X = (MAP_COLS * TILE_SIZE) - TILE_SIZE * 2;
+            const MIN_Y = TILE_SIZE * 3; // 上面有 3 排墙
+            const MAX_Y = (MAP_ROWS * TILE_SIZE) - TILE_SIZE * 2;
 
             if (playerX < MIN_X) playerX = MIN_X;
             if (playerX > MAX_X) playerX = MAX_X;
@@ -217,12 +200,10 @@
 
         canvas.addEventListener('touchend', () => {
             isDragging = false;
-            isMoving = false; // 停止动画
+            isMoving = false;
         });
 
-        tileset.onload = () => {
-            requestAnimationFrame(render);
-        };
+        requestAnimationFrame(render);
     </script>
 </body>
 </html>
