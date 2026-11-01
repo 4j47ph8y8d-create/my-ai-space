@@ -15012,7 +15012,9 @@ function walletAdd(type, amount, note, roleId) {
 // 每日转账计数
 function getTodayKey() {
     var d = new Date();
-    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+    var m = (d.getMonth() + 1).toString().padStart(2, '0');
+    var day = d.getDate().toString().padStart(2, '0');
+    return d.getFullYear() + '-' + m + '-' + day;
 }
 
 function canTransferToday() {
