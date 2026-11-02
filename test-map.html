@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园系统 - 真正无缝拼接</title>
+    <title>家园 - 完美大图叠加</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; }
+        body { margin: 0; padding: 0; background-color: #000; overflow: hidden; touch-action: none; }
         canvas { display: block; image-rendering: pixelated; }
     </style>
 </head>
@@ -20,96 +20,57 @@
         canvas.height = window.innerHeight;
 
         const TILE_SIZE = 32;
-        const MAP_COLS = 15;
-        const MAP_ROWS = 12;
 
-        // 0=虚空, 1=地板, 2=墙壁
-        let mapData = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(2));
-        
-        // 手动挖出几个房间，模拟非标准房型（你可以随意改这里）
-        for(let r = 2; r < 8; r++) {
-            for(let c = 2; c < 10; c++) {
-                mapData[r][c] = 1; // 主房间
-            }
-        }
-        for(let r = 8; r < 11; r++) {
-            for(let c = 8; c < 13; c++) {
-                mapData[r][c] = 1; // 右下角房间
-            }
-        }
-        // 打通走廊
-        mapData[7][9] = 1; 
+        // 加载你画的素材
+        const imgBlueprint = new Image(); imgBlueprint.src = 'assets/furniture/farmhouse_overhaul.png?v=999';
+        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=999';
+        const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png?v=999';
+        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=999';
 
-        // ==================== 加载你画的所有素材 ====================
-        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=500';
-        const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png?v=500';
-        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=500';
-        
-        // 你的四个方向和四个角的外墙壁
-        const oT = new Image(); oT.src = 'assets/furniture/outer_wall_t.png';
-        const oB = new Image(); oB.src = 'assets/furniture/outer_wall_b.png';
-        const oL = new Image(); oL.src = 'assets/furniture/outer_wall_l.png';
-        const oR = new Image(); oR.src = 'assets/furniture/outer_wall_r.png';
-        const oTL = new Image(); oTL.src = 'assets/furniture/outer_wall_tl.png';
-        const oTR = new Image(); oTR.src = 'assets/furniture/outer_wall_tr.png';
-        const oBL = new Image(); oBL.src = 'assets/furniture/outer_wall_bl.png';
-        const oBR = new Image(); oBR.src = 'assets/furniture/outer_wall_br.png';
+        // 让图片居中
+        let offsetX = 0;
+        let offsetY = 0;
 
         function render() {
-            ctx.fillStyle = '#000'; // 虚空底色
+            ctx.fillStyle = '#12101a'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 计算居中偏移
-            let offsetX = (canvas.width - (MAP_COLS * TILE_SIZE)) / 2;
-            let offsetY = (canvas.height - (MAP_ROWS * TILE_SIZE)) / 2;
+            // 大图尺寸假设是 512x512
+            const mapWidth = 512;
+            const mapHeight = 512;
+            
+            offsetX = (canvas.width - mapWidth) / 2;
+            offsetY = (canvas.height - mapHeight) / 2;
 
-            for (let r = 0; r < MAP_ROWS; r++) {
-                for (let c = 0; c < MAP_COLS; c++) {
-                    let sx = offsetX + c * TILE_SIZE;
-                    let sy = offsetY + r * TILE_SIZE;
-                    let cell = mapData[r][c];
-
-                    if (cell === 1) {
-                        // 铺地板
-                        if (imgFloor.complete) ctx.drawImage(imgFloor, sx, sy, TILE_SIZE, TILE_SIZE);
-                    } else if (cell === 2) {
-                        // 判断四周是否是虚空（用来找边缘）
-                        let topVoid = (r - 1 < 0 || mapData[r-1][c] === 0);
-                        let botVoid = (r + 1 >= MAP_ROWS || mapData[r+1][c] === 0);
-                        let leftVoid = (c - 1 < 0 || mapData[r][c-1] === 0);
-                        let rightVoid = (c + 1 >= MAP_COLS || mapData[r][c+1] === 0);
-                        
-                        // 判断下方是否是地板（用来加踢脚线）
-                        let isFrontWall = (r + 1 < MAP_ROWS && mapData[r+1][c] === 1);
-
-                        // 核心 1：先画墙纸当底色（只要不是纯虚空，就铺墙纸，保证不漏底色）
-                        if (imgWallpaper.complete) ctx.drawImage(imgWallpaper, sx, sy, TILE_SIZE, TILE_SIZE);
-
-                        // 核心 2：如果是正对镜头的前墙，贴踢脚线
-                        if (isFrontWall && imgBaseboard.complete) {
-                            ctx.drawImage(imgBaseboard, 0, 8, 16, 8, sx, sy + 16, TILE_SIZE, 16);
-                        }
-
-                        // 核心 3：加盖你画的外边缘墙壁（完美拼接）
-                        let outImg = null;
-                        if (topVoid && leftVoid) outImg = oTL;
-                        else if (topVoid && rightVoid) outImg = oTR;
-                        else if (botVoid && leftVoid) outImg = oBL;
-                        else if (botVoid && rightVoid) outImg = oBR;
-                        else if (topVoid) outImg = oT;
-                        else if (botVoid) outImg = oB;
-                        else if (leftVoid) outImg = oL;
-                        else if (rightVoid) outImg = oR;
-
-                        if (outImg && outImg.complete) {
-                            ctx.drawImage(outImg, sx, sy, TILE_SIZE, TILE_SIZE);
-                        }
+            // 1. 把整个大图的范围里，全部铺满木地板
+            for (let y = 0; y < mapHeight; y += TILE_SIZE) {
+                for (let x = 0; x < mapWidth; x += TILE_SIZE) {
+                    if (imgFloor.complete) {
+                        ctx.drawImage(imgFloor, offsetX + x, offsetY + y, TILE_SIZE, TILE_SIZE);
                     }
                 }
             }
+
+            // 2. 在上方墙壁（假设大图顶部的一条边是墙）画墙纸和踢脚线
+            // 这里我们不用代码去猜，直接强制在 Y 轴 0 到 2 格的地方贴上墙纸和踢脚线（模拟星露谷上方墙壁）
+            // 后面我们可以让你自己指定哪几行是墙。
+            for (let x = 0; x < mapWidth; x += TILE_SIZE) {
+                if (imgWallpaper.complete) {
+                    ctx.drawImage(imgWallpaper, offsetX + x, offsetY, TILE_SIZE, TILE_SIZE);
+                }
+                if (imgBaseboard.complete) {
+                    // 把踢脚线画在墙纸下方
+                    ctx.drawImage(imgBaseboard, 0, 8, 16, 8, offsetX + x, offsetY + 16, TILE_SIZE, 16);
+                }
+            }
+
+            // 3. 盖上天花板：把你画的 512 蓝图罩在最高层！
+            // 因为蓝图中间是透明的，地板会漏出来，边缘的线框会完美地卡在最外层！
+            if (imgBlueprint.complete) {
+                ctx.drawImage(imgBlueprint, offsetX, offsetY, mapWidth, mapHeight);
+            }
         }
 
-        // 循环渲染
         function loop() {
             render();
             requestAnimationFrame(loop);
