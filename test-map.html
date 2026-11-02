@@ -3,309 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园系统 - 终极房型与小地图</title>
+    <title>家园系统 - 终极蓝图引擎</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; }
+        body { margin: 0; padding: 0; background-color: #000; overflow: hidden; touch-action: none; }
         canvas { display: block; image-rendering: pixelated; }
-        
-        /* 小地图容器 */
-        .minimap-container {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 100px;
-            height: 80px;
-            background: rgba(0, 0, 0, 0.6);
-            border: 2px solid #5c3a21;
-            border-radius: 6px;
-            overflow: hidden;
-            pointer-events: none; /* 不让它挡住触摸事件 */
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-        #minimapCanvas {
-            width: 100%;
-            height: 100%;
-            image-rendering: pixelated;
-        }
+        .minimap-container { position: absolute; top: 20px; right: 20px; width: 100px; height: 80px; background: rgba(0,0,0,0.6); border: 2px solid #5c3a21; border-radius: 6px; overflow: hidden; pointer-events: none; }
+        #minimapCanvas { width: 100%; height: 100%; image-rendering: pixelated; }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
-    
-    <!-- 小地图 -->
-    <div class="minimap-container">
-        <canvas id="minimapCanvas" width="120" height="90"></canvas>
-    </div>
+    <div class="minimap-container"><canvas id="minimapCanvas" width="128" height="128"></canvas></div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = false;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
         const miniCanvas = document.getElementById('minimapCanvas');
         const miniCtx = miniCanvas.getContext('2d');
         miniCtx.imageSmoothingEnabled = false;
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        // ==================== 加载素材 ====================
         const TILE_SIZE = 32;
-
+        
+        // 加载素材
+        const imgBlueprint = new Image(); imgBlueprint.src = 'assets/furniture/farmhouse_overhaul.png';
+        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png';
         const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png';
         const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png';
-        const imgFloorWood = new Image(); imgFloorWood.src = 'assets/furniture/tile_floor_wood.png';
-        
-        // 外边缘墙壁 (假设你的图都是 32x32)
-        const imgOuterT = new Image(); imgOuterT.src = 'assets/furniture/outer_wall_t.png';
-        const imgOuterB = new Image(); imgOuterB.src = 'assets/furniture/outer_wall_b.png';
-        const imgOuterL = new Image(); imgOuterL.src = 'assets/furniture/outer_wall_l.png';
-        const imgOuterR = new Image(); imgOuterR.src = 'assets/furniture/outer_wall_r.png';
-        const imgOuterTL = new Image(); imgOuterTL.src = 'assets/furniture/outer_wall_tl.png';
-        const imgOuterTR = new Image(); imgOuterTR.src = 'assets/furniture/outer_wall_tr.png';
-        const imgOuterBL = new Image(); imgOuterBL.src = 'assets/furniture/outer_wall_bl.png';
-        const imgOuterBR = new Image(); imgOuterBR.src = 'assets/furniture/outer_wall_br.png';
 
-        // 小人
+        // 小人加载
         const CHAR_WIDTH = 32; const CHAR_HEIGHT = 64;
         let facing = 'down'; let animFrame = 1; let animTimer = 0;
         const ANIM_SPEED = 100; let lastTime = 0; let isMoving = false; 
         const playerImages = {};
-        const dirs = ['down', 'up', 'left', 'right'];
-        for (let d of dirs) {
+        ['down','up','left','right'].forEach(d => {
             for (let i = 1; i <= 4; i++) {
-                let img = new Image();
-                img.src = `assets/avatar/chibi_male_walk_${d}_${i}.png?v=5`; // 防缓存
+                let img = new Image(); img.src = `assets/avatar/chibi_male_walk_${d}_${i}.png?v=20`;
                 playerImages[`${d}_${i}`] = img;
             }
-        }
+        });
 
-        // ==================== 地图数据（房型） ====================
-        const MAP_COLS = 40;
-        const MAP_ROWS = 30;
+        const MAP_COLS = 16; const MAP_ROWS = 16;
+        // 0: 虚空(不可走), 1: 室内地板(可走), 2: 墙壁边缘
+        let mapData = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(1));
+        
+        // 用离屏 Canvas 扫描蓝图
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = 512; offCanvas.height = 512;
+        const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
 
-        // 0: 虚空, 1: 房间内部, 2: 墙(非外边缘), 3: 走廊/门洞
-        let mapData = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(0));
+        let playerX = 8 * TILE_SIZE; let playerY = 8 * TILE_SIZE; let playerSpeed = 4;
+        let cameraX = 0; let cameraY = 0;
 
-        // 辅助函数：定义一个房间
-        function createRoom(x, y, w, h) {
-            for (let r = y; r < y + h; r++) {
-                for (let c = x; c < x + w; c++) {
-                    if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS) {
-                        // 边缘是墙，中间是地板
-                        if (r === y || r === y + h - 1 || c === x || c === x + w - 1) {
-                            mapData[r][c] = 2; 
-                        } else {
-                            mapData[r][c] = 1;
-                        }
+        // 扫描蓝图，识别墙壁
+        imgBlueprint.onload = function() {
+            offCtx.drawImage(imgBlueprint, 0, 0);
+            for (let r = 0; r < MAP_ROWS; r++) {
+                for (let c = 0; c < MAP_COLS; c++) {
+                    // 取格子左上角稍微偏一点的一个像素，判断是否有线框
+                    let px = offCtx.getImageData(c * TILE_SIZE + 2, r * TILE_SIZE + 2, 1, 1).data;
+                    
+                    // 如果像素不是透明的 (alpha > 0)，或者靠近图的边缘，就认为这是墙壁/边框
+                    if (px[3] > 0) {
+                        mapData[r][c] = 2; // 设为墙壁
+                    } else {
+                        mapData[r][c] = 1; // 设为室内可走地板
                     }
                 }
             }
-        }
-
-        // 构建房型（类似图二的布局）
-        createRoom(2, 2, 12, 10);   // 左上角房间
-        createRoom(25, 2, 12, 10);  // 右上角房间
-        createRoom(2, 18, 15, 10);  // 左下角大房间
-        createRoom(20, 18, 17, 10); // 右下角大房间
-        
-        // 打通横向走廊连接上下
-        for(let c = 10; c <= 28; c++) {
-            mapData[16][c] = 3;
-            mapData[17][c] = 3;
-            mapData[15][c] = 2; // 走廊上墙
-            mapData[18][c] = 2; // 走廊下墙
-        }
-
-        // 玩家初始位置
-        let playerX = 10 * TILE_SIZE;
-        let playerY = 8 * TILE_SIZE;
-        let playerSpeed = 4;
-
-        let cameraX = 0;
-        let cameraY = 0;
-
-        // ==================== 渲染地图核心逻辑 ====================
-        function drawTile(img, screenX, screenY, sx=0, sy=0) {
-            if (img.complete && img.naturalWidth > 0) {
-                // 如果图片是 16x16 的，我们需要按比例缩放适应 32x32 的格子
-                let drawW = (img.naturalWidth === 16) ? TILE_SIZE : TILE_SIZE;
-                let drawH = (img.naturalHeight === 16) ? TILE_SIZE : TILE_SIZE;
-                ctx.drawImage(img, sx, sy, img.naturalWidth, img.naturalHeight, screenX, screenY, drawW, drawH);
-            } else {
-                ctx.fillStyle = '#555';
-                ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+            // 强制把外围一圈设为不可走的墙壁（防止小人掉出地图）
+            for(let i=0; i<16; i++) {
+                mapData[0][i] = 2; mapData[15][i] = 2;
+                mapData[i][0] = 2; mapData[i][15] = 2;
             }
-        }
+        };
 
         function render(timestamp) {
             if (!lastTime) lastTime = timestamp;
-            let dt = timestamp - lastTime;
-            lastTime = timestamp;
+            let dt = timestamp - lastTime; lastTime = timestamp;
 
-            // 动画计时
             if (isMoving) {
                 animTimer += dt;
-                if (animTimer > ANIM_SPEED) {
-                    animTimer = 0; animFrame++;
-                    if (animFrame > 4) animFrame = 1;
-                }
+                if (animTimer > ANIM_SPEED) { animTimer = 0; animFrame++; if (animFrame > 4) animFrame = 1; }
             } else { animFrame = 1; }
 
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // 摄像机
+            ctx.fillStyle = '#12101a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
             cameraX = playerX - canvas.width / 2 + TILE_SIZE / 2;
             cameraY = playerY - canvas.height / 2 + TILE_SIZE / 2;
-            // 允许摄像机看到外围一点，就不死锁边界了
 
-            let startCol = Math.max(0, Math.floor(cameraX / TILE_SIZE) - 2);
-            let endCol = Math.min(MAP_COLS, Math.ceil((cameraX + canvas.width) / TILE_SIZE) + 2);
-            let startRow = Math.max(0, Math.floor(cameraY / TILE_SIZE) - 2);
-            let endRow = Math.min(MAP_ROWS, Math.ceil((cameraY + canvas.height) / TILE_SIZE) + 2);
-
-            // ==================== 三层叠加渲染 ====================
-            for (let r = startRow; r < endRow; r++) {
-                for (let c = startCol; c < endCol; c++) {
-                    let screenX = Math.floor(c * TILE_SIZE - cameraX);
-                    let screenY = Math.floor(r * TILE_SIZE - cameraY);
-                    let cellType = mapData[r][c];
-
-                    if (cellType === 0) continue; // 虚空不画
-
-                    // 1. 画底层：地板或墙纸
-                    if (cellType === 1 || cellType === 3) {
-                        drawTile(imgFloorWood, screenX, screenY);
-                    } else if (cellType === 2) {
-                        drawTile(imgWallpaper, screenX, screenY);
-                    }
-
-                    // 2. 画中层：踢脚线 (如果是上方墙壁，在底部叠一层踢脚线)
-                    // 逻辑：如果当前是墙，且它下面一格是地板/走廊，说明它是“上墙”，要加踢脚线
-                    if (cellType === 2 && r + 1 < MAP_ROWS && (mapData[r+1][c] === 1 || mapData[r+1][c] === 3)) {
-                        // 踢脚线假设是 16x16，且底部有内容，上方透明
-                        // 我们只需要截取它下半部分的像素画到格子的下半部分
-                        if (imgBaseboard.complete) {
-                            // 假设原图是 16x16，我们放大2倍，画在格子底部
-                            ctx.drawImage(imgBaseboard, 0, 8, 16, 8, screenX, screenY + 16, TILE_SIZE, 16);
-                        }
-                    }
-
-                    // 3. 画顶层：外边缘墙壁 (最外圈的包边)
-                    if (cellType === 2) {
-                        let isOuter = false;
-                        let outImg = null;
-
-                        // 检查上方是否是虚空
-                        let topVoid = (r - 1 < 0 || mapData[r-1][c] === 0);
-                        let botVoid = (r + 1 >= MAP_ROWS || mapData[r+1][c] === 0);
-                        let leftVoid = (c - 1 < 0 || mapData[r][c-1] === 0);
-                        let rightVoid = (c + 1 >= MAP_COLS || mapData[r][c+1] === 0);
-
-                        if (topVoid && leftVoid) { outImg = imgOuterTL; isOuter = true; }
-                        else if (topVoid && rightVoid) { outImg = imgOuterTR; isOuter = true; }
-                        else if (botVoid && leftVoid) { outImg = imgOuterBL; isOuter = true; }
-                        else if (botVoid && rightVoid) { outImg = imgOuterBR; isOuter = true; }
-                        else if (topVoid) { outImg = imgOuterT; isOuter = true; }
-                        else if (botVoid) { outImg = imgOuterB; isOuter = true; }
-                        else if (leftVoid) { outImg = imgOuterL; isOuter = true; }
-                        else if (rightVoid) { outImg = imgOuterR; isOuter = true; }
-
-                        if (isOuter && outImg) {
-                            drawTile(outImg, screenX, screenY);
-                        }
-                    }
-                }
-            }
-
-            // 绘制小人
-            const playerScreenX = playerX - cameraX;
-            const playerScreenY = playerY - cameraY;
-            let currentImg = playerImages[`${facing}_${animFrame}`];
-            
-            if (currentImg && currentImg.complete) {
-                const RENDER_WIDTH = TILE_SIZE;
-                const RENDER_HEIGHT = CHAR_HEIGHT * (TILE_SIZE / CHAR_WIDTH);
-                const centerOffsetX = (RENDER_WIDTH - TILE_SIZE) / 2;
-                const centerOffsetY = RENDER_HEIGHT - TILE_SIZE;
-                ctx.drawImage(currentImg, playerScreenX - centerOffsetX, playerScreenY - centerOffsetY, RENDER_WIDTH, RENDER_HEIGHT);
-            }
-
-            // ==================== 绘制小地图 ====================
-            miniCtx.fillStyle = 'rgba(0,0,0,0.8)';
-            miniCtx.fillRect(0, 0, miniCanvas.width, miniCanvas.height);
-            
-            let miniScaleX = miniCanvas.width / MAP_COLS;
-            let miniScaleY = miniCanvas.height / MAP_ROWS;
-
+            // ==================== 真正的分层渲染 ====================
             for (let r = 0; r < MAP_ROWS; r++) {
                 for (let c = 0; c < MAP_COLS; c++) {
-                    let type = mapData[r][c];
-                    if (type === 0) continue;
-                    
-                    if (type === 1 || type === 3) miniCtx.fillStyle = '#cda87b'; // 地板色
-                    else if (type === 2) miniCtx.fillStyle = '#5c3a21'; // 墙壁色
-                    
-                    miniCtx.fillRect(c * miniScaleX, r * miniScaleY, miniScaleX, miniScaleY);
+                    let sx = Math.floor(c * TILE_SIZE - cameraX);
+                    let sy = Math.floor(r * TILE_SIZE - cameraY);
+                    let cell = mapData[r][c];
+
+                    if (cell === 1) {
+                        // 1. 室内空间：铺满无缝木地板
+                        if (imgFloor.complete) ctx.drawImage(imgFloor, sx, sy, TILE_SIZE, TILE_SIZE);
+                    } else if (cell === 2) {
+                        // 2. 墙壁边缘：
+                        // 为了防止边缘漏缝，先垫一层底色墙纸
+                        if (imgWallpaper.complete) ctx.drawImage(imgWallpaper, sx, sy, TILE_SIZE, TILE_SIZE);
+                        
+                        // 如果下面一格是地板，说明是“上墙”，给它贴踢脚线
+                        if (r + 1 < MAP_ROWS && mapData[r+1][c] === 1) {
+                            if (imgBaseboard.complete) {
+                                // 画踢脚线 (假设它是 16x16，下半部不透明，贴在格子底部)
+                                ctx.drawImage(imgBaseboard, 0, 8, 16, 8, sx, sy + 16, TILE_SIZE, 16);
+                            }
+                        }
+                    }
                 }
             }
 
-            // 在小地图上画玩家（红点）
-            miniCtx.fillStyle = '#ff2a6d';
-            miniCtx.fillRect((playerX / TILE_SIZE) * miniScaleX - 1, (playerY / TILE_SIZE) * miniScaleY - 1, 3, 3);
+            // 3. 把蓝图（线框）盖在最上层，作为边缘轮廓
+            if (imgBlueprint.complete) {
+                ctx.drawImage(imgBlueprint, -cameraX, -cameraY, 512, 512);
+            }
+
+            // 4. 画小人
+            const psx = playerX - cameraX; const psy = playerY - cameraY;
+            let curImg = playerImages[`${facing}_${animFrame}`];
+            if (curImg && curImg.complete) {
+                const rw = TILE_SIZE; const rh = CHAR_HEIGHT * (TILE_SIZE / CHAR_WIDTH);
+                ctx.drawImage(curImg, psx - (rw - TILE_SIZE)/2, psy - (rh - TILE_SIZE), rw, rh);
+            }
+
+            // 小地图
+            miniCtx.fillStyle = '#000'; miniCtx.fillRect(0, 0, miniCanvas.width, miniCanvas.height);
+            if (imgBlueprint.complete) miniCtx.drawImage(imgBlueprint, 0, 0, miniCanvas.width, miniCanvas.height);
+            let miniScaleX = miniCanvas.width / 512; let miniScaleY = miniCanvas.height / 512;
+            miniCtx.fillStyle = '#ff2a6d'; miniCtx.fillRect(playerX * miniScaleX - 2, playerY * miniScaleY - 2, 4, 4);
 
             requestAnimationFrame(render);
         }
 
-        // ==================== 触摸控制 ====================
-        let touchStartX = 0; let touchStartY = 0; let isDragging = false;
-
-        canvas.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
-            isDragging = true; isMoving = true;
-        });
-
-        canvas.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            let currentX = e.touches[0].clientX; let currentY = e.touches[0].clientY;
-            let dx = currentX - touchStartX; let dy = currentY - touchStartY;
-
+        // 触摸控制
+        let touchX = 0; let touchY = 0; let dragging = false;
+        canvas.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; touchY = e.touches[0].clientY; dragging = true; isMoving = true; });
+        canvas.addEventListener('touchmove', e => {
+            if (!dragging) return;
+            let cx = e.touches[0].clientX; let cy = e.touches[0].clientY;
+            let dx = cx - touchX; let dy = cy - touchY;
             if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                let nextX = playerX; let nextY = playerY;
-
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    if (dx > 0) { nextX += playerSpeed; facing = 'right'; }
-                    else { nextX -= playerSpeed; facing = 'left'; }
-                } else {
-                    if (dy > 0) { nextY += playerSpeed; facing = 'down'; }
-                    else { nextY -= playerSpeed; facing = 'up'; }
-                }
-
-                // 碰撞检测：只允许在 1(地板) 和 3(走廊) 上走
-                let gridC = Math.floor(nextX / TILE_SIZE);
-                let gridR = Math.floor(nextY / TILE_SIZE);
+                let nx = playerX; let ny = playerY;
+                if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0) { nx += playerSpeed; facing = 'right'; } else { nx -= playerSpeed; facing = 'left'; } }
+                else { if (dy > 0) { ny += playerSpeed; facing = 'down'; } else { ny -= playerSpeed; facing = 'up'; } }
                 
-                // 稍微偏移一点检测脚底，防止贴着墙也能走
-                let checkC = Math.floor((nextX + 16) / TILE_SIZE); 
-                let checkR = Math.floor((nextY + 32) / TILE_SIZE);
-
-                if (gridR >= 0 && gridR < MAP_ROWS && gridC >= 0 && gridC < MAP_COLS) {
-                    let cell = mapData[gridR][gridC];
-                    let cellFoot = mapData[checkR] ? mapData[checkR][checkC] : 0;
-                    if (cell === 1 || cell === 3 || cellFoot === 1 || cellFoot === 3) {
-                        playerX = nextX; playerY = nextY;
+                // 碰撞检测：只允许在 1(地板) 上走
+                let gc = Math.floor(nx / TILE_SIZE); let gr = Math.floor(ny / TILE_SIZE);
+                if (gr >= 0 && gr < MAP_ROWS && gc >= 0 && gc < MAP_COLS) {
+                    if (mapData[gr][gc] === 1) {
+                        playerX = nx; playerY = ny;
                     }
                 }
-
-                touchStartX = currentX; touchStartY = currentY;
+                touchX = cx; touchY = cy;
             }
         });
-
-        canvas.addEventListener('touchend', () => {
-            isDragging = false; isMoving = false;
-        });
-
+        canvas.addEventListener('touchend', () => { dragging = false; isMoving = false; });
         requestAnimationFrame(render);
     </script>
 </body>
