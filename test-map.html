@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园系统 - 完美运行版</title>
+    <title>家园系统 - 地图编辑器</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; }
+        body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; display: flex; flex-direction: column; }
         canvas { display: block; image-rendering: pixelated; }
-        .minimap-container { position: absolute; top: 20px; right: 20px; width: 100px; height: 80px; background: rgba(0,0,0,0.6); border: 2px solid #5c3a21; border-radius: 6px; overflow: hidden; pointer-events: none; }
-        #minimapCanvas { width: 100%; height: 100%; image-rendering: pixelated; }
+        #toolbar { position: absolute; top: 10px; left: 10px; z-index: 10; display: flex; gap: 10px; }
+        button { padding: 5px 10px; background: #333; color: #fff; border: 2px solid #555; border-radius: 5px; font-family: monospace; font-size: 16px; }
+        button.active { background: #ff2a6d; border-color: #fff; }
     </style>
 </head>
 <body>
+    <div id="toolbar">
+        <button id="btnFloor" class="active" onclick="setMode(1)">铺地板</button>
+        <button id="btnWall" onclick="setMode(0)">画墙壁</button>
+        <button onclick="saveMap()">保存并游玩</button>
+    </div>
     <canvas id="gameCanvas"></canvas>
-    <div class="minimap-container"><canvas id="minimapCanvas" width="128" height="128"></canvas></div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -22,17 +27,19 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        const miniCanvas = document.getElementById('minimapCanvas');
-        const miniCtx = miniCanvas.getContext('2d');
-        miniCtx.imageSmoothingEnabled = false;
-
         const TILE_SIZE = 32;
-        
-        // 加载素材（加 ?v=100 防止浏览器缓存旧图）
-        const imgBlueprint = new Image(); imgBlueprint.src = 'assets/furniture/farmhouse_overhaul.png?v=100';
-        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=100';
-        const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png?v=100';
-        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=100';
+        const MAP_COLS = Math.ceil(canvas.width / TILE_SIZE);
+        const MAP_ROWS = Math.ceil(canvas.height / TILE_SIZE);
+
+        // 0: 墙壁, 1: 地板
+        let mapData = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(1));
+        let currentMode = 1; // 默认铺地板
+        let isGameMode = false;
+
+        // 加载素材
+        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=101';
+        const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png?v=101';
+        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=101';
 
         // 小人
         const CHAR_WIDTH = 32; const CHAR_HEIGHT = 64;
@@ -41,37 +48,82 @@
         const playerImages = {};
         ['down','up','left','right'].forEach(d => {
             for (let i = 1; i <= 4; i++) {
-                let img = new Image(); img.src = `assets/avatar/chibi_male_walk_${d}_${i}.png?v=100`;
+                let img = new Image(); img.src = `assets/avatar/chibi_male_walk_${d}_${i}.png?v=101`;
                 playerImages[`${d}_${i}`] = img;
             }
         });
 
-        // 16x16 的网格地图，1 代表可走，0 代表墙壁不可走
-        // 这里我用代码模拟了你的线框图，只有外圈和几个特定的房间是墙，中间全是地板。
-        const MAP_COLS = 16; const MAP_ROWS = 16;
-        let mapData = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(1));
-        for(let i=0; i<16; i++) {
-            mapData[0][i] = 0; mapData[15][i] = 0;
-            mapData[i][0] = 0; mapData[i][15] = 0;
-        }
-
-        let playerX = 8 * TILE_SIZE; let playerY = 8 * TILE_SIZE; let playerSpeed = 4;
+        let playerX = 5 * TILE_SIZE; let playerY = 5 * TILE_SIZE; let playerSpeed = 4;
         let cameraX = 0; let cameraY = 0;
 
+        // --- 画笔功能 ---
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('btnFloor').classList.remove('active');
+            document.getElementById('btnWall').classList.remove('active');
+            if(mode === 1) document.getElementById('btnFloor').classList.add('active');
+            if(mode === 0) document.getElementById('btnWall').classList.add('active');
+        }
+
+        let isDrawing = false;
+        canvas.addEventListener('touchstart', (e) => {
+            if (isGameMode) return;
+            isDrawing = true;
+            paintTile(e);
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            if (isGameMode || !isDrawing) return;
+            paintTile(e);
+        });
+        canvas.addEventListener('touchend', () => { isDrawing = false; });
+
+        function paintTile(e) {
+            let rect = canvas.getBoundingClientRect();
+            let touch = e.touches[0];
+            let x = touch.clientX - rect.left;
+            let y = touch.clientY - rect.top;
+
+            let c = Math.floor(x / TILE_SIZE);
+            let r = Math.floor(y / TILE_SIZE);
+
+            if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS) {
+                mapData[r][c] = currentMode;
+                render(); // 实时重绘
+            }
+        }
+
+        // --- 游玩模式 ---
+        function saveMap() {
+            isGameMode = true;
+            document.getElementById('toolbar').style.display = 'none';
+            // 找一块空地把小人放进去
+            playerX = 5 * TILE_SIZE; playerY = 5 * TILE_SIZE;
+            
+            // 开启摇杆控制（移动逻辑写在下面）
+            initMoveControls();
+            render();
+        }
+
+        // --- 渲染 ---
         function render(timestamp) {
             if (!lastTime) lastTime = timestamp;
             let dt = timestamp - lastTime; lastTime = timestamp;
 
-            if (isMoving) {
+            if (isGameMode && isMoving) {
                 animTimer += dt;
                 if (animTimer > ANIM_SPEED) { animTimer = 0; animFrame++; if (animFrame > 4) animFrame = 1; }
             } else { animFrame = 1; }
 
             ctx.fillStyle = '#12101a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            cameraX = playerX - canvas.width / 2 + TILE_SIZE / 2;
-            cameraY = playerY - canvas.height / 2 + TILE_SIZE / 2;
 
-            // 1. 铺地板和墙
+            if (isGameMode) {
+                cameraX = playerX - canvas.width / 2 + TILE_SIZE / 2;
+                cameraY = playerY - canvas.height / 2 + TILE_SIZE / 2;
+            } else {
+                cameraX = 0; cameraY = 0; // 编辑模式不移动镜头
+            }
+
+            // 画地图
             for (let r = 0; r < MAP_ROWS; r++) {
                 for (let c = 0; c < MAP_COLS; c++) {
                     let sx = Math.floor(c * TILE_SIZE - cameraX);
@@ -80,9 +132,8 @@
                     if (mapData[r][c] === 1) {
                         if (imgFloor.complete) ctx.drawImage(imgFloor, sx, sy, TILE_SIZE, TILE_SIZE);
                     } else {
-                        // 如果是墙，先铺墙纸垫底
                         if (imgWallpaper.complete) ctx.drawImage(imgWallpaper, sx, sy, TILE_SIZE, TILE_SIZE);
-                        // 如果这堵墙下面是地板，加踢脚线
+                        // 如果下面是地板，加踢脚线
                         if (r+1 < MAP_ROWS && mapData[r+1][c] === 1) {
                             if (imgBaseboard.complete) ctx.drawImage(imgBaseboard, 0, 8, 16, 8, sx, sy + 16, TILE_SIZE, 16);
                         }
@@ -90,52 +141,57 @@
                 }
             }
 
-            // 2. 盖上你的大蓝图线框（如果你传了的话）
-            if (imgBlueprint.complete && imgBlueprint.naturalWidth > 0) {
-                ctx.drawImage(imgBlueprint, -cameraX, -cameraY, 512, 512);
+            // 画小人
+            if (isGameMode) {
+                const psx = playerX - cameraX; const psy = playerY - cameraY;
+                let curImg = playerImages[`${facing}_${animFrame}`];
+                if (curImg && curImg.complete) {
+                    const rw = TILE_SIZE; const rh = CHAR_HEIGHT * (TILE_SIZE / CHAR_WIDTH);
+                    ctx.drawImage(curImg, psx - (rw - TILE_SIZE)/2, psy - (rh - TILE_SIZE), rw, rh);
+                }
             }
-
-            // 3. 画小人
-            const psx = playerX - cameraX; const psy = playerY - cameraY;
-            let curImg = playerImages[`${facing}_${animFrame}`];
-            if (curImg && curImg.complete) {
-                const rw = TILE_SIZE; const rh = CHAR_HEIGHT * (TILE_SIZE / CHAR_WIDTH);
-                ctx.drawImage(curImg, psx - (rw - TILE_SIZE)/2, psy - (rh - TILE_SIZE), rw, rh);
-            }
-
-            // 4. 小地图
-            miniCtx.fillStyle = '#000'; miniCtx.fillRect(0, 0, miniCanvas.width, miniCanvas.height);
-            if (imgBlueprint.complete && imgBlueprint.naturalWidth > 0) miniCtx.drawImage(imgBlueprint, 0, 0, miniCanvas.width, miniCanvas.height);
-            let miniScaleX = miniCanvas.width / 512; let miniScaleY = miniCanvas.height / 512;
-            miniCtx.fillStyle = '#ff2a6d'; miniCtx.fillRect(playerX * miniScaleX - 2, playerY * miniScaleY - 2, 4, 4);
 
             requestAnimationFrame(render);
         }
 
-        // 触摸控制
-        let touchX = 0; let touchY = 0; let dragging = false;
-        canvas.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; touchY = e.touches[0].clientY; dragging = true; isMoving = true; });
-        canvas.addEventListener('touchmove', e => {
-            if (!dragging) return;
-            let cx = e.touches[0].clientX; let cy = e.touches[0].clientY;
-            let dx = cx - touchX; let dy = cy - touchY;
-            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                let nx = playerX; let ny = playerY;
-                if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0) { nx += playerSpeed; facing = 'right'; } else { nx -= playerSpeed; facing = 'left'; } }
-                else { if (dy > 0) { ny += playerSpeed; facing = 'down'; } else { ny -= playerSpeed; facing = 'up'; } }
+        // 游玩模式的控制
+        function initMoveControls() {
+            let touchStartX = 0; let touchStartY = 0; let dragging = false;
+
+            canvas.addEventListener('touchstart', (e) => {
+                if (!isGameMode) return;
+                touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+                dragging = true; isMoving = true;
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isGameMode || !dragging) return;
+                let cx = e.touches[0].clientX; let cy = e.touches[0].clientY;
+                let dx = cx - touchStartX; let dy = cy - touchStartY;
                 
-                // 碰撞检测
-                let gc = Math.floor(nx / TILE_SIZE); let gr = Math.floor(ny / TILE_SIZE);
-                if (gr >= 0 && gr < MAP_ROWS && gc >= 0 && gc < MAP_COLS) {
-                    if (mapData[gr][gc] === 1) {
-                        playerX = nx; playerY = ny;
+                if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                    let nx = playerX; let ny = playerY;
+                    if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0) { nx += playerSpeed; facing = 'right'; } else { nx -= playerSpeed; facing = 'left'; } }
+                    else { if (dy > 0) { ny += playerSpeed; facing = 'down'; } else { ny -= playerSpeed; facing = 'up'; } }
+                    
+                    let gc = Math.floor((nx + 16) / TILE_SIZE); let gr = Math.floor((ny + 32) / TILE_SIZE);
+                    if (gr >= 0 && gr < MAP_ROWS && gc >= 0 && gc < MAP_COLS) {
+                        if (mapData[gr][gc] === 1) {
+                            playerX = nx; playerY = ny;
+                        }
                     }
+                    touchStartX = cx; touchStartY = cy;
                 }
-                touchX = cx; touchY = cy;
-            }
-        });
-        canvas.addEventListener('touchend', () => { dragging = false; isMoving = false; });
-        requestAnimationFrame(render);
+            });
+
+            canvas.addEventListener('touchend', () => {
+                if (!isGameMode) return;
+                dragging = false; isMoving = false;
+            });
+        }
+
+        // 预加载图片完成后启动
+        imgFloor.onload = () => render();
     </script>
 </body>
 </html>
