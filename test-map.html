@@ -3,224 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园 - 地图编辑器</title>
+    <title>家园系统 - 你的完美蓝图</title>
     <style>
         body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; font-family: monospace; }
         canvas { display: block; image-rendering: pixelated; }
-        
-        /* 顶部工具栏 */
-        #toolbar { 
-            position: absolute; top: 0; left: 0; width: 100%; 
-            background: rgba(0,0,0,0.8); border-bottom: 2px solid #5c3a21;
-            padding: 10px; display: flex; gap: 10px; overflow-x: auto; align-items: center;
-            z-index: 10;
+        #controls {
+            position: absolute; bottom: 20px; left: 20px; z-index: 10;
+            color: #fff; font-size: 14px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;
         }
-        
-        .btn {
-            background: #333; color: #fff; border: 2px solid #555; 
-            padding: 8px 12px; border-radius: 4px; font-size: 16px;
-            white-space: nowrap;
-        }
-        .btn.active { background: #ff2a6d; border-color: #fff; box-shadow: 0 0 10px #ff2a6d; }
-        
-        .btn-play { background: #05d9e8; color: #000; border-color: #fff; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="toolbar">
-        <button class="btn active" onclick="setTool('floor')">铺地板</button>
-        <button class="btn" onclick="setTool('wall')">画墙纸(上)</button>
-        <button class="btn" onclick="setTool('wall_left')">画墙纸(左)</button>
-        <button class="btn" onclick="setTool('wall_right')">画墙纸(右)</button>
-        <button class="btn" onclick="setTool('erase')">橡皮擦</button>
-        <div style="flex:1;"></div>
-        <button class="btn btn-play" onclick="togglePlay()">开始游玩</button>
-    </div>
-
     <canvas id="gameCanvas"></canvas>
+    <div id="controls">
+        <div>双指缩放 / 拖拽滑动</div>
+        <div id="status">正在加载房型...</div>
+    </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = false;
-        
-        // 画布撑满屏幕
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
         const TILE_SIZE = 32;
-        const MAP_COLS = 30; // 足够大的画布供你编辑
-        const MAP_ROWS = 25;
-        
-        // 瓦片类型: 0=虚空, 1=地板, 2=上墙, 3=左墙, 4=右墙
-        let mapData = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(0));
-        
-        let currentTool = 'floor';
-        let isPlaying = false;
-        let isDrawing = false;
+        const MAP_COLS = 16; // 512 / 32 = 16
+        const MAP_ROWS = 16;
 
-        // 加载图片素材
-        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=200';
-        const imgWallTop = new Image(); imgWallTop.src = 'assets/furniture/tile_wall_basic.png?v=200';
-        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=200';
-        // 假设你有左侧墙壁和右侧墙壁的图，如果没有，暂用上墙代替
-        const imgWallLeft = new Image(); imgWallLeft.src = 'assets/furniture/tile_wall_basic.png?v=200';
-        const imgWallRight = new Image(); imgWallRight.src = 'assets/furniture/tile_wall_basic.png?v=200';
+        // 0: 虚空, 1: 地板, 2: 上墙(带墙纸踢脚线), 3: 实心边框
+        let mapData = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(0));
+
+        // 加载素材
+        const imgBlueprint = new Image(); imgBlueprint.src = 'assets/furniture/farmhouse_overhaul.png?v=300';
+        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=300';
+        const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png?v=300';
+        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=300';
 
         // 小人
         const CHAR_WIDTH = 32; const CHAR_HEIGHT = 64;
-        let facing = 'down'; let animFrame = 1;
+        let facing = 'down'; let animFrame = 1; let lastTime = 0;
         const playerImages = {};
         ['down','up','left','right'].forEach(d => {
             for (let i = 1; i <= 4; i++) {
-                let img = new Image(); img.src = `assets/avatar/chibi_male_walk_${d}_${i}.png?v=200`;
+                let img = new Image(); img.src = `assets/avatar/chibi_male_walk_${d}_${i}.png?v=300`;
                 playerImages[`${d}_${i}`] = img;
             }
         });
 
-        let playerX = 5 * TILE_SIZE; let playerY = 5 * TILE_SIZE; 
-        let cameraX = 0; let cameraY = 0;
+        // 玩家位置 (以像素为单位)
+        let playerX = 8 * TILE_SIZE; 
+        let playerY = 8 * TILE_SIZE; 
 
-        function setTool(tool) {
-            currentTool = tool;
-            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-        }
+        // 镜头控制 (缩放与偏移)
+        let cameraX = 0;
+        let cameraY = 0;
+        let cameraZoom = 1.5; // 初始放大 1.5 倍
 
-        function togglePlay() {
-            isPlaying = !isPlaying;
-            if (isPlaying) {
-                document.getElementById('toolbar').style.display = 'none';
-                // 给玩家找一个安全的位置出生
-                for(let r=1; r<MAP_ROWS; r++){
-                    for(let c=1; c<MAP_COLS; c++){
-                        if(mapData[r][c] === 1) {
-                            playerX = c * TILE_SIZE; playerY = r * TILE_SIZE; break;
-                        }
-                    }
-                    if(playerX !== 5*TILE_SIZE) break;
-                }
-            } else {
-                document.getElementById('toolbar').style.display = 'flex';
-            }
-            render();
-        }
+        // ==================== 核心：扫描蓝图分析结构 ====================
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = 512; offCanvas.height = 512;
+        const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
 
-        // ==================== 画笔逻辑 ====================
-        function handleDraw(clientX, clientY) {
-            if (isPlaying) return;
-            let rect = canvas.getBoundingClientRect();
-            let x = clientX - rect.left;
-            let y = clientY - rect.top;
-
-            let c = Math.floor(x / TILE_SIZE);
-            let r = Math.floor(y / TILE_SIZE);
-
-            if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS) {
-                if (currentTool === 'floor') mapData[r][c] = 1;
-                if (currentTool === 'wall') mapData[r][c] = 2;
-                if (currentTool === 'wall_left') mapData[r][c] = 3;
-                if (currentTool === 'wall_right') mapData[r][c] = 4;
-                if (currentTool === 'erase') mapData[r][c] = 0;
-                render();
-            }
-        }
-
-        canvas.addEventListener('mousedown', e => { isDrawing = true; handleDraw(e.clientX, e.clientY); });
-        canvas.addEventListener('mousemove', e => { if(isDrawing) handleDraw(e.clientX, e.clientY); });
-        window.addEventListener('mouseup', () => isDrawing = false);
-
-        canvas.addEventListener('touchstart', e => { isDrawing = true; handleDraw(e.touches[0].clientX, e.touches[0].clientY); });
-        canvas.addEventListener('touchmove', e => { e.preventDefault(); if(isDrawing) handleDraw(e.touches[0].clientX, e.touches[0].clientY); }, {passive: false});
-        canvas.addEventListener('touchend', () => isDrawing = false);
-
-        // ==================== 渲染逻辑 ====================
-        function render() {
-            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            if (isPlaying) {
-                cameraX = playerX - canvas.width / 2 + TILE_SIZE / 2;
-                cameraY = playerY - canvas.height / 2 + TILE_SIZE / 2;
-            } else {
-                cameraX = 0; cameraY = 0; // 编辑模式不移动镜头
-            }
+        imgBlueprint.onload = function() {
+            offCtx.drawImage(imgBlueprint, 0, 0);
+            document.getElementById('status').innerText = "房型分析完毕，开始探索！";
 
             for (let r = 0; r < MAP_ROWS; r++) {
                 for (let c = 0; c < MAP_COLS; c++) {
-                    let sx = Math.floor(c * TILE_SIZE - cameraX);
-                    let sy = Math.floor(r * TILE_SIZE - cameraY);
+                    // 扫描每个格子中心点的像素，判断是否有棕色线框
+                    let px = offCtx.getImageData(c * TILE_SIZE + 16, r * TILE_SIZE + 16, 1, 1).data;
+                    
+                    // 如果有颜色（不是纯透明），说明这里有东西（可能是线框，也可能是内部）
+                    // 我们用一个简单的算法：如果这个格子的四个角有像素，说明它是线框。
+                    // 因为你的线框很粗，我们取左上角一点点看。
+                    let pxCorner = offCtx.getImageData(c * TILE_SIZE + 2, r * TILE_SIZE + 2, 1, 1).data;
+
+                    if (pxCorner[3] > 0) {
+                        // 如果左上角有像素，大概率是线框
+                        mapData[r][c] = 3; // 实心边框
+                    } else {
+                        // 否则说明是内部透明区域
+                        mapData[r][c] = 1; // 地板
+                    }
+                }
+            }
+            
+            // 修正逻辑：判断哪些是“上墙”。
+            // 如果当前是地板，但它上方（r-1）是线框，说明这里贴着上方墙壁。
+            // 但我们不需要修改地图数据，我们在渲染时动态判断。
+        };
+
+        // ==================== 渲染引擎 ====================
+        function render(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            lastTime = timestamp;
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            
+            // 1. 应用镜头缩放和偏移
+            // 让镜头始终看着小人
+            let targetCamX = playerX - (canvas.width / cameraZoom) / 2 + TILE_SIZE / 2;
+            let targetCamY = playerY - (canvas.height / cameraZoom) / 2 + TILE_SIZE / 2;
+            
+            // 平滑镜头
+            cameraX += (targetCamX - cameraX) * 0.1;
+            cameraY += (targetCamY - cameraY) * 0.1;
+
+            ctx.scale(cameraZoom, cameraZoom);
+            ctx.translate(-cameraX, -cameraY);
+
+            // 2. 渲染底层地图
+            for (let r = 0; r < MAP_ROWS; r++) {
+                for (let c = 0; c < MAP_COLS; c++) {
+                    let sx = c * TILE_SIZE;
+                    let sy = r * TILE_SIZE;
                     let cell = mapData[r][c];
 
-                    if (cell === 0) {
-                        // 虚空背景
-                        ctx.fillStyle = '#111'; ctx.fillRect(sx, sy, TILE_SIZE, TILE_SIZE);
-                        continue; 
-                    }
-
                     if (cell === 1) {
+                        // 如果是地板，先铺满
                         if (imgFloor.complete) ctx.drawImage(imgFloor, sx, sy, TILE_SIZE, TILE_SIZE);
-                    } else if (cell === 2 || cell === 3 || cell === 4) {
-                        // 先垫底图
-                        if (cell === 2 && imgWallTop.complete) ctx.drawImage(imgWallTop, sx, sy, TILE_SIZE, TILE_SIZE);
-                        if (cell === 3 && imgWallLeft.complete) ctx.drawImage(imgWallLeft, sx, sy, TILE_SIZE, TILE_SIZE);
-                        if (cell === 4 && imgWallRight.complete) ctx.drawImage(imgWallRight, sx, sy, TILE_SIZE, TILE_SIZE);
 
-                        // 自动加踢脚线（如果下面一格是地板）
-                        if (r+1 < MAP_ROWS && mapData[r+1][c] === 1) {
+                        // 判断它上方是否是线框，如果是，说明它是“被墙壁挡住的内部”，我们在这画上墙纸
+                        if (r - 1 >= 0 && mapData[r-1][c] === 3) {
+                            if (imgWallpaper.complete) ctx.drawImage(imgWallpaper, sx, sy, TILE_SIZE, TILE_SIZE);
+                            // 画踢脚线
                             if (imgBaseboard.complete) ctx.drawImage(imgBaseboard, 0, 8, 16, 8, sx, sy + 16, TILE_SIZE, 16);
                         }
                     }
                 }
             }
 
-            // 画小人
-            if (isPlaying) {
-                const psx = playerX - cameraX; const psy = playerY - cameraY;
-                let curImg = playerImages[`${facing}_${animFrame}`];
-                if (curImg && curImg.complete) {
-                    const rw = TILE_SIZE; const rh = CHAR_HEIGHT * (TILE_SIZE / CHAR_WIDTH);
-                    ctx.drawImage(curImg, psx - (rw - TILE_SIZE)/2, psy - (rh - TILE_SIZE), rw, rh);
-                }
+            // 3. 渲染小人
+            const psx = playerX; 
+            const psy = playerY - (CHAR_HEIGHT - TILE_SIZE); 
+            let curImg = playerImages[`${facing}_${animFrame}`];
+            if (curImg && curImg.complete) {
+                const rw = TILE_SIZE; const rh = CHAR_HEIGHT * (TILE_SIZE / CHAR_WIDTH);
+                ctx.drawImage(curImg, psx - (rw - TILE_SIZE)/2, psy, rw, rh);
             }
+
+            // 4. 顶层：把原版的 512 蓝图盖上去，保证你的边缘轮廓完美无缺！
+            if (imgBlueprint.complete) {
+                ctx.drawImage(imgBlueprint, 0, 0, 512, 512);
+            }
+
+            ctx.restore();
+            requestAnimationFrame(render);
         }
 
-        // 动画循环
-        function loop() {
-            render();
-            requestAnimationFrame(loop);
-        }
-        loop();
-
-        // ==================== 游玩控制 ====================
+        // ==================== 触摸控制与缩放 ====================
         let tX = 0; let tY = 0; let dragging = false;
+        let initialPinchDist = 0; let initialZoom = 1;
+
         canvas.addEventListener('touchstart', e => {
-            if (!isPlaying) return;
-            tX = e.touches[0].clientX; tY = e.touches[0].clientY; dragging = true;
-        });
-        canvas.addEventListener('touchmove', e => {
-            if (!isPlaying || !dragging) return;
-            let cx = e.touches[0].clientX; let cy = e.touches[0].clientY;
-            let dx = cx - tX; let dy = cy - tY;
-            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                let nx = playerX; let ny = playerY;
-                if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0) { nx += 4; facing = 'right'; } else { nx -= 4; facing = 'left'; } }
-                else { if (dy > 0) { ny += 4; facing = 'down'; } else { ny -= 4; facing = 'up'; } }
-                
-                // 简单碰撞：只能走在地板上
-                let gc = Math.floor((nx + 16) / TILE_SIZE); let gr = Math.floor((ny + 32) / TILE_SIZE);
-                if (gr >= 0 && gr < MAP_ROWS && gc >= 0 && gc < MAP_COLS) {
-                    if (mapData[gr][gc] === 1) {
-                        playerX = nx; playerY = ny;
-                    }
-                }
-                tX = cx; tY = cy;
+            if (e.touches.length === 1) {
+                tX = e.touches[0].clientX; tY = e.touches[0].clientY; dragging = true;
+            } else if (e.touches.length === 2) {
+                dragging = false;
+                initialPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                initialZoom = cameraZoom;
             }
         });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            
+            if (e.touches.length === 1 && dragging) {
+                let cx = e.touches[0].clientX; let cy = e.touches[0].clientY;
+                let dx = cx - tX; let dy = cy - tY;
+                
+                // 移动小人
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                    let nx = playerX; let ny = playerY;
+                    if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0) { nx += 4; facing = 'right'; } else { nx -= 4; facing = 'left'; } }
+                    else { if (dy > 0) { ny += 4; facing = 'down'; } else { ny -= 4; facing = 'up'; } }
+                    
+                    // 碰撞检测：只能走在内部透明区域(1) 和 上墙区域(目前不严格限制)
+                    let gc = Math.floor((nx + 16) / TILE_SIZE); let gr = Math.floor((ny + 32) / TILE_SIZE);
+                    if (gr >= 0 && gr < MAP_ROWS && gc >= 0 && gc < MAP_COLS) {
+                        // 这里稍微放宽点：只要不是撞在最外圈的实心墙上，就算能走
+                        if (mapData[gr][gc] === 1) {
+                            playerX = nx; playerY = ny;
+                        }
+                    }
+                    tX = cx; tY = cy;
+                }
+            } else if (e.touches.length === 2) {
+                // 双指缩放
+                let currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                let scaleFactor = currentDist / initialPinchDist;
+                cameraZoom = Math.max(0.8, Math.min(initialZoom * scaleFactor, 3)); // 限制缩放范围 0.8 - 3
+            }
+        }, {passive: false});
+
         canvas.addEventListener('touchend', () => { dragging = false; });
+
+        requestAnimationFrame(render);
     </script>
 </body>
 </html>
