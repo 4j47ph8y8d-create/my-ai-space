@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园 - 终极像素解析</title>
+    <title>家园 - 64x64 完美拼图</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; }
+        body { margin: 0; padding: 0; background-color: #000; overflow: hidden; touch-action: none; }
         canvas { display: block; image-rendering: pixelated; }
     </style>
 </head>
@@ -20,90 +20,103 @@
         canvas.height = window.innerHeight;
 
         const TILE_SIZE = 32;
-        const MAP_SIZE = 512; // 你的蓝图是 512x512
-        const COLS = MAP_SIZE / TILE_SIZE;
-        const ROWS = MAP_SIZE / TILE_SIZE;
+        const MAP_COLS = 15;
+        const MAP_ROWS = 12;
 
-        // 加载素材 (加上 v=1000 强制刷新)
-        const imgBlueprint = new Image(); imgBlueprint.src = 'assets/furniture/farmhouse_overhaul.png?v=1000';
-        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=1000';
-        const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png?v=1000';
-        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=1000';
+        // 0=虚空, 1=地板, 2=墙壁
+        let mapData = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(0));
+        
+        // 挖出两个房间
+        for(let r = 1; r < 6; r++) {
+            for(let c = 1; c < 8; c++) { mapData[r][c] = 1; }
+        }
+        for(let r = 6; r < 11; r++) {
+            for(let c = 8; c < 14; c++) { mapData[r][c] = 1; }
+        }
+        // 走廊
+        mapData[5][7] = 1; mapData[5][8] = 1; mapData[6][8] = 1;
 
-        // 地图数据: 0=虚空, 1=地板, 2=墙壁
-        let mapData = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
-
-        // 用离屏 Canvas 扫描像素
-        const offCanvas = document.createElement('canvas');
-        offCanvas.width = MAP_SIZE; offCanvas.height = MAP_SIZE;
-        const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
-
-        imgBlueprint.onload = function() {
-            offCtx.drawImage(imgBlueprint, 0, 0);
-
-            // 扫描每一个格子
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    // 检查格子的中心点是否有颜色（线框）
-                    let px = offCtx.getImageData(c * TILE_SIZE + 16, r * TILE_SIZE + 16, 1, 1).data;
-                    
-                    if (px[3] > 0) {
-                        // 如果中心点有颜色，可能是线框
-                        mapData[r][c] = 2; 
-                    } else {
-                        // 如果中心点是透明的，大概率是房间内部
-                        mapData[r][c] = 1; 
-                    }
-                }
-            }
-
-            // 为了确保边缘完全封闭，强制把最外围一圈设为虚空(0)
-            for(let i=0; i<COLS; i++) { mapData[0][i] = 0; mapData[ROWS-1][i] = 0; }
-            for(let i=0; i<ROWS; i++) { mapData[i][0] = 0; mapData[i][COLS-1] = 0; }
-
-            render();
-        };
+        // 加载素材（加 v=2000 防止缓存）
+        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=2000';
+        const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png?v=2000';
+        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=2000';
+        
+        // 你的 64x64 边缘墙壁
+        const oT = new Image(); oT.src = 'assets/furniture/outer_wall_t.png';
+        const oB = new Image(); oB.src = 'assets/furniture/outer_wall_b.png';
+        const oL = new Image(); oL.src = 'assets/furniture/outer_wall_l.png';
+        const oR = new Image(); oR.src = 'assets/furniture/outer_wall_r.png';
+        const oTL = new Image(); oTL.src = 'assets/furniture/outer_wall_tl.png';
+        const oTR = new Image(); oTR.src = 'assets/furniture/outer_wall_tr.png';
+        const oBL = new Image(); oBL.src = 'assets/furniture/outer_wall_bl.png';
+        const oBR = new Image(); oBR.src = 'assets/furniture/outer_wall_br.png';
 
         function render() {
-            ctx.fillStyle = '#000'; // 虚空纯黑底
+            ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            let offsetX = (canvas.width - MAP_SIZE) / 2;
-            let offsetY = (canvas.height - MAP_SIZE) / 2;
+            let offsetX = (canvas.width - (MAP_COLS * TILE_SIZE)) / 2;
+            let offsetY = (canvas.height - (MAP_ROWS * TILE_SIZE)) / 2;
 
-            // 1. 根据解析出的数据画地板和墙
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
+            // 1. 铺底层：地板、墙纸、踢脚线
+            for (let r = 0; r < MAP_ROWS; r++) {
+                for (let c = 0; c < MAP_COLS; c++) {
                     let sx = offsetX + c * TILE_SIZE;
                     let sy = offsetY + r * TILE_SIZE;
                     let cell = mapData[r][c];
 
                     if (cell === 1) {
-                        // 铺地板
                         if (imgFloor.complete) ctx.drawImage(imgFloor, sx, sy, TILE_SIZE, TILE_SIZE);
                     } else if (cell === 2) {
-                        // 贴墙纸和踢脚线
+                        // 如果是墙壁，先铺墙纸垫底
                         if (imgWallpaper.complete) ctx.drawImage(imgWallpaper, sx, sy, TILE_SIZE, TILE_SIZE);
-                        if (r+1 < ROWS && mapData[r+1][c] === 1 && imgBaseboard.complete) {
+                        
+                        // 如果下方是地板，画踢脚线
+                        if (r+1 < MAP_ROWS && mapData[r+1][c] === 1 && imgBaseboard.complete) {
                             ctx.drawImage(imgBaseboard, 0, 8, 16, 8, sx, sy + 16, TILE_SIZE, 16);
                         }
                     }
                 }
             }
 
-            // 2. 把你的蓝图原图盖在最上面，作为完美的“边框线条”！
-            // 因为解析后，蓝图内部是没有线条的，它只会在边缘处盖住，这就形成了完美的房型
-            if (imgBlueprint.complete) {
-                ctx.drawImage(imgBlueprint, offsetX, offsetY, MAP_SIZE, MAP_SIZE);
+            // 2. 铺顶层：你的 64x64 无缝边框
+            // 因为 64x64 刚好是 2x2 的格子，我们在遍历时，只需要遍历偶数格子（2, 4, 6...）来放置边框，防止重叠
+            for (let r = 0; r < MAP_ROWS; r += 2) {
+                for (let c = 0; c < MAP_COLS; c += 2) {
+                    let sx = offsetX + c * TILE_SIZE;
+                    let sy = offsetY + r * TILE_SIZE;
+                    
+                    let topVoid = (r - 1 < 0 || mapData[r-1][c] === 0);
+                    let botVoid = (r + 2 >= MAP_ROWS || mapData[r+2][c] === 0);
+                    let leftVoid = (c - 1 < 0 || mapData[r][c-1] === 0);
+                    let rightVoid = (c + 2 >= MAP_COLS || mapData[r][c+2] === 0);
+
+                    let outImg = null;
+                    
+                    // 寻找角
+                    if (topVoid && leftVoid) outImg = oTL;
+                    else if (topVoid && rightVoid) outImg = oTR;
+                    else if (botVoid && leftVoid) outImg = oBL;
+                    else if (botVoid && rightVoid) outImg = oBR;
+                    // 寻找直边
+                    else if (topVoid) outImg = oT;
+                    else if (botVoid) outImg = oB;
+                    else if (leftVoid) outImg = oL;
+                    else if (rightVoid) outImg = oR;
+
+                    if (outImg && outImg.complete) {
+                        // 将 64x64 的图，强制画满 2x2 个格子（即 64x64 的像素空间）
+                        ctx.drawImage(outImg, sx, sy, 64, 64);
+                    }
+                }
             }
         }
 
-        // 窗口缩放时重新渲染
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        function loop() {
             render();
-        });
+            requestAnimationFrame(loop);
+        }
+        loop();
     </script>
 </body>
 </html>
