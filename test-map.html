@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园 - 真·无缝方块引擎</title>
+    <title>家园 - 真·完美碰撞与拼接</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; overflow: hidden; touch-action: none; }
         canvas { display: block; image-rendering: pixelated; }
@@ -26,30 +26,41 @@
         // 0=虚空, 1=地板, 2=墙壁
         let mapData = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(0));
         
-        // 这是一个测试房型，左下和右上是连着的
-        for(let r = 2; r < 8; r++) {
-            for(let c = 2; c < 8; c++) { mapData[r][c] = 1; }
+        // 生成房型
+        for(let r = 1; r < 7; r++) {
+            for(let c = 1; c < 8; c++) { mapData[r][c] = 1; }
         }
-        for(let r = 6; r < 11; r++) {
-            for(let c = 8; c < 13; c++) { mapData[r][c] = 1; }
+        for(let r = 5; r < 11; r++) {
+            for(let c = 8; c < 14; c++) { mapData[r][c] = 1; }
         }
-        // 门洞
-        mapData[7][8] = 1; mapData[7][7] = 1;
+        // 走廊
+        mapData[6][8] = 1; mapData[6][7] = 1;
 
         // 加载素材
-        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=9999';
-        const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png?v=9999';
-        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=9999';
+        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=777';
+        const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png?v=777';
+        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=777';
         
-        // 你的 64x64 边缘墙壁 (如果它们真的是 64x64，我们需要缩放它们)
-        const oT = new Image(); oT.src = 'assets/furniture/outer_wall_t.png';
-        const oB = new Image(); oB.src = 'assets/furniture/outer_wall_b.png';
-        const oL = new Image(); oL.src = 'assets/furniture/outer_wall_l.png';
-        const oR = new Image(); oR.src = 'assets/furniture/outer_wall_r.png';
-        const oTL = new Image(); oTL.src = 'assets/furniture/outer_wall_tl.png';
-        const oTR = new Image(); oTR.src = 'assets/furniture/outer_wall_tr.png';
-        const oBL = new Image(); oBL.src = 'assets/furniture/outer_wall_bl.png';
-        const oBR = new Image(); oBR.src = 'assets/furniture/outer_wall_br.png';
+        const oT = new Image(); oT.src = 'assets/furniture/outer_wall_t.png?v=777';
+        const oB = new Image(); oB.src = 'assets/furniture/outer_wall_b.png?v=777';
+        const oL = new Image(); oL.src = 'assets/furniture/outer_wall_l.png?v=777';
+        const oR = new Image(); oR.src = 'assets/furniture/outer_wall_r.png?v=777';
+        const oTL = new Image(); oTL.src = 'assets/furniture/outer_wall_tl.png?v=777';
+        const oTR = new Image(); oTR.src = 'assets/furniture/outer_wall_tr.png?v=777';
+        const oBL = new Image(); oBL.src = 'assets/furniture/outer_wall_bl.png?v=777';
+        const oBR = new Image(); oBR.src = 'assets/furniture/outer_wall_br.png?v=777';
+
+        // 小人数据
+        let playerX = 4 * TILE_SIZE; 
+        let playerY = 4 * TILE_SIZE;
+        let playerSpeed = 4;
+        let facing = 'down';
+
+        // 画一个纯色小人占位
+        function drawPlayer(offsetX, offsetY) {
+            ctx.fillStyle = '#ff2a6d';
+            ctx.fillRect(offsetX + playerX, offsetY + playerY, TILE_SIZE, TILE_SIZE);
+        }
 
         function render() {
             ctx.fillStyle = '#000';
@@ -58,15 +69,16 @@
             let offsetX = (canvas.width - (MAP_COLS * TILE_SIZE)) / 2;
             let offsetY = (canvas.height - (MAP_ROWS * TILE_SIZE)) / 2;
 
-            // 第一步：渲染底层的地板和墙纸
+            // 1. 画底层（地板、墙纸、踢脚线）
             for (let r = 0; r < MAP_ROWS; r++) {
                 for (let c = 0; c < MAP_COLS; c++) {
                     let sx = offsetX + c * TILE_SIZE;
                     let sy = offsetY + r * TILE_SIZE;
+                    let cell = mapData[r][c];
 
-                    if (mapData[r][c] === 1) {
+                    if (cell === 1) {
                         if (imgFloor.complete) ctx.drawImage(imgFloor, sx, sy, TILE_SIZE, TILE_SIZE);
-                    } else if (mapData[r][c] === 2) {
+                    } else if (cell === 2) {
                         if (imgWallpaper.complete) ctx.drawImage(imgWallpaper, sx, sy, TILE_SIZE, TILE_SIZE);
                         if (r+1 < MAP_ROWS && mapData[r+1][c] === 1 && imgBaseboard.complete) {
                             ctx.drawImage(imgBaseboard, 0, 8, 16, 8, sx, sy + 16, TILE_SIZE, 16);
@@ -75,51 +87,79 @@
                 }
             }
 
-            // 第二步：叠加 64x64 边缘墙壁
-            // 核心秘诀：因为你的图是 64x64，我们需要在指定的左/上边缘，覆盖画上 64x64 的图！
+            // 2. 画外墙（精确裁剪 64x64 的图，铺在 32x32 的格子上）
             for (let r = 0; r < MAP_ROWS; r++) {
                 for (let c = 0; c < MAP_COLS; c++) {
                     if (mapData[r][c] === 2) {
                         let sx = offsetX + c * TILE_SIZE;
                         let sy = offsetY + r * TILE_SIZE;
 
-                        // 这里的判断逻辑极其精准，专门为你的 64x64 图设计
                         let isTop = (r-1 < 0 || mapData[r-1][c] === 0);
                         let isBottom = (r+1 >= MAP_ROWS || mapData[r+1][c] === 0);
                         let isLeft = (c-1 < 0 || mapData[r][c-1] === 0);
                         let isRight = (c+1 >= MAP_COLS || mapData[r][c+1] === 0);
 
-                        // 先判断四个角落
+                        // 核心秘诀：因为你的图是 64x64，一格是 32x32。
+                        // 遇到左/上的边，我们取 64x64 图的左上半部分 (0,0, 32,32) 来画
+                        // 遇到右/下的边，我们取 64x64 图的右下半部分 (32,32, 32,32) 来画
+                        // 这样就能做到绝对无缝！
+                        
                         if (isTop && isLeft) {
-                            if (oTL.complete) ctx.drawImage(oTL, sx, sy, 64, 64); // 强行把64x64的图画在这个格子上，溢出到旁边
+                            if (oTL.complete) ctx.drawImage(oTL, 0, 0, 32, 32, sx, sy, TILE_SIZE, TILE_SIZE);
                         } else if (isTop && isRight) {
-                            // 右边的角，我们让它向左偏移 32 像素，才能和网格对齐
-                            if (oTR.complete) ctx.drawImage(oTR, sx - 32, sy, 64, 64);
+                            if (oTR.complete) ctx.drawImage(oTR, 32, 0, 32, 32, sx, sy, TILE_SIZE, TILE_SIZE);
                         } else if (isBottom && isLeft) {
-                            if (oBL.complete) ctx.drawImage(oBL, sx, sy - 32, 64, 64);
+                            if (oBL.complete) ctx.drawImage(oBL, 0, 32, 32, 32, sx, sy, TILE_SIZE, TILE_SIZE);
                         } else if (isBottom && isRight) {
-                            if (oBR.complete) ctx.drawImage(oBR, sx - 32, sy - 32, 64, 64);
+                            if (oBR.complete) ctx.drawImage(oBR, 32, 32, 32, 32, sx, sy, TILE_SIZE, TILE_SIZE);
                         } 
-                        // 再判断直边
                         else if (isTop) {
-                            if (oT.complete) ctx.drawImage(oT, sx, sy, 64, 64);
+                            if (oT.complete) ctx.drawImage(oT, 0, 0, 32, 32, sx, sy, TILE_SIZE, TILE_SIZE);
                         } else if (isBottom) {
-                            if (oB.complete) ctx.drawImage(oB, sx, sy - 32, 64, 64);
+                            if (oB.complete) ctx.drawImage(oB, 0, 32, 32, 32, sx, sy, TILE_SIZE, TILE_SIZE);
                         } else if (isLeft) {
-                            if (oL.complete) ctx.drawImage(oL, sx, sy, 64, 64);
+                            if (oL.complete) ctx.drawImage(oL, 0, 0, 32, 32, sx, sy, TILE_SIZE, TILE_SIZE);
                         } else if (isRight) {
-                            if (oR.complete) ctx.drawImage(oR, sx - 32, sy, 64, 64);
+                            if (oR.complete) ctx.drawImage(oR, 32, 0, 32, 32, sx, sy, TILE_SIZE, TILE_SIZE);
                         }
                     }
                 }
             }
+
+            // 3. 画小人
+            drawPlayer(offsetX, offsetY);
         }
 
-        function loop() {
-            render();
-            requestAnimationFrame(loop);
-        }
-        loop();
+        // 碰撞与移动逻辑
+        let touchX = 0; let touchY = 0; let dragging = false;
+        canvas.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; touchY = e.touches[0].clientY; dragging = true; });
+        canvas.addEventListener('touchmove', e => {
+            if (!dragging) return;
+            let cx = e.touches[0].clientX; let cy = e.touches[0].clientY;
+            let dx = cx - touchX; let dy = cy - touchY;
+            
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                let nx = playerX; let ny = playerY;
+                if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0) nx += playerSpeed; else nx -= playerSpeed; }
+                else { if (dy > 0) ny += playerSpeed; else ny -= playerSpeed; }
+                
+                // 核心：只能走在地板(1)上
+                let gc = Math.floor((nx + 16) / TILE_SIZE); 
+                let gr = Math.floor((ny + 16) / TILE_SIZE);
+                
+                if (gr >= 0 && gr < MAP_ROWS && gc >= 0 && gc < MAP_COLS) {
+                    if (mapData[gr][gc] === 1) {
+                        playerX = nx; playerY = ny;
+                    }
+                }
+                touchX = cx; touchY = cy;
+                render();
+            }
+        });
+        canvas.addEventListener('touchend', () => { dragging = false; });
+
+        // 启动渲染
+        render();
     </script>
 </body>
 </html>
