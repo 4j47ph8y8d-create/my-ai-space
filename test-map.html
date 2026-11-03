@@ -3,19 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园 - 造梦空间</title>
+    <title>家园 - 终极图层叠加</title>
     <style>
         body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; font-family: monospace; }
         canvas { display: block; image-rendering: pixelated; }
-        
-        /* 顶部建造工具栏 */
         #toolbar { 
             position: absolute; top: 0; left: 0; width: 100%; 
             background: rgba(0,0,0,0.85); border-bottom: 2px solid #5c3a21;
             padding: 10px; display: flex; gap: 8px; overflow-x: auto; align-items: center;
             z-index: 10; box-sizing: border-box; flex-wrap: wrap;
         }
-        
         .btn {
             background: #333; color: #fff; border: 2px solid #555; 
             padding: 6px 10px; border-radius: 4px; font-size: 14px;
@@ -46,26 +43,23 @@
         canvas.height = window.innerHeight;
 
         const TILE_SIZE = 32;
-        // 我们给一个足够大的网格画布 (比如 30x30)
         const MAP_COLS = 30; 
         const MAP_ROWS = 30;
 
-        // 0=虚空, 1=地板, 2=边缘墙, 3=墙纸
-        let mapData = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(0));
+        // ================= 核心改变：分离图层数据 =================
+        // 每个格子都有独立的标记，不再是互斥的
+        let layerFloor = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(false));
+        let layerWallpaper = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(false));
+        let layerEdge = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(false));
         
         let currentTool = 'floor';
         let isPlaying = false;
         let isDrawing = false;
 
-        // 相机偏移 (用于游玩模式时居中)
-        let cameraX = 0;
-        let cameraY = 0;
-        let playerX = 5 * TILE_SIZE;
-        let playerY = 5 * TILE_SIZE;
-        let playerSpeed = 4;
-        let facing = 'down';
+        let cameraX = 0; let cameraY = 0;
+        let playerX = 5 * TILE_SIZE; let playerY = 5 * TILE_SIZE; let playerSpeed = 4;
 
-        // 加载素材 (加 v=888 防缓存)
+        // 加载素材
         const imgs = {
             floor: new Image(),
             edge_top: new Image(), edge_bottom: new Image(), edge_left: new Image(), edge_right: new Image(),
@@ -74,19 +68,19 @@
             player: new Image()
         };
 
-        imgs.floor.src = 'assets/furniture/floor_wood.png?v=888';
-        imgs.edge_top.src = 'assets/furniture/edge_top.png?v=888';
-        imgs.edge_bottom.src = 'assets/furniture/edge_bottom.png?v=888';
-        imgs.edge_left.src = 'assets/furniture/edge_left.png?v=888';
-        imgs.edge_right.src = 'assets/furniture/edge_right.png?v=888';
-        imgs.edge_tl.src = 'assets/furniture/edge_top_left.png?v=888';
-        imgs.edge_tr.src = 'assets/furniture/edge_top_right.png?v=888';
-        imgs.edge_bl.src = 'assets/furniture/edge_bottom_left.png?v=888';
-        imgs.edge_br.src = 'assets/furniture/edge_bottom_right.png?v=888';
-        imgs.wallpaper_dark.src = 'assets/furniture/wallpaper_top_dark.png?v=888';
-        imgs.wallpaper_base.src = 'assets/furniture/wallpaper_top_base.png?v=888';
-        // 暂用之前的白模小人第一帧
-        imgs.player.src = 'assets/avatar/chibi_male_walk_down_1.png?v=888';
+        // 这里用的是你确认上传的图
+        imgs.floor.src = 'assets/furniture/tile_floor_checkerboard.png?v=999'; // 按你截图里用的棋盘格地板
+        imgs.edge_top.src = 'assets/furniture/edge_top.png?v=999';
+        imgs.edge_bottom.src = 'assets/furniture/edge_bottom.png?v=999';
+        imgs.edge_left.src = 'assets/furniture/edge_left.png?v=999';
+        imgs.edge_right.src = 'assets/furniture/edge_right.png?v=999';
+        imgs.edge_tl.src = 'assets/furniture/edge_top_left.png?v=999';
+        imgs.edge_tr.src = 'assets/furniture/edge_top_right.png?v=999';
+        imgs.edge_bl.src = 'assets/furniture/edge_bottom_left.png?v=999';
+        imgs.edge_br.src = 'assets/furniture/edge_bottom_right.png?v=999';
+        imgs.wallpaper_dark.src = 'assets/furniture/wallpaper_top_dark.png?v=999';
+        imgs.wallpaper_base.src = 'assets/furniture/wallpaper_top_base.png?v=999';
+        imgs.player.src = 'assets/avatar/chibi_male_walk_down_1.png?v=999';
 
         function setTool(tool) {
             currentTool = tool;
@@ -99,11 +93,10 @@
             document.getElementById('toolbar').style.display = isPlaying ? 'none' : 'flex';
             
             if (isPlaying) {
-                // 找一个地板位置放小人
                 let found = false;
                 for(let r=0; r<MAP_ROWS; r++){
                     for(let c=0; c<MAP_COLS; c++){
-                        if(mapData[r][c] === 1) {
+                        if(layerFloor[r][c]) {
                             playerX = c * TILE_SIZE; playerY = r * TILE_SIZE; found = true; break;
                         }
                     }
@@ -119,16 +112,20 @@
             let rect = canvas.getBoundingClientRect();
             let x = clientX - rect.left;
             let y = clientY - rect.top;
-
-            // 计算点击了哪个格子 (加上一些偏移，让画布居中一点，这里简化直接从头开始)
             let c = Math.floor(x / TILE_SIZE);
             let r = Math.floor(y / TILE_SIZE);
 
             if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS) {
-                if (currentTool === 'floor') mapData[r][c] = 1;
-                if (currentTool === 'wall_edge') mapData[r][c] = 2;
-                if (currentTool === 'wall_paper') mapData[r][c] = 3;
-                if (currentTool === 'erase') mapData[r][c] = 0;
+                if (currentTool === 'floor') layerFloor[r][c] = true;
+                if (currentTool === 'wall_edge') layerEdge[r][c] = true;
+                if (currentTool === 'wall_paper') layerWallpaper[r][c] = true;
+                
+                if (currentTool === 'erase') {
+                    // 橡皮擦：一键清除该格子的所有图层
+                    layerFloor[r][c] = false;
+                    layerEdge[r][c] = false;
+                    layerWallpaper[r][c] = false;
+                }
                 render();
             }
         }
@@ -140,73 +137,75 @@
         canvas.addEventListener('touchmove', e => { e.preventDefault(); if(isDrawing) handleDraw(e.touches[0].clientX, e.touches[0].clientY); }, {passive: false});
         canvas.addEventListener('touchend', () => isDrawing = false);
 
-        // ==================== 渲染逻辑 ====================
+        // ==================== 渲染逻辑（绝对按图层顺序） ====================
         function render() {
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 如果是游玩模式，相机跟随小人
             if (isPlaying) {
                 cameraX = playerX - canvas.width / 2 + TILE_SIZE / 2;
                 cameraY = playerY - canvas.height / 2 + TILE_SIZE / 2;
             } else {
-                // 建造模式，画布从左上角开始
-                cameraX = 0;
-                cameraY = 0;
+                cameraX = 0; cameraY = 0;
             }
 
-            // 1. 渲染底层：地板
+            // --- 第一层：地板 (永远在底层) ---
             for (let r = 0; r < MAP_ROWS; r++) {
                 for (let c = 0; c < MAP_COLS; c++) {
                     let sx = c * TILE_SIZE - cameraX;
                     let sy = r * TILE_SIZE - cameraY;
-                    let cell = mapData[r][c];
 
-                    // 画个编辑网格
                     if (!isPlaying) {
                         ctx.strokeStyle = 'rgba(255,255,255,0.05)';
                         ctx.strokeRect(sx, sy, TILE_SIZE, TILE_SIZE);
                     }
 
-                    if (cell === 1 || cell === 2 || cell === 3) {
-                        if (imgs.floor.complete) ctx.drawImage(imgs.floor, sx, sy, TILE_SIZE, TILE_SIZE);
+                    if (layerFloor[r][c] && imgs.floor.complete) {
+                        ctx.drawImage(imgs.floor, sx, sy, TILE_SIZE, TILE_SIZE);
                     }
                 }
             }
 
-            // 2. 渲染中层：墙纸（带踢脚线）
+            // --- 第二层：墙纸上半截 (阴影) ---
             for (let r = 0; r < MAP_ROWS; r++) {
                 for (let c = 0; c < MAP_COLS; c++) {
                     let sx = c * TILE_SIZE - cameraX;
                     let sy = r * TILE_SIZE - cameraY;
-                    if (mapData[r][c] === 3) {
-                        // 墙纸叠加：上半截阴影 + 下半截踢脚线
-                        if (imgs.wallpaper_dark.complete) ctx.drawImage(imgs.wallpaper_dark, sx, sy, TILE_SIZE, TILE_SIZE);
-                        if (imgs.wallpaper_base.complete) ctx.drawImage(imgs.wallpaper_base, sx, sy, TILE_SIZE, TILE_SIZE);
+                    if (layerWallpaper[r][c] && imgs.wallpaper_dark.complete) {
+                        ctx.drawImage(imgs.wallpaper_dark, sx, sy, TILE_SIZE, TILE_SIZE);
                     }
                 }
             }
 
-            // 3. 渲染顶层：智能边缘墙壁 (核心算法！)
+            // --- 第三层：墙纸下半截 (踢脚线) ---
             for (let r = 0; r < MAP_ROWS; r++) {
                 for (let c = 0; c < MAP_COLS; c++) {
-                    if (mapData[r][c] === 2) {
+                    let sx = c * TILE_SIZE - cameraX;
+                    let sy = r * TILE_SIZE - cameraY;
+                    if (layerWallpaper[r][c] && imgs.wallpaper_base.complete) {
+                        ctx.drawImage(imgs.wallpaper_base, sx, sy, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+
+            // --- 第四层：边缘墙壁 (最顶层，压住一切) ---
+            for (let r = 0; r < MAP_ROWS; r++) {
+                for (let c = 0; c < MAP_COLS; c++) {
+                    if (layerEdge[r][c]) {
                         let sx = c * TILE_SIZE - cameraX;
                         let sy = r * TILE_SIZE - cameraY;
 
-                        // 寻找周围是不是自己人 (2)
-                        let isTop = (r-1 < 0 || mapData[r-1][c] !== 2);
-                        let isBottom = (r+1 >= MAP_ROWS || mapData[r+1][c] !== 2);
-                        let isLeft = (c-1 < 0 || mapData[r][c-1] !== 2);
-                        let isRight = (c+1 >= MAP_COLS || mapData[r][c+1] !== 2);
+                        // 判断周围谁是边缘墙，实现自动转角
+                        let isTop = (r-1 < 0 || !layerEdge[r-1][c]);
+                        let isBottom = (r+1 >= MAP_ROWS || !layerEdge[r+1][c]);
+                        let isLeft = (c-1 < 0 || !layerEdge[r][c-1]);
+                        let isRight = (c+1 >= MAP_COLS || !layerEdge[r][c+1]);
 
                         let outImg = null;
-                        // 转角优先判定
                         if (isTop && isLeft) outImg = imgs.edge_tl;
                         else if (isTop && isRight) outImg = imgs.edge_tr;
                         else if (isBottom && isLeft) outImg = imgs.edge_bl;
                         else if (isBottom && isRight) outImg = imgs.edge_br;
-                        // 然后是直边
                         else if (isTop) outImg = imgs.edge_top;
                         else if (isBottom) outImg = imgs.edge_bottom;
                         else if (isLeft) outImg = imgs.edge_left;
@@ -219,11 +218,10 @@
                 }
             }
 
-            // 4. 渲染小人
+            // --- 最顶层：小人 ---
             if (isPlaying) {
                 const psx = playerX - cameraX; 
                 const psy = playerY - cameraY;
-                // 因为小人素材可能是 32x64，稍微调整一下 Y 轴让脚对齐
                 if (imgs.player.complete) {
                     ctx.drawImage(imgs.player, psx, psy - 32, TILE_SIZE, 64);
                 }
@@ -246,13 +244,12 @@
                 if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0) nx += playerSpeed; else nx -= playerSpeed; }
                 else { if (dy > 0) ny += playerSpeed; else ny -= playerSpeed; }
                 
-                // 碰撞检测：只能走在地板(1) 和 墙纸(3) 上 (墙纸可以走，因为我们贴在上墙，小人实际上在下方的地板)
                 let gc = Math.floor((nx + 16) / TILE_SIZE); 
                 let gr = Math.floor((ny + 32) / TILE_SIZE);
                 
                 if (gr >= 0 && gr < MAP_ROWS && gc >= 0 && gc < MAP_COLS) {
-                    let targetCell = mapData[gr][gc];
-                    if (targetCell === 1 || targetCell === 3) {
+                    // 碰撞：只能走在地板上
+                    if (layerFloor[gr][gc]) {
                         playerX = nx; playerY = ny;
                     }
                 }
