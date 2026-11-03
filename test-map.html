@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园 - 64x64 完美拼图</title>
+    <title>家园 - 真·无缝方块引擎</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; overflow: hidden; touch-action: none; }
         canvas { display: block; image-rendering: pixelated; }
@@ -26,22 +26,22 @@
         // 0=虚空, 1=地板, 2=墙壁
         let mapData = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(0));
         
-        // 挖出两个房间
-        for(let r = 1; r < 6; r++) {
-            for(let c = 1; c < 8; c++) { mapData[r][c] = 1; }
+        // 这是一个测试房型，左下和右上是连着的
+        for(let r = 2; r < 8; r++) {
+            for(let c = 2; c < 8; c++) { mapData[r][c] = 1; }
         }
         for(let r = 6; r < 11; r++) {
-            for(let c = 8; c < 14; c++) { mapData[r][c] = 1; }
+            for(let c = 8; c < 13; c++) { mapData[r][c] = 1; }
         }
-        // 走廊
-        mapData[5][7] = 1; mapData[5][8] = 1; mapData[6][8] = 1;
+        // 门洞
+        mapData[7][8] = 1; mapData[7][7] = 1;
 
-        // 加载素材（加 v=2000 防止缓存）
-        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=2000';
-        const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png?v=2000';
-        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=2000';
+        // 加载素材
+        const imgFloor = new Image(); imgFloor.src = 'assets/furniture/tile_floor_wood.png?v=9999';
+        const imgWallpaper = new Image(); imgWallpaper.src = 'assets/furniture/tile_wall_basic.png?v=9999';
+        const imgBaseboard = new Image(); imgBaseboard.src = 'assets/furniture/tile_wall_baseboard.png?v=9999';
         
-        // 你的 64x64 边缘墙壁
+        // 你的 64x64 边缘墙壁 (如果它们真的是 64x64，我们需要缩放它们)
         const oT = new Image(); oT.src = 'assets/furniture/outer_wall_t.png';
         const oB = new Image(); oB.src = 'assets/furniture/outer_wall_b.png';
         const oL = new Image(); oL.src = 'assets/furniture/outer_wall_l.png';
@@ -58,20 +58,16 @@
             let offsetX = (canvas.width - (MAP_COLS * TILE_SIZE)) / 2;
             let offsetY = (canvas.height - (MAP_ROWS * TILE_SIZE)) / 2;
 
-            // 1. 铺底层：地板、墙纸、踢脚线
+            // 第一步：渲染底层的地板和墙纸
             for (let r = 0; r < MAP_ROWS; r++) {
                 for (let c = 0; c < MAP_COLS; c++) {
                     let sx = offsetX + c * TILE_SIZE;
                     let sy = offsetY + r * TILE_SIZE;
-                    let cell = mapData[r][c];
 
-                    if (cell === 1) {
+                    if (mapData[r][c] === 1) {
                         if (imgFloor.complete) ctx.drawImage(imgFloor, sx, sy, TILE_SIZE, TILE_SIZE);
-                    } else if (cell === 2) {
-                        // 如果是墙壁，先铺墙纸垫底
+                    } else if (mapData[r][c] === 2) {
                         if (imgWallpaper.complete) ctx.drawImage(imgWallpaper, sx, sy, TILE_SIZE, TILE_SIZE);
-                        
-                        // 如果下方是地板，画踢脚线
                         if (r+1 < MAP_ROWS && mapData[r+1][c] === 1 && imgBaseboard.complete) {
                             ctx.drawImage(imgBaseboard, 0, 8, 16, 8, sx, sy + 16, TILE_SIZE, 16);
                         }
@@ -79,34 +75,41 @@
                 }
             }
 
-            // 2. 铺顶层：你的 64x64 无缝边框
-            // 因为 64x64 刚好是 2x2 的格子，我们在遍历时，只需要遍历偶数格子（2, 4, 6...）来放置边框，防止重叠
-            for (let r = 0; r < MAP_ROWS; r += 2) {
-                for (let c = 0; c < MAP_COLS; c += 2) {
-                    let sx = offsetX + c * TILE_SIZE;
-                    let sy = offsetY + r * TILE_SIZE;
-                    
-                    let topVoid = (r - 1 < 0 || mapData[r-1][c] === 0);
-                    let botVoid = (r + 2 >= MAP_ROWS || mapData[r+2][c] === 0);
-                    let leftVoid = (c - 1 < 0 || mapData[r][c-1] === 0);
-                    let rightVoid = (c + 2 >= MAP_COLS || mapData[r][c+2] === 0);
+            // 第二步：叠加 64x64 边缘墙壁
+            // 核心秘诀：因为你的图是 64x64，我们需要在指定的左/上边缘，覆盖画上 64x64 的图！
+            for (let r = 0; r < MAP_ROWS; r++) {
+                for (let c = 0; c < MAP_COLS; c++) {
+                    if (mapData[r][c] === 2) {
+                        let sx = offsetX + c * TILE_SIZE;
+                        let sy = offsetY + r * TILE_SIZE;
 
-                    let outImg = null;
-                    
-                    // 寻找角
-                    if (topVoid && leftVoid) outImg = oTL;
-                    else if (topVoid && rightVoid) outImg = oTR;
-                    else if (botVoid && leftVoid) outImg = oBL;
-                    else if (botVoid && rightVoid) outImg = oBR;
-                    // 寻找直边
-                    else if (topVoid) outImg = oT;
-                    else if (botVoid) outImg = oB;
-                    else if (leftVoid) outImg = oL;
-                    else if (rightVoid) outImg = oR;
+                        // 这里的判断逻辑极其精准，专门为你的 64x64 图设计
+                        let isTop = (r-1 < 0 || mapData[r-1][c] === 0);
+                        let isBottom = (r+1 >= MAP_ROWS || mapData[r+1][c] === 0);
+                        let isLeft = (c-1 < 0 || mapData[r][c-1] === 0);
+                        let isRight = (c+1 >= MAP_COLS || mapData[r][c+1] === 0);
 
-                    if (outImg && outImg.complete) {
-                        // 将 64x64 的图，强制画满 2x2 个格子（即 64x64 的像素空间）
-                        ctx.drawImage(outImg, sx, sy, 64, 64);
+                        // 先判断四个角落
+                        if (isTop && isLeft) {
+                            if (oTL.complete) ctx.drawImage(oTL, sx, sy, 64, 64); // 强行把64x64的图画在这个格子上，溢出到旁边
+                        } else if (isTop && isRight) {
+                            // 右边的角，我们让它向左偏移 32 像素，才能和网格对齐
+                            if (oTR.complete) ctx.drawImage(oTR, sx - 32, sy, 64, 64);
+                        } else if (isBottom && isLeft) {
+                            if (oBL.complete) ctx.drawImage(oBL, sx, sy - 32, 64, 64);
+                        } else if (isBottom && isRight) {
+                            if (oBR.complete) ctx.drawImage(oBR, sx - 32, sy - 32, 64, 64);
+                        } 
+                        // 再判断直边
+                        else if (isTop) {
+                            if (oT.complete) ctx.drawImage(oT, sx, sy, 64, 64);
+                        } else if (isBottom) {
+                            if (oB.complete) ctx.drawImage(oB, sx, sy - 32, 64, 64);
+                        } else if (isLeft) {
+                            if (oL.complete) ctx.drawImage(oL, sx, sy, 64, 64);
+                        } else if (isRight) {
+                            if (oR.complete) ctx.drawImage(oR, sx - 32, sy, 64, 64);
+                        }
                     }
                 }
             }
