@@ -3,18 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园 - 极致完美拼接版</title>
+    <title>家园 - 完美建造编辑器</title>
     <style>
         body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; font-family: monospace; }
         canvas { display: block; image-rendering: pixelated; }
-        #toolbar { position: absolute; top: 0; left: 0; width: 100%; background: rgba(0,0,0,0.85); border-bottom: 2px solid #5c3a21; padding: 10px; display: flex; gap: 10px; align-items: center; z-index: 10; box-sizing: border-box; }
+        
+        #toolbar { 
+            position: absolute; top: 0; left: 0; width: 100%; 
+            background: rgba(0,0,0,0.85); border-bottom: 2px solid #5c3a21;
+            padding: 10px; display: flex; gap: 10px; align-items: center;
+            z-index: 10; box-sizing: border-box;
+        }
         .btn-play { background: #05d9e8; color: #000; border: 2px solid #fff; padding: 6px 15px; border-radius: 4px; font-size: 16px; font-weight: bold; }
-        #palette { position: absolute; top: 60px; right: 10px; width: 100px; background: rgba(0,0,0,0.85); border: 2px solid #5c3a21; border-radius: 8px; padding: 10px; z-index: 10; display: flex; flex-direction: column; gap: 8px; max-height: 80vh; overflow-y: auto; }
+        
+        #palette {
+            position: absolute; top: 60px; right: 10px; width: 100px;
+            background: rgba(0,0,0,0.85); border: 2px solid #5c3a21; border-radius: 8px;
+            padding: 10px; z-index: 10; display: flex; flex-direction: column; gap: 8px;
+            max-height: 80vh; overflow-y: auto;
+        }
         .palette-title { color: #ff2a6d; font-size: 12px; font-weight: bold; text-align: center; margin: 5px 0; }
-        .palette-item { height: 32px; border: 1px solid #555; border-radius: 4px; cursor: pointer; display: flex; justify-content: center; align-items: center; color: #fff; font-size: 12px; background: #222; }
+        .palette-item {
+            height: 32px; border: 1px solid #555; border-radius: 4px; cursor: pointer; 
+            display: flex; justify-content: center; align-items: center; color: #fff; font-size: 12px;
+            background: #222;
+        }
         .palette-item.active { border-color: #05d9e8; box-shadow: 0 0 8px #05d9e8; background: #333; }
-        #dpad { position: absolute; bottom: 20px; left: 20px; z-index: 10; display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(3, 40px); gap: 5px; }
-        .dpad-btn { background: rgba(0,0,0,0.7); border: none; padding: 0; display: flex; justify-content: center; align-items: center; border-radius: 8px; }
+        
+        #dpad {
+            position: absolute; bottom: 20px; left: 20px; z-index: 10;
+            display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(3, 40px); gap: 5px;
+        }
+        .dpad-btn {
+            background: rgba(0,0,0,0.7); border: none; padding: 0;
+            display: flex; justify-content: center; align-items: center; border-radius: 8px;
+        }
         .dpad-btn img { width: 100%; height: 100%; object-fit: contain; }
         .dpad-btn:active { transform: scale(0.9); }
     </style>
@@ -22,14 +45,18 @@
 <body>
     <div id="toolbar">
         <button class="btn-play" onclick="togglePlay()">进入游玩</button>
+        <span style="color:#fff; font-size:12px;" id="statusText">建造模式 - 拖拽作画</span>
     </div>
+
     <div id="palette">
         <div class="palette-title">地板</div>
         <div class="palette-item active" onclick="selectBrush('floor_wood')">木地板</div>
         <div class="palette-item" onclick="selectBrush('floor_checker')">棋盘格</div>
-        <div class="palette-item" onclick="selectBrush('floor_stone')">石头</div>
+        <div class="palette-item" onclick="selectBrush('floor_stone')">石头板</div>
+        
         <div class="palette-title">墙纸</div>
         <div class="palette-item" onclick="selectBrush('wallpaper')">刷墙纸</div>
+        
         <div class="palette-title">外边缘</div>
         <div class="palette-item" onclick="selectBrush('edge_top')">上直边</div>
         <div class="palette-item" onclick="selectBrush('edge_bottom')">下直边</div>
@@ -39,14 +66,17 @@
         <div class="palette-item" onclick="selectBrush('edge_tr')">右上角</div>
         <div class="palette-item" onclick="selectBrush('edge_bl')">左下角</div>
         <div class="palette-item" onclick="selectBrush('edge_br')">右下角</div>
+
         <div class="palette-title">内边缘</div>
         <div class="palette-item" onclick="selectBrush('edge_in_tl')">内左上</div>
         <div class="palette-item" onclick="selectBrush('edge_in_tr')">内右上</div>
         <div class="palette-item" onclick="selectBrush('edge_in_bl')">内左下</div>
         <div class="palette-item" onclick="selectBrush('edge_in_br')">内右下</div>
+
         <div class="palette-title">操作</div>
         <div class="palette-item" onclick="selectBrush('erase')" style="color:#ff2a6d;">橡皮擦</div>
     </div>
+
     <div id="dpad">
         <div></div>
         <button class="dpad-btn" onclick="moveCamera(0, -1)"><img src="assets/furniture/icon_arrow_up.png?v=1"></button>
@@ -69,7 +99,8 @@
         const MAP_COLS = 50; 
         const MAP_ROWS = 50;
 
-        let layerFloor = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(null)); 
+        // 图层数据
+        let layerFloor = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(null)); // 存具体的画板类型
         let layerWallpaper = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(false));
         let layerEdge = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(null));
 
@@ -80,31 +111,61 @@
         let cameraX = 0; let cameraY = 0;
         let playerX = 5 * TILE_SIZE; let playerY = 5 * TILE_SIZE; 
 
+        // 加载素材
         const imgs = {
             floor_wood: new Image(), floor_checker: new Image(), floor_stone: new Image(),
             wallpaper_dark: new Image(), wallpaper_base: new Image(), player: new Image()
         };
-        imgs.floor_wood.src = 'assets/furniture/tile_floor_wood.png?v=8888'; 
-        imgs.floor_checker.src = 'assets/furniture/tile_floor_checkerboard.png?v=8888'; 
-        imgs.floor_stone.src = 'assets/furniture/tile_floor_stone2.png?v=8888'; 
-        imgs.wallpaper_dark.src = 'assets/furniture/wallpaper_top_dark.png?v=8888';
-        imgs.wallpaper_base.src = 'assets/furniture/wallpaper_top_base.png?v=8888';
-        imgs.player.src = 'assets/avatar/chibi_male_walk_down_1.png?v=8888';
+        imgs.floor_wood.src = 'assets/furniture/tile_floor_wood.png?v=101'; 
+        imgs.floor_checker.src = 'assets/furniture/tile_floor_checkerboard.png?v=101'; 
+        imgs.floor_stone.src = 'assets/furniture/tile_floor_stone2.png?v=101'; 
+        imgs.wallpaper_dark.src = 'assets/furniture/wallpaper_top_dark.png?v=101';
+        imgs.wallpaper_base.src = 'assets/furniture/wallpaper_top_base.png?v=101';
+        imgs.player.src = 'assets/avatar/chibi_male_walk_down_1.png?v=101';
 
         const edgeImgs = {};
-        const edgeNames = ['edge_top', 'edge_bottom', 'edge_left', 'edge_right', 'edge_tl', 'edge_tr', 'edge_bl', 'edge_br', 'edge_in_tl', 'edge_in_tr', 'edge_in_bl', 'edge_in_br'];
+        const edgeNames = [
+            'edge_top', 'edge_bottom', 'edge_left', 'edge_right',
+            'edge_tl', 'edge_tr', 'edge_bl', 'edge_br',
+            'edge_in_tl', 'edge_in_tr', 'edge_in_bl', 'edge_in_br'
+        ];
+        
         edgeNames.forEach(name => {
             let img = new Image();
             let fileName = name.replace('edge_tl', 'edge_top_left').replace('edge_tr', 'edge_top_right').replace('edge_bl', 'edge_bottom_left').replace('edge_br', 'edge_bottom_right')
                                .replace('edge_in_tl', 'edge_inner_top_left').replace('edge_in_tr', 'edge_inner_top_right')
                                .replace('edge_in_bl', 'edge_inner_bottom_left').replace('edge_in_br', 'edge_inner_bottom_right');
-            img.src = `assets/furniture/${fileName}.png?v=8888`;
+            img.src = `assets/furniture/${fileName}.png?v=101`;
             edgeImgs[name] = img;
         });
 
-        function selectBrush(brushName) { currentBrush = brushName; document.querySelectorAll('.palette-item').forEach(el => el.classList.remove('active')); event.target.classList.add('active'); }
-        function moveCamera(dx, dy) { cameraX += dx * TILE_SIZE * 2; cameraY += dy * TILE_SIZE * 2; render(); }
-        function togglePlay() { isPlaying = !isPlaying; document.getElementById('toolbar').style.display = isPlaying ? 'none' : 'flex'; document.getElementById('palette').style.display = isPlaying ? 'none' : 'flex'; document.getElementById('dpad').style.display = isPlaying ? 'none' : 'grid'; render(); }
+        function selectBrush(brushName) {
+            currentBrush = brushName;
+            document.querySelectorAll('.palette-item').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function moveCamera(dx, dy) {
+            cameraX += dx * TILE_SIZE * 2;
+            cameraY += dy * TILE_SIZE * 2;
+            render();
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            document.getElementById('toolbar').style.display = isPlaying ? 'none' : 'flex';
+            document.getElementById('palette').style.display = isPlaying ? 'none' : 'flex';
+            document.getElementById('dpad').style.display = isPlaying ? 'none' : 'grid';
+            
+            if(isPlaying) {
+                for(let r=0; r<MAP_ROWS; r++){
+                    for(let c=0; c<MAP_COLS; c++){
+                        if(layerFloor[r][c]) { playerX = c*TILE_SIZE; playerY = r*TILE_SIZE; break; }
+                    }
+                }
+            }
+            render();
+        }
 
         function handleDraw(clientX, clientY) {
             if (isPlaying) return;
@@ -115,10 +176,17 @@
             let r = Math.floor(y / TILE_SIZE);
 
             if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS) {
-                if (currentBrush.startsWith('floor_')) layerFloor[r][c] = currentBrush;
-                else if (currentBrush === 'wallpaper') layerWallpaper[r][c] = true;
-                else if (currentBrush.startsWith('edge_')) layerEdge[r][c] = currentBrush; 
-                else if (currentBrush === 'erase') { layerFloor[r][c] = null; layerWallpaper[r][c] = false; layerEdge[r][c] = null; }
+                if (currentBrush.startsWith('floor_')) {
+                    layerFloor[r][c] = currentBrush; // 记录选中的地板
+                } else if (currentBrush === 'wallpaper') {
+                    layerWallpaper[r][c] = true;
+                } else if (currentBrush.startsWith('edge_')) {
+                    layerEdge[r][c] = currentBrush; 
+                } else if (currentBrush === 'erase') {
+                    layerFloor[r][c] = null;
+                    layerWallpaper[r][c] = false;
+                    layerEdge[r][c] = null;
+                }
                 render();
             }
         }
@@ -138,34 +206,28 @@
 
                     if (sx < -TILE_SIZE || sx > canvas.width || sy < -TILE_SIZE || sy > canvas.height) continue;
 
-                    if (!isPlaying) { ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.strokeRect(sx, sy, TILE_SIZE, TILE_SIZE); }
+                    if (!isPlaying) {
+                        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                        ctx.strokeRect(sx, sy, TILE_SIZE, TILE_SIZE);
+                    }
 
-                    // 1. 铺地板（如果这格有地板，就在底层画出来）
+                    // 1. 地板层：铺底
                     if (layerFloor[r][c]) {
                         let floorImg = imgs[layerFloor[r][c]];
-                        if (floorImg && floorImg.complete) ctx.drawImage(floorImg, sx, sy, TILE_SIZE, TILE_SIZE);
-                    }
-
-                    // 2. 如果这格是边缘墙，先在最底层垫一个纯黑色的底，防止透出下面的地板！
-                    if (layerEdge[r][c]) {
-                        ctx.fillStyle = '#12101a'; // 纯黑填充
-                        ctx.fillRect(sx, sy, TILE_SIZE, TILE_SIZE);
-                    }
-
-                    // 3. 墙纸层（智能判断：下面有地板才画踢脚线，否则只画上面）
-                    if (layerWallpaper[r][c]) {
-                        let hasFloorBelow = (r+1 < MAP_ROWS && layerFloor[r+1][c]); // 检查下面一格是否有地板
-
-                        if (hasFloorBelow) {
-                            // 下面有地板，意味着这是底部的墙壁（画带踢脚线的完整墙纸）
-                            if (imgs.wallpaper_base.complete) ctx.drawImage(imgs.wallpaper_base, sx, sy, TILE_SIZE, TILE_SIZE);
-                        } else {
-                            // 上面还有墙，只画墙纸（不带踢脚线）
-                            if (imgs.wallpaper_dark.complete) ctx.drawImage(imgs.wallpaper_dark, sx, sy, TILE_SIZE, TILE_SIZE);
+                        if (floorImg && floorImg.complete) {
+                            // 增加一点透明度以防遮挡
+                            ctx.drawImage(floorImg, sx, sy, TILE_SIZE, TILE_SIZE);
                         }
                     }
 
-                    // 4. 贴边缘墙（压在所有图层的最上面）
+                    // 2. 墙纸层：先画阴影，再画踢脚线
+                    if (layerWallpaper[r][c]) {
+                        // 为了防止覆盖错误，强制确保这两张图不透明
+                        if (imgs.wallpaper_dark.complete) ctx.drawImage(imgs.wallpaper_dark, sx, sy, TILE_SIZE, TILE_SIZE);
+                        if (imgs.wallpaper_base.complete) ctx.drawImage(imgs.wallpaper_base, sx, sy, TILE_SIZE, TILE_SIZE);
+                    }
+
+                    // 3. 边缘墙层
                     if (layerEdge[r][c]) {
                         let edgeImg = edgeImgs[layerEdge[r][c]];
                         if (edgeImg && edgeImg.complete) {
@@ -175,7 +237,7 @@
                 }
             }
 
-            // 小人
+            // 角色
             if (isPlaying) {
                 const psx = playerX + cameraX; 
                 const psy = playerY + cameraY;
