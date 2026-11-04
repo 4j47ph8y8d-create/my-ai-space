@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园 - 终极建造编辑器</title>
+    <title>家园 - 完美建造编辑器</title>
     <style>
         body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; font-family: monospace; }
         canvas { display: block; image-rendering: pixelated; }
         
-        /* 顶部工具栏 */
         #toolbar { 
             position: absolute; top: 0; left: 0; width: 100%; 
             background: rgba(0,0,0,0.85); border-bottom: 2px solid #5c3a21;
@@ -17,12 +16,11 @@
         }
         .btn-play { background: #05d9e8; color: #000; border: 2px solid #fff; padding: 6px 15px; border-radius: 4px; font-size: 16px; font-weight: bold; }
         
-        /* 右侧画笔面板 */
         #palette {
             position: absolute; top: 60px; right: 10px; width: 100px;
             background: rgba(0,0,0,0.85); border: 2px solid #5c3a21; border-radius: 8px;
             padding: 10px; z-index: 10; display: flex; flex-direction: column; gap: 8px;
-            max-height: 75vh; overflow-y: auto;
+            max-height: 80vh; overflow-y: auto;
         }
         .palette-title { color: #ff2a6d; font-size: 12px; font-weight: bold; text-align: center; margin: 5px 0; }
         .palette-item {
@@ -32,7 +30,6 @@
         }
         .palette-item.active { border-color: #05d9e8; box-shadow: 0 0 8px #05d9e8; background: #333; }
         
-        /* 左下角方向控制键 */
         #dpad {
             position: absolute; bottom: 20px; left: 20px; z-index: 10;
             display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(3, 40px); gap: 5px;
@@ -52,11 +49,15 @@
     </div>
 
     <div id="palette">
-        <div class="palette-title">基础图层</div>
-        <div class="palette-item active" onclick="selectBrush('floor')">铺地板</div>
+        <div class="palette-title">地板</div>
+        <div class="palette-item active" onclick="selectBrush('floor_wood')">木地板</div>
+        <div class="palette-item" onclick="selectBrush('floor_checker')">棋盘格</div>
+        <div class="palette-item" onclick="selectBrush('floor_stone')">石头板</div>
+        
+        <div class="palette-title">墙纸</div>
         <div class="palette-item" onclick="selectBrush('wallpaper')">刷墙纸</div>
         
-        <div class="palette-title">外边缘 (凸)</div>
+        <div class="palette-title">外边缘</div>
         <div class="palette-item" onclick="selectBrush('edge_top')">上直边</div>
         <div class="palette-item" onclick="selectBrush('edge_bottom')">下直边</div>
         <div class="palette-item" onclick="selectBrush('edge_left')">左直边</div>
@@ -66,7 +67,7 @@
         <div class="palette-item" onclick="selectBrush('edge_bl')">左下角</div>
         <div class="palette-item" onclick="selectBrush('edge_br')">右下角</div>
 
-        <div class="palette-title">内边缘 (凹)</div>
+        <div class="palette-title">内边缘</div>
         <div class="palette-item" onclick="selectBrush('edge_in_tl')">内左上</div>
         <div class="palette-item" onclick="selectBrush('edge_in_tr')">内右上</div>
         <div class="palette-item" onclick="selectBrush('edge_in_bl')">内左下</div>
@@ -76,7 +77,6 @@
         <div class="palette-item" onclick="selectBrush('erase')" style="color:#ff2a6d;">橡皮擦</div>
     </div>
 
-    <!-- 使用你画的箭头图标 -->
     <div id="dpad">
         <div></div>
         <button class="dpad-btn" onclick="moveCamera(0, -1)"><img src="assets/furniture/icon_arrow_up.png?v=1"></button>
@@ -99,26 +99,29 @@
         const MAP_COLS = 50; 
         const MAP_ROWS = 50;
 
-        // 分层数据
-        let layerFloor = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(false));
+        // 图层数据
+        let layerFloor = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(null)); // 存具体的画板类型
         let layerWallpaper = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(false));
-        let layerEdge = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(null)); // 存具体的画笔类型
+        let layerEdge = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(null));
 
-        let currentBrush = 'floor';
+        let currentBrush = 'floor_wood';
         let isPlaying = false;
         let isDrawing = false;
 
         let cameraX = 0; let cameraY = 0;
         let playerX = 5 * TILE_SIZE; let playerY = 5 * TILE_SIZE; 
 
-        // 加载所有素材 (加版本号防缓存)
+        // 加载素材
         const imgs = {
-            floor: new Image(), wallpaper_dark: new Image(), wallpaper_base: new Image(), player: new Image()
+            floor_wood: new Image(), floor_checker: new Image(), floor_stone: new Image(),
+            wallpaper_dark: new Image(), wallpaper_base: new Image(), player: new Image()
         };
-        imgs.floor.src = 'assets/furniture/tile_floor_checkerboard.png?v=100'; 
-        imgs.wallpaper_dark.src = 'assets/furniture/wallpaper_top_dark.png?v=100';
-        imgs.wallpaper_base.src = 'assets/furniture/wallpaper_top_base.png?v=100';
-        imgs.player.src = 'assets/avatar/chibi_male_walk_down_1.png?v=100';
+        imgs.floor_wood.src = 'assets/furniture/tile_floor_wood.png?v=101'; 
+        imgs.floor_checker.src = 'assets/furniture/tile_floor_checkerboard.png?v=101'; 
+        imgs.floor_stone.src = 'assets/furniture/tile_floor_stone2.png?v=101'; 
+        imgs.wallpaper_dark.src = 'assets/furniture/wallpaper_top_dark.png?v=101';
+        imgs.wallpaper_base.src = 'assets/furniture/wallpaper_top_base.png?v=101';
+        imgs.player.src = 'assets/avatar/chibi_male_walk_down_1.png?v=101';
 
         const edgeImgs = {};
         const edgeNames = [
@@ -127,19 +130,12 @@
             'edge_in_tl', 'edge_in_tr', 'edge_in_bl', 'edge_in_br'
         ];
         
-        // 动态加载所有边缘图
         edgeNames.forEach(name => {
             let img = new Image();
-            // 注意：这里把内拐角命名映射到你的实际文件名
-            let fileName = name.replace('edge_tl', 'edge_top_left')
-                               .replace('edge_tr', 'edge_top_right')
-                               .replace('edge_bl', 'edge_bottom_left')
-                               .replace('edge_br', 'edge_bottom_right')
-                               .replace('edge_in_tl', 'edge_inner_top_left')
-                               .replace('edge_in_tr', 'edge_inner_top_right')
-                               .replace('edge_in_bl', 'edge_inner_bottom_left')
-                               .replace('edge_in_br', 'edge_inner_bottom_right');
-            img.src = `assets/furniture/${fileName}.png?v=100`;
+            let fileName = name.replace('edge_tl', 'edge_top_left').replace('edge_tr', 'edge_top_right').replace('edge_bl', 'edge_bottom_left').replace('edge_br', 'edge_bottom_right')
+                               .replace('edge_in_tl', 'edge_inner_top_left').replace('edge_in_tr', 'edge_inner_top_right')
+                               .replace('edge_in_bl', 'edge_inner_bottom_left').replace('edge_in_br', 'edge_inner_bottom_right');
+            img.src = `assets/furniture/${fileName}.png?v=101`;
             edgeImgs[name] = img;
         });
 
@@ -152,8 +148,6 @@
         function moveCamera(dx, dy) {
             cameraX += dx * TILE_SIZE * 2;
             cameraY += dy * TILE_SIZE * 2;
-            if(cameraX < -TILE_SIZE * 10) cameraX = -TILE_SIZE * 10;
-            if(cameraY < -TILE_SIZE * 10) cameraY = -TILE_SIZE * 10;
             render();
         }
 
@@ -164,7 +158,6 @@
             document.getElementById('dpad').style.display = isPlaying ? 'none' : 'grid';
             
             if(isPlaying) {
-                // 找一块地板出生
                 for(let r=0; r<MAP_ROWS; r++){
                     for(let c=0; c<MAP_COLS; c++){
                         if(layerFloor[r][c]) { playerX = c*TILE_SIZE; playerY = r*TILE_SIZE; break; }
@@ -174,25 +167,23 @@
             render();
         }
 
-        // ==================== 画笔逻辑 ====================
         function handleDraw(clientX, clientY) {
             if (isPlaying) return;
             let rect = canvas.getBoundingClientRect();
-            // 减去相机偏移，找准格子
             let x = clientX - rect.left - cameraX; 
             let y = clientY - rect.top - cameraY;
             let c = Math.floor(x / TILE_SIZE);
             let r = Math.floor(y / TILE_SIZE);
 
             if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS) {
-                if (currentBrush === 'floor') {
-                    layerFloor[r][c] = true;
+                if (currentBrush.startsWith('floor_')) {
+                    layerFloor[r][c] = currentBrush; // 记录选中的地板
                 } else if (currentBrush === 'wallpaper') {
                     layerWallpaper[r][c] = true;
                 } else if (currentBrush.startsWith('edge_')) {
                     layerEdge[r][c] = currentBrush; 
                 } else if (currentBrush === 'erase') {
-                    layerFloor[r][c] = false;
+                    layerFloor[r][c] = null;
                     layerWallpaper[r][c] = false;
                     layerEdge[r][c] = null;
                 }
@@ -200,12 +191,10 @@
             }
         }
 
-        // 触摸事件绑定
         canvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; handleDraw(e.touches[0].clientX, e.touches[0].clientY); }, {passive: false});
         canvas.addEventListener('touchmove', e => { e.preventDefault(); if(isDrawing) handleDraw(e.touches[0].clientX, e.touches[0].clientY); }, {passive: false});
         canvas.addEventListener('touchend', () => isDrawing = false);
 
-        // ==================== 渲染逻辑 ====================
         function render() {
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -215,31 +204,34 @@
                     let sx = c * TILE_SIZE + cameraX;
                     let sy = r * TILE_SIZE + cameraY;
 
-                    // 裁剪屏幕外的格子
                     if (sx < -TILE_SIZE || sx > canvas.width || sy < -TILE_SIZE || sy > canvas.height) continue;
 
-                    // 画网格
                     if (!isPlaying) {
                         ctx.strokeStyle = 'rgba(255,255,255,0.05)';
                         ctx.strokeRect(sx, sy, TILE_SIZE, TILE_SIZE);
                     }
 
-                    // 1. 地板层
-                    if (layerFloor[r][c] && imgs.floor.complete) {
-                        ctx.drawImage(imgs.floor, sx, sy, TILE_SIZE, TILE_SIZE);
+                    // 1. 地板层：铺底
+                    if (layerFloor[r][c]) {
+                        let floorImg = imgs[layerFloor[r][c]];
+                        if (floorImg && floorImg.complete) {
+                            // 增加一点透明度以防遮挡
+                            ctx.drawImage(floorImg, sx, sy, TILE_SIZE, TILE_SIZE);
+                        }
                     }
 
-                    // 2. 墙纸层
+                    // 2. 墙纸层：先画阴影，再画踢脚线
                     if (layerWallpaper[r][c]) {
+                        // 为了防止覆盖错误，强制确保这两张图不透明
                         if (imgs.wallpaper_dark.complete) ctx.drawImage(imgs.wallpaper_dark, sx, sy, TILE_SIZE, TILE_SIZE);
                         if (imgs.wallpaper_base.complete) ctx.drawImage(imgs.wallpaper_base, sx, sy, TILE_SIZE, TILE_SIZE);
                     }
 
-                    // 3. 边缘墙壁层
+                    // 3. 边缘墙层
                     if (layerEdge[r][c]) {
-                        let img = edgeImgs[layerEdge[r][c]];
-                        if (img && img.complete) {
-                            ctx.drawImage(img, sx, sy, TILE_SIZE, TILE_SIZE);
+                        let edgeImg = edgeImgs[layerEdge[r][c]];
+                        if (edgeImg && edgeImg.complete) {
+                            ctx.drawImage(edgeImg, sx, sy, TILE_SIZE, TILE_SIZE);
                         }
                     }
                 }
