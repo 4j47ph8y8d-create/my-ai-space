@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>强制同步云端数据</title>
+</head>
+<body style="background:#12101a; color:#fff; font-family:sans-serif; padding:20px;">
+    <h2>正在为你拉取云端数据...</h2>
+    <p id="status">请稍候...</p>
+    <script>
+        // 尝试从本地拿 token，如果没有 token，就提示
+        const token = localStorage.getItem('dream_token');
+        if (!token) {
+            document.getElementById('status').innerHTML = "❌ 找不到登录 Token，请先在 App 里登录一次，然后再来点这个按钮！";
+        } else {
+            document.getElementById('status').innerHTML = "正在向服务器请求...";
+            fetch('https://lunar-reverie.top/api/data/load', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    // 强制写进 localStorage
+                    localStorage.setItem('ds_multiRole_v2', JSON.stringify({
+                        config: data.data.config || {},
+                        roles: data.data.roles || [],
+                        currentRoleId: data.data.roles && data.data.roles[0] ? data.data.roles[0].id : null
+                    }));
+                    document.getElementById('status').innerHTML = "✅ 云端数据已强行拉回本地！<br><br>请返回主界面刷新！";
+                } else {
+                    document.getElementById('status').innerHTML = "❌ 拉取失败，返回格式不对：" + JSON.stringify(data);
+                }
+            })
+            .catch(err => {
+                document.getElementById('status').innerHTML = "❌ 网络报错: " + err.message;
+            });
+        }
+    </script>
+</body>
+</html>
