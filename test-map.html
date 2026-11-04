@@ -3,33 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家园 - 终极图层叠加</title>
+    <title>家园 - 终极建造编辑器</title>
     <style>
         body { margin: 0; padding: 0; background-color: #12101a; overflow: hidden; touch-action: none; font-family: monospace; }
         canvas { display: block; image-rendering: pixelated; }
+        
+        /* 顶部工具栏 */
         #toolbar { 
             position: absolute; top: 0; left: 0; width: 100%; 
             background: rgba(0,0,0,0.85); border-bottom: 2px solid #5c3a21;
-            padding: 10px; display: flex; gap: 8px; overflow-x: auto; align-items: center;
-            z-index: 10; box-sizing: border-box; flex-wrap: wrap;
+            padding: 10px; display: flex; gap: 10px; align-items: center;
+            z-index: 10; box-sizing: border-box;
         }
-        .btn {
-            background: #333; color: #fff; border: 2px solid #555; 
-            padding: 6px 10px; border-radius: 4px; font-size: 14px;
-            white-space: nowrap; font-weight: bold;
+        .btn-play { background: #05d9e8; color: #000; border: 2px solid #fff; padding: 6px 15px; border-radius: 4px; font-size: 16px; font-weight: bold; }
+        
+        /* 右侧画笔面板 */
+        #palette {
+            position: absolute; top: 60px; right: 10px; width: 100px;
+            background: rgba(0,0,0,0.85); border: 2px solid #5c3a21; border-radius: 8px;
+            padding: 10px; z-index: 10; display: flex; flex-direction: column; gap: 8px;
+            max-height: 75vh; overflow-y: auto;
         }
-        .btn.active { background: #ff2a6d; border-color: #fff; box-shadow: 0 0 10px #ff2a6d; }
-        .btn-play { background: #05d9e8; color: #000; border-color: #fff; }
+        .palette-title { color: #ff2a6d; font-size: 12px; font-weight: bold; text-align: center; margin: 5px 0; }
+        .palette-item {
+            height: 32px; border: 1px solid #555; border-radius: 4px; cursor: pointer; 
+            display: flex; justify-content: center; align-items: center; color: #fff; font-size: 12px;
+            background: #222;
+        }
+        .palette-item.active { border-color: #05d9e8; box-shadow: 0 0 8px #05d9e8; background: #333; }
+        
+        /* 左下角方向控制键 */
+        #dpad {
+            position: absolute; bottom: 20px; left: 20px; z-index: 10;
+            display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(3, 40px); gap: 5px;
+        }
+        .dpad-btn {
+            background: rgba(0,0,0,0.7); border: none; padding: 0;
+            display: flex; justify-content: center; align-items: center; border-radius: 8px;
+        }
+        .dpad-btn img { width: 100%; height: 100%; object-fit: contain; }
+        .dpad-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
     <div id="toolbar">
-        <button class="btn active" onclick="setTool('floor')">铺地板</button>
-        <button class="btn" onclick="setTool('wall_edge')">画外边缘墙</button>
-        <button class="btn" onclick="setTool('wall_paper')">画墙纸(带踢脚线)</button>
-        <button class="btn" onclick="setTool('erase')">橡皮擦</button>
-        <div style="flex:1; min-width: 10px;"></div>
-        <button class="btn btn-play" onclick="togglePlay()">进入游玩</button>
+        <button class="btn-play" onclick="togglePlay()">进入游玩</button>
+        <span style="color:#fff; font-size:12px;" id="statusText">建造模式 - 拖拽作画</span>
+    </div>
+
+    <div id="palette">
+        <div class="palette-title">基础图层</div>
+        <div class="palette-item active" onclick="selectBrush('floor')">铺地板</div>
+        <div class="palette-item" onclick="selectBrush('wallpaper')">刷墙纸</div>
+        
+        <div class="palette-title">外边缘 (凸)</div>
+        <div class="palette-item" onclick="selectBrush('edge_top')">上直边</div>
+        <div class="palette-item" onclick="selectBrush('edge_bottom')">下直边</div>
+        <div class="palette-item" onclick="selectBrush('edge_left')">左直边</div>
+        <div class="palette-item" onclick="selectBrush('edge_right')">右直边</div>
+        <div class="palette-item" onclick="selectBrush('edge_tl')">左上角</div>
+        <div class="palette-item" onclick="selectBrush('edge_tr')">右上角</div>
+        <div class="palette-item" onclick="selectBrush('edge_bl')">左下角</div>
+        <div class="palette-item" onclick="selectBrush('edge_br')">右下角</div>
+
+        <div class="palette-title">内边缘 (凹)</div>
+        <div class="palette-item" onclick="selectBrush('edge_in_tl')">内左上</div>
+        <div class="palette-item" onclick="selectBrush('edge_in_tr')">内右上</div>
+        <div class="palette-item" onclick="selectBrush('edge_in_bl')">内左下</div>
+        <div class="palette-item" onclick="selectBrush('edge_in_br')">内右下</div>
+
+        <div class="palette-title">操作</div>
+        <div class="palette-item" onclick="selectBrush('erase')" style="color:#ff2a6d;">橡皮擦</div>
+    </div>
+
+    <!-- 使用你画的箭头图标 -->
+    <div id="dpad">
+        <div></div>
+        <button class="dpad-btn" onclick="moveCamera(0, -1)"><img src="assets/furniture/icon_arrow_up.png?v=1"></button>
+        <div></div>
+        <button class="dpad-btn" onclick="moveCamera(-1, 0)"><img src="assets/furniture/icon_arrow_left.png?v=1"></button>
+        <button class="dpad-btn" onclick="moveCamera(0, 1)"><img src="assets/furniture/icon_arrow_down.png?v=1"></button>
+        <button class="dpad-btn" onclick="moveCamera(1, 0)"><img src="assets/furniture/icon_arrow_right.png?v=1"></button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -38,69 +92,83 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = false;
-        
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
         const TILE_SIZE = 32;
-        const MAP_COLS = 30; 
-        const MAP_ROWS = 30;
+        const MAP_COLS = 50; 
+        const MAP_ROWS = 50;
 
-        // ================= 核心改变：分离图层数据 =================
-        // 每个格子都有独立的标记，不再是互斥的
+        // 分层数据
         let layerFloor = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(false));
         let layerWallpaper = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(false));
-        let layerEdge = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(false));
-        
-        let currentTool = 'floor';
+        let layerEdge = Array(MAP_ROWS).fill(null).map(() => Array(MAP_COLS).fill(null)); // 存具体的画笔类型
+
+        let currentBrush = 'floor';
         let isPlaying = false;
         let isDrawing = false;
 
         let cameraX = 0; let cameraY = 0;
-        let playerX = 5 * TILE_SIZE; let playerY = 5 * TILE_SIZE; let playerSpeed = 4;
+        let playerX = 5 * TILE_SIZE; let playerY = 5 * TILE_SIZE; 
 
-        // 加载素材
+        // 加载所有素材 (加版本号防缓存)
         const imgs = {
-            floor: new Image(),
-            edge_top: new Image(), edge_bottom: new Image(), edge_left: new Image(), edge_right: new Image(),
-            edge_tl: new Image(), edge_tr: new Image(), edge_bl: new Image(), edge_br: new Image(),
-            wallpaper_dark: new Image(), wallpaper_base: new Image(),
-            player: new Image()
+            floor: new Image(), wallpaper_dark: new Image(), wallpaper_base: new Image(), player: new Image()
         };
+        imgs.floor.src = 'assets/furniture/tile_floor_checkerboard.png?v=100'; 
+        imgs.wallpaper_dark.src = 'assets/furniture/wallpaper_top_dark.png?v=100';
+        imgs.wallpaper_base.src = 'assets/furniture/wallpaper_top_base.png?v=100';
+        imgs.player.src = 'assets/avatar/chibi_male_walk_down_1.png?v=100';
 
-        // 这里用的是你确认上传的图
-        imgs.floor.src = 'assets/furniture/tile_floor_checkerboard.png?v=999'; // 按你截图里用的棋盘格地板
-        imgs.edge_top.src = 'assets/furniture/edge_top.png?v=999';
-        imgs.edge_bottom.src = 'assets/furniture/edge_bottom.png?v=999';
-        imgs.edge_left.src = 'assets/furniture/edge_left.png?v=999';
-        imgs.edge_right.src = 'assets/furniture/edge_right.png?v=999';
-        imgs.edge_tl.src = 'assets/furniture/edge_top_left.png?v=999';
-        imgs.edge_tr.src = 'assets/furniture/edge_top_right.png?v=999';
-        imgs.edge_bl.src = 'assets/furniture/edge_bottom_left.png?v=999';
-        imgs.edge_br.src = 'assets/furniture/edge_bottom_right.png?v=999';
-        imgs.wallpaper_dark.src = 'assets/furniture/wallpaper_top_dark.png?v=999';
-        imgs.wallpaper_base.src = 'assets/furniture/wallpaper_top_base.png?v=999';
-        imgs.player.src = 'assets/avatar/chibi_male_walk_down_1.png?v=999';
+        const edgeImgs = {};
+        const edgeNames = [
+            'edge_top', 'edge_bottom', 'edge_left', 'edge_right',
+            'edge_tl', 'edge_tr', 'edge_bl', 'edge_br',
+            'edge_in_tl', 'edge_in_tr', 'edge_in_bl', 'edge_in_br'
+        ];
+        
+        // 动态加载所有边缘图
+        edgeNames.forEach(name => {
+            let img = new Image();
+            // 注意：这里把内拐角命名映射到你的实际文件名
+            let fileName = name.replace('edge_tl', 'edge_top_left')
+                               .replace('edge_tr', 'edge_top_right')
+                               .replace('edge_bl', 'edge_bottom_left')
+                               .replace('edge_br', 'edge_bottom_right')
+                               .replace('edge_in_tl', 'edge_inner_top_left')
+                               .replace('edge_in_tr', 'edge_inner_top_right')
+                               .replace('edge_in_bl', 'edge_inner_bottom_left')
+                               .replace('edge_in_br', 'edge_inner_bottom_right');
+            img.src = `assets/furniture/${fileName}.png?v=100`;
+            edgeImgs[name] = img;
+        });
 
-        function setTool(tool) {
-            currentTool = tool;
-            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        function selectBrush(brushName) {
+            currentBrush = brushName;
+            document.querySelectorAll('.palette-item').forEach(el => el.classList.remove('active'));
             event.target.classList.add('active');
+        }
+
+        function moveCamera(dx, dy) {
+            cameraX += dx * TILE_SIZE * 2;
+            cameraY += dy * TILE_SIZE * 2;
+            if(cameraX < -TILE_SIZE * 10) cameraX = -TILE_SIZE * 10;
+            if(cameraY < -TILE_SIZE * 10) cameraY = -TILE_SIZE * 10;
+            render();
         }
 
         function togglePlay() {
             isPlaying = !isPlaying;
             document.getElementById('toolbar').style.display = isPlaying ? 'none' : 'flex';
+            document.getElementById('palette').style.display = isPlaying ? 'none' : 'flex';
+            document.getElementById('dpad').style.display = isPlaying ? 'none' : 'grid';
             
-            if (isPlaying) {
-                let found = false;
+            if(isPlaying) {
+                // 找一块地板出生
                 for(let r=0; r<MAP_ROWS; r++){
                     for(let c=0; c<MAP_COLS; c++){
-                        if(layerFloor[r][c]) {
-                            playerX = c * TILE_SIZE; playerY = r * TILE_SIZE; found = true; break;
-                        }
+                        if(layerFloor[r][c]) { playerX = c*TILE_SIZE; playerY = r*TILE_SIZE; break; }
                     }
-                    if(found) break;
                 }
             }
             render();
@@ -110,161 +178,80 @@
         function handleDraw(clientX, clientY) {
             if (isPlaying) return;
             let rect = canvas.getBoundingClientRect();
-            let x = clientX - rect.left;
-            let y = clientY - rect.top;
+            // 减去相机偏移，找准格子
+            let x = clientX - rect.left - cameraX; 
+            let y = clientY - rect.top - cameraY;
             let c = Math.floor(x / TILE_SIZE);
             let r = Math.floor(y / TILE_SIZE);
 
             if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS) {
-                if (currentTool === 'floor') layerFloor[r][c] = true;
-                if (currentTool === 'wall_edge') layerEdge[r][c] = true;
-                if (currentTool === 'wall_paper') layerWallpaper[r][c] = true;
-                
-                if (currentTool === 'erase') {
-                    // 橡皮擦：一键清除该格子的所有图层
+                if (currentBrush === 'floor') {
+                    layerFloor[r][c] = true;
+                } else if (currentBrush === 'wallpaper') {
+                    layerWallpaper[r][c] = true;
+                } else if (currentBrush.startsWith('edge_')) {
+                    layerEdge[r][c] = currentBrush; 
+                } else if (currentBrush === 'erase') {
                     layerFloor[r][c] = false;
-                    layerEdge[r][c] = false;
                     layerWallpaper[r][c] = false;
+                    layerEdge[r][c] = null;
                 }
                 render();
             }
         }
 
-        canvas.addEventListener('mousedown', e => { isDrawing = true; handleDraw(e.clientX, e.clientY); });
-        canvas.addEventListener('mousemove', e => { if(isDrawing) handleDraw(e.clientX, e.clientY); });
-        window.addEventListener('mouseup', () => isDrawing = false);
+        // 触摸事件绑定
         canvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; handleDraw(e.touches[0].clientX, e.touches[0].clientY); }, {passive: false});
         canvas.addEventListener('touchmove', e => { e.preventDefault(); if(isDrawing) handleDraw(e.touches[0].clientX, e.touches[0].clientY); }, {passive: false});
         canvas.addEventListener('touchend', () => isDrawing = false);
 
-        // ==================== 渲染逻辑（绝对按图层顺序） ====================
+        // ==================== 渲染逻辑 ====================
         function render() {
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            if (isPlaying) {
-                cameraX = playerX - canvas.width / 2 + TILE_SIZE / 2;
-                cameraY = playerY - canvas.height / 2 + TILE_SIZE / 2;
-            } else {
-                cameraX = 0; cameraY = 0;
-            }
-
-            // --- 第一层：地板 (永远在底层) ---
             for (let r = 0; r < MAP_ROWS; r++) {
                 for (let c = 0; c < MAP_COLS; c++) {
-                    let sx = c * TILE_SIZE - cameraX;
-                    let sy = r * TILE_SIZE - cameraY;
+                    let sx = c * TILE_SIZE + cameraX;
+                    let sy = r * TILE_SIZE + cameraY;
 
+                    // 裁剪屏幕外的格子
+                    if (sx < -TILE_SIZE || sx > canvas.width || sy < -TILE_SIZE || sy > canvas.height) continue;
+
+                    // 画网格
                     if (!isPlaying) {
                         ctx.strokeStyle = 'rgba(255,255,255,0.05)';
                         ctx.strokeRect(sx, sy, TILE_SIZE, TILE_SIZE);
                     }
 
+                    // 1. 地板层
                     if (layerFloor[r][c] && imgs.floor.complete) {
                         ctx.drawImage(imgs.floor, sx, sy, TILE_SIZE, TILE_SIZE);
                     }
-                }
-            }
 
-            // --- 第二层：墙纸上半截 (阴影) ---
-            for (let r = 0; r < MAP_ROWS; r++) {
-                for (let c = 0; c < MAP_COLS; c++) {
-                    let sx = c * TILE_SIZE - cameraX;
-                    let sy = r * TILE_SIZE - cameraY;
-                    if (layerWallpaper[r][c] && imgs.wallpaper_dark.complete) {
-                        ctx.drawImage(imgs.wallpaper_dark, sx, sy, TILE_SIZE, TILE_SIZE);
+                    // 2. 墙纸层
+                    if (layerWallpaper[r][c]) {
+                        if (imgs.wallpaper_dark.complete) ctx.drawImage(imgs.wallpaper_dark, sx, sy, TILE_SIZE, TILE_SIZE);
+                        if (imgs.wallpaper_base.complete) ctx.drawImage(imgs.wallpaper_base, sx, sy, TILE_SIZE, TILE_SIZE);
                     }
-                }
-            }
 
-            // --- 第三层：墙纸下半截 (踢脚线) ---
-            for (let r = 0; r < MAP_ROWS; r++) {
-                for (let c = 0; c < MAP_COLS; c++) {
-                    let sx = c * TILE_SIZE - cameraX;
-                    let sy = r * TILE_SIZE - cameraY;
-                    if (layerWallpaper[r][c] && imgs.wallpaper_base.complete) {
-                        ctx.drawImage(imgs.wallpaper_base, sx, sy, TILE_SIZE, TILE_SIZE);
-                    }
-                }
-            }
-
-            // --- 第四层：边缘墙壁 (最顶层，压住一切) ---
-            for (let r = 0; r < MAP_ROWS; r++) {
-                for (let c = 0; c < MAP_COLS; c++) {
+                    // 3. 边缘墙壁层
                     if (layerEdge[r][c]) {
-                        let sx = c * TILE_SIZE - cameraX;
-                        let sy = r * TILE_SIZE - cameraY;
-
-                        // 判断周围谁是边缘墙，实现自动转角
-                        let isTop = (r-1 < 0 || !layerEdge[r-1][c]);
-                        let isBottom = (r+1 >= MAP_ROWS || !layerEdge[r+1][c]);
-                        let isLeft = (c-1 < 0 || !layerEdge[r][c-1]);
-                        let isRight = (c+1 >= MAP_COLS || !layerEdge[r][c+1]);
-
-                        let outImg = null;
-                        if (isTop && isLeft) outImg = imgs.edge_tl;
-                        else if (isTop && isRight) outImg = imgs.edge_tr;
-                        else if (isBottom && isLeft) outImg = imgs.edge_bl;
-                        else if (isBottom && isRight) outImg = imgs.edge_br;
-                        else if (isTop) outImg = imgs.edge_top;
-                        else if (isBottom) outImg = imgs.edge_bottom;
-                        else if (isLeft) outImg = imgs.edge_left;
-                        else if (isRight) outImg = imgs.edge_right;
-
-                        if (outImg && outImg.complete) {
-                            ctx.drawImage(outImg, sx, sy, TILE_SIZE, TILE_SIZE);
+                        let img = edgeImgs[layerEdge[r][c]];
+                        if (img && img.complete) {
+                            ctx.drawImage(img, sx, sy, TILE_SIZE, TILE_SIZE);
                         }
                     }
                 }
             }
 
-            // --- 最顶层：小人 ---
+            // 角色
             if (isPlaying) {
-                const psx = playerX - cameraX; 
-                const psy = playerY - cameraY;
-                if (imgs.player.complete) {
-                    ctx.drawImage(imgs.player, psx, psy - 32, TILE_SIZE, 64);
-                }
+                const psx = playerX + cameraX; 
+                const psy = playerY + cameraY;
+                if (imgs.player.complete) ctx.drawImage(imgs.player, psx, psy - 32, TILE_SIZE, 64);
             }
         }
-
-        // ==================== 游玩模式触摸控制 ====================
-        let tX = 0; let tY = 0; let dragging = false;
-        canvas.addEventListener('touchstart', e => {
-            if (!isPlaying) return;
-            tX = e.touches[0].clientX; tY = e.touches[0].clientY; dragging = true;
-        });
-        canvas.addEventListener('touchmove', e => {
-            if (!isPlaying || !dragging) return;
-            let cx = e.touches[0].clientX; let cy = e.touches[0].clientY;
-            let dx = cx - tX; let dy = cy - tY;
-            
-            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                let nx = playerX; let ny = playerY;
-                if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0) nx += playerSpeed; else nx -= playerSpeed; }
-                else { if (dy > 0) ny += playerSpeed; else ny -= playerSpeed; }
-                
-                let gc = Math.floor((nx + 16) / TILE_SIZE); 
-                let gr = Math.floor((ny + 32) / TILE_SIZE);
-                
-                if (gr >= 0 && gr < MAP_ROWS && gc >= 0 && gc < MAP_COLS) {
-                    // 碰撞：只能走在地板上
-                    if (layerFloor[gr][gc]) {
-                        playerX = nx; playerY = ny;
-                    }
-                }
-                tX = cx; tY = cy;
-                render();
-            }
-        });
-        canvas.addEventListener('touchend', () => { dragging = false; });
-
-        // 窗口缩放适应
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            render();
-        });
 
         render();
     </script>
