@@ -19568,6 +19568,10 @@ function cleanupVoicePlayer(msgId) {
 }
 
 async function generateVoiceForMessage(msgId, role) {
+    var voiceTimeout = setTimeout(function() {
+        showToast('⏱️ 语音生成超时，已转为文本');
+        if (typeof renderMessages === 'function') renderMessages();
+    }, 10000);
     if (!role) return;
     var msg = role.messages.find(function(m) { return m.id === msgId; });
     if (!msg) return;
@@ -19608,7 +19612,9 @@ async function generateVoiceForMessage(msgId, role) {
                 debouncedSaveAllData();
             }
         }, 2000);
+        clearTimeout(voiceTimeout);
     } catch (e) {
+        clearTimeout(voiceTimeout);
         console.error('生成语音失败:', e);
         showToast('🔊 语音生成失败: ' + e.message);
         if (CONFIG.voice.mode === 'bailian') {
