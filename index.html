@@ -7434,6 +7434,12 @@ var CONSTANTS = {
     ]
 };
 
+// 全局时间感知变量
+var timePrompt = (function() {
+    var now = new Date();
+    var timeStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 ' + now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    return '\n\n【系统时间背景设定】\n此时此刻的现实时间是 ' + timeStr + '。请结合这个时间点自然地互动，如果是深夜就关心对方休息。绝不能像机器人一样直接报时，也不要捏造时间。';
+})();
 var CONFIG = {
     accessMode: 'direct',
     apiKey: '',
@@ -10419,7 +10425,7 @@ function callDeepSeekDirect(userMessage, role, voiceRequested) {
             break;
         }
     }
-    var systemPrompt = buildSystemPrompt(role);
+    var systemPrompt = buildSystemPrompt(role) + timePrompt;
 // ===== 小钩子：在系统提示最后加一句温柔提醒 =====
 systemPrompt += '\n\n💡 小提示：如果需要用表情包表达情绪，就大胆用 [表情包：名称] 吧！系统会自动显示图片的～';
 systemPrompt += '\n\n💰 小提示：如果想给用户转账（比如用户要钱、你想表达心意、买礼物），就用 [转账 金额] 格式，例如 [转账 520]。系统会自动显示成转账卡片，用户点了就能收款。注意：每天最多 3 次，单次不超过 50000。';
@@ -10437,7 +10443,18 @@ systemPrompt += '\n\n💰 小提示：如果想给用户转账（比如用户要
     }).map(function(m) {
         var content = m.type === 'gift' ? '（送礼消息：' + (m.giftData ? m.giftData.productName : '礼物') + '）' : m.content;
         if (m.quoted && m.quoted.content) { content = '（引用' + (m.quoted.name || '对方') + '：' + m.quoted.content + '）\n' + content; }
-return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
+if (m.role === 'user') {
+                    var now = Date.now();
+                    var lastTime = window._lastUserChatTime || now;
+                    var diffMin = Math.floor((now - lastTime) / 60000);
+                    if (diffMin >= 30) {
+                        var d = new Date(now);
+                        var timeStr = d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日 ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+                        content = '[系统提示：现在是 ' + timeStr + '。距离上次聊天已过去 ' + diffMin + ' 分钟。]\n' + content;
+                    }
+                    window._lastUserChatTime = now;
+                }
+                return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
     });
     var temperature = parseFloat(CONFIG.temperature) || 0.9;
     var controller = new AbortController();
@@ -10491,7 +10508,7 @@ function callRelayAPI(userMessage, role, voiceRequested) {
             break;
         }
     }
-    var systemPrompt = buildSystemPrompt(role);
+    var systemPrompt = buildSystemPrompt(role) + timePrompt;
     var recentMemoryText = '';
     if (shouldRecall) {
         recentMemoryText = retrieveRelevantMemory(role, userMessage);
@@ -10505,7 +10522,18 @@ function callRelayAPI(userMessage, role, voiceRequested) {
     }).map(function(m) {
         var content = m.type === 'gift' ? '（送礼消息：' + (m.giftData ? m.giftData.productName : '礼物') + '）' : m.content;
         if (m.quoted && m.quoted.content) { content = '（引用' + (m.quoted.name || '对方') + '：' + m.quoted.content + '）\n' + content; }
-return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
+if (m.role === 'user') {
+                    var now = Date.now();
+                    var lastTime = window._lastUserChatTime || now;
+                    var diffMin = Math.floor((now - lastTime) / 60000);
+                    if (diffMin >= 30) {
+                        var d = new Date(now);
+                        var timeStr = d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日 ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+                        content = '[系统提示：现在是 ' + timeStr + '。距离上次聊天已过去 ' + diffMin + ' 分钟。]\n' + content;
+                    }
+                    window._lastUserChatTime = now;
+                }
+                return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
     });
     var temperature = parseFloat(CONFIG.temperature) || 0.9;
     var controller = new AbortController();
@@ -10554,13 +10582,24 @@ function callWebSearchAPI(userMessage, role, voiceRequested) {
     if (!apiKey) throw new Error('请先在设置中配置联网搜索 API Key');
     if (!endpoint) throw new Error('请先在设置中配置联网搜索 Endpoint');
     
-    var systemPrompt = buildSystemPrompt(role);
+    var systemPrompt = buildSystemPrompt(role) + timePrompt;
     var history = (role.messages || []).slice(-10).filter(function(m) {
         return m.type === 'text' || m.type === 'gift';
     }).map(function(m) {
         var content = m.type === 'gift' ? '（送礼消息：' + (m.giftData ? m.giftData.productName : '礼物') + '）' : m.content;
         if (m.quoted && m.quoted.content) { content = '（引用' + (m.quoted.name || '对方') + '：' + m.quoted.content + '）\n' + content; }
-return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
+if (m.role === 'user') {
+                    var now = Date.now();
+                    var lastTime = window._lastUserChatTime || now;
+                    var diffMin = Math.floor((now - lastTime) / 60000);
+                    if (diffMin >= 30) {
+                        var d = new Date(now);
+                        var timeStr = d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日 ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+                        content = '[系统提示：现在是 ' + timeStr + '。距离上次聊天已过去 ' + diffMin + ' 分钟。]\n' + content;
+                    }
+                    window._lastUserChatTime = now;
+                }
+                return { role: m.role === 'user' ? 'user' : 'assistant', content: content };
     });
     
     var temperature = parseFloat(CONFIG.temperature) || 0.9;
