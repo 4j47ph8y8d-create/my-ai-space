@@ -57,7 +57,7 @@
         let currentRoleId = null;
 
         function init() {
-            const raw = localStorage.getItem('ds_multiRole_v2');
+            const raw = localStorage.getItem('ds_multiRole_v2') || localStorage.getItem('ds_multiRole_v2_backup');
             if (!raw) return alert('请先在主界面创建角色！');
             
             globalData = JSON.parse(raw);
