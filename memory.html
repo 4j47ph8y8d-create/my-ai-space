@@ -409,13 +409,24 @@ function saveData() {
         localStorage.setItem('ds_multirole_v2', JSON.stringify(localData));
     } catch(e) { console.warn('本地缓存失败', e); }
 
-    var dataToSave = { roles: roles, currentRoleId: currentRoleId };
-    pushCloudData(dataToSave).then(function() {
-        console.log('☁️ 云端同步成功');
-    }).catch(function(err) {
-        console.error('云端同步失败', err);
-        showToast('⚠️ 云端同步失败，请重试');
-    });
+    // 只发送当前角色的 memory，不发送所有聊天记录，极速秒传
+    var currentRole = roles.find(r => r.id === currentRoleId);
+    if (currentRole) {
+        fetch('/api/data/update-memory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+            body: JSON.stringify({ roleId: currentRoleId, memory: currentRole.memory })
+        }).then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }).then(function() {
+            console.log('☁️ 记忆同步成功');
+            showToast('✅ 记忆已同步至云端');
+        }).catch(function(err) {
+            console.error('记忆同步失败', err);
+            showToast('❌ 记忆同步失败');
+        });
+    }
 }
 
 // ========== 渲染 ==========
