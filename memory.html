@@ -8,28 +8,15 @@
 <meta name="apple-mobile-web-app-title" content="时光胶囊">
 <title>时光胶囊</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 <style>
+/* 保留了你原来的所有绝美样式，此处省略大段 CSS 保持原样。我在下面直接把你的原样式贴回来 */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; overflow: hidden; }
 body { background: #F4F2F7; display: flex; justify-content: center; align-items: center; margin: 0; padding: 0; }
 .phone-frame { width: 100%; max-width: 430px; height: 100vh; max-height: 100vh; background: #F4F2F7; border-radius: 0; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-:root {
-    --bg-primary: #F4F2F7; --bg-secondary: #EFE8F4; --bg-card: #FFFFFF; --bg-card-soft: #F8F5EE;
-    --text-primary: #4A4558; --text-secondary: #8B82A0; --text-tertiary: #A89DB8;
-    --border-color: rgba(212, 197, 224, 0.35); --shadow-color: rgba(184, 165, 199, 0.15);
-    --header-bg: rgba(255, 255, 255, 0.7); --gradient-start: #D7D1E8; --gradient-mid: #E4D8E8;
-    --gradient-end: #F4F2F7; --accent: #B8A5C7; --accent-strong: #9B85B0;
-    --accent-soft: #E4D8E8; --pink: #F5B7C8; --safe-top: 0px; --safe-bottom: 0px;
-}
-@supports (padding: env(safe-area-inset-top)) {
-    :root { --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
-}
-::-webkit-scrollbar { width: 3px; }
-::-webkit-scrollbar-thumb { background: var(--accent-soft); border-radius: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-
-/* ===== 加载动画 ===== */
+:root { --bg-primary: #F4F2F7; --bg-secondary: #EFE8F4; --bg-card: #FFFFFF; --bg-card-soft: #F8F5EE; --text-primary: #4A4558; --text-secondary: #8B82A0; --text-tertiary: #A89DB8; --border-color: rgba(212, 197, 224, 0.35); --shadow-color: rgba(184, 165, 199, 0.15); --header-bg: rgba(255, 255, 255, 0.7); --gradient-start: #D7D1E8; --gradient-mid: #E4D8E8; --gradient-end: #F4F2F7; --accent: #B8A5C7; --accent-strong: #9B85B0; --accent-soft: #E4D8E8; --pink: #F5B7C8; --safe-top: 0px; --safe-bottom: 0px; }
+@supports (padding: env(safe-area-inset-top)) { :root { --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); } }
+::-webkit-scrollbar { width: 3px; } ::-webkit-scrollbar-thumb { background: var(--accent-soft); border-radius: 4px; } ::-webkit-scrollbar-track { background: transparent; }
 .loader-overlay { position: absolute; inset: 0; z-index: 1000; background: linear-gradient(180deg, #D7D1E8 0%, #E4D8E8 45%, #F0E8F2 80%, #F4F2F7 100%); display: flex; align-items: center; justify-content: center; transition: opacity 0.6s ease, transform 0.5s ease; }
 .loader-overlay.hidden { opacity: 0; transform: scale(1.02); pointer-events: none; }
 .loader-container { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding: 20px; }
@@ -38,9 +25,7 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .ring-outer { width: 130px; height: 130px; border-color: rgba(155, 133, 176, 0.35); border-top-color: rgba(155, 133, 176, 0.9); border-right-color: rgba(155, 133, 176, 0.15); border-bottom-color: rgba(155, 133, 176, 0.08); animation: spinOuter 2.8s linear infinite; }
 .ring-middle { width: 100px; height: 100px; border-color: rgba(245, 183, 200, 0.35); border-top-color: rgba(245, 183, 200, 0.85); border-right-color: rgba(245, 183, 200, 0.12); border-bottom-color: rgba(245, 183, 200, 0.06); animation: spinMiddle 2s linear infinite reverse; }
 .ring-inner { width: 70px; height: 70px; border-color: rgba(184, 165, 199, 0.35); border-top-color: rgba(184, 165, 199, 0.8); border-right-color: rgba(184, 165, 199, 0.1); border-bottom-color: rgba(184, 165, 199, 0.05); animation: spinInner 1.4s linear infinite; }
-@keyframes spinOuter { to { transform: rotate(360deg); } }
-@keyframes spinMiddle { to { transform: rotate(-360deg); } }
-@keyframes spinInner { to { transform: rotate(360deg); } }
+@keyframes spinOuter { to { transform: rotate(360deg); } } @keyframes spinMiddle { to { transform: rotate(-360deg); } } @keyframes spinInner { to { transform: rotate(360deg); } }
 .capsule-wrapper { position: relative; z-index: 2; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; animation: capsuleFloat 2.5s ease-in-out infinite; }
 .capsule-slant { width: 16px; height: 52px; border-radius: 8px; background: linear-gradient(180deg, #B8A5C7, #9B85B0); transform: rotate(35deg); box-shadow: 0 4px 16px rgba(155, 133, 176, 0.3), inset 0 1px 0 rgba(255,255,255,0.2); position: relative; flex-shrink: 0; }
 .capsule-slant::before { content: ''; position: absolute; top: 6px; left: 3px; width: 4px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.15); pointer-events: none; }
@@ -48,8 +33,7 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .capsule-slant .line:nth-child(1) { top: 12px; } .capsule-slant .line:nth-child(2) { top: 18px; } .capsule-slant .line:nth-child(3) { top: 24px; } .capsule-slant .line:nth-child(4) { top: 30px; } .capsule-slant .line:nth-child(5) { top: 36px; }
 .capsule-slant .dot { position: absolute; width: 2.5px; height: 2.5px; border-radius: 50%; background: rgba(255,255,255,0.3); animation: dotPulse 2s ease-in-out infinite; }
 .capsule-slant .dot:nth-child(6) { top: 8px; right: 3px; animation-delay: 0s; } .capsule-slant .dot:nth-child(7) { bottom: 8px; left: 3px; animation-delay: 0.6s; }
-@keyframes dotPulse { 0%,100% { opacity: 0.15; transform: scale(0.8); } 50% { opacity: 0.5; transform: scale(1.2); } }
-@keyframes capsuleFloat { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.01); } }
+@keyframes dotPulse { 0%,100% { opacity: 0.15; transform: scale(0.8); } 50% { opacity: 0.5; transform: scale(1.2); } } @keyframes capsuleFloat { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.01); } }
 .loader-text { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .loader-text .en { font-size: 13px; font-weight: 400; color: rgba(74, 69, 88, 0.35); letter-spacing: 4px; text-transform: uppercase; animation: textPulse 2s ease-in-out infinite; }
 .loader-text .en .highlight { color: rgba(155, 133, 176, 0.9); }
@@ -59,8 +43,6 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .loader-progress .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #B8A5C7, #9B85B0); border-radius: 4px; animation: progressFill 2.5s ease-in-out infinite; }
 @keyframes progressFill { 0% { width: 0%; } 50% { width: 70%; } 80% { width: 90%; } 100% { width: 0%; } }
 .loader-sub { font-size: 10px; color: rgba(74, 69, 88, 0.15); letter-spacing: 2px; margin-top: 2px; }
-
-/* ===== 顶部渐变头 ===== */
 .memory-top { position: relative; flex-shrink: 0; padding: calc(12px + var(--safe-top, 0px)) 18px 20px; background: linear-gradient(180deg, #D7D1E8 0%, #E4D8E8 55%, #F0E8F2 85%, #F4F2F7 100%); overflow: hidden; z-index: 5; }
 .memory-top::before { content: ''; position: absolute; top: -60px; right: -40px; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 70%); pointer-events: none; }
 .memory-top::after { content: ''; position: absolute; bottom: -80px; left: -50px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%); pointer-events: none; }
@@ -74,11 +56,7 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .memory-title { font-size: 26px; font-weight: 700; color: #4A4558; letter-spacing: 2px; line-height: 1.3; display: flex; align-items: center; gap: 10px; }
 .memory-title i { color: #9B85B0; font-size: 22px; }
 .memory-subtitle { font-size: 13px; color: #8B82A0; margin-top: 6px; letter-spacing: 1px; font-weight: 400; }
-
-/* ===== 主内容区 ===== */
 .memory-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 16px 24px; margin-top: 0; position: relative; z-index: 3; -webkit-overflow-scrolling: touch; }
-
-/* ===== 角色选择条 ===== */
 .role-strip { display: flex; gap: 10px; overflow-x: auto; padding: 4px 4px 14px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .role-strip::-webkit-scrollbar { display: none; }
 .role-chip { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 16px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1.5px solid transparent; cursor: pointer; transition: 0.2s; min-width: 72px; }
@@ -87,8 +65,6 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .role-chip .chip-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #B8A5C7; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; font-weight: 500; border: 2px solid rgba(255, 255, 255, 0.8); }
 .role-chip .chip-name { font-size: 11px; color: #4A4558; font-weight: 500; max-width: 68px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.3px; }
 .role-chip.active .chip-name { color: #6B5F80; font-weight: 600; }
-
-/* ===== 关系概览卡 ===== */
 .relation-card { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 22px; padding: 18px 20px 16px; border: 1px solid rgba(255, 255, 255, 0.7); box-shadow: 0 8px 28px rgba(184, 165, 199, 0.15); margin-bottom: 14px; position: relative; overflow: hidden; }
 .relation-card::before { content: ''; position: absolute; top: -50%; right: -30%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(245, 183, 200, 0.15), transparent 70%); pointer-events: none; }
 .relation-card .rc-title { font-size: 11px; color: #A89DB8; letter-spacing: 2px; margin-bottom: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; position: relative; z-index: 1; }
@@ -105,20 +81,14 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .relation-card .rc-stages { display: flex; justify-content: space-between; margin-top: 8px; font-size: 9px; color: #A89DB8; padding: 0 2px; position: relative; z-index: 1; }
 .relation-card .rc-stages .stage { opacity: 0.35; transition: all 0.4s ease; font-weight: 400; padding: 2px 6px; border-radius: 6px; }
 .relation-card .rc-stages .stage.active { opacity: 1; color: #9B85B0; font-weight: 700; background: rgba(184, 165, 199, 0.15); }
-
-/* ===== 胶囊式 tab 切换 ===== */
 .memory-tabs { display: flex; gap: 6px; padding: 5px; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.7); margin-bottom: 14px; box-shadow: 0 4px 14px rgba(184, 165, 199, 0.1); }
 .memory-tab { flex: 1; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: 500; color: #8B82A0; cursor: pointer; border: none; background: none; border-radius: 12px; transition: all 0.25s ease; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 5px; }
 .memory-tab .tab-icon { font-size: 13px; }
 .memory-tab.active { background: linear-gradient(135deg, #B8A5C7, #9B85B0); color: #FFFFFF; box-shadow: 0 4px 12px rgba(155, 133, 176, 0.35); font-weight: 600; }
 .memory-tab:active { transform: scale(0.97); }
-
-/* ===== 面板 ===== */
 .memory-panel { display: none; animation: fadeSlideIn 0.35s ease; }
 .memory-panel.active { display: block; }
 @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-
-/* ===== 记忆卡片 ===== */
 .mem-search-bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
 .mem-search-bar .search-wrap { flex: 1; position: relative; display: flex; align-items: center; }
 .mem-search-bar input { width: 100%; padding: 11px 40px 11px 40px; border: 1px solid rgba(212, 197, 224, 0.5); border-radius: 14px; background: rgba(255, 255, 255, 0.8); color: #4A4558; font-size: 13px; outline: none; transition: 0.2s; font-family: inherit; }
@@ -130,8 +100,6 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .mem-batch-toggle { width: 42px; height: 42px; border-radius: 14px; border: 1px solid rgba(212, 197, 224, 0.5); background: rgba(255, 255, 255, 0.8); color: #9B85B0; font-size: 14px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
 .mem-batch-toggle:active { transform: scale(0.92); }
 .mem-batch-toggle.active { background: linear-gradient(135deg, #B8A5C7, #9B85B0); color: #fff; border-color: transparent; }
-
-/* 批量操作栏 */
 .mem-batch-bar { display: none; gap: 8px; margin-bottom: 12px; padding: 10px 14px; background: rgba(255, 255, 255, 0.9); border-radius: 14px; border: 1px solid rgba(212, 197, 224, 0.5); align-items: center; justify-content: space-between; animation: fadeSlideIn 0.25s ease; }
 .mem-batch-bar.show { display: flex; }
 .mem-batch-bar .batch-info { font-size: 12px; color: #8B82A0; }
@@ -142,8 +110,6 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .mem-batch-bar .batch-btns .btn-upgrade { background: rgba(184, 165, 199, 0.25); color: #6B5F80; }
 .mem-batch-bar .batch-btns .btn-delete { background: rgba(240, 130, 130, 0.15); color: #D07A7A; }
 .mem-batch-bar .batch-btns .btn-cancel { background: rgba(212, 197, 224, 0.4); color: #8B82A0; }
-
-/* 记忆分类 */
 .mem-category { margin-bottom: 12px; }
 .mem-category .cat-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.7); cursor: pointer; transition: 0.2s; user-select: none; box-shadow: 0 2px 10px rgba(184, 165, 199, 0.08); }
 .mem-category .cat-header:active { background: #FFFFFF; transform: scale(0.99); }
@@ -155,8 +121,6 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .mem-category .cat-header .cat-checkbox { width: 16px; height: 16px; accent-color: #B8A5C7; cursor: pointer; }
 .mem-category .cat-body { padding: 8px 0 0; overflow: hidden; transition: max-height 0.3s ease; max-height: 9999px; }
 .mem-category .cat-body.collapsed { max-height: 0; padding: 0; }
-
-/* 记忆条目 */
 .mem-item { display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; border: 1px solid rgba(255, 255, 255, 0.7); transition: 0.2s; box-shadow: 0 2px 10px rgba(184, 165, 199, 0.08); animation: cardFadeIn 0.35s ease backwards; }
 @keyframes cardFadeIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .mem-item:active { transform: scale(0.99); }
@@ -170,14 +134,10 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .mem-item .item-actions .btn-upgrade-item:active { opacity: 1; }
 .mem-item .item-actions .btn-del-item { color: #D07A7A; opacity: 0.4; }
 .mem-item .item-actions .btn-del-item:active { opacity: 1; }
-
-/* 空状态 */
 .empty-state { text-align: center; padding: 50px 20px; color: #8B82A0; }
 .empty-state i { font-size: 42px; opacity: 0.25; display: block; margin-bottom: 14px; color: #B8A5C7; }
 .empty-state p { font-size: 14px; font-weight: 500; color: #6B5F80; line-height: 1.6; letter-spacing: 0.5px; }
 .empty-state .empty-hint { font-size: 12px; color: #A89DB8; opacity: 0.7; margin-top: 6px; display: block; }
-
-/* 摘要卡片 */
 .summary-item { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; border: 1px solid rgba(255, 255, 255, 0.7); border-left: 3px solid #B8A5C7; box-shadow: 0 3px 14px rgba(184, 165, 199, 0.1); animation: cardFadeIn 0.4s ease backwards; transition: 0.2s; }
 .summary-item:active { transform: scale(0.99); }
 .summary-item.is-current { border-left-color: #9B85B0; background: linear-gradient(135deg, rgba(184, 165, 199, 0.08), rgba(245, 183, 200, 0.06)); }
@@ -192,8 +152,6 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .summary-item .s-footer .s-badge { font-size: 10px; padding: 3px 10px; border-radius: 10px; background: rgba(184, 165, 199, 0.15); color: #9B85B0; font-weight: 600; letter-spacing: 0.5px; }
 .summary-item .s-footer .jump-btn { font-size: 11px; color: #9B85B0; cursor: pointer; background: rgba(184, 165, 199, 0.12); border: none; font-family: inherit; padding: 5px 12px; border-radius: 12px; transition: 0.15s; display: flex; align-items: center; gap: 4px; font-weight: 500; }
 .summary-item .s-footer .jump-btn:active { background: rgba(184, 165, 199, 0.25); transform: scale(0.95); }
-
-/* 添加记忆区 */
 .mem-add-section { display: flex; gap: 8px; margin-top: 14px; padding: 12px; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.7); box-shadow: 0 3px 14px rgba(184, 165, 199, 0.1); }
 .mem-add-section input { flex: 1; min-width: 0; padding: 10px 14px; border: 1px solid rgba(212, 197, 224, 0.5); border-radius: 12px; background: rgba(244, 242, 247, 0.6); color: #4A4558; font-size: 13px; outline: none; transition: 0.2s; font-family: inherit; }
 .mem-add-section input:focus { border-color: #B8A5C7; background: #FFFFFF; box-shadow: 0 0 0 3px rgba(184, 165, 199, 0.12); }
@@ -201,8 +159,6 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .mem-add-section .add-btn { flex-shrink: 0; padding: 10px 18px; border: none; border-radius: 12px; background: linear-gradient(135deg, #B8A5C7, #9B85B0); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s; font-family: inherit; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 12px rgba(155, 133, 176, 0.3); }
 .mem-add-section .add-btn:active { transform: scale(0.95); }
 .mem-add-section .add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* 确认弹窗 */
 .confirm-overlay { position: fixed; inset: 0; background: rgba(74, 69, 88, 0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; justify-content: center; align-items: center; animation: fadeIn 0.2s ease; padding: 20px; }
 .confirm-overlay.active { display: flex; }
 .confirm-dialog { background: #FFFFFF; border-radius: 22px; padding: 24px 22px 20px; max-width: 320px; width: 100%; animation: scaleIn 0.25s ease; border: 1px solid rgba(212, 197, 224, 0.4); box-shadow: 0 20px 60px rgba(74, 69, 88, 0.25); }
@@ -213,8 +169,6 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 .confirm-dialog .btn-group button:active { transform: scale(0.96); }
 .confirm-dialog .btn-group .btn-confirm { background: linear-gradient(135deg, #E88BA5, #D07A7A); color: #fff; }
 .confirm-dialog .btn-group .btn-cancel { background: rgba(228, 216, 232, 0.5); color: #8B82A0; }
-
-/* Toast */
 .custom-toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(74, 69, 88, 0.9); backdrop-filter: blur(12px); color: #fff; padding: 12px 22px; border-radius: 14px; font-size: 13px; z-index: 200; animation: fadeInUp 0.3s ease; text-align: center; max-width: 80%; font-weight: 500; letter-spacing: 0.3px; box-shadow: 0 8px 24px rgba(74, 69, 88, 0.3); }
 @keyframes fadeInUp { from { opacity: 0; transform: translateX(-50%) translateY(12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -229,7 +183,6 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 <body>
 
 <div class="phone-frame" id="app">
-    <!-- 加载动画 -->
     <div class="loader-overlay" id="loaderOverlay">
         <div class="loader-container">
             <div class="rings-container">
@@ -238,9 +191,7 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
                 <div class="ring ring-inner"></div>
                 <div class="capsule-wrapper">
                     <div class="capsule-slant">
-                        <span class="line"></span><span class="line"></span>
-                        <span class="line"></span><span class="line"></span>
-                        <span class="line"></span>
+                        <span class="line"></span><span class="line"></span><span class="line"></span><span class="line"></span><span class="line"></span>
                         <span class="dot"></span><span class="dot"></span>
                     </div>
                 </div>
@@ -254,7 +205,6 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
         </div>
     </div>
 
-    <!-- 顶部渐变头 -->
     <div class="memory-top">
         <div class="memory-topbar">
             <button class="top-back" id="backBtn"><i class="fas fa-chevron-left"></i></button>
@@ -268,7 +218,6 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
         </div>
     </div>
 
-    <!-- 内容区 -->
     <div class="memory-content">
         <div class="role-strip" id="roleStrip"></div>
         <div class="relation-card">
@@ -284,21 +233,13 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
                 <span class="rc-percent" id="intimacyPercent">0%</span>
             </div>
             <div class="rc-stages" id="stageLabels">
-                <span class="stage" data-stage="0">初识</span>
-                <span class="stage" data-stage="1">熟悉</span>
-                <span class="stage" data-stage="2">亲密</span>
-                <span class="stage" data-stage="3">依赖</span>
-                <span class="stage" data-stage="4">灵魂伴侣</span>
+                <span class="stage" data-stage="0">初识</span><span class="stage" data-stage="1">熟悉</span><span class="stage" data-stage="2">亲密</span><span class="stage" data-stage="3">依赖</span><span class="stage" data-stage="4">灵魂伴侣</span>
             </div>
         </div>
 
         <div class="memory-tabs">
-            <button class="memory-tab active" data-tab="summary">
-                <span class="tab-icon"><i class="fas fa-comment-dots"></i></span>对话摘要
-            </button>
-            <button class="memory-tab" data-tab="memory">
-                <span class="tab-icon"><i class="fas fa-brain"></i></span>记忆库
-            </button>
+            <button class="memory-tab active" data-tab="summary"><span class="tab-icon"><i class="fas fa-comment-dots"></i></span>对话摘要</button>
+            <button class="memory-tab" data-tab="memory"><span class="tab-icon"><i class="fas fa-brain"></i></span>记忆库</button>
         </div>
 
         <div class="memory-panel active" id="panelSummary"></div>
@@ -321,7 +262,7 @@ body { background: #F4F2F7; display: flex; justify-content: center; align-items:
 
 <script>
 // ============================================================
-// 📦 时光胶囊 v3.0 - 终极云端直连版
+// 📦 时光胶囊 v3.1 - 终极稳固版（带云端强制同步）
 // ============================================================
 var CLEANUP_RULES = { RECENT_TO_ARCHIVE_DAYS: 30, ARCHIVE_TO_DELETE_DAYS: 45 };
 var roles = [];
@@ -334,7 +275,7 @@ var memorySearchKeyword = '';
 var selectedMemories = [];
 var batchMode = false;
 var categoryStates = { core: true, recent: true, archived: true };
-var cloudDataCache = {}; // 存储云端原始数据，防止保存时覆盖 config 等
+var cloudDataCache = {}; // 缓存云端全量数据
 
 function generateId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6); }
 function escapeHtml(text) { if (text === null || text === undefined) return ''; text = String(text); var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
@@ -349,41 +290,27 @@ function showToast(msg) {
     var el = document.getElementById('toast');
     if (!el) return;
     clearTimeout(toastTimer);
-    el.textContent = msg;
-    el.style.display = 'block';
-    el.style.opacity = '0';
-    el.style.transform = 'translateX(-50%) translateY(10px)';
-    el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    el.textContent = msg; el.style.display = 'block'; el.style.opacity = '0'; el.style.transform = 'translateX(-50%) translateY(10px)'; el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
     requestAnimationFrame(function() { el.style.opacity = '1'; el.style.transform = 'translateX(-50%) translateY(0)'; });
     toastTimer = setTimeout(function() { el.style.opacity = '0'; el.style.transform = 'translateX(-50%) translateY(10px)'; setTimeout(function() { if (el) el.style.display = 'none'; }, 300); }, 2500);
 }
 
 // ========== 云端请求 ==========
-function getToken() {
-    return localStorage.getItem('dream_token') || localStorage.getItem('token');
-}
+function getToken() { return localStorage.getItem('dream_token') || localStorage.getItem('token'); }
 
 function fetchCloudData() {
     var token = getToken();
     if (!token) return Promise.reject(new Error('无 Token，请重新登录'));
-
-    return fetch('/api/data/load', {
-        method: 'GET',
-        headers: { 'Authorization': 'Bearer ' + token }
-    }).then(function(res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-    }).then(function(resData) {
-        if (!resData.success || !resData.data) throw new Error('数据为空');
-        return resData.data;
-    });
+    return fetch('/api/data/load', { method: 'GET', headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+    .then(function(resData) { if (!resData.success || !resData.data) throw new Error('数据为空'); return resData.data; });
 }
 
 function pushCloudData(dataToSave) {
     var token = getToken();
     if (!token) return Promise.reject(new Error('无 Token'));
 
-    // 合并基础数据（config, diaries），防止覆盖
+    // 合并基础数据（config, diaries），防止覆盖其他配置
     var finalData = {
         config: dataToSave.config || cloudDataCache.config || {},
         diaries: dataToSave.diaries || cloudDataCache.diaries || [],
@@ -401,11 +328,10 @@ function pushCloudData(dataToSave) {
     });
 }
 
-// ========== 自动清理记忆 ==========
+// ========== 自动清理 ==========
 function cleanupMemories() {
     var now = Date.now();
     var totalCleaned = 0, totalArchived = 0;
-
     roles.forEach(function(role) {
         if (!Array.isArray(role.memory)) return;
         var newMemory = [];
@@ -414,28 +340,18 @@ function cleanupMemories() {
             if (level === 'core') { newMemory.push(mem); return; }
             if (!mem.timestamp) { newMemory.push(mem); return; }
             var age = (now - mem.timestamp) / (24 * 60 * 60 * 1000);
-            
             if (level === 'recent') {
-                if (age > CLEANUP_RULES.RECENT_TO_ARCHIVE_DAYS) {
-                    mem.level = 'archived';
-                    totalArchived++;
-                }
-                newMemory.push(mem);
-                return;
+                if (age > CLEANUP_RULES.RECENT_TO_ARCHIVE_DAYS) { mem.level = 'archived'; totalArchived++; }
+                newMemory.push(mem); return;
             }
             if (level === 'archived') {
-                if (age > CLEANUP_RULES.ARCHIVE_TO_DELETE_DAYS) {
-                    totalCleaned++;
-                } else {
-                    newMemory.push(mem);
-                }
+                if (age > CLEANUP_RULES.ARCHIVE_TO_DELETE_DAYS) { totalCleaned++; } else { newMemory.push(mem); }
                 return;
             }
             newMemory.push(mem);
         });
         role.memory = newMemory;
     });
-
     if (totalCleaned > 0 || totalArchived > 0) {
         var msg = '';
         if (totalArchived > 0) msg += '📦 ' + totalArchived + ' 条近期记忆已归档 ';
@@ -445,34 +361,21 @@ function cleanupMemories() {
     }
 }
 
-// ========== 数据加载（改从云端） ==========
+// ========== 数据加载 ==========
 function loadData() {
     return fetchCloudData().then(function(data) {
-        cloudDataCache = data; // 缓存原始数据供保存用
+        cloudDataCache = data;
         roles = data.roles || [];
-
-        if (roles.length === 0) {
-            showToast('⚠️ 数据为空，请先创建角色');
-            return false;
-        }
+        if (roles.length === 0) { showToast('⚠️ 数据为空，请先创建角色'); return false; }
 
         roles.forEach(function(role) {
             if (!role.extendedState) {
-                role.extendedState = {
-                    lifeLogs: [], lastActiveMessage: { time: null, content: '', topic: '' },
-                    intimacy: 0, contextMemory: { lastTopic: '', lastUserEmotion: '', lastUserMessage: '', lastConversationSummary: '' },
-                    lastUserMessageTime: 0, lastAiMessageTime: 0, messageCount: 0, totalHeartSpikes: 0,
-                    contextSummary: '你们还没有深入聊过，ta好像还在了解你。', summaryHistory: []
-                };
+                role.extendedState = { lifeLogs: [], lastActiveMessage: { time: null, content: '', topic: '' }, intimacy: 0, contextMemory: { lastTopic: '', lastUserEmotion: '', lastUserMessage: '', lastConversationSummary: '' }, lastUserMessageTime: 0, lastAiMessageTime: 0, messageCount: 0, totalHeartSpikes: 0, contextSummary: '你们还没有深入聊过，ta好像还在了解你。', summaryHistory: [] };
             }
-            if (!role.extendedState.summaryHistory || !Array.isArray(role.extendedState.summaryHistory)) {
-                role.extendedState.summaryHistory = [];
-            }
-            if (!role.heartData) {
-                role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' };
-            }
-            if (!Array.isArray(role.memory)) { role.memory = []; }
-            if (!Array.isArray(role.messages)) { role.messages = []; }
+            if (!role.extendedState.summaryHistory || !Array.isArray(role.extendedState.summaryHistory)) role.extendedState.summaryHistory = [];
+            if (!role.heartData) role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' };
+            if (!Array.isArray(role.memory)) role.memory = [];
+            if (!Array.isArray(role.messages)) role.messages = [];
             if (!role.createdAt) {
                 if (role.messages && role.messages.length > 0) role.createdAt = role.messages[0].time;
                 else role.createdAt = new Date().toISOString();
@@ -483,11 +386,8 @@ function loadData() {
 
         var params = new URLSearchParams(window.location.search);
         var urlRoleId = params.get('roleId');
-        if (urlRoleId && roles.find(function(r) { return r.id === urlRoleId; })) {
-            currentRoleId = urlRoleId;
-        } else {
-            currentRoleId = data.currentRoleId || roles[0].id;
-        }
+        if (urlRoleId && roles.find(function(r) { return r.id === urlRoleId; })) { currentRoleId = urlRoleId; }
+        else { currentRoleId = data.currentRoleId || roles[0].id; }
 
         cleanupMemories();
         return true;
@@ -498,11 +398,9 @@ function loadData() {
     });
 }
 
-// ========== 数据保存（改同步云端） ==========
+// ========== 数据保存 ==========
 function saveData() {
     if (!roles || roles.length === 0) return;
-
-    // 1. 先写本地缓存（用于快速渲染，主应用也会读这里）
     try {
         var localData = JSON.parse(JSON.stringify(cloudDataCache || {}));
         localData.roles = roles;
@@ -511,7 +409,6 @@ function saveData() {
         localStorage.setItem('ds_multirole_v2', JSON.stringify(localData));
     } catch(e) { console.warn('本地缓存失败', e); }
 
-    // 2. 上传云端
     var dataToSave = { roles: roles, currentRoleId: currentRoleId };
     pushCloudData(dataToSave).then(function() {
         console.log('☁️ 云端同步成功');
@@ -521,39 +418,31 @@ function saveData() {
     });
 }
 
-// ========== 获取当前角色 ==========
+// ========== 渲染 ==========
 function getCurrentRole() { return roles.find(function(r) { return r.id === currentRoleId; }) || roles[0] || null; }
 
-// ========== 渲染角色选择条 ==========
 function renderRoleStrip() {
     var strip = document.getElementById('roleStrip');
     if (!strip) return;
     if (roles.length === 0) { strip.innerHTML = '<div style="color:#A89DB8;font-size:12px;padding:10px;">暂无角色</div>'; return; }
-
     var html = '';
     roles.forEach(function(role) {
         var isActive = role.id === currentRoleId;
         var avatarStyle = role.avatar ? 'background-image:url(' + role.avatar + ');background-size:cover;background-position:center;' : '';
         var avatarContent = role.avatar ? '' : escapeHtml((role.name || '?').charAt(0));
-        html += '<div class="role-chip ' + (isActive ? 'active' : '') + '" data-roleid="' + role.id + '">' +
-            '<div class="chip-avatar" style="' + avatarStyle + '">' + avatarContent + '</div>' +
-            '<div class="chip-name">' + escapeHtml(role.name || '未命名') + '</div></div>';
+        html += '<div class="role-chip ' + (isActive ? 'active' : '') + '" data-roleid="' + role.id + '"><div class="chip-avatar" style="' + avatarStyle + '">' + avatarContent + '</div><div class="chip-name">' + escapeHtml(role.name || '未命名') + '</div></div>';
     });
     strip.innerHTML = html;
-
     strip.querySelectorAll('.role-chip').forEach(function(chip) {
         chip.addEventListener('click', function() {
             var rid = this.dataset.roleid;
             if (rid === currentRoleId) return;
-            currentRoleId = rid;
-            selectedMemories = []; memorySearchKeyword = '';
-            saveData();
-            renderRoleStrip(); renderAll();
+            currentRoleId = rid; selectedMemories = []; memorySearchKeyword = '';
+            saveData(); renderRoleStrip(); renderAll();
         });
     });
 }
 
-// ========== 关系卡片 ==========
 function renderRelationCard(role) {
     if (!role) return;
     var intimacy = role.extendedState ? role.extendedState.intimacy || 0 : 0;
@@ -562,100 +451,55 @@ function renderRelationCard(role) {
     var stage = getIntimacyLevel(intimacy);
     var stageIdx = getStageIndex(intimacy);
 
-    var intimacyEl = document.getElementById('intimacyValue');
-    var daysEl = document.getElementById('daysValue');
-    var stageEl = document.getElementById('stageValue');
-    var msgEl = document.getElementById('msgCountValue');
-    var bar = document.getElementById('intimacyBar');
-    var percentEl = document.getElementById('intimacyPercent');
-
+    var intimacyEl = document.getElementById('intimacyValue'), daysEl = document.getElementById('daysValue'), stageEl = document.getElementById('stageValue'), msgEl = document.getElementById('msgCountValue'), bar = document.getElementById('intimacyBar'), percentEl = document.getElementById('intimacyPercent');
     if (intimacyEl) intimacyEl.textContent = intimacy + '%';
     if (daysEl) daysEl.textContent = days;
     if (stageEl) stageEl.textContent = stage;
     if (msgEl) msgEl.textContent = messages.length;
-
     var percent = Math.min(100, intimacy);
     if (bar) bar.style.width = percent + '%';
     if (percentEl) percentEl.textContent = percent + '%';
-
-    document.querySelectorAll('#stageLabels .stage').forEach(function(el) {
-        el.classList.toggle('active', parseInt(el.dataset.stage) === stageIdx);
-    });
+    document.querySelectorAll('#stageLabels .stage').forEach(function(el) { el.classList.toggle('active', parseInt(el.dataset.stage) === stageIdx); });
 }
 
-// ========== 对话摘要 ==========
 function renderSummary(role) {
     var panel = document.getElementById('panelSummary');
     if (!panel) return;
     if (!role) { panel.innerHTML = '<div class="empty-state"><i class="fas fa-comment-dots"></i><p>请先选择一个角色</p></div>'; return; }
-
     var history = role.extendedState ? role.extendedState.summaryHistory || [] : [];
     var currentSummary = role.extendedState ? role.extendedState.contextSummary || '' : '';
     var html = '';
-
     if (currentSummary && currentSummary !== '你们还没有深入聊过，ta好像还在了解你。') {
         html += '<div class="summary-item is-current"><div class="s-header"><span class="s-time"><i class="fas fa-star"></i>当前摘要</span><div class="s-actions"><button class="btn-del-summary-current" title="删除"><i class="fas fa-times"></i></button></div></div><div class="s-content">' + escapeHtml(currentSummary) + '</div><div class="s-footer"><span class="s-badge">最新</span></div></div>';
     }
-
     var sorted = history.slice().sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
     sorted.forEach(function(item) {
         var timeDisplay = formatDateDisplay(item.time);
         html += '<div class="summary-item"><div class="s-header"><span class="s-time"><i class="fas fa-clock"></i>' + timeDisplay + '</span><div class="s-actions"><button class="btn-del-summary" data-id="' + item.id + '" title="删除"><i class="fas fa-times"></i></button></div></div><div class="s-content">' + escapeHtml(item.content) + '</div><div class="s-footer">' + (item.msgId ? '<span></span><button class="jump-btn" data-msgid="' + item.msgId + '"><i class="fas fa-comment"></i>跳转到聊天</button>' : '<span class="s-badge">已归档</span><span></span>') + '</div></div>';
     });
-
     if (!html) { panel.innerHTML = '<div class="empty-state"><i class="fas fa-comment-dots"></i><p>还没有对话摘要</p><span class="empty-hint">多聊聊天，我会帮你记录重要的对话</span></div>'; return; }
     panel.innerHTML = html;
-
-    panel.querySelectorAll('.btn-del-summary-current').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            showConfirm('删除当前摘要', '确定要删除当前摘要吗？', function() {
-                if (role.extendedState) { role.extendedState.contextSummary = '你们还没有深入聊过，ta好像还在了解你。'; saveData(); renderSummary(role); renderRelationCard(role); showToast('✅ 已删除'); }
-            });
-        });
-    });
-    panel.querySelectorAll('.btn-del-summary').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var id = this.dataset.id;
-            showConfirm('删除摘要', '确定要删除这条摘要吗？', function() {
-                if (role.extendedState && role.extendedState.summaryHistory) {
-                    var idx = role.extendedState.summaryHistory.findIndex(function(s) { return s.id === id; });
-                    if (idx !== -1) { role.extendedState.summaryHistory.splice(idx, 1); saveData(); renderSummary(role); showToast('✅ 已删除'); }
-                }
-            });
-        });
-    });
-    panel.querySelectorAll('.jump-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var msgId = this.dataset.msgid;
-            var frame = document.querySelector('.phone-frame');
-            if (frame) { frame.classList.add('page-leaving'); setTimeout(function() { window.location.href = 'index.html?chat=' + role.id + '&msg=' + msgId; }, 350); }
-            else { window.location.href = 'index.html?chat=' + role.id + '&msg=' + msgId; }
-        });
-    });
+    panel.querySelectorAll('.btn-del-summary-current').forEach(function(btn) { btn.addEventListener('click', function() { showConfirm('删除当前摘要', '确定要删除当前摘要吗？', function() { if (role.extendedState) { role.extendedState.contextSummary = '你们还没有深入聊过，ta好像还在了解你。'; saveData(); renderSummary(role); renderRelationCard(role); showToast('✅ 已删除'); } }); }); });
+    panel.querySelectorAll('.btn-del-summary').forEach(function(btn) { btn.addEventListener('click', function() { var id = this.dataset.id; showConfirm('删除摘要', '确定要删除这条摘要吗？', function() { if (role.extendedState && role.extendedState.summaryHistory) { var idx = role.extendedState.summaryHistory.findIndex(function(s) { return s.id === id; }); if (idx !== -1) { role.extendedState.summaryHistory.splice(idx, 1); saveData(); renderSummary(role); showToast('✅ 已删除'); } } }); }); });
+    panel.querySelectorAll('.jump-btn').forEach(function(btn) { btn.addEventListener('click', function() { var msgId = this.dataset.msgid; var frame = document.querySelector('.phone-frame'); if (frame) { frame.classList.add('page-leaving'); setTimeout(function() { window.location.href = 'index.html?chat=' + role.id + '&msg=' + msgId; }, 350); } else { window.location.href = 'index.html?chat=' + role.id + '&msg=' + msgId; } }); });
 }
 
-// ========== 记忆库 ==========
 function renderMemory(role) {
     var panel = document.getElementById('panelMemory');
     if (!panel) return;
     if (!role) { panel.innerHTML = '<div class="empty-state"><i class="fas fa-brain"></i><p>请先选择一个角色</p></div>'; return; }
-
     var allMemories = role.memory || [];
     var html = '';
-
     html += '<div class="mem-search-bar"><div class="search-wrap"><i class="fas fa-search search-icon"></i><input type="text" id="memorySearchInput" placeholder="搜索记忆..." value="' + escapeHtml(memorySearchKeyword) + '" /><button class="search-clear' + (memorySearchKeyword ? ' show' : '') + '" id="memorySearchClear"><i class="fas fa-times-circle"></i></button></div><button class="mem-batch-toggle' + (batchMode ? ' active' : '') + '" id="batchToggleBtn" title="批量管理"><i class="fas fa-check-square"></i></button></div>';
     html += '<div class="mem-batch-bar' + (batchMode ? ' show' : '') + '" id="batchActions"><span class="batch-info">已选 <span id="selectedCount">' + selectedMemories.length + '</span> 条</span><div class="batch-btns"><button class="btn-upgrade" id="batchUpgradeBtn"><i class="fas fa-arrow-up"></i> 升级</button><button class="btn-delete" id="batchDeleteBtn"><i class="fas fa-trash-alt"></i> 删除</button></div></div>';
-
     var filtered = allMemories;
     if (memorySearchKeyword.trim()) {
         var keyword = memorySearchKeyword.trim().toLowerCase();
         filtered = allMemories.filter(function(m) { return getMemoryText(m).toLowerCase().indexOf(keyword) !== -1; });
     }
-
     var core = filtered.filter(function(m) { return m.level === 'core' || !m.level; });
     var recent = filtered.filter(function(m) { return m.level === 'recent'; });
     var archived = filtered.filter(function(m) { return m.level === 'archived'; });
-
     if (filtered.length === 0) {
         if (allMemories.length === 0) html += '<div class="empty-state"><i class="fas fa-inbox"></i><p>还没有保存任何记忆</p><span class="empty-hint">聊天中会慢慢积累关于你的事</span></div>';
         else html += '<div class="empty-state"><i class="fas fa-search"></i><p>没有找到匹配的记忆</p><span class="empty-hint">试试其他关键词</span></div>';
@@ -664,24 +508,19 @@ function renderMemory(role) {
         html += renderCategory('近期记忆', 'recent', recent, '🕐', false, '30天后自动归档');
         html += renderCategory('归档记忆', 'archived', archived, '📦', false, '45天后自动删除');
     }
-
     html += '<div class="mem-add-section"><input type="text" id="memoryAddInput" placeholder="添加新记忆..." maxlength="100" /><button class="add-btn" id="memoryAddBtn"><i class="fas fa-plus"></i> 添加</button></div>';
     panel.innerHTML = html;
     bindMemoryEvents(role);
 }
 
 function renderCategory(label, catId, items, icon, isCore, hint) {
-    if (items.length === 0) {
-        return '<div class="mem-category" style="opacity:0.35;"><div class="cat-header" style="cursor:default;background:transparent;border-color:transparent;box-shadow:none;"><span class="cat-icon">' + icon + '</span><span class="cat-name">' + label + '</span><span class="cat-count">0 条</span></div></div>';
-    }
+    if (items.length === 0) return '<div class="mem-category" style="opacity:0.35;"><div class="cat-header" style="cursor:default;background:transparent;border-color:transparent;box-shadow:none;"><span class="cat-icon">' + icon + '</span><span class="cat-name">' + label + '</span><span class="cat-count">0 条</span></div></div>';
     var isOpen = categoryStates[catId] !== false;
     var arrowClass = isOpen ? 'open' : '';
     var bodyClass = isOpen ? '' : 'collapsed';
-
     var html = '<div class="mem-category"><div class="cat-header" data-cat-id="' + catId + '">';
     if (batchMode) html += '<input type="checkbox" class="cat-checkbox" data-cat-id="' + catId + '" />';
     html += '<span class="cat-icon">' + icon + '</span><span class="cat-name">' + label + '</span><span class="cat-count">' + items.length + ' 条</span><span class="cat-arrow ' + arrowClass + '"><i class="fas fa-chevron-down"></i></span></div><div class="cat-body ' + bodyClass + '">';
-
     items.forEach(function(mem) {
         var text = getMemoryText(mem);
         var isSelected = selectedMemories.indexOf(text) !== -1;
@@ -698,103 +537,19 @@ function renderCategory(label, catId, items, icon, isCore, hint) {
 function bindMemoryEvents(role) {
     var searchInput = document.getElementById('memorySearchInput');
     var searchClear = document.getElementById('memorySearchClear');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            memorySearchKeyword = this.value;
-            if (searchClear) searchClear.classList.toggle('show', !!memorySearchKeyword);
-            selectedMemories = []; renderMemory(role);
-        });
-    }
+    if (searchInput) { searchInput.addEventListener('input', function() { memorySearchKeyword = this.value; if (searchClear) searchClear.classList.toggle('show', !!memorySearchKeyword); selectedMemories = []; renderMemory(role); }); }
     if (searchClear) { searchClear.addEventListener('click', function() { memorySearchKeyword = ''; selectedMemories = []; renderMemory(role); }); }
-
     var batchToggle = document.getElementById('batchToggleBtn');
     if (batchToggle) { batchToggle.addEventListener('click', function() { batchMode = !batchMode; selectedMemories = []; renderMemory(role); }); }
-
-    document.querySelectorAll('.cat-header').forEach(function(header) {
-        header.addEventListener('click', function(e) {
-            if (e.target.closest('.cat-checkbox')) return;
-            var catId = this.dataset.catId;
-            if (catId && categoryStates[catId] !== undefined) {
-                categoryStates[catId] = !categoryStates[catId];
-                var body = this.nextElementSibling;
-                var arrow = this.querySelector('.cat-arrow');
-                if (body) body.classList.toggle('collapsed');
-                if (arrow) arrow.classList.toggle('open');
-            }
-        });
-    });
-
-    document.querySelectorAll('.cat-checkbox').forEach(function(cb) {
-        cb.addEventListener('change', function() {
-            var catId = this.dataset.catId;
-            var isChecked = this.checked;
-            document.querySelectorAll('.mem-item[data-cat="' + catId + '"] .item-checkbox').forEach(function(itemCb) {
-                itemCb.checked = isChecked; itemCb.dispatchEvent(new Event('change'));
-            });
-        });
-    });
-
-    document.querySelectorAll('.item-checkbox').forEach(function(cb) {
-        cb.addEventListener('change', function() {
-            var text = this.dataset.text;
-            if (this.checked) { if (selectedMemories.indexOf(text) === -1) selectedMemories.push(text); }
-            else { var idx = selectedMemories.indexOf(text); if (idx !== -1) selectedMemories.splice(idx, 1); }
-            var catId = this.dataset.catId;
-            var items = document.querySelectorAll('.mem-item[data-cat="' + catId + '"] .item-checkbox');
-            var checked = document.querySelectorAll('.mem-item[data-cat="' + catId + '"] .item-checkbox:checked');
-            var catCb = document.querySelector('.cat-checkbox[data-cat-id="' + catId + '"]');
-            if (catCb) catCb.checked = items.length > 0 && checked.length === items.length;
-            var countEl = document.getElementById('selectedCount'); if (countEl) countEl.textContent = selectedMemories.length;
-        });
-    });
-
+    document.querySelectorAll('.cat-header').forEach(function(header) { header.addEventListener('click', function(e) { if (e.target.closest('.cat-checkbox')) return; var catId = this.dataset.catId; if (catId && categoryStates[catId] !== undefined) { categoryStates[catId] = !categoryStates[catId]; var body = this.nextElementSibling; var arrow = this.querySelector('.cat-arrow'); if (body) body.classList.toggle('collapsed'); if (arrow) arrow.classList.toggle('open'); } }); });
+    document.querySelectorAll('.cat-checkbox').forEach(function(cb) { cb.addEventListener('change', function() { var catId = this.dataset.catId; var isChecked = this.checked; document.querySelectorAll('.mem-item[data-cat="' + catId + '"] .item-checkbox').forEach(function(itemCb) { itemCb.checked = isChecked; itemCb.dispatchEvent(new Event('change')); }); }); });
+    document.querySelectorAll('.item-checkbox').forEach(function(cb) { cb.addEventListener('change', function() { var text = this.dataset.text; if (this.checked) { if (selectedMemories.indexOf(text) === -1) selectedMemories.push(text); } else { var idx = selectedMemories.indexOf(text); if (idx !== -1) selectedMemories.splice(idx, 1); } var catId = this.dataset.catId; var items = document.querySelectorAll('.mem-item[data-cat="' + catId + '"] .item-checkbox'); var checked = document.querySelectorAll('.mem-item[data-cat="' + catId + '"] .item-checkbox:checked'); var catCb = document.querySelector('.cat-checkbox[data-cat-id="' + catId + '"]'); if (catCb) catCb.checked = items.length > 0 && checked.length === items.length; var countEl = document.getElementById('selectedCount'); if (countEl) countEl.textContent = selectedMemories.length; }); });
     var batchUpgradeBtn = document.getElementById('batchUpgradeBtn');
-    if (batchUpgradeBtn) {
-        batchUpgradeBtn.addEventListener('click', function() {
-            if (selectedMemories.length === 0) return;
-            showConfirm('批量升级', '确定要将选中的 ' + selectedMemories.length + ' 条记忆升级为「核心记忆」吗？', function() {
-                var upgraded = 0;
-                if (role.memory) { role.memory.forEach(function(m) { if (selectedMemories.indexOf(getMemoryText(m)) !== -1 && m.level !== 'core') { m.level = 'core'; upgraded++; } }); }
-                saveData(); selectedMemories = []; renderMemory(role); renderRelationCard(role); showToast('✅ 已升级 ' + upgraded + ' 条');
-            });
-        });
-    }
-
+    if (batchUpgradeBtn) { batchUpgradeBtn.addEventListener('click', function() { if (selectedMemories.length === 0) return; showConfirm('批量升级', '确定要将选中的 ' + selectedMemories.length + ' 条记忆升级为「核心记忆」吗？', function() { var upgraded = 0; if (role.memory) { role.memory.forEach(function(m) { if (selectedMemories.indexOf(getMemoryText(m)) !== -1 && m.level !== 'core') { m.level = 'core'; upgraded++; } }); } saveData(); selectedMemories = []; renderMemory(role); renderRelationCard(role); showToast('✅ 已升级 ' + upgraded + ' 条'); }); }); }
     var batchDeleteBtn = document.getElementById('batchDeleteBtn');
-    if (batchDeleteBtn) {
-        batchDeleteBtn.addEventListener('click', function() {
-            if (selectedMemories.length === 0) return;
-            showConfirm('批量删除', '确定要删除选中的 ' + selectedMemories.length + ' 条记忆吗？此操作不可恢复！', function() {
-                var count = selectedMemories.length;
-                if (role.memory) { role.memory = role.memory.filter(function(m) { return selectedMemories.indexOf(getMemoryText(m)) === -1; }); }
-                saveData(); selectedMemories = []; renderMemory(role); renderRelationCard(role); showToast('🗑️ 已删除 ' + count + ' 条');
-            });
-        });
-    }
-
-    document.querySelectorAll('.btn-upgrade-item').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var text = this.dataset.text;
-            if (role.memory) {
-                var found = role.memory.find(function(m) { return getMemoryText(m) === text && m.level !== 'core'; });
-                if (found) { found.level = 'core'; saveData(); renderMemory(role); renderRelationCard(role); showToast('✅ 已升级为核心记忆'); }
-            }
-        });
-    });
-
-    document.querySelectorAll('.btn-del-item').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var text = this.dataset.text;
-            showConfirm('删除记忆', '确定要删除这条记忆吗？', function() {
-                if (role.memory) {
-                    var idx = role.memory.findIndex(function(m) { return getMemoryText(m) === text; });
-                    if (idx !== -1) { role.memory.splice(idx, 1); saveData(); renderMemory(role); renderRelationCard(role); showToast('✅ 已删除'); }
-                }
-            });
-        });
-    });
+    if (batchDeleteBtn) { batchDeleteBtn.addEventListener('click', function() { if (selectedMemories.length === 0) return; showConfirm('批量删除', '确定要删除选中的 ' + selectedMemories.length + ' 条记忆吗？此操作不可恢复！', function() { var count = selectedMemories.length; if (role.memory) { role.memory = role.memory.filter(function(m) { return selectedMemories.indexOf(getMemoryText(m)) === -1; }); } saveData(); selectedMemories = []; renderMemory(role); renderRelationCard(role); showToast('🗑️ 已删除 ' + count + ' 条'); }); }); }
+    document.querySelectorAll('.btn-upgrade-item').forEach(function(btn) { btn.addEventListener('click', function(e) { e.stopPropagation(); var text = this.dataset.text; if (role.memory) { var found = role.memory.find(function(m) { return getMemoryText(m) === text && m.level !== 'core'; }); if (found) { found.level = 'core'; saveData(); renderMemory(role); renderRelationCard(role); showToast('✅ 已升级为核心记忆'); } } }); });
+    document.querySelectorAll('.btn-del-item').forEach(function(btn) { btn.addEventListener('click', function(e) { e.stopPropagation(); var text = this.dataset.text; showConfirm('删除记忆', '确定要删除这条记忆吗？', function() { if (role.memory) { var idx = role.memory.findIndex(function(m) { return getMemoryText(m) === text; }); if (idx !== -1) { role.memory.splice(idx, 1); saveData(); renderMemory(role); renderRelationCard(role); showToast('✅ 已删除'); } } }); }); });
 
     var addInput = document.getElementById('memoryAddInput');
     var addBtn = document.getElementById('memoryAddBtn');
@@ -812,12 +567,16 @@ function bindMemoryEvents(role) {
         isAddingMemory = true;
         if (addBtn) addBtn.disabled = true;
         if (!Array.isArray(role.memory)) role.memory = [];
+        
         role.memory.push({ text: text, level: 'core', timestamp: Date.now() });
-        saveData(); // 立刻同步云端
+        
+        // 核心改动：直接调取当前最新数组全量覆盖云端
+        saveData(); 
+        
         if (addInput) addInput.value = '';
         memorySearchKeyword = ''; selectedMemories = [];
         renderMemory(role); renderRelationCard(role);
-        showToast('🧠 已添加核心记忆');
+        showToast('🧠 已添加核心记忆并请求云端同步');
         isAddingMemory = false;
         if (addBtn) addBtn.disabled = false;
         if (addInput) addInput.focus();
@@ -827,32 +586,14 @@ function bindMemoryEvents(role) {
     if (addInput) { addInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); handleAddMemory(); } }); }
 }
 
-// ========== 确认弹窗 ==========
-function showConfirm(title, message, callback) {
-    document.getElementById('confirmTitle').textContent = title;
-    document.getElementById('confirmMessage').textContent = message;
-    document.getElementById('confirmOverlay').classList.add('active');
-    confirmCallback = callback;
-}
-document.getElementById('confirmBtn').addEventListener('click', function() {
-    document.getElementById('confirmOverlay').classList.remove('active');
-    if (confirmCallback) { confirmCallback(); confirmCallback = null; }
-});
-document.getElementById('cancelBtn').addEventListener('click', function() {
-    document.getElementById('confirmOverlay').classList.remove('active');
-    confirmCallback = null;
-});
-document.getElementById('confirmOverlay').addEventListener('click', function(e) {
-    if (e.target === this) { this.classList.remove('active'); confirmCallback = null; }
-});
+function showConfirm(title, message, callback) { document.getElementById('confirmTitle').textContent = title; document.getElementById('confirmMessage').textContent = message; document.getElementById('confirmOverlay').classList.add('active'); confirmCallback = callback; }
+document.getElementById('confirmBtn').addEventListener('click', function() { document.getElementById('confirmOverlay').classList.remove('active'); if (confirmCallback) { confirmCallback(); confirmCallback = null; } });
+document.getElementById('cancelBtn').addEventListener('click', function() { document.getElementById('confirmOverlay').classList.remove('active'); confirmCallback = null; });
+document.getElementById('confirmOverlay').addEventListener('click', function(e) { if (e.target === this) { this.classList.remove('active'); confirmCallback = null; } });
 
-// ========== 主渲染 ==========
 function renderAll() {
     var role = getCurrentRole();
-    if (!role) {
-        ['panelSummary', 'panelMemory'].forEach(function(id) { var el = document.getElementById(id); if (el) el.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>未找到角色</p></div>'; });
-        return;
-    }
+    if (!role) { ['panelSummary', 'panelMemory'].forEach(function(id) { var el = document.getElementById(id); if (el) el.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>未找到角色</p></div>'; }); return; }
     renderRelationCard(role);
     if (currentTab === 'summary') renderSummary(role);
     else if (currentTab === 'memory') renderMemory(role);
@@ -890,19 +631,15 @@ function refreshData() {
     });
 }
 
-function hideLoader() {
-    var overlay = document.getElementById('loaderOverlay');
-    if (overlay) { overlay.classList.add('hidden'); setTimeout(function() { overlay.style.display = 'none'; }, 600); }
-}
+function hideLoader() { var overlay = document.getElementById('loaderOverlay'); if (overlay) { overlay.classList.add('hidden'); setTimeout(function() { overlay.style.display = 'none'; }, 600); } }
 
 function init() {
-    console.log('📦 时光胶囊 v3.0 初始化中...');
+    console.log('📦 时光胶囊 v3.1 初始化...');
     loadData().then(function(ok) {
         if (ok) {
             renderRoleStrip(); setupTabs(); renderAll();
             document.getElementById('backBtn').addEventListener('click', goBack);
             document.getElementById('refreshBtn').addEventListener('click', refreshData);
-            console.log('📦 时光胶囊 v3.0 已加载，共 ' + roles.length + ' 个角色');
         } else {
             var ps = document.getElementById('panelSummary');
             if (ps) ps.innerHTML = '<div class="empty-state"><i class="fas fa-database"></i><p>请先打开主应用</p><span class="empty-hint">在「梦女空间」中创建角色后，再来这里查看</span></div>';
