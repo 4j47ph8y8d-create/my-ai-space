@@ -1,168 +1,285 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>时光胶囊 - LunarReverie</title>
-    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
-    <style>
-        body { margin: 0; background: #faf0f5; font-family: 'ZCOOL QingKe HuangYou', sans-serif; color: #333; height: 100vh; overflow-y: auto; }
-        .header { padding: 20px; font-size: 24px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; }
-        .role-tabs { display: flex; gap: 15px; padding: 0 20px 10px; overflow-x: auto; }
-        .role-tab { display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 12px; border: 2px solid transparent; min-width: 60px;}
-        .role-tab.active { background: #fff; border-color: #a29bfe; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .role-tab img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 5px; background:#eee;}
-        .memory-section { padding: 20px; }
-        .memory-title { display: flex; justify-content: space-between; font-size: 18px; margin-bottom: 10px; color: #666; }
-        .memory-list { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .memory-item { padding: 10px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 15px;}
-        .memory-item:last-child { border-bottom: none; }
-        .add-area { display: flex; gap: 10px; margin-top: 20px; }
-        .add-input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-family: inherit; background: #fff;}
-        .add-btn { padding: 10px 20px; background: #a29bfe; color: #fff; border: none; border-radius: 8px; font-family: inherit; font-weight: bold; }
-        .back-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>时光胶囊</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+/* 保留了你原来的所有绝美样式 */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: #F4F2F7; }
+.phone-frame { width: 100%; max-width: 430px; height: 100vh; background: #F4F2F7; display: flex; flex-direction: column; margin: 0 auto; }
+:root { --bg-primary: #F4F2F7; --text-primary: #4A4558; --text-secondary: #8B82A0; --accent: #B8A5C7; --accent-strong: #9B85B0; }
+
+/* 顶部渐变头 */
+.memory-top { padding: 15px 18px 20px; background: linear-gradient(180deg, #D7D1E8 0%, #E4D8E8 55%, #F0E8F2 85%, #F4F2F7 100%); }
+.memory-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.top-back { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.6); border: none; color: #4A4558; font-size: 15px; }
+.memory-title { font-size: 26px; font-weight: 700; color: #4A4558; display: flex; align-items: center; gap: 10px; }
+.memory-title i { color: #9B85B0; font-size: 22px; }
+.memory-subtitle { font-size: 13px; color: #8B82A0; margin-top: 6px; }
+
+/* 内容区 */
+.memory-content { flex: 1; overflow-y: auto; padding: 12px 16px 24px; }
+
+/* 角色条 */
+.role-strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 14px; }
+.role-chip { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 16px; background: rgba(255,255,255,0.7); border: 1.5px solid transparent; }
+.role-chip.active { background: #fff; border-color: #B8A5C7; box-shadow: 0 4px 14px rgba(184,165,199,0.25); }
+.chip-avatar { width: 40px; height: 40px; border-radius: 50%; background: #B8A5C7; background-size: cover; color: #fff; display: flex; align-items: center; justify-content: center; }
+.chip-name { font-size: 11px; color: #4A4558; max-width: 68px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 关系卡片 */
+.relation-card { background: rgba(255,255,255,0.65); border-radius: 22px; padding: 18px 20px 16px; margin-bottom: 14px; border: 1px solid #fff; }
+.rc-title { font-size: 11px; color: #A89DB8; margin-bottom: 14px; font-weight: 600; }
+.rc-grid { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; }
+.rc-number { font-size: 20px; font-weight: 800; color: #4A4558; }
+.rc-number.heart-color { color: #E88BA5; }
+.rc-label { font-size: 9px; color: #A89DB8; margin-top: 2px; }
+
+/* Tab */
+.memory-tabs { display: flex; background: rgba(255,255,255,0.6); padding: 5px; border-radius: 16px; margin-bottom: 14px; }
+.memory-tab { flex: 1; padding: 10px; font-size: 13px; color: #8B82A0; border: none; background: none; border-radius: 12px; }
+.memory-tab.active { background: linear-gradient(135deg, #B8A5C7, #9B85B0); color: #fff; font-weight: 600; }
+
+/* 面板 */
+.memory-panel { display: none; }
+.memory-panel.active { display: block; }
+
+/* 搜索框 */
+.mem-search-bar { display: flex; margin-bottom: 12px; }
+.mem-search-bar input { width: 100%; padding: 11px 14px; border-radius: 14px; border: 1px solid rgba(212,197,224,0.5); background: rgba(255,255,255,0.8); font-size: 13px; outline: none; }
+
+/* 记忆分类 */
+.mem-category { margin-bottom: 12px; }
+.cat-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(255,255,255,0.7); border-radius: 14px; border: 1px solid #fff; }
+.cat-icon { font-size: 15px; }
+.cat-name { font-size: 13px; font-weight: 600; color: #4A4558; flex: 1; }
+.cat-count { font-size: 10px; color: #8B82A0; background: #E4D8E8; padding: 2px 10px; border-radius: 10px; }
+.cat-body { padding-top: 8px; }
+
+/* 记忆条目 */
+.mem-item { display: flex; background: rgba(255,255,255,0.75); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; border: 1px solid #fff; }
+.item-text { flex: 1; font-size: 13px; color: #4A4558; line-height: 1.6; word-break: break-word; }
+.item-actions { display: flex; gap: 4px; align-items: flex-start; }
+.item-actions button { background: none; border: none; color: #D07A7A; font-size: 14px; padding: 4px; }
+
+/* 添加区 */
+.mem-add-section { display: flex; gap: 8px; margin-top: 14px; }
+.mem-add-section input { flex: 1; padding: 10px 14px; border-radius: 12px; border: 1px solid #ddd; background: #fff; font-size: 13px; }
+.mem-add-section .add-btn { padding: 10px 18px; border: none; border-radius: 12px; background: linear-gradient(135deg, #B8A5C7, #9B85B0); color: #fff; font-size: 13px; font-weight: 600; }
+
+/* Toast */
+.toast { position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 10px; font-size: 13px; display: none; z-index: 999; }
+</style>
 </head>
 <body>
 
-    <div class="header">
-        <button class="back-btn" onclick="window.location.href='index.html'">&lt; 返回</button>
-        <span>🧠 时光胶囊</span>
-        <div style="width: 40px;"></div>
+<div class="phone-frame">
+    <div class="memory-top">
+        <div class="memory-topbar">
+            <button class="top-back" onclick="window.location.href='index.html'"><i class="fas fa-chevron-left"></i></button>
+        </div>
+        <div class="memory-title"><i class="fas fa-brain"></i>时光胶囊</div>
+        <div class="memory-subtitle">记录每一个关于你的瞬间</div>
     </div>
+
+    <div class="memory-content">
+        <div class="role-strip" id="roleStrip"></div>
+        
+        <div class="relation-card">
+            <div class="rc-title"><i class="fas fa-heart"></i> 关系概览</div>
+            <div class="rc-grid">
+                <div class="rc-item"><div class="rc-number heart-color" id="intimacyVal">0%</div><div class="rc-label">亲密度</div></div>
+                <div class="rc-item"><div class="rc-number" id="daysVal">0</div><div class="rc-label">相识天数</div></div>
+                <div class="rc-item"><div class="rc-number" id="msgCountVal">0</div><div class="rc-label">消息总数</div></div>
+            </div>
+        </div>
+
+        <div class="memory-tabs">
+            <button class="memory-tab active" onclick="switchTab('memory', this)">记忆库</button>
+        </div>
+
+        <div class="memory-panel active" id="panelMemory">
+            <div class="mem-search-bar">
+                <input type="text" id="searchInput" placeholder="搜索记忆..." oninput="renderMemory()">
+            </div>
+            <div id="memoryList"></div>
+            <div class="mem-add-section">
+                <input type="text" id="newMemoryInput" placeholder="添加新记忆..." maxlength="100">
+                <button class="add-btn" onclick="addMemory()">+ 添加</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let roles = [];
+let currentRoleId = null;
+
+function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.innerText = msg;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 2000);
+}
+
+function getMemoryText(m) {
+    if (!m) return '';
+    return typeof m === 'string' ? m : (m.text || '');
+}
+
+// 初始化：兼容主应用的本地存储大小写
+function init() {
+    const raw = localStorage.getItem('ds_multiRole_v2') || localStorage.getItem('ds_multirole_v2');
+    if (!raw) {
+        document.getElementById('memoryList').innerHTML = '<div style="text-align:center; padding: 40px; color:#888;">请先打开主应用</div>';
+        return;
+    }
+    const data = JSON.parse(raw);
+    roles = data.roles || [];
+    if (roles.length === 0) return;
     
-    <div class="role-tabs" id="roleTabs"></div>
+    currentRoleId = data.currentRoleId || roles[0].id;
+    renderRoleStrip();
+    renderStats();
+    renderMemory();
+}
 
-    <div class="memory-section">
-        <div class="memory-title">
-            <span>📌 核心记忆</span>
-            <span id="coreCount">0 条</span>
+function renderRoleStrip() {
+    const strip = document.getElementById('roleStrip');
+    strip.innerHTML = roles.map(r => `
+        <div class="role-chip ${r.id === currentRoleId ? 'active' : ''}" onclick="switchRole('${r.id}')">
+            <div class="chip-avatar" style="${r.avatar ? 'background-image:url(' + r.avatar + ')' : ''}">
+                ${r.avatar ? '' : (r.name ? r.name.charAt(0) : '?')}
+            </div>
+            <div class="chip-name">${r.name || '未命名'}</div>
         </div>
-        <div class="memory-list" id="coreList"></div>
+    `).join('');
+}
 
-        <div class="memory-title">
-            <span>🕒 近期记忆</span>
-            <span id="recentCount">0 条</span>
+function switchRole(id) {
+    currentRoleId = id;
+    renderRoleStrip();
+    renderStats();
+    renderMemory();
+}
+
+function getCurrentRole() {
+    return roles.find(r => r.id === currentRoleId);
+}
+
+function renderStats() {
+    const role = getCurrentRole();
+    if (!role) return;
+    document.getElementById('intimacyVal').innerText = (role.extendedState ? role.extendedState.intimacy : 0) + '%';
+    document.getElementById('msgCountVal').innerText = (role.messages || []).length;
+}
+
+function renderMemory() {
+    const role = getCurrentRole();
+    if (!role) return;
+
+    let mems = role.memory || [];
+    const keyword = (document.getElementById('searchInput')?.value || '').toLowerCase();
+    
+    if (keyword) {
+        mems = mems.filter(m => getMemoryText(m).toLowerCase().includes(keyword));
+    }
+
+    const core = mems.filter(m => m.level === 'core' || !m.level);
+    const recent = mems.filter(m => m.level === 'recent');
+    const archived = mems.filter(m => m.level === 'archived');
+
+    const html = `
+        ${renderCategory('📌 核心记忆', core, 'core')}
+        ${renderCategory('🕒 近期记忆', recent, 'recent')}
+        ${renderCategory('📦 归档记忆', archived, 'archived')}
+    `;
+    document.getElementById('memoryList').innerHTML = html;
+}
+
+function renderCategory(title, items, type) {
+    if (items.length === 0) return '';
+    return `
+        <div class="mem-category">
+            <div class="cat-header">
+                <span class="cat-name">${title}</span>
+                <span class="cat-count">${items.length} 条</span>
+            </div>
+            <div class="cat-body">
+                ${items.map(m => `
+                    <div class="mem-item">
+                        <span class="item-text">${getMemoryText(m)}</span>
+                        <div class="item-actions">
+                            <button onclick="deleteMemory('${getMemoryText(m)}')">×</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
         </div>
-        <div class="memory-list" id="recentList"></div>
+    `;
+}
 
-        <div class="add-area">
-            <input type="text" id="memoryInput" class="add-input" placeholder="添加新的核心记忆...">
-            <button onclick="addMemory()" class="add-btn">+ 添加</button>
-        </div>
-    </div>
+// 终极添加记忆函数：直接同步云端
+function addMemory() {
+    const input = document.getElementById('newMemoryInput');
+    const text = input.value.trim();
+    if (!text) return;
 
-    <script>
-        let globalData = null;
-        let currentRoleId = null;
+    const role = getCurrentRole();
+    if (!role) return;
 
-        function init() {
-            const raw = localStorage.getItem('ds_multiRole_v2') || localStorage.getItem('ds_multiRole_v2_backup');
-            if (!raw) return alert('请先在主界面创建角色！');
-            
-            globalData = JSON.parse(raw);
-            if (!globalData.roles || globalData.roles.length === 0) return alert('数据异常，请去主界面刷新！');
-            
-            currentRoleId = globalData.roles[0].id;
-            renderTabs();
-            renderMemories();
-        }
+    role.memory = role.memory || [];
+    role.memory.push({ text: text, level: 'core', timestamp: Date.now() });
+    
+    input.value = '';
+    renderMemory();
+    saveAndSync();
 
-        function renderTabs() {
-            const tabs = document.getElementById('roleTabs');
-            tabs.innerHTML = '';
-            globalData.roles.forEach(r => {
-                const div = document.createElement('div');
-                div.className = `role-tab ${r.id === currentRoleId ? 'active' : ''}`;
-                div.innerHTML = `
-                    <img src="${r.avatar || 'assets/avatar/body_male.png'}" alt="${r.name}">
-                    <span>${r.name}</span>
-                `;
-                div.onclick = () => {
-                    currentRoleId = r.id;
-                    renderTabs();
-                    renderMemories();
-                };
-                tabs.appendChild(div);
-            });
-        }
+    // 立刻弹窗测试，证明逻辑走到了！
+    showToast("✅ 已添加到界面，正在上传云端...");
+}
 
-        function renderMemories() {
-            const role = globalData.roles.find(r => r.id === currentRoleId);
-            if (!role) return;
-            role.memory = role.memory || [];
-            
-            // 重新分类：明确把 core 和 recent 分开
-            const coreMems = role.memory.filter(m => m.level === 'core');
-            const recentMems = role.memory.filter(m => m.level !== 'core');
-            
-            document.getElementById('coreCount').innerText = coreMems.length + ' 条';
-            document.getElementById('recentCount').innerText = recentMems.length + ' 条';
+function deleteMemory(text) {
+    if (!confirm('确定删除这条记忆吗？')) return;
+    const role = getCurrentRole();
+    if (!role) return;
 
-            const coreList = document.getElementById('coreList');
-            coreList.innerHTML = coreMems.map(m => `
-                <div class="memory-item">
-                    <span>${m.text}</span>
-                    <span style="color:#ff7675; cursor:pointer; font-size:20px;" onclick="deleteMemory('${m.timestamp}')">×</span>
-                </div>
-            `).join('') || '<div style="color:#aaa; text-align:center; padding:10px;">暂无核心记忆</div>';
+    role.memory = role.memory.filter(m => getMemoryText(m) !== text);
+    renderMemory();
+    saveAndSync();
+}
 
-            const recentList = document.getElementById('recentList');
-            recentList.innerHTML = recentMems.map(m => `
-                <div class="memory-item"><span>${m.text}</span></div>
-            `).join('') || '<div style="color:#aaa; text-align:center; padding:10px;">暂无近期记忆</div>';
-        }
+// 核心武器：保存 + 强行上传云端
+function saveAndSync() {
+    const raw = localStorage.getItem('ds_multiRole_v2') || localStorage.getItem('ds_multirole_v2');
+    let data = JSON.parse(raw || '{}');
+    
+    data.roles = roles;
+    data.currentRoleId = currentRoleId;
+    
+    // 存本地
+    localStorage.setItem('ds_multiRole_v2', JSON.stringify(data));
+    localStorage.setItem('ds_multirole_v2', JSON.stringify(data));
 
-        // 核心改动：直接调用后门接口
-        async function addMemory() {
-            const input = document.getElementById('memoryInput');
-            const text = input.value.trim();
-            if (!text) return;
+    // 存云端
+    const token = localStorage.getItem('dream_token');
+    if (token) {
+        fetch('/api/data/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify(data)
+        }).then(res => {
+            if(res.ok) showToast("🚀 云端同步成功！");
+        }).catch(() => showToast("⚠️ 云端同步失败"));
+    }
+}
 
-            const token = localStorage.getItem('dream_token');
-            if (!token) return alert('登录状态失效，请重新登录！');
-
-            input.value = '添加中...';
-            input.disabled = true;
-
-            try {
-                const res = await fetch('/api/memory/add', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token
-                    },
-                    body: JSON.stringify({ roleId: currentRoleId, text: text, level: 'core' })
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    // 为了立刻让界面显示，我们在本地也塞一份
-                    const role = globalData.roles.find(r => r.id === currentRoleId);
-                    role.memory.push({ text: text, level: 'core', timestamp: Date.now() });
-                    localStorage.setItem('ds_multiRole_v2', JSON.stringify(globalData));
-                    renderMemories();
-                } else {
-                    alert('保存失败：' + (data.error || '未知错误'));
-                }
-            } catch (e) {
-                alert('网络错误！');
-            } finally {
-                input.value = '';
-                input.disabled = false;
-            }
-        }
-
-        function deleteMemory(ts) {
-            if (!confirm('确定删除这条核心记忆吗？')) return;
-            // 删除暂时先做前端，后端以后再加
-            const role = globalData.roles.find(r => r.id === currentRoleId);
-            role.memory = role.memory.filter(m => String(m.timestamp) !== String(ts));
-            localStorage.setItem('ds_multiRole_v2', JSON.stringify(globalData));
-            renderMemories();
-        }
-
-        init();
-    </script>
+init();
+</script>
 </body>
 </html>
