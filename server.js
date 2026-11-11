@@ -425,7 +425,26 @@ app.post('/api/data/save', authenticate, async (req, res) => {
         res.status(500).json({ error: '数据保存失败: ' + error.message });
     }
 });
+// ===== 单独更新记忆接口 =====
+app.post('/api/data/update-memory', authenticate, async (req, res) => {
+    try {
+        const { roleId, memory } = req.body;
+        const userData = await UserData.findOne({ userId: req.userId });
+        if (!userData) return res.status(404).json({ error: '找不到用户数据' });
 
+        const role = userData.roles.find(r => r.id === roleId);
+        if (!role) return res.status(404).json({ error: '找不到角色' });
+
+        role.memory = memory;
+        userData.markModified('roles'); // 强制通知 MongoDB 数据已修改
+        await userData.save();
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error('保存记忆失败', e);
+        res.status(500).json({ error: '保存失败' });
+    }
+});
 // ===== 加载数据 =====
 app.get('/api/data/load', authenticate, async (req, res) => {
     try {
