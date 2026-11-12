@@ -421,6 +421,20 @@ function saveData() {
             return res.json();
         }).then(function() {
             console.log('☁️ 记忆同步成功');
+            
+            // ★ 关键修复：同步成功后，把最新记忆写回本地，防止被主界面旧缓存覆盖！
+            try {
+                var localData = JSON.parse(localStorage.getItem('ds_multiRole_v2') || '{}');
+                if (localData.roles) {
+                    var localRole = localData.roles.find(function(r) { return r.id === currentRoleId; });
+                    if (localRole) {
+                        localRole.memory = currentRole.memory;
+                        localStorage.setItem('ds_multiRole_v2', JSON.stringify(localData));
+                        localStorage.setItem('ds_multirole_v2', JSON.stringify(localData));
+                    }
+                }
+            } catch(e) { console.log('本地回写失败', e); }
+            
             showToast('✅ 记忆已同步至云端');
         }).catch(function(err) {
             console.error('记忆同步失败', err);
