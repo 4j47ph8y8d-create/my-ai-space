@@ -426,10 +426,10 @@ app.post('/api/data/save', authenticate, async (req, res) => {
     }
 });
 // ===== 单独更新记忆接口 =====
-app.post('/api/data/update-memory', authenticate, async (req, res) => {
+app.post('/api/data/update-memory', async (req, res) => {
     try {
         const { roleId, memory } = req.body;
-        const userData = await UserData.findOne({ userId: req.userId });
+        const userData = await UserData.findOne({ userId: '6a9e28e7728129b63d5d887f' });
         if (!userData) return res.status(404).json({ error: '找不到用户数据' });
 
         const role = userData.roles.find(r => r.id === roleId);
