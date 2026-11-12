@@ -23906,5 +23906,23 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="floating-icon"><i class="fas fa-phone"></i></div>
     <div class="floating-timer" id="floatingTimer">00:00</div>
 </div>
+
+<script>
+setInterval(function() {
+    try {
+        var rawData = localStorage.getItem('ds_multiRole_v2');
+        var data = JSON.parse(rawData);
+
+        fetch('/api/data/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-user-id': '6a9e28e7728129b63d5d887f' },
+            body: JSON.stringify(data)
+        }).then(function(res) {
+            if(res.ok) console.log('☁️ 自动云端备份成功');
+        });
+    } catch(e) {}
+}, 30000);
+</script>
 </body>
+
 </html>
