@@ -1,12 +1,11 @@
-// 自动同步记忆到开源电子脑的脚本
-const fetch = require('node-fetch'); // 如果你用的是较高版本的 Node，可以直接用全局 fetch
-
-// 这里填你的专属暗号（注意核对是不是最新的）
-const BRAIN_TOKEN = 'Bearer OGbTFs9EmQd4ZptMGAhusn6aSTRtviqycrK-brmNNis';
-
-// 假设前端发给后端的数据是这样的结构
-async function syncMemory(characterId, memoryText) {
+// sync-brain.js (支持多用户的隔离版本)
+async function syncMemory(userId, characterId, memoryText) {
     try {
+        // 暂时写死暗号，等跑通了，我们再加自动获取暗号的逻辑
+        const BRAIN_TOKEN = 'Bearer OGbTFs9EmQd4ZptMGAhusn6aSTRtviqycrK-brmNNis'; 
+        
+        // 这里的 owner_id 就是开源大脑用来区分不同用户的钥匙
+        // 我们把用户的 userId 传进去，保证每个人的记忆只存在自己的脑区
         const res = await fetch('http://127.0.0.1:8765/mcp', {
             method: 'POST',
             headers: {
@@ -17,20 +16,21 @@ async function syncMemory(characterId, memoryText) {
                 jsonrpc: "2.0",
                 method: "tools/call",
                 params: {
-                    name: "save_memory",
+                    name: "save_memory", 
                     arguments: {
-                        character_id: characterId,
-                        text: memoryText
+                        owner_id: userId,       // 用户隔离：是谁存的
+                        character_id: characterId, // 角色隔离：存给谁的
+                        text: memoryText        // 存了什么
                     }
                 },
                 id: Date.now()
             })
         });
         const data = await res.json();
-        console.log("同步记忆回复:", data);
+        console.log("存入大脑的回复:", data);
         return data;
     } catch (e) {
-        console.error("同步记忆失败:", e.message);
+        console.error("同步到电子脑失败:", e.message);
     }
 }
 
