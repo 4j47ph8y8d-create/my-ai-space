@@ -25,89 +25,78 @@ function decayMood(roleId) {
 }
 
 window.retrieveRelevantMemory = function(role, userMessage) {
-    if (!role || !Array.isArray(role.memory)) return "";
+    var allMemories = [];
     
-    // 1. 情绪代谢（每次对话前，状态随时间回落）
-    decayMood(role.id);
-
-    var allMemories = role.memory;
-    var result = [];
+    // 1. 优先尝试从传进来的角色数据里拿记忆
+    if (role && Array.isArray(role.memory)) {
+        allMemories = role.memory;
+    }
     
-    // 2. 识别情绪波动（利用简单关键词，动态增加/减少激素）
-    var negativeWords = ["生气", "吵架", "难过", "委屈", "讨厌", "滚", "不理你"];
-    var positiveWords = ["开心", "想你", "喜欢", "爱你", "乖", "抱抱"];
-    var timeWords = ["昨天", "昨晚", "上次", "之前"];
-    
-    var isNegative = false;
-    var isPositive = false;
-    var hasTime = false;
-
-    for (var i = 0; i < negativeWords.length; i++) {
-        if (userMessage.indexOf(negativeWords[i]) !== -1) { isNegative = true; break; }
-    }
-    for (var j = 0; j < positiveWords.length; j++) {
-        if (userMessage.indexOf(positiveWords[j]) !== -1) { isPositive = true; break; }
-    }
-    for (var k = 0; k < timeWords.length; k++) {
-        if (userMessage.indexOf(timeWords[k]) !== -1) { hasTime = true; break; }
-    }
-
-    // 如果有情绪波动，改变激素分数
-    if (isNegative) { updateMood(role.id, -15); }
-    if (isPositive) { updateMood(role.id, +10); }
-
-    // 3. 核心记忆必带（最多3条防爆Token）
-    var coreCount = 0;
-    for (var m = 0; m < allMemories.length; m++) {
-        if (allMemories[m].level === "core" && coreCount < 3) {
-            result.push(allMemories[m].text);
-            coreCount++;
-        }
-    }
-
-    // 4. 检索近期记忆（只有触发情绪、时间词，或者有话对上才搜）
-    if (isNegative || isPositive || hasTime) {
-        for (var n = 0; n < allMemories.length; n++) {
-            var mem = allMemories[n];
-            if (mem.level === "core") continue; // 核心记忆上面已经处理过了
-            var text = mem.text || "";
-            if (text === "") continue;
-            
-            var matched = false;
-            // 匹配时间或情绪相关
-            if (text.indexOf(userMessage) !== -1 || userMessage.indexOf(text) !== -1) matched = true;
-            
-            // 降维打击（只要沾边就算）
-            if (!matched) {
-                var chars = userMessage.split("");
-                for (var c = 0; c < chars.length; c++) {
-                    if (chars[c].trim() !== "" && /[\u4e00-\u9fa5]/.test(chars[c]) && text.indexOf(chars[c]) !== -1) {
-                        matched = true; break;
+    // 2. 兜底方案：如果上面是空的（或者闪烁导致丢了），直接从浏览器底层强制读取！
+    if (allMemories.length === 0) {
+        try {
+            var raw = localStorage.getItem("ds_multiRole_v2");
+            if (raw) {
+                var data = JSON.parse(raw);
+                if (data && data.roles) {
+                    var realRole = data.roles.find(function(r) { return r.id === role.id; });
+                    if (realRole && Array.isArray(realRole.memory)) {
+                        allMemories = realRole.memory;
                     }
                 }
             }
-            if (matched) result.push(text);
+        } catch(e) {}
+    }
+
+    if (allMemories.length === 0) return "";
+
+    var result = [];
+    var triggerWords = ["昨天", "昨晚", "生气", "吵架", "难过", "委屈", "开心", "想你", "吃醋", "冷战", "小名", "记得"];
+    var isEmotional = false;
+    for (var k = 0; k < triggerWords.length; k++) {
+        if (userMessage.indexOf(triggerWords[k]) !== -1) {
+            isEmotional = true;
+            break;
         }
     }
 
-    // 5. 组装最终提示词 (记忆 + 情绪)
-    var output = "";
-    var currentMood = getMood(role.id);
-    
-    // 只有发生波动或检索到记忆才注入，极省 Token
-    if (result.length > 0 || isNegative || isPositive) {
-        output += "\n\n【电子脑潜意识层】\n";
-        // 如果命中了相关记忆
-    if (result.length > 0) {
-        var output = "\n\n【脑海中的绝对事实（必读）】\n" + result.join("\n") + "\n";
-        
-        // 加上强力的防幻觉指令
-        output += "⚠️【核心指令】：上面的事实是真实的记忆，请务必遵守。如果事实中记录了小名、身份等重要信息，请绝对不要自己编造（比如编造童年往事）。如果你记忆里没有这件事，你就直接说不知道，绝不可以说谎！";
+    for (var i = 0; i < allMemories.length; i++) {
+        var mem = allMemories[i];
+        var text = mem.text || "";
+        if (text === "") continue;
 
-        if (isEmotional) {
-            output += "\n⚠️【情绪提示】：结合你现在的激素水平，带有真实情绪地回应，不要像没事人一样。";
+        var isMatch = false;
+
+        // 核心记忆，无条件直接塞进去
+        if (mem.level === "core") {
+            isMatch = true;
         }
         
-        return output;
+        // 模糊匹配
+        if (text.indexOf(userMessage) !== -1 || userMessage.indexOf(text) !== -1) {
+            isMatch = true;
+        }
+
+        // 字级匹配
+        if (!isMatch) {
+            var chars = userMessage.split("");
+            for (var j = 0; j < chars.length; j++) {
+                if (chars[j].trim() !== "" && /[\u4e00-\u9fa5]/.test(chars[j]) && text.indexOf(chars[j]) !== -1) {
+                    isMatch = true;
+                    break;
+                }
+            }
+        }
+
+        if (isMatch) result.push(text);
+    }
+
+    if (result.length > 0) {
+        // 用极其强硬的语气，禁止 AI 编造！
+        return "\n\n【系统强制指令：绝对事实】\n" +
+               "以下是你脑海中拥有的真实记忆：\n" +
+               result.join("\n") + "\n" +
+               "⚠️【底线要求】：请你直接用上述事实回答用户。**绝对禁止**凭空编造事实里没有的小名、往事或设定。如果事实里写的是“圆圆”，你就必须叫“圆圆”，不准瞎编别的名字！";
     }
     return "";
+};
