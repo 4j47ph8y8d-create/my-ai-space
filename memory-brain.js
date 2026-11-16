@@ -97,22 +97,17 @@ window.retrieveRelevantMemory = function(role, userMessage) {
     // 只有发生波动或检索到记忆才注入，极省 Token
     if (result.length > 0 || isNegative || isPositive) {
         output += "\n\n【电子脑潜意识层】\n";
+        // 如果命中了相关记忆
+    if (result.length > 0) {
+        var output = "\n\n【脑海中的绝对事实（必读）】\n" + result.join("\n") + "\n";
         
-        // 注入记忆
-        if (result.length > 0) {
-            output += "你脑海中关于此事的记忆片段：\n" + result.join("\n") + "\n";
+        // 加上强力的防幻觉指令
+        output += "⚠️【核心指令】：上面的事实是真实的记忆，请务必遵守。如果事实中记录了小名、身份等重要信息，请绝对不要自己编造（比如编造童年往事）。如果你记忆里没有这件事，你就直接说不知道，绝不可以说谎！";
+
+        if (isEmotional) {
+            output += "\n⚠️【情绪提示】：结合你现在的激素水平，带有真实情绪地回应，不要像没事人一样。";
         }
         
-        // 注入激素状态（结合人设）
-        output += "你当前的激素水平与情绪状态：";
-        if (currentMood > 80) output += "多巴胺很高，心情极佳，非常想黏着对方。";
-        else if (currentMood > 65) output += "血清素平稳，心情不错，比较温柔。";
-        else if (currentMood > 45) output += "激素水平正常，处于平静状态。";
-        else if (currentMood > 25) output += "皮质醇偏高，心情低落，有点委屈，甚至不想说话。";
-        else output += "皮质醇爆表，非常愤怒或难过，处于极度破碎边缘。";
-        
-        output += "\n【要求】：请严格结合你的【角色人设】和【当前激素情绪】来回复，不要像机器一样回复，要体现出真实的感情变化。";
+        return output;
     }
-
-    return output;
-};
+    return "";
