@@ -398,7 +398,7 @@ function loadData() {
     });
 }
 
-// ========== 数据保存 ==========
+// ========== 数据保存（修复版 + 电子脑同步） ==========
 function saveData() {
     if (!roles || roles.length === 0) return;
     try {
@@ -409,9 +409,9 @@ function saveData() {
         localStorage.setItem('ds_multirole_v2', JSON.stringify(localData));
     } catch(e) { console.warn('本地缓存失败', e); }
 
-    // 只发送当前角色的 memory，不发送所有聊天记录，极速秒传
     var currentRole = roles.find(r => r.id === currentRoleId);
     if (currentRole) {
+        // 1. 发送到你的云端备份
         fetch('/api/data/update-memory', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
@@ -421,8 +421,6 @@ function saveData() {
             return res.json();
         }).then(function() {
             console.log('☁️ 记忆同步成功');
-            
-            // ★ 关键修复：同步成功后，把最新记忆写回本地，防止被主界面旧缓存覆盖！
             try {
                 var localData = JSON.parse(localStorage.getItem('ds_multiRole_v2') || '{}');
                 if (localData.roles) {
@@ -434,12 +432,32 @@ function saveData() {
                     }
                 }
             } catch(e) { console.log('本地回写失败', e); }
-            
             showToast('✅ 记忆已同步至云端');
         }).catch(function(err) {
             console.error('记忆同步失败', err);
             showToast('❌ 记忆同步失败');
         });
+
+        // 2. 🧠 新增：无感同步到独立开源大脑（绝对不卡界面，不影响原有的任何逻辑）
+        var latestMemory = currentRole.memory[currentRole.memory.length - 1];
+        if (latestMemory) {
+            var brainToken = localStorage.getItem('dream_token');
+            if (brainToken) {
+                fetch('https://lunar-reverie.top/api/save_memory', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + brainToken
+                    },
+                    body: JSON.stringify({
+                        characterId: currentRole.id,
+                        memoryText: latestMemory.text
+                    })
+                }).then(function(r) {
+                    if (r.ok) console.log('🧠 电子脑记忆同步成功');
+                }).catch(function(e) { console.warn('🧠 电子脑同步跳过', e); });
+            }
+        }
     }
 }
 
@@ -597,7 +615,28 @@ function bindMemoryEvents(role) {
         
         // 核心改动：直接调取当前最新数组全量覆盖云端
         saveData(); 
-        
+        // ==========================================
+        // 🧠 电子脑同步模块：将最新记忆发送给开源大脑
+        // ==========================================
+        var brainToken = localStorage.getItem('dream_token');
+        if (brainToken) {
+            fetch('https://lunar-reverie.top/api/save_memory', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + brainToken
+                },
+                body: JSON.stringify({
+                    characterId: role.id, // 当前角色的唯一ID（避免多用户串台）
+                    memoryText: text      // 刚刚输入的记忆文字
+                })
+            }).then(function(res) {
+                if (res.ok) console.log('🧠 已成功同步到开源大脑');
+            }).catch(function(err) {
+                console.warn('🧠 同步开源大脑失败', err);
+            });
+        }
+        // ==========================================
         if (addInput) addInput.value = '';
         memorySearchKeyword = ''; selectedMemories = [];
         renderMemory(role); renderRelationCard(role);
@@ -618,7 +657,11 @@ document.getElementById('confirmOverlay').addEventListener('click', function(e) 
 
 function renderAll() {
     var role = getCurrentRole();
-    if (!role) { ['panelSummary', 'panelMemory'].forEach(function(id) { var el = document.getElementById(id); if (el) el.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>未找到角色</p></div>'; }); return; }
+    if (!role) { 
+        // ★ 修复：如果没角色，显示加载中，千万别清空事件的绑定
+        console.log('⏳ 正在等待云端数据加载...'); 
+        return; 
+    }
     renderRelationCard(role);
     if (currentTab === 'summary') renderSummary(role);
     else if (currentTab === 'memory') renderMemory(role);
