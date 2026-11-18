@@ -398,9 +398,11 @@ function loadData() {
     });
 }
 
-// ========== 数据保存（修复版 + 电子脑同步） ==========
+// ========== 数据保存（极简防闪烁版） ==========
 function saveData() {
     if (!roles || roles.length === 0) return;
+    
+    // 1. 只存本地，绝对不拉取云端覆盖，防止闪烁
     try {
         var localData = JSON.parse(JSON.stringify(cloudDataCache || {}));
         localData.roles = roles;
@@ -411,51 +413,16 @@ function saveData() {
 
     var currentRole = roles.find(r => r.id === currentRoleId);
     if (currentRole) {
-        // 1. 发送到你的云端备份
-        fetch('/api/data/update-memory', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-            body: JSON.stringify({ roleId: currentRoleId, memory: currentRole.memory })
-        }).then(function(res) {
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            return res.json();
-        }).then(function() {
-            console.log('☁️ 记忆同步成功');
-            try {
-                var localData = JSON.parse(localStorage.getItem('ds_multiRole_v2') || '{}');
-                if (localData.roles) {
-                    var localRole = localData.roles.find(function(r) { return r.id === currentRoleId; });
-                    if (localRole) {
-                        localRole.memory = currentRole.memory;
-                        localStorage.setItem('ds_multiRole_v2', JSON.stringify(localData));
-                        localStorage.setItem('ds_multirole_v2', JSON.stringify(localData));
-                    }
-                }
-            } catch(e) { console.log('本地回写失败', e); }
-            showToast('✅ 记忆已同步至云端');
-        }).catch(function(err) {
-            console.error('记忆同步失败', err);
-            showToast('❌ 记忆同步失败');
-        });
-
-        // 2. 🧠 新增：无感同步到独立开源大脑（绝对不卡界面，不影响原有的任何逻辑）
+        // 2. 异步静默发给大脑（我们只发大脑，不发旧的云端了）
         var latestMemory = currentRole.memory[currentRole.memory.length - 1];
         if (latestMemory) {
-            var brainToken = localStorage.getItem('dream_token');
-            if (brainToken) {
+            var token = getToken();
+            if (token) {
                 fetch('https://lunar-reverie.top/api/save_memory', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + brainToken
-                    },
-                    body: JSON.stringify({
-                        characterId: currentRole.id,
-                        memoryText: latestMemory.text
-                    })
-                }).then(function(r) {
-                    if (r.ok) console.log('🧠 电子脑记忆同步成功');
-                }).catch(function(e) { console.warn('🧠 电子脑同步跳过', e); });
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ characterId: currentRole.id, memoryText: latestMemory.text })
+                }).catch(function(e) { console.warn('同步跳过', e); });
             }
         }
     }
