@@ -386,10 +386,33 @@ app.post('/api/auth/reset-password', async (req, res) => {
 });
 
 // ===== 保存数据（修复版） =====
+function mergeRoleMem(oldRole, newRole) {
+    var oldT = Array.isArray(oldRole.memoryTombstones) ? oldRole.memoryTombstones : [];
+    var newT = Array.isArray(newRole.memoryTombstones) ? newRole.memoryTombstones : [];
+    var tombSet = new Set(oldT.concat(newT).filter(function (x) { return typeof x === 'string' && x; }));
+    var map = new Map();
+    var order = [];
+    function add(m, isNew) {
+        if (!m || typeof m.text !== 'string' || !m.text) return;
+        if (tombSet.has(m.text)) return;
+        if (map.has(m.text)) {
+            var old = map.get(m.text);
+            if (isNew && m.level === 'core' && old.level !== 'core') map.set(m.text, m);
+        } else { map.set(m.text, m); order.push(m.text); }
+    }
+    (oldRole.memory || []).forEach(function (m) { add(m, false); });
+    (newRole.memory || []).forEach(function (m) { add(m, true); });
+    (newRole.memory || []).forEach(function (m) { if (m && typeof m.text === 'string') tombSet.delete(m.text); });
+    return {
+        memory: order.map(function (t) { return map.get(t); }),
+        memoryTombstones: Array.from(tombSet)
+    };
+}
 app.post('/api/data/save', authenticate, async (req, res) => {
     try {
         const userId = req.userId;
         let { config, roles, diaries } = req.body;
+        console.log('[SAVE] 收到 userId=' + userId + ' roles=' + (Array.isArray(roles) ? roles.length : '非数组') + ' 记忆=' + (Array.isArray(roles) ? roles.map(function (r) { return (r && r.id || '?') + ':' + (r && r.memory ? r.memory.length : 0); }).join(',') : '-'));
 
         // 清理可能携带的 __v 字段
         if (config && typeof config === 'object') {
@@ -409,6 +432,21 @@ app.post('/api/data/save', authenticate, async (req, res) => {
         }
 
         let userData = await UserData.findOne({ userId });
+        const existingRoles = userData && Array.isArray(userData.roles) ? userData.roles : [];
+        if (Array.isArray(roles)) {
+            roles = roles.map(function (r) {
+                if (!r || typeof r !== 'object') return r;
+                const old = existingRoles.find(function (x) { return x && x.id === r.id; });
+                if (old) {
+                    const merged = mergeRoleMem(old, r);
+                    r.memory = merged.memory;
+                    r.memoryTombstones = merged.memoryTombstones;
+                } else if (!Array.isArray(r.memoryTombstones)) {
+                    r.memoryTombstones = [];
+                }
+                return r;
+            });
+        }
         if (userData) {
             userData.config = config || userData.config;
             userData.roles = roles || userData.roles;
@@ -419,32 +457,15 @@ app.post('/api/data/save', authenticate, async (req, res) => {
             userData = new UserData({ userId, config, roles, diaries });
             await userData.save();
         }
+        console.log('[SAVE] 保存成功 version=' + (userData.version || 1));
+        if (userData && Array.isArray(userData.roles)) { console.log('[SAVE] 落库记忆=' + userData.roles.map(function (r) { return (r && r.id || '?') + ':' + (r && Array.isArray(r.memory) ? r.memory.length : 0); }).join(',')); }
         res.json({ success: true, version: userData.version || 1 });
     } catch (error) {
         console.error('保存数据错误:', error);
         res.status(500).json({ error: '数据保存失败: ' + error.message });
     }
 });
-// ===== 单独更新记忆接口 =====
-app.post('/api/data/update-memory', async (req, res) => {
-    try {
-        const { roleId, memory } = req.body;
-        const userData = await UserData.findOne({ userId: '6a9e28e7728129b63d5d887f' });
-        if (!userData) return res.status(404).json({ error: '找不到用户数据' });
 
-        const role = userData.roles.find(r => r.id === roleId);
-        if (!role) return res.status(404).json({ error: '找不到角色' });
-
-        role.memory = memory;
-        userData.markModified('roles'); // 强制通知 MongoDB 数据已修改
-        await userData.save();
-
-        res.json({ success: true });
-    } catch (e) {
-        console.error('保存记忆失败', e);
-        res.status(500).json({ error: '保存失败' });
-    }
-});
 // ===== 加载数据 =====
 app.get('/api/data/load', authenticate, async (req, res) => {
     try {
@@ -486,3 +507,4 @@ app.listen(3000, () => {
 https.createServer(httpsOptions, app).listen(443, () => {
   console.log('HTTPS Server running on port 443');
 });
+app.post('/api/save_memory', authenticate, async (req, res) => { const { characterId, memoryText } = req.body; const userId = req.userId; const { syncMemory } = require('./sync-brain.js'); try { const result = await syncMemory(userId, characterId, memoryText); res.json({ success: true, result: result }); } catch(e) { res.json({ success: false, error: e.message }); } });

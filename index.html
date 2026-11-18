@@ -8553,7 +8553,7 @@ function saveSummaryToMemory(role, summary) {
         recentMemories.sort(function(a, b) { return (a.timestamp || 0) - (b.timestamp || 0); });
         var toArchive = recentMemories.slice(0, recentMemories.length - 30);
         toArchive.forEach(function(m) {
-            m.level = 'archive';
+            m.level = 'archived';
         });
     }
     debouncedSaveAllData();
@@ -10003,7 +10003,7 @@ function consolidateMemory(role) {
             var age = now - mem.timestamp;
             if (age > 90 * 24 * 60 * 60 * 1000) { return; }
             if (age > 30 * 24 * 60 * 60 * 1000 && mem.level === 'recent') {
-                mem.level = 'archive';
+                mem.level = 'archived';
             }
         }
         newMemory.push(mem);
@@ -10280,7 +10280,7 @@ function generateCoreMemoryText(memories) {
 function retrieveRelevantMemory(role, userMessage) {
     if (!role || !Array.isArray(role.memory)) return '';
     var allMemories = role.memory.filter(function(m) {
-        return m.level === 'recent' || m.level === 'archive';
+        return m.level === 'recent' || m.level === 'archived';
     });
     if (allMemories.length === 0) return '';
     allMemories.sort(function(a, b) {
@@ -15242,7 +15242,7 @@ function detectAndProcessTransfer(roleId, reply) {
 function mergeWalletFromStorage(configToSave) {
     // 按 lastModified 决定 wallet 权威：谁后改的用谁的
     try {
-        var raw = localStorage.getItem('ds_multiRole_v2');
+        var raw = localStorage.getItem('ds_multirole_v2');
         var lsWallet = null;
         if (raw) {
             try {
@@ -23906,23 +23906,5 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="floating-icon"><i class="fas fa-phone"></i></div>
     <div class="floating-timer" id="floatingTimer">00:00</div>
 </div>
-
-<script>
-setInterval(function() {
-    try {
-        var rawData = localStorage.getItem('ds_multiRole_v2');
-        var data = JSON.parse(rawData);
-
-        fetch('/api/data/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-user-id': '6a9e28e7728129b63d5d887f' },
-            body: JSON.stringify(data)
-        }).then(function(res) {
-            if(res.ok) console.log('☁️ 自动云端备份成功');
-        });
-    } catch(e) {}
-}, 30000);
-</script>
 </body>
-
 </html>
