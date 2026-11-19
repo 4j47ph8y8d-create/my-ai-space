@@ -7716,6 +7716,22 @@ function getIntimacyLevel(intimacy) { if (intimacy < 20) return '初识'; if (in
 function getHeartData(role) { if (!role) return { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; if (!role.heartData) { role.heartData = { value: 65, restingValue: 65, peakValue: 65, signature: '今天也很想你 💕', recentTrigger: '初次相遇' }; debouncedSaveAllData(); } return role.heartData; }
 
 // ===== 按时间戳合并云端数据到本地（谁新用谁） =====
+// 记忆文本并集（core 级别优先），口径与时光胶囊 memory.html 一致
+function mergeMemoryLists(cloudMem, localMem) {
+    var map = new Map();
+    var order = [];
+    function add(mem) {
+        if (!mem || typeof mem.text !== 'string' || !mem.text) return;
+        if (map.has(mem.text)) {
+            var old = map.get(mem.text);
+            if (mem.level === 'core' && old.level !== 'core') map.set(mem.text, mem);
+        } else { map.set(mem.text, mem); order.push(mem.text); }
+    }
+    (cloudMem || []).forEach(add);
+    (localMem || []).forEach(add);
+    return order.map(function(t) { return map.get(t); });
+}
+
 function mergeCloudDataByTimestamp(cloudRoles, cloudConfig, cloudDiaries) {
     if (!Array.isArray(cloudRoles) || cloudRoles.length === 0) return 0;
 
@@ -7731,14 +7747,23 @@ function mergeCloudDataByTimestamp(cloudRoles, cloudConfig, cloudDiaries) {
             merged++;
             console.log('  ✅ 新增角色：' + cloudRole.name);
         } else {
-            // 本地有 → 比较时间戳
-            var localTime = localRole.lastModified || 0;
-            var cloudTime = cloudRole.lastModified || 0;
-
-            if (cloudTime > localTime) {
-    console.log(' 📌 保留本地：' + localRole.name + '（云端较新但不覆盖本地）');
-} else {
-                console.log('  📌 保留本地：' + localRole.name + ' (本地 ' + new Date(localTime).toLocaleString() + ' >= 云端 ' + new Date(cloudTime).toLocaleString() + ')');
+            // 本地有 → 角色级字段保留本地；仅把云端新增的记忆按文本并集补进来
+            var cloudMem = Array.isArray(cloudRole.memory) ? cloudRole.memory : [];
+            var localMem = Array.isArray(localRole.memory) ? localRole.memory : [];
+            var before = localMem.length;
+            var tset = new Set(
+                (Array.isArray(cloudRole.memoryTombstones) ? cloudRole.memoryTombstones : [])
+                .concat(Array.isArray(localRole.memoryTombstones) ? localRole.memoryTombstones : [])
+            );
+            var restoreSet = new Set(Array.isArray(localRole.memoryRestored) ? localRole.memoryRestored : []);
+            var mergedMem = mergeMemoryLists(cloudMem, localMem).filter(function(m) { return !tset.has(m.text); });
+            localRole.memory = mergedMem;
+            restoreSet.forEach(function(t) { tset.delete(t); });
+            localRole.memoryTombstones = Array.from(tset);
+            localRole.memoryRestored = [];
+            if (mergedMem.length !== before) {
+                merged += (mergedMem.length - before);
+                console.log('  🧠 合并记忆：' + localRole.name + ' 新增 ' + (mergedMem.length - before) + ' 条');
             }
         }
     });
@@ -7982,14 +8007,17 @@ function deepCloneRole(role) {
         extra: role.extra || '', messages: role.messages || [], memory: [], heartData: null,
         createdAt: role.createdAt || new Date().toISOString(), extendedState: null,
         voiceId: role.voiceId || '',
-        lastModified: role.lastModified || 0
+        lastModified: role.lastModified || 0,
+        memoryTombstones: Array.isArray(role.memoryTombstones) ? role.memoryTombstones.slice() : [],
+        memoryRestored: Array.isArray(role.memoryRestored) ? role.memoryRestored.slice() : []
     };
 
     if (Array.isArray(role.memory)) {
+        var tomSet = new Set(clone.memoryTombstones);
         clone.memory = role.memory.map(function(m) {
             if (typeof m === 'string') return { text: m };
-            return { text: m.text || '', level: m.level || 'core', timestamp: m.timestamp || Date.now(), sourceMessageId: m.sourceMessageId || undefined };
-        });
+            return { text: m.text || '', level: m.level || 'core', timestamp: m.timestamp || Date.now(), sourceMessageId: m.sourceMessageId || undefined, source: m.source || undefined };
+        }).filter(function(m) { return m.text && !tomSet.has(m.text); });
     }
     if (role.heartData) {
         clone.heartData = { value: role.heartData.value || 65, restingValue: role.heartData.restingValue || 65, peakValue: role.heartData.peakValue || 65, signature: role.heartData.signature || '今天也很想你 💕', recentTrigger: role.heartData.recentTrigger || '初次相遇' };
@@ -8006,7 +8034,8 @@ function deepCloneRole(role) {
             lastAiMessageTime: role.extendedState.lastAiMessageTime || 0,
             messageCount: role.extendedState.messageCount || 0,
             totalHeartSpikes: role.extendedState.totalHeartSpikes || 0,
-            contextSummary: role.extendedState.contextSummary || '你们还没有深入聊过，ta好像还在了解你。'
+            contextSummary: role.extendedState.contextSummary || '你们还没有深入聊过，ta好像还在了解你。',
+            summaryDebug: Array.isArray(role.extendedState.summaryDebug) ? role.extendedState.summaryDebug.slice(-20) : []
         };
     }
     return clone;
@@ -8454,41 +8483,87 @@ function updateIntimacy(role) {
     if (role.extendedState.intimacy < 0) role.extendedState.intimacy = 0;
     if (role.extendedState.intimacy > CONSTANTS.MAX_INTIMACY) role.extendedState.intimacy = CONSTANTS.MAX_INTIMACY;
     return role.extendedState.intimacy;
-} function generateContextSummary(role) {
+}
+// 总结链路调试痕迹（落库后供诊断脚本读取，最多保留最近 20 条）
+function pushSummaryDebug(role, stage, info) {
+    try {
+        if (!role.extendedState) initRoleExtendedState(role);
+        if (!Array.isArray(role.extendedState.summaryDebug)) role.extendedState.summaryDebug = [];
+        var d = Object.assign({ t: Date.now(), stage: stage }, info || {});
+        role.extendedState.summaryDebug.push(d);
+        if (role.extendedState.summaryDebug.length > 20) role.extendedState.summaryDebug = role.extendedState.summaryDebug.slice(-20);
+    } catch (e) {}
+}
+// 总结失败/被截断时的本地兜底：从最近用户消息提取关键词，存一条简短记忆
+function fallbackContextSummary(role) {
+    var lastMsgs = role.messages.slice(-6);
+    var topics = [];
+    var userMsgs = lastMsgs.filter(function(m) { return m.role === 'user'; });
+    userMsgs.forEach(function(m) {
+        var content = m.content || '';
+        if (content.length > 10) {
+            var excerpt = content.substring(0, 20) + (content.length > 20 ? '…' : '');
+            topics.push('她提到「' + excerpt + '」');
+        }
+    });
+    var summary = '我记得';
+    if (topics.length > 0) summary += topics.join('，');
+    else summary += '我们聊了些日常。';
+    if (!role.extendedState) initRoleExtendedState(role);
+    // 已有一条非兜底的实质近期摘要时：保留旧记忆条目，不用空话覆盖；contextSummary 沿用旧摘要
+    var lastSum = null;
+    role.memory.forEach(function(m) { if (m.source === 'context_summary' && m.level === 'recent') lastSum = m; });
+    var lastPlain = lastSum ? String(lastSum.text || '').replace(/^📝\s*/, '') : '';
+    var lastIsFallback = !lastPlain || /我们聊了些日常/.test(lastPlain);
+    if (lastSum && !lastIsFallback) {
+        role.extendedState.contextSummary = lastPlain;
+        var rc = role.memory.filter(function(m) { return m.level === 'recent'; }).length;
+        pushSummaryDebug(role, 'fallback_keep', { recent: rc, total: role.memory.length });
+        debouncedSaveAllData();
+        console.log('🧠 总结为空/失败，保留上一条实质摘要，未用空话覆盖。');
+        return;
+    }
+    role.extendedState.contextSummary = summary;
+    saveSummaryToMemory(role, summary);
+    debouncedSaveAllData();
+}
+// 清洗模型返回的总结：去前缀、去包裹引号、合并换行与多余空白
+function cleanSummaryText(text) {
+    if (!text) return '';
+    var s = String(text).trim();
+    s = s.replace(/^\s*(记忆|总结|摘要|备注|回顾)\s*[:：]\s*/, '');
+    s = s.replace(/^[「『“'"]+|[」』”'"]+$/g, '');
+    s = s.replace(/\s*\n\s*/g, '').replace(/[ \t]{2,}/g, ' ');
+    return s.trim();
+}
+
+function generateContextSummary(role) {
     if (!role || !Array.isArray(role.messages) || role.messages.length < 3) return;
     var apiKey = CONFIG.accessMode === 'direct' ? CONFIG.apiKey : CONFIG.relayApiKey;
     var endpoint = CONFIG.accessMode === 'direct' ? 'https://api.deepseek.com/v1' : CONFIG.relayEndpoint;
+    pushSummaryDebug(role, 'gen_start', { len: role.messages.length, direct: CONFIG.accessMode === 'direct', hasKey: !!apiKey, endpoint: endpoint });
     if (!apiKey || !endpoint) {
-        var lastMsgs = role.messages.slice(-6);
-        var topics = [];
-        var userMsgs = lastMsgs.filter(function(m) { return m.role === 'user'; });
-        userMsgs.forEach(function(m) {
-            var content = m.content || '';
-            if (content.length > 10) {
-                var excerpt = content.substring(0, 20) + (content.length > 20 ? '…' : '');
-                topics.push('你说过「' + excerpt + '」');
-            }
-        });
-        var summary = '你们聊了';
-        if (topics.length > 0) summary += topics.join('，');
-        else summary += '一些日常的话题。';
-        if (!role.extendedState) initRoleExtendedState(role);
-        role.extendedState.contextSummary = summary;
-        saveSummaryToMemory(role, summary);
-        debouncedSaveAllData();
+        pushSummaryDebug(role, 'no_key', {});
+        fallbackContextSummary(role);
         return;
     }
-    var recentMsgs = role.messages.slice(-15);
+    var recentMsgs = role.messages.slice(-20);
     var conversationText = '';
     recentMsgs.forEach(function(msg) {
-        var sender = msg.role === 'user' ? '用户' : role.name;
+        var sender = msg.role === 'user' ? '她' : role.name;
         var content = msg.type === 'gift' ? '（送礼：' + (msg.giftData ? msg.giftData.productName : '礼物') + '）' : msg.content;
         conversationText += sender + '：' + content + '\n';
     });
-    var systemPrompt = '你是一个擅长总结对话的人。请用1-2句话总结下面这段对话的核心内容。\n要求：\n1. 只总结「用户说了什么、AI回应了什么」，不要说空话\n2. 如果用户在分享自己的事，要点出具体内容\n3. 如果用户在表达情绪，要点出是什么情绪\n4. 格式：直接输出总结，不要有任何前缀\n5. 控制在50字以内';
+    var systemPrompt = '你在扮演「' + role.name + '」。请把下面这段对话整理成你自己记住的一件事，存进你的记忆。\n' +
+        '要求：\n' +
+        '1. 全程用第一人称「我」（我就是' + role.name + '），对方用「她」；不要写成“用户说…AI回应…”这种旁观者记录。\n' +
+        '2. 信息要完整：她做了什么、说了什么、是什么情绪、我们之间的称呼/约定/重要细节都要写清楚，不要遗漏，不要写半截。\n' +
+        '3. 自然连贯，2-4 句话，像你在心里记下的事。\n' +
+        '4. 直接输出记忆内容本身，不要加标题、序号、引号，也不要写“记忆：”“总结：”之类前缀。';
     var model = CONFIG.accessMode === 'direct' ? CONFIG.model : CONFIG.relayModel;
+    pushSummaryDebug(role, 'gen_model', { model: model || 'deepseek-v4-pro' });
     var controller = new AbortController();
-    var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
+    var timeoutId = setTimeout(function() { controller.abort(); }, 40000);
     fetchWithRetry(endpoint + '/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
@@ -8496,54 +8571,80 @@ function updateIntimacy(role) {
             model: model || 'deepseek-v4-pro',
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: '对话内容：\n' + conversationText }],
             temperature: 0.5,
-            max_tokens: 100
+            max_tokens: 2500
         }),
         signal: controller.signal
     }, 1).then(function(resp) {
         clearTimeout(timeoutId);
-        if (!resp.ok) throw new Error('API 错误');
-        return resp.json();
-    }).then(function(data) {
-        var summary = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (summary && summary.trim()) {
+        if (!resp.ok) throw new Error('API 错误 ' + resp.status);
+        return resp.text();
+    }).then(function(rawText) {
+        var data;
+        try { data = JSON.parse(rawText); } catch (pe) {
+            pushSummaryDebug(role, 'gen_badjson', { len: rawText.length, head: String(rawText).slice(0, 160) });
+            throw pe;
+        }
+        var ch = data.choices && data.choices[0];
+        var msg = (ch && ch.message) || {};
+        var raw = msg.content;
+        var summary = cleanSummaryText(raw);
+        pushSummaryDebug(role, 'gen_done', {
+            rawLen: (raw || '').length, cleanLen: summary.length, ok: !!(summary && summary.length >= 4),
+            choices: (data.choices || []).length, finish: ch && ch.finish_reason,
+            msgKeys: msg ? Object.keys(msg).join(',') : '', reasonLen: (msg.reasoning_content || '').length,
+            err: data.error ? String(data.error.message || JSON.stringify(data.error)).slice(0, 80) : '',
+            head: String(rawText).slice(0, 160)
+        });
+        if (summary && summary.length >= 4) {
             if (!role.extendedState) initRoleExtendedState(role);
-            role.extendedState.contextSummary = summary.trim();
-            saveSummaryToMemory(role, summary.trim());
+            role.extendedState.contextSummary = summary;
+            saveSummaryToMemory(role, summary);
             debouncedSaveAllData();
+        } else {
+            pushSummaryDebug(role, 'gen_empty', { finish: ch && ch.finish_reason, reasonLen: (msg.reasoning_content || '').length });
+            fallbackContextSummary(role);
         }
     }).catch(function(e) {
         clearTimeout(timeoutId);
-        var lastMsgs2 = role.messages.slice(-6);
-        var topics2 = [];
-        var userMsgs2 = lastMsgs2.filter(function(m) { return m.role === 'user'; });
-        userMsgs2.forEach(function(m) {
-            var content = m.content || '';
-            if (content.length > 10) {
-                var excerpt = content.substring(0, 20) + (content.length > 20 ? '…' : '');
-                topics2.push('你说过「' + excerpt + '」');
-            }
-        });
-        var summary2 = '你们聊了';
-        if (topics2.length > 0) summary2 += topics2.join('，');
-        else summary2 += '一些日常话题。';
-        if (!role.extendedState) initRoleExtendedState(role);
-        role.extendedState.contextSummary = summary2;
-        saveSummaryToMemory(role, summary2);
-        debouncedSaveAllData();
+        pushSummaryDebug(role, 'gen_catch', { err: String((e && e.message) || e).slice(0, 80) });
+        fallbackContextSummary(role);
     }).finally(function() {
         clearTimeout(timeoutId);
     });
 }
 
+// 两段中文摘要的字符二元组 Jaccard 相似度（0~1）
+function summarySimilarity(a, b) {
+    function grams(s) { var g = new Set(); s = String(s || ''); for (var i = 0; i < s.length - 1; i++) g.add(s.slice(i, i + 2)); return g; }
+    var A = grams(a), B = grams(b);
+    if (!A.size || !B.size) return 0;
+    var inter = 0; A.forEach(function(x) { if (B.has(x)) inter++; });
+    return inter / (A.size + B.size - inter);
+}
 function saveSummaryToMemory(role, summary) {
     if (!role || !summary || !summary.trim()) return;
     if (!Array.isArray(role.memory)) role.memory = [];
+    var plain = summary.trim();
     var exists = role.memory.some(function(m) {
-        return m.text && m.text === '📝 ' + summary.trim();
+        return m.text && m.text === '📝 ' + plain;
     });
-    if (exists) return;
+    if (exists) { pushSummaryDebug(role, 'save_dup', { text: plain.slice(0, 20) }); return; }
+    // 近期对话摘要始终只留最新一条：新总结直接滚动覆盖最近一条摘要，不累积复述同一段对话的条目
+    var lastSum = null;
+    role.memory.forEach(function(m) { if (m.source === 'context_summary' && m.level === 'recent') lastSum = m; });
+    if (lastSum) {
+        var prevPlain = String(lastSum.text || '').replace(/^📝\s*/, '');
+        var sim = summarySimilarity(plain, prevPlain);
+        lastSum.text = '📝 ' + plain;
+        lastSum.timestamp = Date.now();
+        var rc = role.memory.filter(function(m) { return m.level === 'recent'; }).length;
+        pushSummaryDebug(role, 'save_update', { sim: Number(sim.toFixed(2)), recent: rc, total: role.memory.length });
+        debouncedSaveAllData();
+        console.log('🧠 对话摘要已滚动覆盖上一条近期摘要:', summary);
+        return;
+    }
     role.memory.push({
-        text: '📝 ' + summary.trim(),
+        text: '📝 ' + plain,
         level: 'recent',
         timestamp: Date.now(),
         source: 'context_summary'
@@ -8556,6 +8657,7 @@ function saveSummaryToMemory(role, summary) {
             m.level = 'archived';
         });
     }
+    pushSummaryDebug(role, 'save_ok', { recent: recentMemories.length, total: role.memory.length });
     debouncedSaveAllData();
     console.log('🧠 对话摘要已存入近期记忆（按需调用）:', summary);
 } // ===== 修复：不会无限重试的 fetchWithRetry =====
@@ -9921,9 +10023,11 @@ function addMessageToRole(roleId, role, content, type, giftData, voiceRequested)
     }
     if (role === 'assistant') {
         r.extendedState.lastAiMessageTime = Date.now();
+        var __hit = r.messages.length % 10 === 0 && r.messages.length > 3;
+        pushSummaryDebug(r, 'assistant', { len: r.messages.length, hit: __hit });
         if (!CONFIG.unreadCount) CONFIG.unreadCount = {};
         CONFIG.unreadCount[roleId] = (CONFIG.unreadCount[roleId] || 0) + 1;
-        if (r.messages.length % 5 === 0 && r.messages.length > 3) {
+        if (__hit) {
             generateContextSummary(r);
         }
     }
@@ -10278,51 +10382,55 @@ function generateCoreMemoryText(memories) {
 }
 
 function retrieveRelevantMemory(role, userMessage) {
+    userMessage = String(userMessage || '');
     if (!role || !Array.isArray(role.memory)) return '';
+    // 核心 / 近期 / 归档都作为检索候选，命中才注入，不全量带入
     var allMemories = role.memory.filter(function(m) {
-        return m.level === 'recent' || m.level === 'archived';
+        return m && m.text && (!m.level || m.level === 'core' || m.level === 'recent' || m.level === 'archived');
     });
     if (allMemories.length === 0) return '';
-    allMemories.sort(function(a, b) {
-        return (b.timestamp || 0) - (a.timestamp || 0);
-    });
-    var cleaned = userMessage.replace(/[，。！？、；：""''（）\s，。！？、；：""''（）\s]/g, ' ');
-    var words = cleaned.split(' ');
-    var keywords = [];
-    for (var i = 0; i < words.length; i++) {
-        var w = words[i].trim();
-        if (w.length >= 2) {
-            keywords.push(w);
-        }
+
+    // 中文按单字 + 相邻二元组切分，英文/数字按词切分
+    function tokensOf(s) {
+        s = (s || '').toLowerCase();
+        var toks = [];
+        var words = s.match(/[a-z0-9]+/g) || [];
+        words.forEach(function(w) { if (w.length >= 2) toks.push(w); });
+        var cjk = s.match(/[一-鿿぀-ヿ]+/g) || [];
+        cjk.forEach(function(seq) {
+            for (var i = 0; i < seq.length; i++) toks.push(seq[i]);
+            for (var j = 0; j < seq.length - 1; j++) toks.push(seq.slice(j, j + 2));
+        });
+        return toks;
     }
-    var relevantMemories = [];
-    allMemories.forEach(function(mem) {
+    var qSet = {};
+    tokensOf(userMessage).forEach(function(t) { qSet[t] = true; });
+
+    var scored = allMemories.map(function(mem) {
         var text = mem.text || '';
-        var matched = false;
-        for (var j = 0; j < keywords.length; j++) {
-            if (text.indexOf(keywords[j]) !== -1) {
-                matched = true;
-                break;
-            }
-        }
-        if (matched) {
-            relevantMemories.push(text);
-        }
-    });
+        var tSet = {};
+        tokensOf(text).forEach(function(t) { tSet[t] = true; });
+        var hit = 0;
+        for (var k in qSet) { if (k.length >= 2 && tSet[k]) hit += 2; }
+        var words = (userMessage.toLowerCase().match(/[a-z0-9]+/g) || []);
+        words.forEach(function(w) { if (w.length >= 2 && text.toLowerCase().indexOf(w) !== -1) hit += 2; });
+        return { text: text, score: hit, ts: mem.timestamp || 0 };
+    }).filter(function(x) { return x.score > 0; });
+
+    scored.sort(function(a, b) { return b.score - a.score || b.ts - a.ts; });
+    var relevantMemories = scored.slice(0, 5).map(function(x) { return x.text; });
+
     if (relevantMemories.length === 0) {
-        var hasTimeIndicator = userMessage.indexOf('之前') !== -1 || 
+        var hasTimeIndicator = userMessage.indexOf('之前') !== -1 ||
                                userMessage.indexOf('上次') !== -1 ||
                                userMessage.indexOf('记得') !== -1 ||
                                userMessage.indexOf('聊过') !== -1;
         if (hasTimeIndicator) {
-            var recent = allMemories.slice(0, 3);
+            var recent = allMemories.filter(function(m) { return m.level !== 'core'; }).slice(0, 3);
             recent.forEach(function(m) {
                 if (m.text) relevantMemories.push(m.text);
             });
         }
-    }
-    if (relevantMemories.length > 5) {
-        relevantMemories = relevantMemories.slice(0, 5);
     }
     if (relevantMemories.length === 0) return '';
     var result = '你问起了一些之前的事：\n';
@@ -10402,6 +10510,21 @@ function splitReplyIntoMessages(text) {
     return segments;
 }
 
+// 拉取本地大脑的相关记忆与情绪/关系状态（失败静默降级为空，不影响聊天）
+async function fetchBrainContext(role, userMessage) {
+    try {
+        var token = localStorage.getItem('dream_token');
+        if (!token || !role || !role.id) return { memories: [], emotionNote: null };
+        var url = API_BASE + '/brain/context?roleId=' + encodeURIComponent(role.id) + '&message=' + encodeURIComponent(userMessage || '');
+        var resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!resp.ok) return { memories: [], emotionNote: null };
+        var data = await resp.json();
+        return { memories: (data && data.memories) || [], emotionNote: (data && data.emotionNote) || null };
+    } catch (e) {
+        return { memories: [], emotionNote: null };
+    }
+}
+
 function callAI(userMessage, role, voiceRequested) {
     var mode = CONFIG.accessMode || 'direct';
     if (mode === 'direct') {
@@ -10413,7 +10536,7 @@ function callAI(userMessage, role, voiceRequested) {
     }
 }
 
-function callDeepSeekDirect(userMessage, role, voiceRequested) {
+async function callDeepSeekDirect(userMessage, role, voiceRequested) {
     var shouldGenerateVoice = voiceRequested || false;
     var apiKey = CONFIG.apiKey;
     if (!apiKey) throw new Error('请先设置 DeepSeek API Key（设置 → AI接入 → 直连模式）');
@@ -10430,14 +10553,20 @@ function callDeepSeekDirect(userMessage, role, voiceRequested) {
 systemPrompt += '\n\n💡 小提示：如果需要用表情包表达情绪，就大胆用 [表情包：名称] 吧！系统会自动显示图片的～';
 systemPrompt += '\n\n💰 小提示：如果想给用户转账（比如用户要钱、你想表达心意、买礼物），就用 [转账 金额] 格式，例如 [转账 520]。系统会自动显示成转账卡片，用户点了就能收款。注意：每天最多 3 次，单次不超过 50000。';
 // ===== 小钩子结束 =====
-    var recentMemoryText = '';
-    if (shouldRecall) {
-        recentMemoryText = retrieveRelevantMemory(role, userMessage);
-        if (recentMemoryText) {
-            systemPrompt += '\n\n【📖 你询问的近期回忆】\n' + recentMemoryText;
-            systemPrompt += '\n\n⚠️ 用户主动询问了这些回忆，你可以自然地回应。但不要编造，只说你记得的内容。';
-        }
+    var recentMemoryText = retrieveRelevantMemory(role, userMessage);
+    if (recentMemoryText) {
+        systemPrompt += '\n\n【📖 与当前话题相关的回忆】\n' + recentMemoryText;
+        systemPrompt += '\n\n⚠️ 以上是之前提到过的内容，自然地回应即可，不要编造，只说你记得的。';
     }
+// ===== 大脑：相关记忆 + 情绪/关系状态（后端桥接，失败降级为空） =====
+    var brainCtx = await fetchBrainContext(role, userMessage);
+    if (brainCtx.memories && brainCtx.memories.length) {
+        systemPrompt += '\n\n【🧠 你记得的相关信息】\n' + brainCtx.memories.join('\n');
+    }
+    if (brainCtx.emotionNote) {
+        systemPrompt += '\n\n【当前情绪与关系状态】\n' + brainCtx.emotionNote;
+    }
+
     var history = (role.messages || []).slice(-10).filter(function(m) {
         return m.type === 'text' || m.type === 'gift';
     }).map(function(m) {
@@ -11303,6 +11432,7 @@ document.addEventListener('visibilitychange', function() {
         if (now - _lastVisibilityCheck > 60000) {
             _lastVisibilityCheck = now;
             console.log('👁️ 页面可见，检查主动消息...');
+            roles.forEach(function(r) { syncMemoryFromCloud(r); });
             setTimeout(function() { checkAllRolesForActiveMessages(); }, 3000);
         }
     }
@@ -14907,6 +15037,52 @@ function refreshTtsCache() {
     }
 }
 
+// 从本地存储把最新记忆并集对齐回内存角色（时光胶囊页可能已更新 localStorage，而本页内存仍是旧快照）
+function syncMemoryFromStorage(role) {
+    if (!role) return;
+    try {
+        var raw = localStorage.getItem('ds_multirole_v2');
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        var sr = (data.roles || []).find(function(x) { return x.id === role.id; });
+        if (!sr || !Array.isArray(sr.memory)) return;
+        var tset = new Set(
+            (Array.isArray(sr.memoryTombstones) ? sr.memoryTombstones : [])
+            .concat(Array.isArray(role.memoryTombstones) ? role.memoryTombstones : [])
+        );
+        var restoreSet = new Set(Array.isArray(role.memoryRestored) ? role.memoryRestored : []);
+        var mergedMem = mergeMemoryLists(sr.memory, role.memory || []).filter(function(m) { return !tset.has(m.text); });
+        role.memory = mergedMem;
+        restoreSet.forEach(function(t) { tset.delete(t); });
+        role.memoryTombstones = Array.from(tset);
+        role.memoryRestored = [];
+    } catch (e) {}
+}
+
+// 异步从云端拉最新记忆并集对齐回内存角色（防止后台旧快照覆盖本地/云端新增的核心记忆）
+async function syncMemoryFromCloud(role) {
+    if (!role) return;
+    try {
+        var token = localStorage.getItem('dream_token');
+        if (!token) return;
+        var resp = await fetch(API_BASE + '/data/load', { headers: { 'Authorization': 'Bearer ' + token } });
+        var j = await resp.json();
+        if (!j.success || !j.data) return;
+        var cr = (j.data.roles || []).find(function(x) { return x.id === role.id; });
+        if (!cr || !Array.isArray(cr.memory)) return;
+        var tset = new Set(
+            (Array.isArray(cr.memoryTombstones) ? cr.memoryTombstones : [])
+            .concat(Array.isArray(role.memoryTombstones) ? role.memoryTombstones : [])
+        );
+        var restoreSet = new Set(Array.isArray(role.memoryRestored) ? role.memoryRestored : []);
+        var mergedMem = mergeMemoryLists(cr.memory, role.memory || []).filter(function(m) { return !tset.has(m.text); });
+        role.memory = mergedMem;
+        restoreSet.forEach(function(t) { tset.delete(t); });
+        role.memoryTombstones = Array.from(tset);
+        role.memoryRestored = [];
+    } catch (e) {}
+}
+
 function openChat(fromContacts) {
     var __r = getCurrentRole();
     fromContacts = fromContacts || false;
@@ -14921,6 +15097,8 @@ function openChat(fromContacts) {
     document.getElementById('diaryScreen').classList.remove('open');
     var role2 = getCurrentRole();
     if (role2) {
+        syncMemoryFromStorage(role2);
+        syncMemoryFromCloud(role2);
         clearUnreadForRole(role2.id);
         readMessages = {};
         document.getElementById('messageInput').value = loadDraft(role2.id);

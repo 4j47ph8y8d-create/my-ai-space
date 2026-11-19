@@ -1341,11 +1341,12 @@ function cloudLoadData() {
     }
     return attempt(3);
 }
-function mergeMemory(cloudMem, localMem) {
+function mergeMemory(cloudMem, localMem, tset) {
     var map = new Map();
     var order = [];
     function add(mem) {
         if (!mem || typeof mem.text !== 'string' || !mem.text) return;
+        if (tset && tset.has(mem.text)) return;
         if (map.has(mem.text)) {
             var old = map.get(mem.text);
             if (mem.level === 'core' && old.level !== 'core') map.set(mem.text, mem);
@@ -1358,11 +1359,17 @@ function mergeMemory(cloudMem, localMem) {
 function markMemDeleted(role, t) {
     if (!Array.isArray(role.memoryTombstones)) role.memoryTombstones = [];
     if (t && role.memoryTombstones.indexOf(t) === -1) role.memoryTombstones.push(t);
+    if (Array.isArray(role.memoryRestored)) {
+        var ri = role.memoryRestored.indexOf(t);
+        if (ri !== -1) role.memoryRestored.splice(ri, 1);
+    }
 }
 function unmarkMemDeleted(role, t) {
     if (!Array.isArray(role.memoryTombstones) || !t) return;
     var i = role.memoryTombstones.indexOf(t);
     if (i !== -1) role.memoryTombstones.splice(i, 1);
+    if (!Array.isArray(role.memoryRestored)) role.memoryRestored = [];
+    if (role.memoryRestored.indexOf(t) === -1) role.memoryRestored.push(t);
 }
 function cloudSyncLocal() {
     return cloudLoadData().then(function(cloud) {
@@ -1370,8 +1377,12 @@ function cloudSyncLocal() {
         roles.forEach(function(r) {
             var cr = cloudRoles.find(function(x) { return x.id === r.id; });
             if (cr) {
-                if (Array.isArray(cr.memory)) r.memory = cr.memory;
-                if (Array.isArray(cr.memoryTombstones)) r.memoryTombstones = cr.memoryTombstones;
+                var tset = new Set((Array.isArray(cr.memoryTombstones) ? cr.memoryTombstones : []).concat(Array.isArray(r.memoryTombstones) ? r.memoryTombstones : []));
+                var restoreSet = new Set(Array.isArray(r.memoryRestored) ? r.memoryRestored : []);
+                var cloudMem = Array.isArray(cr.memory) ? cr.memory : [];
+                r.memory = cloudMem.filter(function(m) { return m && typeof m.text === 'string' && !tset.has(m.text); });
+                restoreSet.forEach(function(t) { tset.delete(t); });
+                r.memoryTombstones = Array.from(tset);
                 if (cr.extendedState) r.extendedState = cr.extendedState;
                 if (cr.heartData) r.heartData = cr.heartData;
             }
@@ -1402,10 +1413,12 @@ function cloudSaveMemories() {
         roles.forEach(function(r) {
             var cr = cloudRoles.find(function(x) { return x.id === r.id; });
             if (cr) {
-                cr.memory = mergeMemory(cr.memory, r.memory || []);
                 var tset = new Set((Array.isArray(cr.memoryTombstones) ? cr.memoryTombstones : []).concat(Array.isArray(r.memoryTombstones) ? r.memoryTombstones : []));
-                (r.memory || []).forEach(function (m) { if (m && typeof m.text === 'string') tset.delete(m.text); });
+                var restoreSet = new Set(Array.isArray(r.memoryRestored) ? r.memoryRestored : []);
+                cr.memory = mergeMemory(cr.memory, r.memory || [], tset);
+                restoreSet.forEach(function (t) { tset.delete(t); });
                 cr.memoryTombstones = Array.from(tset);
+                cr.memoryRestored = Array.from(restoreSet);
                 if (r.extendedState) cr.extendedState = r.extendedState;
                 if (r.heartData) cr.heartData = r.heartData;
             } else {
@@ -1419,7 +1432,7 @@ function cloudSaveMemories() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify(body)
-        }).then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); });
+        }).then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); roles.forEach(function(r) { r.memoryRestored = []; }); return res.json(); });
     });
 }
 function idbSet(key, value) {
@@ -2247,10 +2260,9 @@ function refreshData() {
     }
     loadData().then(function(ok) {
         if (!ok) return;
-        renderRoleStrip();
         selectedMemories = [];
         memorySearchKeyword = '';
-        renderAll();
+        cloudSyncLocal();
         showToast('🔄 已刷新');
     });
 }
@@ -2283,10 +2295,7 @@ function init() {
                 if (e.key === 'ds_multirole_v2') {
                     console.log('📦 检测到数据变化，刷新中...');
                     loadData().then(function(ok2) {
-                        if (ok2) {
-                            renderRoleStrip();
-                            renderAll();
-                        }
+                        if (ok2) cloudSyncLocal();
                     });
                 }
             });

@@ -389,6 +389,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
 function mergeRoleMem(oldRole, newRole) {
     var oldT = Array.isArray(oldRole.memoryTombstones) ? oldRole.memoryTombstones : [];
     var newT = Array.isArray(newRole.memoryTombstones) ? newRole.memoryTombstones : [];
+    // 显式恢复列表：仅本次主动恢复的文本，才从删除标记中移除
+    var restoreSet = new Set((Array.isArray(newRole.memoryRestored) ? newRole.memoryRestored : []).filter(function (x) { return typeof x === 'string' && x; }));
     var tombSet = new Set(oldT.concat(newT).filter(function (x) { return typeof x === 'string' && x; }));
     var map = new Map();
     var order = [];
@@ -402,12 +404,51 @@ function mergeRoleMem(oldRole, newRole) {
     }
     (oldRole.memory || []).forEach(function (m) { add(m, false); });
     (newRole.memory || []).forEach(function (m) { add(m, true); });
-    (newRole.memory || []).forEach(function (m) { if (m && typeof m.text === 'string') tombSet.delete(m.text); });
+    // 不再因新快照现存某条就自动抹除删除标记；只清理显式恢复的文本
+    restoreSet.forEach(function (t) { tombSet.delete(t); });
     return {
         memory: order.map(function (t) { return map.get(t); }),
         memoryTombstones: Array.from(tombSet)
     };
 }
+// ===== 记忆期限兜底清扫（后端执行，不依赖前端页面是否打开） =====
+const MEMORY_RULES = {
+    RECENT_TO_ARCHIVE_DAYS: 30,
+    ARCHIVE_TO_DELETE_DAYS: 45
+};
+function pruneRoleMemory(role) {
+    if (!role || typeof role !== 'object') return role;
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+    const mem = Array.isArray(role.memory) ? role.memory : [];
+    const kept = [];
+    mem.forEach((m) => {
+        if (!m || typeof m.text !== 'string' || !m.text) return;
+        const level = m.level || 'core';
+        // 核心记忆永久保留
+        if (level === 'core') { kept.push(m); return; }
+        let t = typeof m.timestamp === 'number' ? m.timestamp : Date.parse(m.timestamp);
+        if (!t || isNaN(t)) { kept.push(m); return; } // 无有效时间戳，不误删
+        const ageDays = (now - t) / DAY;
+        if (level === 'recent') {
+            if (ageDays > MEMORY_RULES.RECENT_TO_ARCHIVE_DAYS) m.level = 'archived';
+            kept.push(m); return;
+        }
+        // archived 与历史旧命名 archive 视同归档，到期直接物理删除
+        if (level === 'archived' || level === 'archive') {
+            if (ageDays > MEMORY_RULES.ARCHIVE_TO_DELETE_DAYS) return;
+            kept.push(m); return;
+        }
+        kept.push(m);
+    });
+    role.memory = kept;
+    // 回收删除标记：对应记忆已不在库中的，标记本身一并清掉，不长期占库
+    const memTexts = new Set(kept.map((m) => m.text));
+    const tomb = Array.isArray(role.memoryTombstones) ? role.memoryTombstones : [];
+    role.memoryTombstones = tomb.filter((t) => typeof t === 'string' && memTexts.has(t));
+    return role;
+}
+
 app.post('/api/data/save', authenticate, async (req, res) => {
     try {
         const userId = req.userId;
@@ -444,6 +485,7 @@ app.post('/api/data/save', authenticate, async (req, res) => {
                 } else if (!Array.isArray(r.memoryTombstones)) {
                     r.memoryTombstones = [];
                 }
+                pruneRoleMemory(r); // 后端兜底：期限清扫 + 标记回收
                 return r;
             });
         }
@@ -508,3 +550,35 @@ https.createServer(httpsOptions, app).listen(443, () => {
   console.log('HTTPS Server running on port 443');
 });
 app.post('/api/save_memory', authenticate, async (req, res) => { const { characterId, memoryText } = req.body; const userId = req.userId; const { syncMemory } = require('./sync-brain.js'); try { const result = await syncMemory(userId, characterId, memoryText); res.json({ success: true, result: result }); } catch(e) { res.json({ success: false, error: e.message }); } });
+// 大脑上下文桥接：检索该角色相关记忆 + 情绪/关系状态（只读；大脑不可用则降级为空，不阻断聊天）
+app.get('/api/brain/context', authenticate, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const roleId = req.query.roleId;
+        const message = String(req.query.message || '').slice(0, 16000);
+        if (!roleId) return res.json({ success: true, memories: [], emotionNote: null, degraded: true });
+        const userData = await UserData.findOne({ userId });
+        const role = (userData && Array.isArray(userData.roles) ? userData.roles : []).find(r => r && r.id === roleId);
+        const characterId = userId + ':' + roleId;
+        const name = role ? role.name : 'AI 伴侣';
+        const persona = role ? [role.persona, role.background, role.style, role.extra].filter(Boolean).join('\n') : '';
+        const { ensureCharacter, getContext, brainGet, syncMemories } = require('./brain-bridge.js');
+        try { await ensureCharacter(characterId, name, persona); } catch (e) { console.error('[BRAIN] 建档失败:', e.message); }
+        // 首次进入时把 MongoDB 既有记忆幂等灌入大脑（大脑该角色记忆为空才灌，避免每轮重复）
+        try {
+            const memList = Array.isArray(role && role.memory) ? role.memory : [];
+            if (memList.length) {
+                const conv = await brainGet('conversation', { character_id: characterId });
+                const existing = Array.isArray(conv && conv.memories) ? conv.memories.length : 0;
+                if (existing === 0) {
+                    const synced = await syncMemories(characterId, memList);
+                    console.log('[BRAIN] 记忆灌入 ' + characterId + ' added=' + synced.added + ' skipped=' + synced.skipped);
+                }
+            }
+        } catch (e) { console.error('[BRAIN] 记忆同步失败:', e.message); }
+        const ctx = await getContext(characterId, message);
+        res.json({ success: true, memories: ctx.memories, emotionNote: ctx.emotionNote, degraded: ctx.degraded });
+    } catch (e) {
+        res.json({ success: true, memories: [], emotionNote: null, degraded: true });
+    }
+});
