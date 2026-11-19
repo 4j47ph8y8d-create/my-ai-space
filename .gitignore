@@ -1,7 +1,33 @@
 node_modules/
 .env
 .env.bak
+*.bak
 *.bak-*
 setup18.sh
 .env.save
 check_wallet.js
+
+# 本地大脑引擎与临时排查脚本（不入库）
+anima-brain/
+brain.log
+fix_*.js
+query*.js
+test*.js
+check*.js
+new_mem.js
+brain.js
+bridge.js
+auto-sync.js
+force_api.py
+
+# 部署临时产物（base64 片段、部署脚本、备份快照）
+*.b64
+*.b64echo
+deploy*.js
+clean*.js
+backup-*.json
+d10*
+
+diag*.js
+*.broken-*
+deploy_*.py

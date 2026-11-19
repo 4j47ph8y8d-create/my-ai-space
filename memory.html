@@ -1466,6 +1466,18 @@ function loadRoleChatBgFromIDB(roleId) {
     });
 }
 
+// 首屏渲染前，按本地删除标记滤掉已删条目，避免旧快照先闪现、再被云端过滤
+function applyLocalTombstones() {
+    roles.forEach(function(role) {
+        if (!Array.isArray(role.memory)) return;
+        var tset = new Set(Array.isArray(role.memoryTombstones) ? role.memoryTombstones : []);
+        if (!tset.size) return;
+        role.memory = role.memory.filter(function(m) {
+            return m && typeof m.text === 'string' && !tset.has(m.text);
+        });
+    });
+}
+
 // ========== 自动清理记忆 ==========
 function cleanupMemories() {
     var now = Date.now();
@@ -1592,9 +1604,11 @@ function loadData() {
 
             Promise.all(tasks).then(function() {
                 cleanupMemories();
+                applyLocalTombstones();
                 resolve(true);
             }).catch(function() {
                 cleanupMemories();
+                applyLocalTombstones();
                 resolve(true);
             });
 

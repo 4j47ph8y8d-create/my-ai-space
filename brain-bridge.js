@@ -114,6 +114,11 @@ async function rememberMemory(characterId, draft) {
   await brainPost('remember', { character_id: characterId, draft });
 }
 
+// 用一条 Appraisal 推进大脑情绪/关系状态；返回大脑最新 state/note。失败由调用方降级处理。
+async function applyAppraisal(characterId, appraisal) {
+  return await brainPost('appraise', { character_id: characterId, appraisal });
+}
+
 // 把宿主既有记忆（[{text, level}]）幂等灌入大脑；逐条失败不阻断其余
 async function syncMemories(characterId, memList) {
   const added = [];
@@ -140,4 +145,4 @@ async function syncMemories(characterId, memList) {
   return { added: added.length, skipped: skipped.length };
 }
 
-module.exports = { ensureCharacter, getContext, brainGet, brainPost, rememberMemory, syncMemories };
+module.exports = { ensureCharacter, getContext, brainGet, brainPost, rememberMemory, syncMemories, applyAppraisal };

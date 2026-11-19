@@ -442,10 +442,11 @@ function pruneRoleMemory(role) {
         kept.push(m);
     });
     role.memory = kept;
-    // 回收删除标记：对应记忆已不在库中的，标记本身一并清掉，不长期占库
-    const memTexts = new Set(kept.map((m) => m.text));
+    // 删除标记长期保留：它是拦住旧记录从云端/本地旧副本重新并回的依据，
+    // 只在显式恢复某条时（mergeRoleMem 按 memoryRestored 移除）才清掉；
+    // 不能因为对应记忆已不在现存列表就回收，否则标记丢失后旧记忆会被重新并回（复活）。
     const tomb = Array.isArray(role.memoryTombstones) ? role.memoryTombstones : [];
-    role.memoryTombstones = tomb.filter((t) => typeof t === 'string' && memTexts.has(t));
+    role.memoryTombstones = tomb.filter((t) => typeof t === 'string' && t);
     return role;
 }
 
@@ -580,5 +581,33 @@ app.get('/api/brain/context', authenticate, async (req, res) => {
         res.json({ success: true, memories: ctx.memories, emotionNote: ctx.emotionNote, degraded: ctx.degraded });
     } catch (e) {
         res.json({ success: true, memories: [], emotionNote: null, degraded: true });
+    }
+});
+
+// 大脑情绪推进：把本轮对话按本地规则映射成 Appraisal，让情绪/关系随对话演变；失败静默降级，不阻断聊天。
+app.post('/api/brain/advance', authenticate, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const roleId = req.body.roleId;
+        const message = String(req.body.message || '').slice(0, 16000);
+        const reply = String(req.body.reply || '').slice(0, 16000);
+        if (!roleId) return res.json({ success: true, emotionNote: null, degraded: true });
+        const userData = await UserData.findOne({ userId });
+        const role = (userData && Array.isArray(userData.roles) ? userData.roles : []).find(r => r && r.id === roleId);
+        const characterId = userId + ':' + roleId;
+        const name = role ? role.name : 'AI 伴侣';
+        const persona = role ? [role.persona, role.background, role.style, role.extra].filter(Boolean).join('\n') : '';
+        const { ensureCharacter, applyAppraisal } = require('./brain-bridge.js');
+        const { evaluateAppraisal } = require('./appraisal-rules.js');
+        try { await ensureCharacter(characterId, name, persona); } catch (e) { console.error('[BRAIN] 建档失败:', e.message); }
+        const appraisal = evaluateAppraisal(message, reply);
+        let emotionNote = null;
+        try {
+            const advanced = await applyAppraisal(characterId, appraisal);
+            if (advanced && advanced.note) emotionNote = advanced.note;
+        } catch (e) { console.error('[BRAIN] 情绪推进失败:', e.message); }
+        res.json({ success: true, emotionNote, degraded: emotionNote == null });
+    } catch (e) {
+        res.json({ success: true, emotionNote: null, degraded: true });
     }
 });

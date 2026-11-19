@@ -6625,6 +6625,15 @@
     <option value="deepseek-reasoner">DeepSeek R1 推理</option>
 </select>
             </div>
+            <div class="setting-group">
+                <label>思考强度（仅 DeepSeek 直连，越低越省 token）</label>
+                <select id="reasoningEffort">
+    <option value="off">关闭思考（最省 token，回复最快）</option>
+    <option value="low">低（思考较少）</option>
+    <option value="high">高（默认，回答更细致）</option>
+    <option value="max">最大（最细致，最耗 token）</option>
+</select>
+            </div>
         </div>
         <div id="relayConfig" style="display:none;">
             <div class="setting-group">
@@ -7444,6 +7453,7 @@ var CONFIG = {
     accessMode: 'direct',
     apiKey: '',
     model: 'deepseek-v4-pro',
+    reasoningEffort: 'high',
     relayEndpoint: '',
     relayApiKey: '',
     relayModel: '',
@@ -7529,6 +7539,22 @@ function daysBetween(date1, date2) {
     return Math.round((d2 - d1) / (24 * 60 * 60 * 1000));
 }
 
+// 取今天是否处于某条经期记录中；返回 { record, dayNum }，否则 null
+function getCurrentPeriod() {
+    var period = CONFIG.period;
+    if (!period || !period.records) return null;
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    for (var i = 0; i < period.records.length; i++) {
+        var r = period.records[i];
+        var s = parseDateKey(r.startDate);
+        var e = parseDateKey(r.endDate);
+        if (today >= s && today <= e) {
+            return { record: r, dayNum: daysBetween(s, today) + 1 };
+        }
+    }
+    return null;
+}
+
 // 算平均周期（最近 6 次）
 function calcAverageCycle() {
     var period = CONFIG.period;
@@ -7587,7 +7613,7 @@ function getEffectiveDuration() {
     return calcAverageDuration();
 }
 
-// 预测未来 3 次的经期
+// 预测未来 3 次的经期（自动跳过已经过去的周期）
 function predictNextPeriods() {
     var period = CONFIG.period;
     if (!period || !period.records || period.records.length === 0) return [];
@@ -7599,13 +7625,16 @@ function predictNextPeriods() {
     var lastStart = parseDateKey(last.startDate);
     var cycle = getEffectiveCycle();
     var duration = getEffectiveDuration();
+    var today = new Date(); today.setHours(0, 0, 0, 0);
 
     var predictions = [];
-    for (var i = 1; i <= 3; i++) {
+    for (var i = 1; i <= 15 && predictions.length < 3; i++) {
         var predictStart = new Date(lastStart);
         predictStart.setDate(predictStart.getDate() + cycle * i);
         var predictEnd = new Date(predictStart);
         predictEnd.setDate(predictEnd.getDate() + duration - 1);
+        // 整个周期都已过去，跳过，不标到日历上
+        if (predictEnd < today) continue;
         predictions.push({
             startDate: formatDateKey(predictStart),
             endDate: formatDateKey(predictEnd),
@@ -7615,7 +7644,7 @@ function predictNextPeriods() {
     return predictions;
 }
 
-// 距离下次来还有几天
+// 距离下次来还有几天（自动滚动到下一个未来周期，不再卡在“已推迟”）
 function daysUntilNextPeriod() {
     var period = CONFIG.period;
     if (!period || !period.records || period.records.length === 0) return null;
@@ -7625,10 +7654,17 @@ function daysUntilNextPeriod() {
     });
     var last = sorted[sorted.length - 1];
     var lastStart = parseDateKey(last.startDate);
-    var nextStart = new Date(lastStart);
-    nextStart.setDate(nextStart.getDate() + getEffectiveCycle());
+    var cycle = getEffectiveCycle();
+    var today = new Date(); today.setHours(0, 0, 0, 0);
 
-    var today = new Date();
+    var nextStart = new Date(lastStart);
+    for (var i = 1; i <= 15; i++) {
+        var cand = new Date(lastStart);
+        cand.setDate(cand.getDate() + cycle * i);
+        nextStart = cand;
+        if (cand >= today) break;
+    }
+
     var days = daysBetween(today, nextStart);
     return { days: days, date: formatDateKey(nextStart) };
 }
@@ -8205,7 +8241,8 @@ if (!CONFIG.period) CONFIG.period = {
             avgDuration: null,
             customCycle: null,
             customDuration: null,
-            lastReminderDate: null
+            lastReminderDate: null,
+            lastAskDate: null
         };
         if (!CONFIG.period.records) CONFIG.period.records = [];
         if (!CONFIG.diaries || !Array.isArray(CONFIG.diaries)) CONFIG.diaries = [];
@@ -8229,6 +8266,7 @@ if (!CONFIG.period) CONFIG.period = {
         if (!CONFIG.relayEndpoint) CONFIG.relayEndpoint = '';
         if (!CONFIG.relayApiKey) CONFIG.relayApiKey = '';
         if (!CONFIG.relayModel) CONFIG.relayModel = '';
+        if (!CONFIG.reasoningEffort) CONFIG.reasoningEffort = 'high';
         if (!CONFIG.websearchEndpoint) CONFIG.websearchEndpoint = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
         if (!CONFIG.websearchApiKey) CONFIG.websearchApiKey = '';
         if (!CONFIG.websearchModel) CONFIG.websearchModel = 'qwen-plus';
@@ -8571,7 +8609,7 @@ function generateContextSummary(role) {
             model: model || 'deepseek-v4-pro',
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: '对话内容：\n' + conversationText }],
             temperature: 0.5,
-            max_tokens: 2500
+            max_tokens: 1000
         }),
         signal: controller.signal
     }, 1).then(function(resp) {
@@ -9700,6 +9738,7 @@ function regenerateMessage(roleId, messageId) {
         reply = detectAndProcessGift(role.id, reply);
         reply = detectAndProcessTransfer(role.id, reply);
         reply = stripRoleNamePrefix(reply, role.name);
+        advanceBrainEmotion(role, userMessage, reply);
         var segments = CONFIG.splitEnabled !== false ? splitReplyIntoMessages(reply) : [reply];
         var idx = 0;
         function sendNext() {
@@ -9878,6 +9917,7 @@ if (quotedMsg) {
         }
         
         reply = stripRoleNamePrefix(reply, role.name);
+        advanceBrainEmotion(role, finalMessage, reply);
         var segments = CONFIG.splitEnabled !== false ? splitReplyIntoMessages(reply) : [reply];
         var idx = 0;
         
@@ -10120,32 +10160,22 @@ function consolidateMemory(role) {
 function getPeriodStatusForAI() {
   if (!CONFIG.period || !CONFIG.period.records || CONFIG.period.records.length === 0) return null;
 
-  var today = new Date();
-  var todayKey = formatDateKey(today);
-
-  // 1. 今天是否在经期中
-  var inPeriod = false;
-  var periodDayNum = 0;
-  CONFIG.period.records.forEach(function(r) {
-    var s = parseDateKey(r.startDate);
-    var e = parseDateKey(r.endDate);
-    if (today >= s && today <= e) {
-      inPeriod = true;
-      periodDayNum = daysBetween(s, today) + 1;
+  // 1. 今天是否在经期中：只在经期第 1 天告知一次，之后几天不再主动提醒，避免话题一直卡在月经上
+  var cur = getCurrentPeriod();
+  if (cur) {
+    if (cur.dayNum === 1) {
+      return '用户今天来月经了（经期第 1 天）。这只是背景信息，可以自然关心一句，但不要在之后的对话里反复主动提起或追问月经，除非用户自己说到。';
     }
-  });
-
-  if (inPeriod) {
-    return '用户现在处于经期（第 ' + periodDayNum + ' 天）。';
+    return null;
   }
 
-  // 2. 距离下次 ≤ 3 天
+  // 2. 距离下次 ≤ 3 天：保留倒计时提示，但约束不要每轮主动追问
   var info = daysUntilNextPeriod();
   if (info && info.days >= 0 && info.days <= 3) {
-    if (info.days === 0) {
-      return '用户预计今天来经期。';
-    }
-    return '用户距离下次经期还有 ' + info.days + ' 天。';
+    var head = info.days === 0
+      ? '用户预计今天来经期。'
+      : '用户距离下次经期还有 ' + info.days + ' 天。';
+    return head + '这只是背景信息，不要每轮主动追问月经，除非用户自己说起。';
   }
 
   return null;
@@ -10189,12 +10219,13 @@ try {
 
     // ===== 第一步：强制角色宣言 =====
     var parts = [];
+    var dyn = [];
     // ===== 第一段：像真人一样自然聊天 =====
     parts.push('【💬 聊天风格】');
     parts.push('你是一个真实的人，像用微信一样和用户聊天。');
     parts.push('可以自然地使用表情包来表达情绪，就像你手机里存了很多表情包一样。');
-    parts.push('真人聊天时，看到好笑的会发"哈哈哈"然后甩个表情包，看到震惊的会发"？？"再甩个表情包。');
-    parts.push('你也是这样，该用表情包的时候就用，不该用的时候就不用。');
+    parts.push('情绪反应的强度和方式要贴合你自己的性格：性格外放就自然外放，性格沉稳就收敛克制，不要套用统一的热情反应模板。');
+    parts.push('表情包只在确实比文字更生动时才用，不该用的时候就不用。');
     parts.push('不要机械地每句话都加，也不要刻意回避。');
     parts.push('');
 
@@ -10224,12 +10255,13 @@ try {
         personaBlock += '其他细节：' + role.extra.trim() + '\n';
     }
     personaBlock += '\n⚠️ 以上所有设定是强制性的，你「' + role.name + '」就是这样一个活生生的人。';
+    personaBlock += '\n⚠️ 你的性格、话量、措辞和情绪表达方式，优先于前面的通用聊天习惯；通用模板不能让你变得比人设更热情、话多、外放或油腻。';
     parts.push(personaBlock);
     
     // 3. 记忆（改成“你记得的事”，而不是“关于用户的信息”）
     var memoryText = generateNaturalMemoryText(role);
     if (memoryText) {
-        parts.push('【📖 你记得的关于 ta 的事】\n' + memoryText + '\n（这些是你们相处中你记住的，聊天时可以自然地提起）');
+        dyn.push('【📖 你记得的关于 ta 的事】\n' + memoryText + '\n（这些是你们相处中你记住的，聊天时可以自然地提起）');
     }
     
     // 4. 表情包 & 送礼（精简成"可以做的事"）
@@ -10284,7 +10316,7 @@ abilityBlock += '⚠️ 不要连着送，一个对话里送一次就够了。';
     parts.push('5. 你现在就是 ' + role.name + '，ta 正在和你说话。');
     // ===== 注入经期状态（仅告知，不给话术）=====
   if (periodStatusForAI) {
-    parts.push('【当前状态】' + periodStatusForAI);
+    dyn.push('【当前状态】' + periodStatusForAI);
   }
 
 // ===== 注入今天的纪念日 =====
@@ -10349,9 +10381,9 @@ abilityBlock += '⚠️ 不要连着送，一个对话里送一次就够了。';
         anniLines.push('- 你「必须知道今天是纪念日」，但具体怎么表达，完全由你的性格和你们的关系决定。');
         anniLines.push('- 不要每一句话都重复提起，可以只提一次，也可以在聊天中轻轻带过。');
 
-        parts.push(anniLines.join('\n'));
+        dyn.push(anniLines.join('\n'));
     }
-    return parts.join('\n\n');
+    return { stable: parts.join('\n\n'), dynamic: dyn.join('\n\n') };
 }
 
 function generateCoreMemoryText(memories) {
@@ -10525,6 +10557,23 @@ async function fetchBrainContext(role, userMessage) {
     }
 }
 
+// 大脑情绪推进：AI 回复成功后静默上报本轮对话，让大脑情绪/关系随对话演变；失败不阻断聊天。
+function advanceBrainEmotion(role, userMessage, reply) {
+    try {
+        var token = localStorage.getItem('dream_token');
+        if (!token || !role || !role.id) return;
+        fetch(API_BASE + '/brain/advance', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                roleId: role.id,
+                message: String(userMessage || '').slice(0, 16000),
+                reply: String(reply || '').slice(0, 16000)
+            })
+        }).catch(function() {});
+    } catch (e) {}
+}
+
 function callAI(userMessage, role, voiceRequested) {
     var mode = CONFIG.accessMode || 'direct';
     if (mode === 'direct') {
@@ -10548,11 +10597,14 @@ async function callDeepSeekDirect(userMessage, role, voiceRequested) {
             break;
         }
     }
-    var systemPrompt = buildSystemPrompt(role) + timePrompt;
+    var bp = buildSystemPrompt(role);
+    var systemPrompt = bp.stable;
 // ===== 小钩子：在系统提示最后加一句温柔提醒 =====
-systemPrompt += '\n\n💡 小提示：如果需要用表情包表达情绪，就大胆用 [表情包：名称] 吧！系统会自动显示图片的～';
+systemPrompt += '\n\n💡 小提示：表情包按你本人的性格和当下情绪自然使用即可，贴合人设。';
 systemPrompt += '\n\n💰 小提示：如果想给用户转账（比如用户要钱、你想表达心意、买礼物），就用 [转账 金额] 格式，例如 [转账 520]。系统会自动显示成转账卡片，用户点了就能收款。注意：每天最多 3 次，单次不超过 50000。';
 // ===== 小钩子结束 =====
+    if (bp.dynamic) systemPrompt += '\n\n' + bp.dynamic;
+    systemPrompt += timePrompt;
     var recentMemoryText = retrieveRelevantMemory(role, userMessage);
     if (recentMemoryText) {
         systemPrompt += '\n\n【📖 与当前话题相关的回忆】\n' + recentMemoryText;
@@ -10595,7 +10647,10 @@ if (m.role === 'user') {
             model: CONFIG.model || 'deepseek-v4-pro',
             messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userMessage }],
             temperature: temperature,
-            max_tokens: 600
+            max_tokens: 2000,
+            ...(CONFIG.reasoningEffort === 'off'
+                ? { thinking: { type: 'disabled' } }
+                : { reasoning_effort: CONFIG.reasoningEffort || 'high' })
         }),
         signal: controller.signal
     }, 1).then(function(resp) {
@@ -10609,8 +10664,10 @@ if (m.role === 'user') {
         }
         return resp.json();
     }).then(function(data) {
-        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (!reply) throw new Error('未获取到回复');
+        var reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+        if (!String(reply || '').trim()) {
+            throw new Error('未获取到回复');
+        }
         reply = reply.replace(/^我[^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
         reply = reply.replace(/^[他她][^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
         reply = reply.replace(/^[忍不住心想觉得感到][^，。！？]*[，。！？]?\s*/gm, '');
@@ -10637,7 +10694,8 @@ function callRelayAPI(userMessage, role, voiceRequested) {
             break;
         }
     }
-    var systemPrompt = buildSystemPrompt(role) + timePrompt;
+    var bp = buildSystemPrompt(role);
+    var systemPrompt = bp.stable + (bp.dynamic ? '\n\n' + bp.dynamic : '') + timePrompt;
     var recentMemoryText = '';
     if (shouldRecall) {
         recentMemoryText = retrieveRelevantMemory(role, userMessage);
@@ -10674,7 +10732,7 @@ if (m.role === 'user') {
             model: model,
             messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userMessage }],
             temperature: temperature,
-            max_tokens: 600
+            max_tokens: 2000
         }),
         signal: controller.signal
     }, 1).then(function(resp) {
@@ -10682,14 +10740,18 @@ if (m.role === 'user') {
         if (!resp.ok) {
             return resp.text().then(function(err) {
                 var msg = '中转 API 错误 (' + resp.status + ')';
-                try { var j = JSON.parse(err); msg = j.error && j.error.message ? j.error.message : msg; } catch (_) {}
-                throw new Error(msg);
+                var code = '';
+                try { var j = JSON.parse(err); if (j.error) { code = j.error.code || ''; msg = j.error.message || msg; } } catch (_) {}
+                var tail = err && err.length > 160 ? err.slice(0, 160) : err;
+                throw new Error('[' + resp.status + ']' + (code ? ' ' + code + ' · ' : ' ') + msg + (tail ? ' | ' + tail : ''));
             });
         }
         return resp.json();
     }).then(function(data) {
-        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (!reply) throw new Error('未获取到回复');
+        var reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+        if (!String(reply || '').trim()) {
+            throw new Error('未获取到回复');
+        }
         reply = reply.replace(/^我[^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
         reply = reply.replace(/^[他她][^，。！？]*[了着过]?[，。！？]?\s*/gm, '');
         reply = reply.replace(/^[忍不住心想觉得感到][^，。！？]*[，。！？]?\s*/gm, '');
@@ -10711,7 +10773,8 @@ function callWebSearchAPI(userMessage, role, voiceRequested) {
     if (!apiKey) throw new Error('请先在设置中配置联网搜索 API Key');
     if (!endpoint) throw new Error('请先在设置中配置联网搜索 Endpoint');
     
-    var systemPrompt = buildSystemPrompt(role) + timePrompt;
+    var bp = buildSystemPrompt(role);
+    var systemPrompt = bp.stable + (bp.dynamic ? '\n\n' + bp.dynamic : '') + timePrompt;
     var history = (role.messages || []).slice(-10).filter(function(m) {
         return m.type === 'text' || m.type === 'gift';
     }).map(function(m) {
@@ -10737,7 +10800,7 @@ if (m.role === 'user') {
         model: model,
         messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userMessage }],
         temperature: temperature,
-        max_tokens: 600
+        max_tokens: 2000
     };
     
     if (enableSearch) {
@@ -10768,8 +10831,10 @@ if (m.role === 'user') {
         }
         return resp.json();
     }).then(function(data) {
-        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (!reply) throw new Error('未获取到回复');
+        var reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+        if (!String(reply || '').trim()) {
+            throw new Error('未获取到回复');
+        }
         reply = reply.replace(/【\d+†[^】]*】/g, '').trim();
         reply = reply.replace(/\[citation:\d+\]/g, '').trim();
         reply = reply.replace(/\n{3,}/g, '\n\n').trim();
@@ -12066,7 +12131,7 @@ async function generateAICommentForUserMoment(role, moment) {
         '请直接评论：';
 
     try {
-        var reply = await callAIForMomentReply(sys, prompt, 2000);
+        var reply = await callAIForMomentReply(sys, prompt, 300);
         if (!reply || !reply.trim()) return null;
         return reply.trim().replace(/^["「『]|["」』]$/g, '').trim();
     } catch(e) {
@@ -12236,7 +12301,7 @@ async function generateAIReplyForUserMomentReply(role, moment, userReply) {
         '请直接回复：';
 
     try {
-        var reply = await callAIForMomentReply(sys, prompt, 1500);
+        var reply = await callAIForMomentReply(sys, prompt, 300);
         if (!reply || !reply.trim()) return null;
         return reply.trim().replace(/^["「『]|["」』]$/g, '').trim();
     } catch(e) {
@@ -12808,7 +12873,7 @@ async function callAIForMomentReply(systemPrompt, userPrompt, maxTokens) {
                     { role: 'user', content: userPrompt }
                 ],
                 temperature: 0.9,
-                max_tokens: maxTokens || 2000
+                max_tokens: maxTokens || 1000
             }),
             signal: controller.signal,
             cache: 'no-store'
@@ -12936,7 +13001,7 @@ async function generateAIReplyForComment(role, moment, userComment) {
         '请直接回复这条评论：';
 
     try {
-        var reply = await callAIForMomentReply(sys, prompt, 2000);
+        var reply = await callAIForMomentReply(sys, prompt, 300);
         if (!reply || !reply.trim()) return null;
         return reply.trim().replace(/^["「『]|["」』]$/g, '').trim();
     } catch(e) {
@@ -14216,7 +14281,7 @@ function generateDiary(roleId, showToastMsg) {
             model: model || 'deepseek-v4-pro',
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
             temperature: 0.9,
-            max_tokens: 4000
+            max_tokens: 1500
         }),
         signal: controller.signal
     }, 1).then(function(resp) {
@@ -15825,7 +15890,7 @@ function generateLetterReply(userLetter, role) {
         { role: 'user', content: user }
       ],
       temperature: 0.9,
-      max_tokens: 4000
+      max_tokens: 1200
     }),
     signal: controller.signal,
     cache: 'no-store'
@@ -16155,7 +16220,7 @@ function generateAutoLetter(role, reason) {
         { role: 'user', content: user }
       ],
       temperature: 0.9,
-      max_tokens: 4000
+      max_tokens: 1200
     }),
     signal: controller.signal,
     cache: 'no-store'
@@ -17109,6 +17174,15 @@ function renderPeriodCountdown() {
     var daysEl = document.getElementById('countdownDays');
     var dateEl = document.getElementById('countdownDate');
     var card = document.getElementById('periodCountdown');
+
+    // 经期进行中：直接显示经期第几天，不把经期天数算进下次倒计时
+    var cur = getCurrentPeriod();
+    if (cur) {
+        card.classList.remove('is-empty');
+        daysEl.textContent = '经期第 ' + cur.dayNum + ' 天';
+        dateEl.textContent = '本次经期中';
+        return;
+    }
 
     if (!info) {
         daysEl.textContent = '--';
@@ -18364,6 +18438,7 @@ function openSettings() {
     document.getElementById('accessMode').value = CONFIG.accessMode || 'direct';
     document.getElementById('directApiKey').value = CONFIG.apiKey || '';
     document.getElementById('directModel').value = CONFIG.model || 'deepseek-v4-pro';
+    document.getElementById('reasoningEffort').value = CONFIG.reasoningEffort || 'high';
     document.getElementById('relayEndpoint').value = CONFIG.relayEndpoint || '';
     document.getElementById('relayApiKey').value = CONFIG.relayApiKey || '';
     document.getElementById('relayModelCustom').value = CONFIG.relayModel || '';
@@ -21352,6 +21427,7 @@ document.getElementById('closeSettingsBtn').addEventListener('click', closeSetti
         CONFIG.accessMode = document.getElementById('accessMode').value;
         CONFIG.apiKey = document.getElementById('directApiKey').value.trim();
         CONFIG.model = document.getElementById('directModel').value;
+        CONFIG.reasoningEffort = document.getElementById('reasoningEffort').value;
         CONFIG.relayEndpoint = document.getElementById('relayEndpoint').value.trim();
         CONFIG.relayApiKey = document.getElementById('relayApiKey').value.trim();
         var customModel = document.getElementById('relayModelCustom').value.trim();
