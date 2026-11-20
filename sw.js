@@ -10,7 +10,7 @@ self.addEventListener('install', (e) => {
     })
   );
 });
-const CACHE_NAME = 'lunar-reverie-v7';
+const CACHE_NAME = 'lunar-reverie-v8';
 const STATIC_ASSETS = [
     '/',
     '/manifest.json',
@@ -62,6 +62,7 @@ self.addEventListener('fetch', function(event) {
         url.includes('dashscope.aliyuncs.com') ||
         url.includes('aliyuncs.com') ||
         url.includes('/api/') ||
+        url.includes('/tmp-img/') ||
         !url.startsWith(self.location.origin)) {
         return;  // 不调用 respondWith，浏览器直接请求
     }

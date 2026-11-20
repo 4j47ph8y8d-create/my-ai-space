@@ -6937,6 +6937,42 @@
 </div>
 <script>
 
+// ===== 全局错误捕获：真机（鸿蒙/移动 WebView）静默异常可见化 =====
+(function () {
+  function recordError(kind, err) {
+    try {
+      var msg;
+      if (err && (err.message || err.stack)) {
+        msg = (err.name ? err.name + ': ' : '') + (err.message || '') + '\n' + (err.stack || '');
+      } else {
+        msg = String(err);
+      }
+      var rec = { t: new Date().toISOString(), kind: kind, msg: String(msg).slice(0, 800) };
+      var prev = [];
+      try { prev = JSON.parse(localStorage.getItem('dream_errors') || '[]'); } catch (_) {}
+      prev.push(rec);
+      if (prev.length > 20) prev = prev.slice(-20);
+      localStorage.setItem('dream_errors', JSON.stringify(prev));
+      showErrorBar(rec);
+    } catch (_) {}
+  }
+  function showErrorBar(rec) {
+    try {
+      var bar = document.getElementById('globalErrorBar');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'globalErrorBar';
+        bar.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:100000;background:rgba(180,30,30,0.95);color:#fff;font-size:11px;padding:8px 10px;border-radius:10px;white-space:pre-wrap;word-break:break-word;max-height:35vh;overflow:auto;';
+        document.body.appendChild(bar);
+      }
+      bar.textContent = '⚠️ ' + rec.kind + ': ' + rec.msg;
+      bar.style.display = 'block';
+    } catch (_) {}
+  }
+  window.addEventListener('error', function (e) { recordError('error', e.error || e.message); });
+  window.addEventListener('unhandledrejection', function (e) { recordError('promise', e.reason); });
+})();
+
 // ==========================================
 // 🎬 启动加载动画（流星 + 乱码打字）
 // ==========================================
@@ -9866,6 +9902,8 @@ if (quotedMsg) {
     input.disabled = true;
     document.getElementById('sendBtn').disabled = true;
     showToast('💬 正在发送...');
+    // 每轮重置本轮转账上锁状态
+    window.__transferAlreadyTriggered = false;
     // 检测转账关键词（B 模式）
     window.__transferKeywordHit = detectTransferKeyword(finalMessage);
     addMessageToRole(role.id, 'user', finalMessage);
@@ -9974,6 +10012,7 @@ if (quotedMsg) {
                 // 关键词触发转账（B 模式）
                 if (window.__transferKeywordHit && !window.__transferAlreadyTriggered) {
                     window.__transferKeywordHit = false;
+                    window.__transferAlreadyTriggered = true;
                     setTimeout(function() {
                         try { tryTransferByKeyword(getCurrentRole()); } catch(e) { console.log('关键词转账失败:', e); }
                     }, 1200);
@@ -11137,6 +11176,7 @@ function detectHeartKeywords(roleId, content, sender) {
 function startHeartBeatFluctuation() {
     if (heartBeatInterval) clearInterval(heartBeatInterval);
     heartBeatInterval = setInterval(function() {
+        if (!CONFIG || !CONFIG.heart) return;
         var bindRoleId = CONFIG.heart.bindRoleId;
         if (!bindRoleId) return;
         var role = roles.find(function(r) { return r.id === bindRoleId; });
@@ -11512,13 +11552,15 @@ function openImagePicker(action) {
         'chatImage': '选择图片发送'
     };
     document.getElementById('pickerTitle').textContent = titles[action] || '选择图片';
-    document.getElementById('imagePickerOverlay').classList.add('active');
+    var _el = document.getElementById('imagePickerOverlay');
+    _el.style.display = '';
+    _el.classList.add('active');
 }
 
 function closeImagePicker() {
     var el = document.getElementById('imagePickerOverlay');
     el.classList.remove('active');
-    el.style.display = 'none';
+    el.style.display = '';
     currentPickerTarget = null;
 }
 
@@ -11526,11 +11568,14 @@ function selectImageFromGallery(callback) {
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    input.style.display = 'none';
+    document.body.appendChild(input);
     input.onchange = function(e) {
-        var file = e.target.files[0];
-        if (!file) return;
+        var file = e.target.files && e.target.files[0];
+        if (!file) { input.remove(); return; }
         var reader = new FileReader();
-        reader.onload = function(ev) { callback(ev.target.result); };
+        reader.onload = function(ev) { callback(ev.target.result, file); input.remove(); };
+        reader.onerror = function() { input.remove(); if (typeof recordError === 'function') recordError('reader', reader.error); };
         reader.readAsDataURL(file);
     };
     input.click();
@@ -11541,18 +11586,115 @@ function selectImageFromCamera(callback) {
     input.type = 'file';
     input.accept = 'image/*';
     input.capture = 'environment';
+    input.style.display = 'none';
+    document.body.appendChild(input);
     input.onchange = function(e) {
-        var file = e.target.files[0];
-        if (!file) return;
+        var file = e.target.files && e.target.files[0];
+        if (!file) { input.remove(); return; }
         var reader = new FileReader();
-        reader.onload = function(ev) { callback(ev.target.result); };
+        reader.onload = function(ev) { callback(ev.target.result, file); input.remove(); };
+        reader.onerror = function() { input.remove(); if (typeof recordError === 'function') recordError('reader', reader.error); };
         reader.readAsDataURL(file);
     };
     input.click();
 }
 
-function handleImageSelected(dataUrl) {
-    var target = currentPickerTarget;
+function convertHeicOnServer(dataUrl) {
+  function dlog(m){
+    try {
+      var prev=[];
+      try{prev=JSON.parse(localStorage.getItem('dream_errors')||'[]');}catch(_){}
+      prev.push({t:new Date().toISOString(),kind:'convert-image',msg:String(m).slice(0,800)});
+      if(prev.length>20)prev=prev.slice(-20);
+      localStorage.setItem('dream_errors',JSON.stringify(prev));
+    }catch(_){}
+  }
+  function imgToDataUrl(abs, cb){
+    var img=new Image();
+    var done=false;
+    var timer=setTimeout(function(){if(!done){done=true;cb(null,'img timeout 20s');}},20000);
+    img.onload=function(){
+      if(done)return; done=true; clearTimeout(timer);
+      try{
+        var c=document.createElement('canvas');
+        c.width=img.naturalWidth; c.height=img.naturalHeight;
+        c.getContext('2d').drawImage(img,0,0);
+        cb(c.toDataURL('image/jpeg',0.9),null);
+      }catch(e){cb(null,e&&e.message?e.message:String(e));}
+    };
+    img.onerror=function(){if(done)return;done=true;clearTimeout(timer);cb(null,'img onerror');};
+    img.src=abs;
+  }
+  return new Promise(function(resolve){
+    try {
+      var token=localStorage.getItem('dream_token');
+      var body=JSON.stringify({dataUrl:dataUrl});
+      dlog('进入 tokenLen='+(token?token.length:0)+' dataLen='+String(dataUrl||'').length+' bodyLen='+body.length+' API_BASE='+API_BASE);
+      var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+      var timer=ctrl?setTimeout(function(){dlog('超时 abort');try{ctrl.abort();}catch(_){}},20000):null;
+      fetch(API_BASE+'/convert-image',{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:body,signal:ctrl?ctrl.signal:undefined})
+      .then(function(resp){dlog('响应 status='+resp.status+' ct='+resp.headers.get('content-type'));return resp.json().then(function(data){return{status:resp.status,data:data};});})
+      .then(function(r){
+        if(timer)clearTimeout(timer);
+        if(r.data&&r.data.success&&r.data.url){
+          var rel=r.data.url;
+          var abs=rel.indexOf('http')===0?rel:(location.origin+rel);
+          dlog('拿到静态 url='+abs);
+          imgToDataUrl(abs,function(du,err){
+            if(err){dlog('图片加载/转码失败: '+err);resolve(null);return;}
+            dlog('图片转 dataUrl 成功 len='+du.length+' 前缀='+du.slice(0,40));
+            resolve(du);
+          });
+          return;
+        }
+        dlog('HTTP '+r.status+' '+((r.data&&r.data.error)||''));
+        resolve(null);
+      })
+      .catch(function(e){if(timer)clearTimeout(timer);dlog('异常: '+(e&&e.name?e.name+': ':'')+(e&&e.message?e.message:e)+' stack='+(e&&e.stack?String(e.stack).slice(0,200):''));resolve(null);});
+    }catch(e){dlog('同步异常: '+(e&&e.name?e.name+': ':'')+(e&&e.message?e.message:e)+' stack='+(e&&e.stack?String(e.stack).slice(0,200):''));resolve(null);}
+  });
+}
+function sniffImageFormat(dataUrl) {
+    try {
+        var b64 = String(dataUrl || '').split(',')[1] || '';
+        if (!b64) return 'unknown';
+        var head = atob(b64.slice(0, 64));
+        var b = [];
+        for (var i = 0; i < head.length; i++) b.push(head.charCodeAt(i));
+        if (b[0] === 0xFF && b[1] === 0xD8) return 'jpeg';
+        if (b[0] === 0x89 && b[1] === 0x50) return 'png';
+        if (b[0] === 0x47 && b[1] === 0x49) return 'gif';
+        if (b[0] === 0x52 && b[1] === 0x49 && b[8] === 0x57) return 'webp';
+        if (b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) {
+            var brand = String.fromCharCode(b[8], b[9], b[10], b[11]);
+            if (/heic|heif|mif1|heix|hevc|avic|avif/i.test(brand)) return 'heic';
+            return 'iso:' + brand;
+        }
+        return 'unknown';
+    } catch (e) { return 'unknown'; }
+}
+
+function handleImageSelected(dataUrl, file, overrideTarget) {
+    var _fmt = sniffImageFormat(dataUrl);
+    if (_fmt === 'heic') {
+        var _targetSnap = currentPickerTarget;
+        try {
+            var _p0 = [];
+            try { _p0 = JSON.parse(localStorage.getItem('dream_errors') || '[]'); } catch(_) {}
+            _p0.push({ t: new Date().toISOString(), kind: 'wallpaper-diag', msg: 'HEIC 转码前快照 target=' + JSON.stringify(_targetSnap) + ' dataLen=' + String(dataUrl || '').length });
+            var _types = 'convertHeicOnServer=' + (typeof convertHeicOnServer) + ' fetch=' + (typeof fetch) + ' AbortController=' + (typeof AbortController) + ' showToast=' + (typeof showToast) + ' API_BASE=' + (typeof API_BASE);
+            _p0.push({ t: new Date().toISOString(), kind: 'wallpaper-diag', msg: 'HEIC 类型探测 ' + _types });
+            if (_p0.length > 20) _p0 = _p0.slice(-20);
+            localStorage.setItem('dream_errors', JSON.stringify(_p0));
+        } catch(_) {}
+        showToast('🔄 正在转换图片格式…');
+        convertHeicOnServer(dataUrl).then(function(jpegUrl) {
+            if (jpegUrl) { handleImageSelected(jpegUrl, file, _targetSnap); }
+            else { showToast('⚠️ 图片转换失败，请换 JPEG/PNG'); closeImagePicker(); }
+        }).catch(function() { showToast('⚠️ 图片转换失败，请换 JPEG/PNG'); closeImagePicker(); });
+        return;
+    }
+    var target = (overrideTarget !== undefined && overrideTarget !== null) ? overrideTarget : currentPickerTarget;
     if (target && typeof target === 'object' && target.type === 'role') {
         var role = roles.find(function(r) { return r.id === target.roleId; });
         if (!role) { showToast('⚠️ 未找到该角色'); closeImagePicker(); return; }
@@ -11593,6 +11735,14 @@ function handleImageSelected(dataUrl) {
         return;
     }
     if (target === 'wallpaper') {
+        try {
+            var prev = [];
+            try { prev = JSON.parse(localStorage.getItem('dream_errors') || '[]'); } catch(_) {}
+            var _b64 = String(dataUrl || '').split(',')[1] || '';
+            prev.push({ t: new Date().toISOString(), kind: 'wallpaper-diag', msg: '选图 type=' + (file && file.type) + ' name=' + (file && file.name) + ' size=' + (file && file.size) + ' dataLen=' + String(dataUrl || '').length + ' b64mod4=' + (_b64.length % 4) + ' 前缀=' + String(dataUrl || '').slice(0, 60) });
+            if (prev.length > 20) prev = prev.slice(-20);
+            localStorage.setItem('dream_errors', JSON.stringify(prev));
+        } catch(_) {}
         setTimeout(function() {
             applyWallpaper(dataUrl);
         }, 100);
@@ -11612,7 +11762,9 @@ function openImagePickerForRole(roleId, type) {
     var titles = { 'avatar': '选择角色头像', 'bg': '选择角色聊天背景' };
     document.getElementById('pickerTitle').textContent = titles[type] || '选择图片';
     currentPickerTarget = { type: 'role', roleId: roleId, field: type };
-    document.getElementById('imagePickerOverlay').classList.add('active');
+    var _elr = document.getElementById('imagePickerOverlay');
+    _elr.style.display = '';
+    _elr.classList.add('active');
 }
 
 function showPermissionDialog(action) {
@@ -11717,46 +11869,43 @@ function deleteWallpaperFromIndexedDB() {
 
 function applyWallpaper(dataUrl) {
     var screen = document.getElementById('launcherScreen');
+    var preview = document.getElementById('wallpaperPreviewImg');
+    function wpDiag(msg) {
+        try {
+            var prev = [];
+            try { prev = JSON.parse(localStorage.getItem('dream_errors') || '[]'); } catch(_) {}
+            prev.push({ t: new Date().toISOString(), kind: 'wallpaper-diag', msg: String(msg).slice(0, 800) });
+            if (prev.length > 20) prev = prev.slice(-20);
+            localStorage.setItem('dream_errors', JSON.stringify(prev));
+        } catch(_) {}
+    }
     if (dataUrl) {
-        deleteWallpaperFromIndexedDB().then(function() {
-            screen.style.backgroundImage = 'url(' + dataUrl + ')';
-            screen.style.backgroundSize = 'cover';
-            screen.style.backgroundPosition = 'center';
-            screen.style.pointerEvents = 'auto';
-            document.getElementById('wallpaperPreviewImg').src = dataUrl;
-            document.getElementById('wallpaperPreviewImg').style.display = 'block';
-            document.getElementById('wallpaperStatus').textContent = '自定义';
-            CONFIG.wallpaper = 'saved';
-            saveWallpaperToIndexedDB(dataUrl).then(function() {
-                debouncedSaveAllData();
-                showToast('✅ 壁纸已更换');
-            }).catch(function(e) {
-                console.error('❌ 壁纸保存失败:', e);
-                showToast('⚠️ 壁纸保存失败');
-            });
-        }).catch(function() {
-            screen.style.backgroundImage = 'url(' + dataUrl + ')';
-            screen.style.backgroundSize = 'cover';
-            screen.style.backgroundPosition = 'center';
-            screen.style.pointerEvents = 'auto';
-            document.getElementById('wallpaperPreviewImg').src = dataUrl;
-            document.getElementById('wallpaperPreviewImg').style.display = 'block';
-            document.getElementById('wallpaperStatus').textContent = '自定义';
-            CONFIG.wallpaper = 'saved';
-            saveWallpaperToIndexedDB(dataUrl).then(function() {
-                debouncedSaveAllData();
-                showToast('✅ 壁纸已更换');
-            }).catch(function(e) {
-                console.error('❌ 壁纸保存失败:', e);
-                showToast('⚠️ 壁纸保存失败');
-            });
+        var safeUrl = 'url("' + dataUrl + '")';
+        screen.style.backgroundImage = safeUrl;
+        screen.style.backgroundSize = 'cover';
+        screen.style.backgroundPosition = 'center';
+        screen.style.pointerEvents = 'auto';
+        preview.onerror = function() { wpDiag('预览图解码失败, 长度=' + String(dataUrl).length); };
+        preview.onload = function() { wpDiag('预览图解码成功 natural=' + preview.naturalWidth + 'x' + preview.naturalHeight + ' 长度=' + String(dataUrl).length); };
+        preview.src = dataUrl;
+        preview.style.display = 'block';
+        document.getElementById('wallpaperStatus').textContent = '自定义';
+        CONFIG.wallpaper = 'saved';
+        saveWallpaperToIndexedDB(dataUrl).then(function() {
+            wpDiag('IDB 保存成功, 长度=' + String(dataUrl).length);
+            debouncedSaveAllData();
+            showToast('✅ 壁纸已更换');
+        }).catch(function(e) {
+            console.error('❌ 壁纸保存失败:', e);
+            wpDiag('IDB 保存失败: ' + (e && e.message ? e.message : e));
+            showToast('⚠️ 壁纸保存失败');
         });
     } else {
         screen.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
         screen.style.backgroundSize = 'auto';
         screen.style.pointerEvents = 'auto';
-        document.getElementById('wallpaperPreviewImg').style.display = 'none';
-        document.getElementById('wallpaperPreviewImg').src = '';
+        preview.style.display = 'none';
+        preview.src = '';
         document.getElementById('wallpaperStatus').textContent = '默认';
         CONFIG.wallpaper = '';
         deleteWallpaperFromIndexedDB().then(function() {
@@ -11767,6 +11916,64 @@ function applyWallpaper(dataUrl) {
             showToast('✅ 已恢复默认壁纸');
         });
     }
+}
+
+function collectImageDiagText() {
+  var L = [];
+  L.push('time=' + new Date().toISOString());
+  L.push('indexedDB=' + (typeof indexedDB) + ' localStorage=' + (typeof localStorage));
+  function info(id, label) {
+    var el = document.getElementById(id);
+    if (!el) { L.push(label + ': <no element>'); return; }
+    var src = el.src || '';
+    var _b = src.split(',')[1] || '';
+    L.push(label + ': complete=' + el.complete + ' natural=' + el.naturalWidth + 'x' + el.naturalHeight + ' disp=' + el.style.display + ' srcLen=' + src.length + ' b64mod4=' + (_b.length % 4) + ' prefix=' + src.slice(0, 60));
+  }
+  info('wallpaperPreviewImg', 'wallpaper');
+  info('chatBgPreviewImg', 'chatBg');
+  info('userAvatarPreviewImg', 'avatar');
+  L.push('CONFIG.wallpaper=' + CONFIG.wallpaper);
+  L.push('CONFIG.chatBgLen=' + String(CONFIG.chatBg || '').length + ' avatarLen=' + String(CONFIG.userAvatar || '').length);
+  var errs = [];
+  try { errs = JSON.parse(localStorage.getItem('dream_errors') || '[]'); } catch(_) {}
+  L.push('--- dream_errors (' + errs.length + ') ---');
+  errs.forEach(function(r) { L.push(r.t + ' [' + r.kind + '] ' + r.msg); });
+  return L.join('\n');
+}
+
+function showImageDiag() {
+  var text = collectImageDiagText();
+  var ov = document.getElementById('imageDiagOverlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'imageDiagOverlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px;';
+    ov.innerHTML = '<div style="background:#1f2430;border-radius:14px;width:100%;max-width:520px;max-height:80vh;display:flex;flex-direction:column;padding:14px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><span style="color:#fff;font-size:15px;font-weight:600;">🔧 图片诊断</span><button id="imageDiagClose" style="background:none;border:none;color:#fff;font-size:22px;">×</button></div>' +
+      '<textarea id="imageDiagText" readonly style="flex:1;min-height:220px;background:#11151d;color:#7ee787;font-size:11px;border-radius:8px;padding:10px;white-space:pre-wrap;word-break:break-word;"></textarea>' +
+      '<div style="display:flex;gap:10px;margin-top:10px;"><button id="imageDiagCopy" style="flex:1;padding:10px;border:none;border-radius:10px;background:#2ecc71;color:#fff;font-size:14px;">复制诊断</button></div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    document.getElementById('imageDiagClose').addEventListener('click', function() { ov.style.display = 'none'; });
+    document.getElementById('imageDiagCopy').addEventListener('click', function() {
+      var t = document.getElementById('imageDiagText').value;
+      function fb() { var ta = document.getElementById('imageDiagText'); ta.select(); try { document.execCommand('copy'); showToast('✅ 已复制'); } catch(_) { showToast('⚠️ 复制失败，请长按选择'); } }
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(function() { showToast('✅ 已复制'); }, fb); } else fb();
+    });
+  }
+  document.getElementById('imageDiagText').value = text;
+  ov.style.display = 'flex';
+}
+
+function injectImageDiagBtn() {
+  var drawer = document.querySelector('.settings-drawer');
+  if (!drawer || document.getElementById('imageDiagBtn')) return;
+  var btn = document.createElement('button');
+  btn.id = 'imageDiagBtn';
+  btn.textContent = '🔧 图片诊断（查看壁纸/头像加载状态）';
+  btn.style.cssText = 'display:block;width:100%;margin:12px 0;padding:12px;border:1px dashed var(--border-color);border-radius:12px;background:transparent;color:var(--text-secondary);font-size:13px;';
+  btn.addEventListener('click', showImageDiag);
+  drawer.appendChild(btn);
 }
 
 function applyChatBg(dataUrl) {
@@ -15304,13 +15511,18 @@ function canTransferToday() {
     if (!CONFIG.transferDailyCount) CONFIG.transferDailyCount = {};
     var key = getTodayKey();
     var count = CONFIG.transferDailyCount[key] || 0;
-    return count < 3;
+    if (count >= 3) return false;
+    // 4 小时冷却：距上次转账不足 4 小时不再自动转账
+    var last = CONFIG.lastTransferTime || 0;
+    if (last && (Date.now() - last) < 4 * 60 * 60 * 1000) return false;
+    return true;
 }
 
 function recordTransferToday() {
     if (!CONFIG.transferDailyCount) CONFIG.transferDailyCount = {};
     var key = getTodayKey();
     CONFIG.transferDailyCount[key] = (CONFIG.transferDailyCount[key] || 0) + 1;
+    CONFIG.lastTransferTime = Date.now();
 }
 
 // 根据角色人设估算「富有程度」
@@ -15330,7 +15542,7 @@ function estimateWealth(role) {
 function tryRandomTransfer(role) {
     if (!role) return false;
     if (!canTransferToday()) return false;
-    if (Math.random() > 0.2) return false;
+    if (Math.random() > 0.1) return false;
 
     var wealth = estimateWealth(role);
     var min = 500;
@@ -18424,6 +18636,10 @@ function openMall() { window.open('mall.html', '_blank'); }
 function openPhone() { window.open('phone.html', '_blank'); }
 
 function openSettings() {
+    // 兜底：先把浮层打开，避免内部填充异常导致面板完全不出现
+    var _ov = document.getElementById('settingsOverlay');
+    if (_ov) _ov.classList.add('active');
+  try {
 
 // 加载信箱设置
   var autoLetterSwitch = document.getElementById('autoLetterSwitch');
@@ -18470,8 +18686,16 @@ function openSettings() {
 
     loadWallpaperFromIndexedDB().then(function(wallpaperData) {
         if (wallpaperData) {
-            document.getElementById('wallpaperPreviewImg').src = wallpaperData;
-            document.getElementById('wallpaperPreviewImg').style.display = 'block';
+            var pv = document.getElementById('wallpaperPreviewImg');
+            pv.onerror = function() {
+                deleteWallpaperFromIndexedDB();
+                pv.style.display = 'none';
+                pv.src = '';
+                document.getElementById('wallpaperStatus').textContent = '默认';
+                CONFIG.wallpaper = '';
+            };
+            pv.src = wallpaperData;
+            pv.style.display = 'block';
             document.getElementById('wallpaperStatus').textContent = '自定义';
         } else {
             document.getElementById('wallpaperPreviewImg').style.display = 'none';
@@ -18524,12 +18748,19 @@ function openSettings() {
             localStorage.removeItem('dream_user_remember');
             if (typeof closeSettings === 'function') closeSettings();
             if (typeof showLoginScreen === 'function') showLoginScreen();
+            if (typeof cleanupResources === 'function') cleanupResources();
             roles = [];
             CONFIG = {};
             if (typeof showToast === 'function') showToast('👋 已切换账号');
         });
     }
 
+    try { injectImageDiagBtn(); } catch(_) {}
+
+    } catch (_e) {
+      try { recordError('openSettings', _e); } catch (_) {}
+      if (typeof showToast === 'function') showToast('⚠️ 设置加载部分异常：' + (_e && _e.message ? _e.message : _e));
+    }
     document.getElementById('settingsOverlay').classList.add('active');
 }
 
@@ -20902,12 +21133,29 @@ function init() {
         loadWallpaperFromIndexedDB().then(function(wallpaperData) {
             if (wallpaperData) {
                 var screen = document.getElementById('launcherScreen');
-                screen.style.backgroundImage = 'url(' + wallpaperData + ')';
+                var pv = document.getElementById('wallpaperPreviewImg');
+                pv.onerror = function() {
+                    try {
+                        var prev = [];
+                        try { prev = JSON.parse(localStorage.getItem('dream_errors') || '[]'); } catch(_) {}
+                        prev.push({ t: new Date().toISOString(), kind: 'wallpaper-diag', msg: '启动读回解码失败, 长度=' + String(wallpaperData).length + ', 已清坏记录' });
+                        if (prev.length > 20) prev = prev.slice(-20);
+                        localStorage.setItem('dream_errors', JSON.stringify(prev));
+                    } catch(_) {}
+                    deleteWallpaperFromIndexedDB();
+                    screen.style.backgroundImage = 'linear-gradient(145deg, #1a1a2e, #16213e, #0f3460)';
+                    screen.style.backgroundSize = 'auto';
+                    pv.style.display = 'none';
+                    pv.src = '';
+                    document.getElementById('wallpaperStatus').textContent = '默认';
+                    CONFIG.wallpaper = '';
+                };
+                screen.style.backgroundImage = 'url("' + wallpaperData + '")';
                 screen.style.backgroundSize = 'cover';
                 screen.style.backgroundPosition = 'center';
                 screen.style.pointerEvents = 'auto';
-                document.getElementById('wallpaperPreviewImg').src = wallpaperData;
-                document.getElementById('wallpaperPreviewImg').style.display = 'block';
+                pv.src = wallpaperData;
+                pv.style.display = 'block';
                 document.getElementById('wallpaperStatus').textContent = '自定义';
                 CONFIG.wallpaper = 'saved';
             } else {
@@ -21918,9 +22166,10 @@ if (_letterBadgeSwitch) {
             showLoginScreen();
             
             // 清空当前数据
+            if (typeof cleanupResources === 'function') cleanupResources();
             roles = [];
             CONFIG = {};
-            
+
             showToast('👋 已退出登录');
         }
     });

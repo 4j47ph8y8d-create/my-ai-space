@@ -6,6 +6,9 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const { execFile } = require('child_process');
+const os = require('os');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -550,6 +553,29 @@ app.listen(3000, () => {
 https.createServer(httpsOptions, app).listen(443, () => {
   console.log('HTTPS Server running on port 443');
 });
+// ===== tmp-img 中转图片 TTL 清扫：转码 JPEG 仅供 WebView 临时加载，超过 1 小时自动删除防止磁盘累积 =====
+const TMP_IMG_DIR = path.join(__dirname, 'tmp-img');
+const TMP_IMG_TTL_MS = 60 * 60 * 1000; // 1 小时
+function sweepTmpImg() {
+    try {
+        fs.mkdirSync(TMP_IMG_DIR, { recursive: true });
+        let names;
+        try { names = fs.readdirSync(TMP_IMG_DIR); } catch (_) { return; }
+        const now = Date.now();
+        let removed = 0;
+        for (const name of names) {
+            if (!/\.jpg$/i.test(name)) continue;
+            const p = path.join(TMP_IMG_DIR, name);
+            try {
+                const st = fs.statSync(p);
+                if (now - st.mtimeMs > TMP_IMG_TTL_MS) { fs.unlinkSync(p); removed++; }
+            } catch (_) {}
+        }
+        if (removed > 0) console.log('[tmp-img] swept', removed, 'expired jpg(s)');
+    } catch (e) { console.error('[tmp-img] sweep failed:', e && e.message); }
+}
+sweepTmpImg();
+setInterval(sweepTmpImg, 60 * 60 * 1000).unref();
 app.post('/api/save_memory', authenticate, async (req, res) => { const { characterId, memoryText } = req.body; const userId = req.userId; const { syncMemory } = require('./sync-brain.js'); try { const result = await syncMemory(userId, characterId, memoryText); res.json({ success: true, result: result }); } catch(e) { res.json({ success: false, error: e.message }); } });
 // 大脑上下文桥接：检索该角色相关记忆 + 情绪/关系状态（只读；大脑不可用则降级为空，不阻断聊天）
 app.get('/api/brain/context', authenticate, async (req, res) => {
@@ -611,3 +637,64 @@ app.post('/api/brain/advance', authenticate, async (req, res) => {
         res.json({ success: true, emotionNote: null, degraded: true });
     }
 });
+// ===== HEIC/HEIF 图片转码：服务器端用 libheif 解码为 JPEG（鸿蒙 WebView 不支持 HEIC）=====
+function convertHeicToJpegBuffer(dataUrl) {
+    return new Promise((resolve, reject) => {
+        const m = /^data:([^;]+);base64,(.+)$/.exec(String(dataUrl || ''));
+        if (!m) return reject(new Error('bad dataUrl'));
+        const buf = Buffer.from(m[2], 'base64');
+        if (buf.length > 20 * 1024 * 1024) return reject(new Error('image too large (>20MB)'));
+        const id = crypto.randomBytes(8).toString('hex');
+        const dir = os.tmpdir();
+        const inF = path.join(dir, 'hep_' + id + '.heic');
+        const outF = path.join(dir, 'hep_' + id + '.jpg');
+        const sizedF = path.join(dir, 'hep_' + id + '_s.jpg');
+        let cleaned = false;
+        const cleanup = () => {
+            if (cleaned) return; cleaned = true;
+            try { fs.unlinkSync(inF); } catch (_) {}
+            try { fs.unlinkSync(outF); } catch (_) {}
+            try { fs.unlinkSync(sizedF); } catch (_) {}
+        };
+        fs.writeFileSync(inF, buf);
+        execFile('heif-convert', ['-q', '85', inF, outF], { timeout: 20000, maxBuffer: 20 * 1024 * 1024 }, (err, stdout, stderr) => {
+            if (err) {
+                const detail = (err && err.stderr ? String(err.stderr) : String(stderr || '')).slice(0, 300);
+                cleanup();
+                err.message = (err.message || 'heif-convert failed') + ' | stderr: ' + detail;
+                return reject(err);
+            }
+            execFile('convert', [outF, '-resize', '1280x1280>', '-quality', '70', sizedF], { timeout: 20000, maxBuffer: 20 * 1024 * 1024 }, (err2, so2, se2) => {
+                let jpg = null;
+                try { if (!err2) jpg = fs.readFileSync(sizedF); } catch (e) { err2 = err2 || e; }
+                cleanup();
+                if (err2) {
+                    const detail = (err2 && err2.stderr ? String(err2.stderr) : String(se2 || '')).slice(0, 300);
+                    err2.message = (err2.message || 'resize failed') + ' | stderr: ' + detail;
+                    return reject(err2);
+                }
+                if (!jpg || jpg.length === 0) return reject(new Error('empty convert result'));
+                resolve(jpg);
+            });
+        });
+    });
+}
+
+app.post('/api/convert-image', authenticate, async (req, res) => {
+    try {
+        const dataUrl = req.body && req.body.dataUrl;
+        console.log('[convert-image] recv, dataUrl len=', dataUrl ? dataUrl.length : 0);
+        if (!dataUrl) return res.status(400).json({ success: false, error: 'missing image data' });
+        const jpg = await convertHeicToJpegBuffer(dataUrl);
+        const sid = crypto.randomBytes(8).toString('hex');
+        const staticDir = path.join(__dirname, 'tmp-img');
+        try { fs.mkdirSync(staticDir, { recursive: true }); } catch (_) {}
+        const outStatic = path.join(staticDir, sid + '.jpg');
+        fs.writeFileSync(outStatic, jpg);
+        console.log('[convert-image] ok, jpg bytes=', jpg.length, 'file=', sid + '.jpg');
+        res.json({ success: true, url: '/tmp-img/' + sid + '.jpg' });
+    } catch (e) {
+        console.error('[convert-image] fail:', e && e.message, 'code=', e && e.code);
+        res.status(500).json({ success: false, error: e && e.message ? e.message : String(e) });
+    }
+});;

@@ -31,3 +31,4 @@ d10*
 diag*.js
 *.broken-*
 deploy_*.py
+tmp-img/
